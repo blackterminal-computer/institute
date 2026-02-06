@@ -6,30 +6,40 @@
 
 <style>
 body{
-font-family:Arial;
-background:#020617;
+margin:0;
+font-family:Poppins,Arial;
+background:radial-gradient(circle,#020617,#000);
 color:white;
-padding:20px;
+text-align:center;
 }
 
 .box{
-max-width:600px;
-margin:auto;
+width:92%;
+max-width:700px;
+margin:40px auto;
 background:#0f172a;
-padding:25px;
+padding:20px;
 border-radius:18px;
 }
 
-h1{text-align:center;margin-bottom:20px}
+h1{
+margin-bottom:20px;
+}
 
 .row{
 display:flex;
-justify-content:space-between;
 align-items:center;
-padding:12px;
-margin-top:12px;
+justify-content:space-between;
 background:#020617;
-border-radius:12px;
+padding:12px;
+margin:12px 0;
+border-radius:14px;
+animation:fade .6s ease;
+}
+
+@keyframes fade{
+from{opacity:0;transform:translateY(20px)}
+to{opacity:1;transform:translateY(0)}
 }
 
 .left{
@@ -38,12 +48,44 @@ align-items:center;
 gap:12px;
 }
 
-img{
-width:45px;
-height:45px;
+.left img{
+width:50px;
+height:50px;
 border-radius:50%;
-object-fit:cover;
 border:2px solid #22c55e;
+}
+
+.rank{
+font-size:22px;
+width:40px;
+}
+
+.name{
+font-size:16px;
+}
+
+.streak{
+font-size:12px;
+color:#22c55e;
+}
+
+.xp{
+font-size:18px;
+color:gold;
+}
+
+/* home btn */
+.home{
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+padding:14px 35px;
+background:linear-gradient(45deg,#6366f1,#06b6d4);
+border:none;
+border-radius:12px;
+color:white;
+font-size:16px;
 }
 </style>
 </head>
@@ -52,8 +94,10 @@ border:2px solid #22c55e;
 
 <div class="box">
 <h1>🏆 Live Leaderboard</h1>
-<div id="list">Loading...</div>
+<div id="list"></div>
 </div>
+
+<button class="home" onclick="window.location='index.html'">🏠 Home</button>
 
 <script type="module">
 
@@ -61,77 +105,55 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebas
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-  authDomain: "black-terminal-f2c91.firebaseapp.com",
-  projectId: "black-terminal-f2c91",
-  storageBucket: "black-terminal-f2c91.firebasestorage.app",
-  messagingSenderId: "552489994197",
-  appId: "1:552489994197:web:7662331264c334ffbadf5c"
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.firebasestorage.app",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const querySnapshot = await getDocs(collection(db,"students"));
-
+async function load(){
+let snap = await getDocs(collection(db,"students"));
 let arr=[];
-querySnapshot.forEach(doc=>{
-arr.push(doc.data());
-});
+snap.forEach(doc=>arr.push(doc.data()));
 
+// sort by xp
 arr.sort((a,b)=>b.xp-a.xp);
 
 let html="";
+arr.forEach((x,i)=>{
 
-arr.forEach((s,i)=>{
-
-let medal="";
+let medal="🏅";
 if(i==0) medal="🥇";
-else if(i==1) medal="🥈";
-else if(i==2) medal="🥉";
-else medal="#"+(i+1);
-
-let photo=s.photo || "https://i.imgur.com/6VBx3io.png";
+if(i==1) medal="🥈";
+if(i==2) medal="🥉";
 
 html+=`
 <div class="row">
 <div class="left">
-<img src="${photo}">
+<div class="rank">${medal}</div>
+<img src="${x.photo || 'https://i.ibb.co/4pDNDk1/avatar.png'}">
 <div>
-${medal} ${s.name}<br>
-<span style="font-size:12px;color:orange">🔥 ${s.streak} days</span>
+<div class="name">${x.name}</div>
+<div class="streak">🔥 ${x.streak || 0} days</div>
 </div>
 </div>
-
-<div>⭐ ${s.xp}</div>
-
-
-
-
-
-<button onclick="window.location='index.html'" style="
-position:fixed;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-padding:14px 30px;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-border:none;
-border-radius:12px;
-color:white;
-font-size:16px;
-z-index:999;">
-🏠 Home
-</button>
+<div class="xp">⭐ ${x.xp}</div>
 </div>
 `;
 });
 
-if(arr.length==0){
-html="No students yet";
+document.getElementById("list").innerHTML=html;
 }
 
-document.getElementById("list").innerHTML=html;
+load();
+
+// auto refresh every 5 sec
+setInterval(load,5000);
 
 </script>
 
