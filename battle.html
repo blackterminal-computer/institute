@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>1 vs 1 Battle</title>
+<title>Live Battle</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -15,6 +15,7 @@ justify-content:center;
 align-items:center;
 height:100vh;
 text-align:center;
+overflow:hidden;
 }
 
 .box{
@@ -33,13 +34,25 @@ border-radius:10px;
 cursor:pointer;
 }
 
-button{
-padding:14px 25px;
-border:none;
-border-radius:10px;
+.timer{
+font-size:22px;
+color:#22c55e;
+margin-bottom:10px;
+}
+
+/* VS SCREEN */
+.vs{
+font-size:55px;
+font-weight:bold;
 background:linear-gradient(45deg,#6366f1,#06b6d4);
-color:white;
-margin-top:15px;
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+animation:zoom .8s ease infinite alternate;
+}
+
+@keyframes zoom{
+from{transform:scale(1)}
+to{transform:scale(1.2)}
 }
 </style>
 </head>
@@ -82,23 +95,23 @@ let quiz=[
 {q:"WWW full form?",o:["World Wide Web","Web","Wide","None"],a:0}
 ];
 
-// join waiting room
+// join waiting
 let myRef = await addDoc(collection(db,"battle_wait"),{
 name:student,
 time:Date.now()
 });
 
-// listen battle start
+// listen battle
 onSnapshot(collection(db,"battles"),(snap)=>{
 snap.forEach(d=>{
 let data=d.data();
 if(data.p1==student || data.p2==student){
-startGame(d.id,data);
+startVS(d.id,data);
 }
 });
 });
 
-// check opponent
+// match making
 setInterval(async ()=>{
 let snap = await getDocs(collection(db,"battle_wait"));
 let players=[];
@@ -115,26 +128,42 @@ await setDoc(doc(db,"battles",battleId),{
 p1:p1.name,
 p2:p2.name,
 score1:0,
-score2:0
+score2:0,
+timer:60
 });
 
-// delete waiting
 await deleteDoc(doc(db,"battle_wait",p1.id));
 await deleteDoc(doc(db,"battle_wait",p2.id));
 }
 },2000);
 
+// VS ENTRY
+function startVS(id,data){
+
+let opponent = student==data.p1?data.p2:data.p1;
+
+document.getElementById("screen").innerHTML=
+`<h2>${student}</h2>
+<div class="vs">VS</div>
+<h2>${opponent}</h2>`;
+
+setTimeout(()=>startGame(id,data),2000);
+}
+
+// GAME START
 function startGame(battleId,data){
 
 let me=student;
-let opponent= me==data.p1?data.p2:data.p1;
+let opponent = me==data.p1?data.p2:data.p1;
 
 let i=0,score=0;
+let time=60;
 
 function load(){
 let q=quiz[i];
-let html=`<h2>⚔ ${me} vs ${opponent}</h2>
-<h3>${q.q}</h3>`;
+let html=`<div class="timer">⏱ ${time}s</div>
+<h3>${me} vs ${opponent}</h3>
+<h2>${q.q}</h2>`;
 
 q.o.forEach((opt,idx)=>{
 html+=`<div class="opt" onclick="ans(${idx})">${opt}</div>`;
@@ -155,6 +184,15 @@ await setDoc(doc(db,"battles",battleId),{
 if(i<quiz.length) load();
 else finish();
 }
+
+// TIMER
+let timer=setInterval(()=>{
+time--;
+if(time<=0){
+clearInterval(timer);
+finish();
+}
+},1000);
 
 function finish(){
 document.getElementById("screen").innerHTML="<h2>Waiting result...</h2>";
