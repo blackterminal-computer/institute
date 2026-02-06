@@ -212,3 +212,124 @@ document.getElementById("quiz").style.display="block";
 listenBattle(id,n1,n2);
 }
 
+
+
+let battleId="";
+let me="";
+let opp="";
+let myScore=0;
+
+const quiz=[
+{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Computer Unit","Control Unit"],a:1},
+{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
+{q:"1 KB = ?",o:["1000","1024","500","2048"],a:1},
+{q:"WWW full form?",o:["World Wide Web","Web World","Wide Web","None"],a:0},
+{q:"Excel is?",o:["Software","Game","OS","Browser"],a:0},
+{q:"Mouse is?",o:["Input","Output","CPU","RAM"],a:0},
+{q:"Monitor is?",o:["Input","Output","Both","None"],a:1},
+{q:"Binary of 2?",o:["10","11","01","00"],a:0},
+{q:"Keyboard type?",o:["Input","Output","Storage","CPU"],a:0},
+{q:"ALU stands?",o:["Logic Unit","Arithmetic Logic Unit","Memory","None"],a:1},
+{q:"RAM type?",o:["Memory","CPU","Input","Output"],a:0},
+{q:"Hard disk?",o:["Storage","Input","Output","CPU"],a:0},
+{q:"Internet?",o:["Network","Software","Hardware","None"],a:0},
+{q:"USB?",o:["Port","CPU","RAM","Monitor"],a:0},
+{q:"OS example?",o:["Windows","Mouse","CPU","Cable"],a:0}
+];
+
+function listenBattle(id,p1,p2){
+
+battleId=id;
+
+if(student==p1){
+me="p1";
+opp="p2";
+}else{
+me="p2";
+opp="p1";
+}
+
+let index=0;
+let selected=-1;
+let time=60;
+
+loadQ();
+
+function loadQ(){
+let q=quiz[index];
+document.getElementById("qno").innerText=index+1;
+document.getElementById("question").innerText=q.q;
+
+let html="";
+q.o.forEach((opt,i)=>{
+html+=`<div class="option" onclick="select(${i},this)">${opt}</div>`;
+});
+document.getElementById("options").innerHTML=html;
+}
+
+window.select=function(i,el){
+if(selected!=-1) return;
+
+selected=i;
+el.classList.add("lock");
+
+if(i==quiz[index].a){
+myScore++;
+updateDoc(doc(db,"battles",battleId),{
+[me=="p1"?"score1":"score2"]:myScore
+});
+}
+}
+
+window.next=function(){
+if(selected==-1){
+alert("Select option");
+return;
+}
+selected=-1;
+index++;
+
+if(index>=quiz.length){
+finish();
+return;
+}
+loadQ();
+}
+
+// timer
+setInterval(()=>{
+time--;
+document.getElementById("time").innerText=time;
+
+if(time<=0){
+finish();
+}
+},1000);
+
+function finish(){
+
+document.getElementById("quiz").style.display="none";
+document.getElementById("result").style.display="block";
+
+onSnapshot(doc(db,"battles",battleId),(docu)=>{
+let d=docu.data();
+
+let s1=d.score1||0;
+let s2=d.score2||0;
+
+let win="Draw 🤝";
+
+if(s1>s2) win=d.p1+" Wins 🏆";
+if(s2>s1) win=d.p2+" Wins 🏆";
+
+document.getElementById("winner").innerText=
+d.p1+" : "+s1+"  |  "+d.p2+" : "+s2+
+"\n"+win;
+});
+}
+
+}
+</script>
+
+</body>
+</html>
