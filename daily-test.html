@@ -39,6 +39,7 @@ border-radius:10px;
 cursor:pointer;
 border:2px solid transparent;
 transition:.2s;
+position:relative;
 }
 
 .opt:hover{transform:scale(1.03)}
@@ -47,6 +48,22 @@ transition:.2s;
 border:2px solid #22c55e;
 box-shadow:0 0 20px #22c55e;
 background:#020617;
+}
+
+/* lock icon */
+.locked::after{
+content:"🔒";
+position:absolute;
+right:12px;
+top:8px;
+font-size:16px;
+color:#22c55e;
+animation:lockPop .3s ease;
+}
+
+@keyframes lockPop{
+from{transform:scale(0);opacity:0}
+to{transform:scale(1);opacity:1}
 }
 
 button{
@@ -131,17 +148,24 @@ document.getElementById("options").innerHTML=html;
 }
 load();
 
+// select option
 window.select=function(el,idx){
 if(locked) return;
 
 document.getElementById("click").play();
+
 document.querySelectorAll(".opt").forEach(o=>o.classList.remove("locked"));
 
 el.classList.add("locked");
 locked=true;
+
+el.style.transform="scale(1.08)";
+setTimeout(()=>{el.style.transform="scale(1)"},200);
+
 selected=idx;
 }
 
+// next
 window.next=function(){
 if(selected==-1){alert("Select option");return;}
 
@@ -151,9 +175,8 @@ selected=-1;
 locked=false;
 i++;
 
-if(i<quiz.length){
-load();
-}else finish();
+if(i<quiz.length) load();
+else finish();
 }
 
 // timer
