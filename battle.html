@@ -40,7 +40,6 @@ color:#22c55e;
 margin-bottom:10px;
 }
 
-/* VS SCREEN */
 .vs{
 font-size:55px;
 font-weight:bold;
@@ -87,6 +86,8 @@ student = prompt("Enter name");
 localStorage.setItem("studentName",student);
 }
 
+let gameStarted=false;
+
 // questions
 let quiz=[
 {q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
@@ -96,22 +97,23 @@ let quiz=[
 ];
 
 // join waiting
-let myRef = await addDoc(collection(db,"battle_wait"),{
+await addDoc(collection(db,"battle_wait"),{
 name:student,
 time:Date.now()
 });
 
-// listen battle
+// listen battle start
 onSnapshot(collection(db,"battles"),(snap)=>{
 snap.forEach(d=>{
 let data=d.data();
-if(data.p1==student || data.p2==student){
+if((data.p1==student || data.p2==student) && !gameStarted){
+gameStarted=true;
 startVS(d.id,data);
 }
 });
 });
 
-// match making
+// matchmaking
 setInterval(async ()=>{
 let snap = await getDocs(collection(db,"battle_wait"));
 let players=[];
@@ -121,15 +123,13 @@ if(players.length>=2){
 
 let p1=players[0];
 let p2=players[1];
-
 let battleId="battle_"+Date.now();
 
 await setDoc(doc(db,"battles",battleId),{
 p1:p1.name,
 p2:p2.name,
 score1:0,
-score2:0,
-timer:60
+score2:0
 });
 
 await deleteDoc(doc(db,"battle_wait",p1.id));
@@ -137,7 +137,7 @@ await deleteDoc(doc(db,"battle_wait",p2.id));
 }
 },2000);
 
-// VS ENTRY
+// VS screen
 function startVS(id,data){
 
 let opponent = student==data.p1?data.p2:data.p1;
@@ -150,7 +150,7 @@ document.getElementById("screen").innerHTML=
 setTimeout(()=>startGame(id,data),2000);
 }
 
-// GAME START
+// game
 function startGame(battleId,data){
 
 let me=student;
@@ -185,7 +185,6 @@ if(i<quiz.length) load();
 else finish();
 }
 
-// TIMER
 let timer=setInterval(()=>{
 time--;
 if(time<=0){
