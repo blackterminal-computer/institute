@@ -44,7 +44,28 @@ border:2px solid transparent;
 
 .selected{
 border:2px solid #22c55e;
-box-shadow:0 0 15px #22c55e;
+}
+
+.locked{
+border:2px solid #22c55e;
+box-shadow:0 0 18px #22c55e inset,0 0 18px #22c55e;
+background:#020617;
+position:relative;
+}
+
+.locked::after{
+content:"🔒 Locked";
+position:absolute;
+right:12px;
+top:10px;
+font-size:12px;
+color:#22c55e;
+animation:pop .3s ease;
+}
+
+@keyframes pop{
+from{transform:scale(.5);opacity:0}
+to{transform:scale(1);opacity:1}
 }
 
 button{
@@ -77,9 +98,8 @@ cursor:pointer;
 
 <script>
 
-// ⭐ ASK NAME FIRST TIME
+// ⭐ ask name first time
 let studentName = localStorage.getItem("studentName");
-
 if(!studentName){
 studentName = prompt("Enter your name");
 if(studentName){
@@ -103,9 +123,9 @@ let quiz=[
 ];
 
 let i=0,score=0,selected=-1;
+let locked=false;
 let time=300;
 
-// load question
 function load(){
 document.getElementById("qno").innerHTML="Question "+(i+1)+" / "+quiz.length;
 document.getElementById("question").innerHTML=quiz[i].q;
@@ -119,19 +139,37 @@ document.getElementById("options").innerHTML=html;
 load();
 
 function select(el,idx){
+if(locked) return;
+
 document.getElementById("clickSound").play();
-document.querySelectorAll(".opt").forEach(o=>o.classList.remove("selected"));
+
+document.querySelectorAll(".opt").forEach(o=>{
+o.classList.remove("selected");
+o.classList.remove("locked");
+});
+
 el.classList.add("selected");
+
+setTimeout(()=>{
+el.classList.add("locked");
+locked=true;
+},200);
+
 selected=idx;
 }
 
 function next(){
 if(selected==-1){alert("Select option");return;}
+
 if(selected==quiz[i].a) score++;
+
 selected=-1;
+locked=false;
 i++;
-if(i<quiz.length) load();
-else finish();
+
+if(i<quiz.length){
+load();
+}else finish();
 }
 
 // timer
@@ -144,7 +182,6 @@ finish();
 }
 },1000);
 
-// finish
 function finish(){
 clearInterval(t);
 
