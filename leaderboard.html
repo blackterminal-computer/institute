@@ -30,11 +30,24 @@ margin-bottom:20px;
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:14px;
+padding:12px;
 margin-top:12px;
 background:#020617;
-border-radius:10px;
-font-size:18px;
+border-radius:12px;
+}
+
+.left{
+display:flex;
+align-items:center;
+gap:12px;
+}
+
+img{
+width:42px;
+height:42px;
+border-radius:50%;
+object-fit:cover;
+border:2px solid #22c55e;
 }
 
 button{
@@ -46,7 +59,6 @@ border:none;
 border-radius:10px;
 color:white;
 font-size:16px;
-cursor:pointer;
 }
 </style>
 </head>
@@ -62,21 +74,21 @@ cursor:pointer;
 
 <script>
 
-// load xp
 let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
 let streakData = JSON.parse(localStorage.getItem("streakData")) || {};
 
 let arr=[];
 
-// convert to array
 for(let name in xpData){
 let xp = xpData[name];
 let streak = streakData[name] ? streakData[name].streak : 0;
 
-arr.push({name:name,xp:xp,streak:streak});
+let photo = localStorage.getItem("photo_"+name);
+if(!photo) photo="https://via.placeholder.com/40";
+
+arr.push({name,xp,streak,photo});
 }
 
-// sort by xp
 arr.sort((a,b)=>b.xp-a.xp);
 
 let html="";
@@ -91,14 +103,21 @@ else medal="#"+(i+1);
 
 html+=`
 <div class="row">
-<div>${medal} ${s.name} 🔥${s.streak}</div>
+<div class="left">
+<img src="${s.photo}">
+<div>
+${medal} ${s.name}<br>
+<span style="font-size:12px;color:orange">🔥 ${s.streak} days</span>
+</div>
+</div>
+
 <div>⭐ ${s.xp} XP</div>
 </div>
 `;
 });
 
 if(arr.length==0){
-html="<p style='text-align:center'>No data yet. Give test first.</p>";
+html="<p>No data yet. Give test first.</p>";
 }
 
 document.getElementById("list").innerHTML=html;
