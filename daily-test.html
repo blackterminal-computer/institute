@@ -14,6 +14,7 @@ display:flex;
 justify-content:center;
 align-items:center;
 height:100vh;
+overflow:hidden;
 }
 
 .box{
@@ -36,11 +37,16 @@ padding:14px;
 margin-top:12px;
 border-radius:10px;
 cursor:pointer;
+border:2px solid transparent;
+transition:.2s;
 }
+
+.opt:hover{transform:scale(1.03)}
 
 .locked{
 border:2px solid #22c55e;
-box-shadow:0 0 10px #22c55e;
+box-shadow:0 0 20px #22c55e;
+background:#020617;
 }
 
 button{
@@ -52,6 +58,13 @@ border:none;
 border-radius:10px;
 color:white;
 font-size:16px;
+}
+
+canvas{
+position:fixed;
+top:0;
+left:0;
+pointer-events:none;
 }
 </style>
 </head>
@@ -65,6 +78,10 @@ font-size:16px;
 <div id="options"></div>
 <button onclick="next()">Next</button>
 </div>
+
+<audio id="click">
+<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3">
+</audio>
 
 <script type="module">
 
@@ -100,7 +117,7 @@ let quiz=[
 {q:"WWW full form?",o:["World Wide Web","Web","Wide","None"],a:0}
 ];
 
-let i=0,score=0,selected=-1,time=300;
+let i=0,score=0,selected=-1,locked=false,time=300;
 
 function load(){
 document.getElementById("qno").innerHTML="Question "+(i+1)+"/"+quiz.length;
@@ -115,32 +132,28 @@ document.getElementById("options").innerHTML=html;
 load();
 
 window.select=function(el,idx){
+if(locked) return;
+
+document.getElementById("click").play();
 document.querySelectorAll(".opt").forEach(o=>o.classList.remove("locked"));
+
 el.classList.add("locked");
+locked=true;
 selected=idx;
 }
 
 window.next=function(){
-
-// अगर last question already finish
-if(i>=quiz.length) return;
-
-// option select check
-if(selected==-1){
-alert("Select option");
-return;
-}
+if(selected==-1){alert("Select option");return;}
 
 if(selected==quiz[i].a) score++;
 
 selected=-1;
+locked=false;
 i++;
 
 if(i<quiz.length){
 load();
-}else{
-finish();
-}
+}else finish();
 }
 
 // timer
@@ -175,13 +188,13 @@ streakData[student].lastDate=today;
 localStorage.setItem("streakData",JSON.stringify(streakData));
 let streak=streakData[student].streak;
 
-// xp store
+// xp
 let xpData = JSON.parse(localStorage.getItem("xpData"))||{};
 if(!xpData[student]) xpData[student]=0;
 xpData[student]+=xp;
 localStorage.setItem("xpData",JSON.stringify(xpData));
 
-// 🔥 FIREBASE SAVE
+// firebase save
 await setDoc(doc(db,"students",student),{
 name:student,
 xp:xpData[student],
@@ -189,15 +202,52 @@ streak:streak,
 photo:localStorage.getItem("photo_"+student)||""
 });
 
-// result
+// result UI
 document.querySelector(".box").innerHTML=`
-<h1>🎉 Finished</h1>
+<h1>🎉 Test Completed</h1>
 <h2>${student}</h2>
 <h2>Score: ${score}/${quiz.length}</h2>
 <h2>⭐ XP: ${xp}</h2>
 <h2>🔥 Streak: ${streak}</h2>
 <button onclick="window.location='leaderboard.html'">Leaderboard</button>
+<canvas id="confetti"></canvas>
 `;
+
+confetti();
+}
+
+// confetti
+function confetti(){
+const canvas=document.getElementById("confetti");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let pieces=[];
+for(let i=0;i<120;i++){
+pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*6+2,d:Math.random()*50,color:`hsl(${Math.random()*360},100%,50%)`});
+}
+
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+pieces.forEach(p=>{
+ctx.beginPath();
+ctx.fillStyle=p.color;
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+ctx.fill();
+});
+update();
+requestAnimationFrame(draw);
+}
+
+function update(){
+pieces.forEach(p=>{
+p.y+=Math.cos(p.d)+2;
+p.x+=Math.sin(p.d);
+if(p.y>canvas.height){p.y=0;p.x=Math.random()*canvas.width;}
+});
+}
+draw();
 }
 
 </script>
