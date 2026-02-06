@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Daily MCQ Exam</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+font-family:Arial;
+background:#0e0f13;
+color:white;
+padding:20px;
+}
+.box{
+max-width:600px;
+margin:auto;
+background:#171821;
+padding:25px;
+border-radius:12px;
+}
+.q{
+margin-top:20px;
+font-size:18px;
+}
+.opt{
+background:#232432;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+cursor:pointer;
+}
+button{
+margin-top:20px;
+padding:12px;
+width:100%;
+background:#4f8cff;
+border:none;
+color:white;
+border-radius:6px;
+font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+<h2>Daily MCQ Exam</h2>
+<p id="qno"></p>
+<div class="q" id="question"></div>
+
+<div id="options"></div>
+
+<button onclick="next()">Next</button>
+</div>
+
+<script>
+let student = localStorage.getItem("studentName");
+if(!student){window.location="login.html";}
+
+// QUESTIONS (edit anytime)
+let quiz = [
+{
+q:"CPU full form?",
+o:["Central Process Unit","Central Processing Unit","Computer Unit","Control Unit"],
+a:1
+},
+{
+q:"Brain of computer?",
+o:["RAM","CPU","Mouse","Keyboard"],
+a:1
+},
+{
+q:"1 KB = ?",
+o:["1000 byte","1024 byte","500 byte","2048 byte"],
+a:1
+}
+];
+
+let index=0;
+let score=0;
+
+function load(){
+document.getElementById("qno").innerHTML="Question "+(index+1)+" / "+quiz.length;
+document.getElementById("question").innerHTML=quiz[index].q;
+
+let opt="";
+quiz[index].o.forEach((x,i)=>{
+opt+=`<div class="opt" onclick="select(${i})">${x}</div>`;
+});
+document.getElementById("options").innerHTML=opt;
+}
+
+let selected=-1;
+function select(i){
+selected=i;
+}
+
+function next(){
+if(selected==-1){alert("Select option");return;}
+
+if(selected==quiz[index].a) score++;
+
+selected=-1;
+index++;
+
+if(index<quiz.length){
+load();
+}else{
+finish();
+}
+}
+
+function finish(){
+let id=localStorage.getItem("studentId");
+let results = JSON.parse(localStorage.getItem("results"))||[];
+
+results.push({
+name:student,
+score:score,
+total:quiz.length,
+date:new Date().toLocaleDateString()
+});
+
+localStorage.setItem("results",JSON.stringify(results));
+
+document.querySelector(".box").innerHTML=
+`<h2>Exam Finished</h2>
+<h1>${score} / ${quiz.length}</h1>
+<button onclick="window.location='dashboard.html'">Back Dashboard</button>`;
+}
+
+load();
+</script>
+
+</body>
+</html>
