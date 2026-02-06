@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Live Battle</title>
+<title>1 vs 1 Battle</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -15,7 +15,6 @@ justify-content:center;
 align-items:center;
 height:100vh;
 text-align:center;
-overflow:hidden;
 }
 
 .box{
@@ -41,17 +40,11 @@ margin-bottom:10px;
 }
 
 .vs{
-font-size:55px;
+font-size:50px;
 font-weight:bold;
 background:linear-gradient(45deg,#6366f1,#06b6d4);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
-animation:zoom .8s ease infinite alternate;
-}
-
-@keyframes zoom{
-from{transform:scale(1)}
-to{transform:scale(1.2)}
 }
 </style>
 </head>
@@ -65,7 +58,7 @@ to{transform:scale(1.2)}
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, onSnapshot, deleteDoc } 
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc } 
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -86,75 +79,69 @@ student = prompt("Enter name");
 localStorage.setItem("studentName",student);
 }
 
-let gameStarted=false;
-
-// questions
+// 🔥 15 QUESTIONS
 let quiz=[
 {q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
 {q:"Excel is?",o:["Software","Game","OS","Browser"],a:0},
 {q:"1 KB = ?",o:["1000","1024","500","200"],a:1},
-{q:"WWW full form?",o:["World Wide Web","Web","Wide","None"],a:0}
+{q:"WWW full form?",o:["World Wide Web","Web","Wide","None"],a:0},
+{q:"Mouse is?",o:["Input","Output","CPU","RAM"],a:0},
+{q:"Keyboard type?",o:["Input","Output","Both","None"],a:0},
+{q:"Monitor is?",o:["Output","Input","CPU","RAM"],a:0},
+{q:"RAM stands for?",o:["Random Access Memory","Read Access","Run Memory","None"],a:0},
+{q:"Computer shortcut copy?",o:["Ctrl+C","Ctrl+V","Ctrl+X","Ctrl+Z"],a:0},
+{q:"Paste shortcut?",o:["Ctrl+V","Ctrl+C","Ctrl+X","Ctrl+A"],a:0},
+{q:"Internet full form?",o:["Interconnected Network","Internal","Net","None"],a:0},
+{q:"File delete?",o:["Del","Esc","Tab","Ctrl"],a:0},
+{q:"Windows is?",o:["OS","Game","App","Browser"],a:0},
+{q:"Printer is?",o:["Output","Input","CPU","RAM"],a:0},
+{q:"Hard disk?",o:["Storage","Input","Output","None"],a:0}
 ];
 
 // join waiting
-await addDoc(collection(db,"battle_wait"),{
-name:student,
-time:Date.now()
+let my = await addDoc(collection(db,"battle_wait"),{
+name:student,time:Date.now()
 });
 
-// listen battle start
-onSnapshot(collection(db,"battles"),(snap)=>{
-snap.forEach(d=>{
-let data=d.data();
-if((data.p1==student || data.p2==student) && !gameStarted){
-gameStarted=true;
-startVS(d.id,data);
-}
-});
-});
+// match making
+let matchInterval=setInterval(async()=>{
+let snap=await getDocs(collection(db,"battle_wait"));
+let arr=[];
+snap.forEach(d=>arr.push({id:d.id,...d.data()}));
 
-// matchmaking
-setInterval(async ()=>{
-let snap = await getDocs(collection(db,"battle_wait"));
-let players=[];
-snap.forEach(d=>players.push({id:d.id,...d.data()}));
-
-if(players.length>=2){
-
-let p1=players[0];
-let p2=players[1];
+if(arr.length>=2){
+let p1=arr[0];
+let p2=arr[1];
 let battleId="battle_"+Date.now();
 
 await setDoc(doc(db,"battles",battleId),{
 p1:p1.name,
 p2:p2.name,
-score1:0,
-score2:0
+start:Date.now()
 });
 
 await deleteDoc(doc(db,"battle_wait",p1.id));
 await deleteDoc(doc(db,"battle_wait",p2.id));
+
+clearInterval(matchInterval);
+startBattle(battleId,p1.name,p2.name);
 }
 },2000);
 
+async function startBattle(id,n1,n2){
+
+let opponent = student==n1?n2:n1;
+
 // VS screen
-function startVS(id,data){
-
-let opponent = student==data.p1?data.p2:data.p1;
-
 document.getElementById("screen").innerHTML=
 `<h2>${student}</h2>
 <div class="vs">VS</div>
 <h2>${opponent}</h2>`;
 
-setTimeout(()=>startGame(id,data),2000);
+setTimeout(()=>startQuiz(id,n1,n2),2000);
 }
 
-// game
-function startGame(battleId,data){
-
-let me=student;
-let opponent = me==data.p1?data.p2:data.p1;
+function startQuiz(id,n1,n2){
 
 let i=0,score=0;
 let time=60;
@@ -162,7 +149,7 @@ let time=60;
 function load(){
 let q=quiz[i];
 let html=`<div class="timer">⏱ ${time}s</div>
-<h3>${me} vs ${opponent}</h3>
+<h3>${student} vs ${student==n1?n2:n1}</h3>
 <h2>${q.q}</h2>`;
 
 q.o.forEach((opt,idx)=>{
@@ -176,32 +163,38 @@ load();
 window.ans=async function(idx){
 if(idx==quiz[i].a) score++;
 i++;
-
-await setDoc(doc(db,"battles",battleId),{
-[me==data.p1?"score1":"score2"]:score
-},{merge:true});
-
 if(i<quiz.length) load();
 else finish();
 }
 
-let timer=setInterval(()=>{
+// timer
+let t=setInterval(()=>{
 time--;
 if(time<=0){
-clearInterval(timer);
+clearInterval(t);
 finish();
 }
 },1000);
 
-function finish(){
-document.getElementById("screen").innerHTML="<h2>Waiting result...</h2>";
+async function finish(){
 
-onSnapshot(doc(db,"battles",battleId),(d)=>{
-let r=d.data();
-if(!r) return;
+await setDoc(doc(db,"battle_score",id+"_"+student),{
+name:student,score:score
+});
 
-let my = me==r.p1?r.score1:r.score2;
-let opp = me==r.p1?r.score2:r.score1;
+document.getElementById("screen").innerHTML="<h2>Waiting opponent...</h2>";
+
+setTimeout(async()=>{
+let s1=await getDoc(doc(db,"battle_score",id+"_"+n1));
+let s2=await getDoc(doc(db,"battle_score",id+"_"+n2));
+
+if(!s1.exists()||!s2.exists()) return;
+
+let sc1=s1.data().score;
+let sc2=s2.data().score;
+
+let my = student==n1?sc1:sc2;
+let opp = student==n1?sc2:sc1;
 
 let res="Draw 🤝";
 if(my>opp) res="🏆 You Win!";
@@ -211,7 +204,7 @@ document.getElementById("screen").innerHTML=
 `<h1>${res}</h1>
 <h2>${my} vs ${opp}</h2>
 <button onclick="location.reload()">Play Again</button>`;
-});
+},3000);
 }
 }
 
