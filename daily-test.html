@@ -14,29 +14,14 @@ display:flex;
 justify-content:center;
 align-items:center;
 min-height:100vh;
-overflow:hidden;
 }
 
-/* exam box */
 .box{
 width:95%;
 max-width:700px;
 background:rgba(255,255,255,0.05);
-backdrop-filter:blur(10px);
 padding:25px;
 border-radius:18px;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-animation:fade .6s ease;
-}
-
-@keyframes fade{
-from{opacity:0;transform:scale(.95)}
-to{opacity:1;transform:scale(1)}
-}
-
-.qno{
-opacity:.7;
-margin-bottom:10px;
 }
 
 .timer{
@@ -45,31 +30,25 @@ color:#22c55e;
 font-weight:bold;
 }
 
-/* options */
 .opt{
 background:#1f2937;
 padding:14px;
 margin-top:12px;
 border-radius:10px;
 cursor:pointer;
-transition:.25s;
+transition:.2s;
 border:2px solid transparent;
 }
 
-.opt:hover{
-transform:scale(1.03);
-}
+.opt:hover{transform:scale(1.02)}
 
-/* selected neon */
 .selected{
-background:#020617;
 border:2px solid #22c55e;
 box-shadow:0 0 15px #22c55e;
-transform:scale(1.05);
 }
 
 button{
-margin-top:25px;
+margin-top:20px;
 padding:14px;
 width:100%;
 background:linear-gradient(45deg,#6366f1,#06b6d4);
@@ -86,25 +65,19 @@ cursor:pointer;
 
 <div class="box">
 <div class="timer">⏱ <span id="time">300</span>s</div>
-<div class="qno" id="qno"></div>
+<h3 id="qno"></h3>
 <h2 id="question"></h2>
-
 <div id="options"></div>
-
 <button onclick="next()">Next</button>
 </div>
 
-<!-- sound -->
 <audio id="clickSound">
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3" type="audio/mpeg">
+<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3">
 </audio>
 
 <script>
 
-// fullscreen
-document.documentElement.requestFullscreen?.();
-
-// ask name first time
+// ⭐ ASK NAME FIRST TIME
 let studentName = localStorage.getItem("studentName");
 
 if(!studentName){
@@ -117,8 +90,10 @@ localStorage.setItem("studentName", studentName);
 }
 }
 
+// fullscreen
+document.documentElement.requestFullscreen?.();
 
-// questions
+// questions (edit daily)
 let quiz=[
 {q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Control Unit","Computer Unit"],a:1},
 {q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
@@ -143,26 +118,20 @@ document.getElementById("options").innerHTML=html;
 }
 load();
 
-// select option
 function select(el,idx){
 document.getElementById("clickSound").play();
-
 document.querySelectorAll(".opt").forEach(o=>o.classList.remove("selected"));
 el.classList.add("selected");
 selected=idx;
 }
 
-// next
 function next(){
 if(selected==-1){alert("Select option");return;}
-
 if(selected==quiz[i].a) score++;
 selected=-1;
 i++;
-
-if(i<quiz.length){
-load();
-}else finish();
+if(i<quiz.length) load();
+else finish();
 }
 
 // timer
@@ -179,11 +148,9 @@ finish();
 function finish(){
 clearInterval(t);
 
-// result save
-let student = localStorage.getItem("studentName") || "Student";
+let student = localStorage.getItem("studentName");
 let results = JSON.parse(localStorage.getItem("results")) || [];
 
-// push new result
 results.push({
 name: student,
 score: score,
@@ -193,12 +160,10 @@ date: new Date().toLocaleDateString()
 
 localStorage.setItem("results", JSON.stringify(results));
 
-// show result
 document.querySelector(".box").innerHTML=
 `<h1>Test Finished</h1>
-<h2>Your Score: ${score}/${quiz.length}</h2>
-<button onclick="window.location='leaderboard.html'">View Leaderboard</button>
-`;
+<h2>${student} : ${score}/${quiz.length}</h2>
+<button onclick="window.location='leaderboard.html'">Leaderboard</button>`;
 }
 </script>
 
