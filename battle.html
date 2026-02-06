@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>1 vs 1 Battle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+font-family:Arial;
+background:#0e0f13;
+color:white;
+padding:20px;
+text-align:center;
+}
+.box{
+max-width:650px;
+margin:auto;
+background:#171821;
+padding:25px;
+border-radius:12px;
+}
+.opt{
+background:#232432;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+cursor:pointer;
+}
+button{
+margin-top:20px;
+padding:12px;
+width:100%;
+background:#22c55e;
+border:none;
+color:white;
+border-radius:6px;
+font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+<h2>⚔️ 1 vs 1 Battle</h2>
+<h3 id="opponent"></h3>
+
+<p id="qno"></p>
+<h3 id="question"></h3>
+<div id="options"></div>
+
+<button onclick="next()">Next</button>
+</div>
+
+<script>
+let player = localStorage.getItem("studentName");
+if(!player){window.location="login.html";}
+
+// opponents list
+let opponents=["Rahul","Amit","Sanjay","Rakesh","Vivek"];
+let opponent = opponents[Math.floor(Math.random()*opponents.length)];
+
+document.getElementById("opponent").innerHTML="You vs "+opponent;
+
+// questions
+let quiz=[
+{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Control Unit","Computer Unit"],a:1},
+{q:"Brain of computer?",o:["Mouse","CPU","RAM","Keyboard"],a:1},
+{q:"1 KB = ?",o:["1000 byte","1024 byte","500","2048"],a:1},
+{q:"Excel is?",o:["OS","Software","Game","Browser"],a:1},
+{q:"WWW stands for?",o:["World Wide Web","Web World","Wide Web","None"],a:0}
+];
+
+let i=0,score=0;
+let selected=-1;
+
+function load(){
+document.getElementById("qno").innerHTML="Question "+(i+1)+" / "+quiz.length;
+document.getElementById("question").innerHTML=quiz[i].q;
+
+let html="";
+quiz[i].o.forEach((x,idx)=>{
+html+=`<div class="opt" onclick="select(${idx})">${x}</div>`;
+});
+document.getElementById("options").innerHTML=html;
+}
+
+function select(x){selected=x;}
+
+function next(){
+if(selected==-1){alert("Select option");return;}
+
+if(selected==quiz[i].a) score++;
+
+selected=-1;
+i++;
+
+if(i<quiz.length) load();
+else finish();
+}
+
+function finish(){
+let oppScore=Math.floor(Math.random()*quiz.length)+1;
+
+let result="";
+if(score>oppScore) result="🏆 You Won!";
+else if(score<oppScore) result="😢 You Lost";
+else result="🤝 Draw";
+
+document.querySelector(".box").innerHTML=`
+<h2>Battle Finished</h2>
+<h1>${player}: ${score}</h1>
+<h1>${opponent}: ${oppScore}</h1>
+<h2>${result}</h2>
+
+<button onclick="window.location='dashboard.html'">Back Dashboard</button>
+`;
+}
+
+load();
+</script>
+
+</body>
+</html>
