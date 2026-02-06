@@ -8,19 +8,18 @@
 body{
 margin:0;
 font-family:Arial;
-background:radial-gradient(circle at top,#0f172a,#020617);
+background:radial-gradient(circle,#020617,#000);
 color:white;
 display:flex;
 justify-content:center;
 align-items:center;
-min-height:100vh;
-overflow:hidden;
+height:100vh;
 }
 
 .box{
 width:95%;
-max-width:700px;
-background:rgba(255,255,255,0.05);
+max-width:650px;
+background:#0f172a;
 padding:25px;
 border-radius:18px;
 }
@@ -37,23 +36,11 @@ padding:14px;
 margin-top:12px;
 border-radius:10px;
 cursor:pointer;
-border:2px solid transparent;
 }
 
 .locked{
 border:2px solid #22c55e;
-box-shadow:0 0 18px #22c55e inset,0 0 18px #22c55e;
-background:#020617;
-position:relative;
-}
-
-.locked::after{
-content:"🔒 Locked";
-position:absolute;
-right:12px;
-top:10px;
-font-size:12px;
-color:#22c55e;
+box-shadow:0 0 10px #22c55e;
 }
 
 button{
@@ -66,24 +53,12 @@ border-radius:10px;
 color:white;
 font-size:16px;
 }
-
-canvas{
-position:fixed;
-top:0;
-left:0;
-pointer-events:none;
-}
 </style>
 </head>
 
 <body>
 
 <div class="box">
-<div id="streakShow" style="
-color:orange;
-font-weight:bold;
-margin-bottom:10px">
-</div>
 <div class="timer">⏱ <span id="time">300</span>s</div>
 <h3 id="qno"></h3>
 <h2 id="question"></h2>
@@ -91,55 +66,44 @@ margin-bottom:10px">
 <button onclick="next()">Next</button>
 </div>
 
-<audio id="clickSound">
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3">
-</audio>
-
 <script type="module">
 
-
+// 🔥 FIREBASE
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-  authDomain: "black-terminal-f2c91.firebaseapp.com",
-  projectId: "black-terminal-f2c91",
-  storageBucket: "black-terminal-f2c91.firebasestorage.app",
-  messagingSenderId: "552489994197",
-  appId: "1:552489994197:web:7662331264c334ffbadf5c"
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.firebasestorage.app",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// name ask first time
-let studentName = localStorage.getItem("studentName");
+// name
 let student = localStorage.getItem("studentName");
-let streakData = JSON.parse(localStorage.getItem("streakData")) || {};
-
-if(student && streakData[student]){
-document.getElementById("streakShow").innerHTML =
-"🔥 Current Streak: "+streakData[student].streak+" days";
-}
-if(!studentName){
-studentName = prompt("Enter your name");
-localStorage.setItem("studentName", studentName);
+if(!student){
+student = prompt("Enter name");
+localStorage.setItem("studentName",student);
 }
 
 // questions
 let quiz=[
-{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Control Unit","Computer Unit"],a:1},
 {q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
+{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Unit","Process"],a:1},
 {q:"Excel is?",o:["Software","Game","OS","Browser"],a:0},
-{q:"1 KB = ?",o:["1000","1024","500","2048"],a:1},
-{q:"WWW full form?",o:["World Wide Web","Web World","Wide Web","None"],a:0}
+{q:"1 KB = ?",o:["1000","1024","500","200"],a:1},
+{q:"WWW full form?",o:["World Wide Web","Web","Wide","None"],a:0}
 ];
 
-let i=0,score=0,selected=-1,locked=false,time=300;
+let i=0,score=0,selected=-1,time=300;
 
 function load(){
-document.getElementById("qno").innerHTML="Question "+(i+1)+" / "+quiz.length;
+document.getElementById("qno").innerHTML="Question "+(i+1)+"/"+quiz.length;
 document.getElementById("question").innerHTML=quiz[i].q;
 
 let html="";
@@ -150,22 +114,20 @@ document.getElementById("options").innerHTML=html;
 }
 load();
 
-function select(el,idx){
-if(locked) return;
-document.getElementById("clickSound").play();
+window.select=function(el,idx){
 document.querySelectorAll(".opt").forEach(o=>o.classList.remove("locked"));
 el.classList.add("locked");
-locked=true;
 selected=idx;
 }
 
-function next(){
+window.next=function(){
 if(selected==-1){alert("Select option");return;}
 if(selected==quiz[i].a) score++;
+
 selected=-1;
-locked=false;
 i++;
-if(i<quiz.length) load(); else finish();
+if(i<quiz.length) load();
+else finish();
 }
 
 // timer
@@ -175,18 +137,38 @@ document.getElementById("time").innerHTML=time;
 if(time<=0){clearInterval(t);finish();}
 },1000);
 
-// finish + XP + streak
-function finish(){
+// finish
+async function finish(){
 clearInterval(t);
 
-let student = localStorage.getItem("studentName");
 let xp = score*10;
 
-// XP store
-let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
+// streak
+let streakData = JSON.parse(localStorage.getItem("streakData"))||{};
+let today=new Date().toLocaleDateString();
+
+if(!streakData[student]){
+streakData[student]={streak:1,lastDate:today};
+}else{
+let last=streakData[student].lastDate;
+let y=new Date();y.setDate(y.getDate()-1);
+let yest=y.toLocaleDateString();
+
+if(last==yest) streakData[student].streak+=1;
+else if(last!=today) streakData[student].streak=1;
+
+streakData[student].lastDate=today;
+}
+localStorage.setItem("streakData",JSON.stringify(streakData));
+let streak=streakData[student].streak;
+
+// xp store
+let xpData = JSON.parse(localStorage.getItem("xpData"))||{};
 if(!xpData[student]) xpData[student]=0;
 xpData[student]+=xp;
+localStorage.setItem("xpData",JSON.stringify(xpData));
 
+// 🔥 FIREBASE SAVE
 await setDoc(doc(db,"students",student),{
 name:student,
 xp:xpData[student],
@@ -194,80 +176,17 @@ streak:streak,
 photo:localStorage.getItem("photo_"+student)||""
 });
 
-// streak system
-let streakData = JSON.parse(localStorage.getItem("streakData")) || {};
-let today = new Date().toLocaleDateString();
-
-if(!streakData[student]){
-streakData[student]={streak:1,lastDate:today};
-}else{
-let last = streakData[student].lastDate;
-let yesterday = new Date();
-yesterday.setDate(yesterday.getDate()-1);
-let yDate = yesterday.toLocaleDateString();
-
-if(last==yDate) streakData[student].streak+=1;
-else if(last!=today) streakData[student].streak=1;
-
-streakData[student].lastDate=today;
-}
-
-let streak = streakData[student].streak;
-let bonus="";
-if(streak==7){ xpData[student]+=50; bonus="🔥 7 Day Bonus +50 XP";}
-if(streak==30){ xpData[student]+=200; bonus="👑 30 Day King Bonus +200 XP";}
-
-localStorage.setItem("xpData", JSON.stringify(xpData));
-localStorage.setItem("streakData", JSON.stringify(streakData));
-
-// UI
+// result
 document.querySelector(".box").innerHTML=`
-<h1>🎉 Test Completed</h1>
+<h1>🎉 Finished</h1>
 <h2>${student}</h2>
 <h2>Score: ${score}/${quiz.length}</h2>
-<h1 style="color:#22c55e">⭐ XP Earned: ${xp}</h1>
-<h2 style="color:orange">🔥 Streak: ${streak} days</h2>
-<h3>${bonus}</h3>
+<h2>⭐ XP: ${xp}</h2>
+<h2>🔥 Streak: ${streak}</h2>
 <button onclick="window.location='leaderboard.html'">Leaderboard</button>
-<canvas id="confetti"></canvas>
 `;
-
-startConfetti();
 }
 
-// confetti
-function startConfetti(){
-const canvas=document.getElementById("confetti");
-const ctx=canvas.getContext("2d");
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
-
-let pieces=[];
-for(let i=0;i<120;i++){
-pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*6+2,d:Math.random()*50,color:`hsl(${Math.random()*360},100%,50%)`});
-}
-
-function draw(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
-pieces.forEach(p=>{
-ctx.beginPath();
-ctx.fillStyle=p.color;
-ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-ctx.fill();
-});
-update();
-requestAnimationFrame(draw);
-}
-
-function update(){
-pieces.forEach(p=>{
-p.y+=Math.cos(p.d)+2;
-p.x+=Math.sin(p.d);
-if(p.y>canvas.height){p.y=0;p.x=Math.random()*canvas.width;}
-});
-}
-draw();
-}
 </script>
 
 </body>
