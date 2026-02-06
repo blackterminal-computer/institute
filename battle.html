@@ -6,119 +6,175 @@
 
 <style>
 body{
+margin:0;
 font-family:Arial;
-background:#0e0f13;
+background:radial-gradient(circle,#020617,#000);
 color:white;
-padding:20px;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
 text-align:center;
 }
+
 .box{
-max-width:650px;
-margin:auto;
-background:#171821;
+width:95%;
+max-width:600px;
+background:#0f172a;
 padding:25px;
-border-radius:12px;
+border-radius:18px;
 }
+
 .opt{
-background:#232432;
-padding:10px;
-margin-top:10px;
-border-radius:6px;
+background:#1f2937;
+padding:14px;
+margin-top:12px;
+border-radius:10px;
 cursor:pointer;
 }
+
+.opt:hover{background:#111827}
+
 button{
-margin-top:20px;
-padding:12px;
-width:100%;
-background:#22c55e;
+padding:14px 25px;
 border:none;
+border-radius:10px;
+background:linear-gradient(45deg,#6366f1,#06b6d4);
 color:white;
-border-radius:6px;
-font-size:16px;
+margin-top:15px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="box">
-<h2>⚔️ 1 vs 1 Battle</h2>
-<h3 id="opponent"></h3>
-
-<p id="qno"></p>
-<h3 id="question"></h3>
-<div id="options"></div>
-
-<button onclick="next()">Next</button>
+<div class="box" id="screen">
+<h2>⚔ Waiting for opponent...</h2>
+<p>Stay on this page</p>
 </div>
 
-<script>
-let player = localStorage.getItem("studentName");
-if(!player){window.location="login.html";}
+<script type="module">
 
-// opponents list
-let opponents=["Rahul","Amit","Sanjay","Rakesh","Vivek"];
-let opponent = opponents[Math.floor(Math.random()*opponents.length)];
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, onSnapshot, deleteDoc } 
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-document.getElementById("opponent").innerHTML="You vs "+opponent;
+const firebaseConfig = {
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.firebasestorage.app",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let student = localStorage.getItem("studentName");
+if(!student){
+student = prompt("Enter name");
+localStorage.setItem("studentName",student);
+}
 
 // questions
 let quiz=[
-{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Control Unit","Computer Unit"],a:1},
-{q:"Brain of computer?",o:["Mouse","CPU","RAM","Keyboard"],a:1},
-{q:"1 KB = ?",o:["1000 byte","1024 byte","500","2048"],a:1},
-{q:"Excel is?",o:["OS","Software","Game","Browser"],a:1},
-{q:"WWW stands for?",o:["World Wide Web","Web World","Wide Web","None"],a:0}
+{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
+{q:"Excel is?",o:["Software","Game","OS","Browser"],a:0},
+{q:"1 KB = ?",o:["1000","1024","500","200"],a:1},
+{q:"WWW full form?",o:["World Wide Web","Web","Wide","None"],a:0}
 ];
 
-let i=0,score=0;
-let selected=-1;
-
-function load(){
-document.getElementById("qno").innerHTML="Question "+(i+1)+" / "+quiz.length;
-document.getElementById("question").innerHTML=quiz[i].q;
-
-let html="";
-quiz[i].o.forEach((x,idx)=>{
-html+=`<div class="opt" onclick="select(${idx})">${x}</div>`;
+// join waiting room
+let roomRef = await addDoc(collection(db,"battle_wait"),{
+name:student,
+time:Date.now()
 });
-document.getElementById("options").innerHTML=html;
+
+// check opponent
+setInterval(async ()=>{
+let snap = await getDocs(collection(db,"battle_wait"));
+let players=[];
+snap.forEach(d=>players.push({id:d.id,...d.data()}));
+
+if(players.length>=2){
+startBattle(players);
+}
+},2000);
+
+async function startBattle(players){
+
+// delete waiting
+for(let p of players){
+await deleteDoc(doc(db,"battle_wait",p.id));
 }
 
-function select(x){selected=x;}
+let battleId="battle_"+Date.now();
+await setDoc(doc(db,"battles",battleId),{
+p1:players[0].name,
+p2:players[1].name,
+score1:0,
+score2:0,
+q:0
+});
 
-function next(){
-if(selected==-1){alert("Select option");return;}
+play(battleId,players);
+}
 
-if(selected==quiz[i].a) score++;
+function play(id,players){
 
-selected=-1;
+let me = student;
+let opponent = players.find(p=>p.name!==student)?.name||"Opponent";
+
+let i=0,score=0;
+
+function load(){
+let q=quiz[i];
+let html=`<h2>⚔ ${me} vs ${opponent}</h2>
+<h3>${q.q}</h3>`;
+
+q.o.forEach((opt,idx)=>{
+html+=`<div class="opt" onclick="ans(${idx})">${opt}</div>`;
+});
+
+document.getElementById("screen").innerHTML=html;
+}
+load();
+
+window.ans=async function(idx){
+if(idx==quiz[i].a) score++;
 i++;
+
+await setDoc(doc(db,"battles",id),{
+[me==players[0].name?"score1":"score2"]:score
+},{merge:true});
 
 if(i<quiz.length) load();
 else finish();
 }
 
 function finish(){
-let oppScore=Math.floor(Math.random()*quiz.length)+1;
+document.getElementById("screen").innerHTML="<h2>Waiting result...</h2>";
 
-let result="";
-if(score>oppScore) result="🏆 You Won!";
-else if(score<oppScore) result="😢 You Lost";
-else result="🤝 Draw";
+onSnapshot(doc(db,"battles",id),(d)=>{
+let data=d.data();
+if(!data) return;
 
-document.querySelector(".box").innerHTML=`
-<h2>Battle Finished</h2>
-<h1>${player}: ${score}</h1>
-<h1>${opponent}: ${oppScore}</h1>
-<h2>${result}</h2>
+let my = me==data.p1?data.score1:data.score2;
+let opp = me==data.p1?data.score2:data.score1;
 
-<button onclick="window.location='dashboard.html'">Back Dashboard</button>
-`;
+let result="Draw 🤝";
+if(my>opp) result="🏆 You Win!";
+if(my<opp) result="😢 You Lose";
+
+document.getElementById("screen").innerHTML=
+`<h1>${result}</h1>
+<h2>${my} vs ${opp}</h2>
+<button onclick="location.reload()">Play Again</button>`;
+});
+}
 }
 
-load();
 </script>
-
 </body>
 </html>
