@@ -42,10 +42,6 @@ border:2px solid transparent;
 
 .opt:hover{transform:scale(1.02)}
 
-.selected{
-border:2px solid #22c55e;
-}
-
 .locked{
 border:2px solid #22c55e;
 box-shadow:0 0 18px #22c55e inset,0 0 18px #22c55e;
@@ -60,12 +56,6 @@ right:12px;
 top:10px;
 font-size:12px;
 color:#22c55e;
-animation:pop .3s ease;
-}
-
-@keyframes pop{
-from{transform:scale(.5);opacity:0}
-to{transform:scale(1);opacity:1}
 }
 
 button{
@@ -113,7 +103,7 @@ localStorage.setItem("studentName", studentName);
 // fullscreen
 document.documentElement.requestFullscreen?.();
 
-// questions (edit daily)
+// questions
 let quiz=[
 {q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Control Unit","Computer Unit"],a:1},
 {q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
@@ -143,17 +133,12 @@ if(locked) return;
 
 document.getElementById("clickSound").play();
 
-document.querySelectorAll(".opt").forEach(o=>{
-o.classList.remove("selected");
-o.classList.remove("locked");
-});
-
-el.classList.add("selected");
+document.querySelectorAll(".opt").forEach(o=>o.classList.remove("locked"));
 
 setTimeout(()=>{
 el.classList.add("locked");
 locked=true;
-},200);
+},150);
 
 selected=idx;
 }
@@ -182,24 +167,29 @@ finish();
 }
 },1000);
 
+// finish
 function finish(){
 clearInterval(t);
 
 let student = localStorage.getItem("studentName");
+let xp = score*10;
+
+// XP store
+let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
+if(!xpData[student]) xpData[student]=0;
+xpData[student]+=xp;
+localStorage.setItem("xpData", JSON.stringify(xpData));
+
+// result store
 let results = JSON.parse(localStorage.getItem("results")) || [];
-
-results.push({
-name: student,
-score: score,
-total: quiz.length,
-date: new Date().toLocaleDateString()
-});
-
+results.push({name:student,score:score,xp:xp});
 localStorage.setItem("results", JSON.stringify(results));
 
 document.querySelector(".box").innerHTML=
 `<h1>Test Finished</h1>
-<h2>${student} : ${score}/${quiz.length}</h2>
+<h2>${student}</h2>
+<h2>Score: ${score}/${quiz.length}</h2>
+<h2>⭐ XP Earned: ${xp}</h2>
 <button onclick="window.location='leaderboard.html'">Leaderboard</button>`;
 }
 </script>
