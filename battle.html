@@ -132,3 +132,83 @@ font-weight:bold;
 <h2 id="winner"></h2>
 <button onclick="location.reload()">Play Again</button>
 </div>
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import {
+getFirestore, collection, addDoc, getDocs,
+doc, setDoc, onSnapshot, deleteDoc, updateDoc
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain: "black-terminal-f2c91.firebaseapp.com",
+projectId: "black-terminal-f2c91",
+storageBucket: "black-terminal-f2c91.firebasestorage.app",
+messagingSenderId: "552489994197",
+appId: "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let student=localStorage.getItem("studentName")||prompt("Enter name");
+localStorage.setItem("studentName",student);
+
+// join waiting
+let myRef=await addDoc(collection(db,"battle_wait"),{
+name:student,
+time:Date.now()
+});
+
+// check match
+let started=false;
+
+setInterval(async()=>{
+if(started) return;
+
+let snap=await getDocs(collection(db,"battle_wait"));
+let arr=[];
+snap.forEach(d=>arr.push({id:d.id,...d.data()}));
+
+if(arr.length>=2){
+
+started=true;
+
+let p1=arr[0];
+let p2=arr[1];
+let battleId="battle_"+Date.now();
+
+await setDoc(doc(db,"battles",battleId),{
+p1:p1.name,
+p2:p2.name,
+q:0,
+score1:0,
+score2:0,
+time:60
+});
+
+await deleteDoc(doc(db,"battle_wait",p1.id));
+await deleteDoc(doc(db,"battle_wait",p2.id));
+
+startBattle(battleId,p1.name,p2.name);
+}
+},2000);
+
+async function startBattle(id,n1,n2){
+
+document.getElementById("wait").style.display="none";
+document.getElementById("vsScreen").style.display="block";
+
+document.getElementById("p1").innerText=n1;
+document.getElementById("p2").innerText=n2;
+
+setTimeout(()=>{
+document.getElementById("vsScreen").style.display="none";
+document.getElementById("quiz").style.display="block";
+},2500);
+
+listenBattle(id,n1,n2);
+}
+
