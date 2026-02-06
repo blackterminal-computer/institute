@@ -37,7 +37,6 @@ padding:14px;
 margin-top:12px;
 border-radius:10px;
 cursor:pointer;
-transition:.2s;
 border:2px solid transparent;
 }
 
@@ -66,12 +65,6 @@ border:none;
 border-radius:10px;
 color:white;
 font-size:16px;
-cursor:pointer;
-}
-
-@keyframes pop{
-from{transform:scale(.5);opacity:0}
-to{transform:scale(1);opacity:1}
 }
 
 canvas{
@@ -99,20 +92,12 @@ pointer-events:none;
 
 <script>
 
-// ask name first time
+// name ask first time
 let studentName = localStorage.getItem("studentName");
 if(!studentName){
 studentName = prompt("Enter your name");
-if(studentName){
-localStorage.setItem("studentName", studentName);
-}else{
-studentName="Student";
 localStorage.setItem("studentName", studentName);
 }
-}
-
-// fullscreen
-document.documentElement.requestFullscreen?.();
 
 // questions
 let quiz=[
@@ -123,9 +108,7 @@ let quiz=[
 {q:"WWW full form?",o:["World Wide Web","Web World","Wide Web","None"],a:0}
 ];
 
-let i=0,score=0,selected=-1;
-let locked=false;
-let time=300;
+let i=0,score=0,selected=-1,locked=false,time=300;
 
 function load(){
 document.getElementById("qno").innerHTML="Question "+(i+1)+" / "+quiz.length;
@@ -141,41 +124,30 @@ load();
 
 function select(el,idx){
 if(locked) return;
-
 document.getElementById("clickSound").play();
 document.querySelectorAll(".opt").forEach(o=>o.classList.remove("locked"));
-
-setTimeout(()=>{
 el.classList.add("locked");
 locked=true;
-},150);
-
 selected=idx;
 }
 
 function next(){
 if(selected==-1){alert("Select option");return;}
 if(selected==quiz[i].a) score++;
-
 selected=-1;
 locked=false;
 i++;
-
-if(i<quiz.length){load();}
-else finish();
+if(i<quiz.length) load(); else finish();
 }
 
 // timer
 let t=setInterval(()=>{
 time--;
 document.getElementById("time").innerHTML=time;
-if(time<=0){
-clearInterval(t);
-finish();
-}
+if(time<=0){clearInterval(t);finish();}
 },1000);
 
-// finish + celebration
+// finish + XP + streak
 function finish(){
 clearInterval(t);
 
@@ -186,48 +158,58 @@ let xp = score*10;
 let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
 if(!xpData[student]) xpData[student]=0;
 xpData[student]+=xp;
+
+// streak system
+let streakData = JSON.parse(localStorage.getItem("streakData")) || {};
+let today = new Date().toLocaleDateString();
+
+if(!streakData[student]){
+streakData[student]={streak:1,lastDate:today};
+}else{
+let last = streakData[student].lastDate;
+let yesterday = new Date();
+yesterday.setDate(yesterday.getDate()-1);
+let yDate = yesterday.toLocaleDateString();
+
+if(last==yDate) streakData[student].streak+=1;
+else if(last!=today) streakData[student].streak=1;
+
+streakData[student].lastDate=today;
+}
+
+let streak = streakData[student].streak;
+let bonus="";
+if(streak==7){ xpData[student]+=50; bonus="🔥 7 Day Bonus +50 XP";}
+if(streak==30){ xpData[student]+=200; bonus="👑 30 Day King Bonus +200 XP";}
+
 localStorage.setItem("xpData", JSON.stringify(xpData));
+localStorage.setItem("streakData", JSON.stringify(streakData));
 
-// save result
-let results = JSON.parse(localStorage.getItem("results")) || [];
-results.push({name:student,score:score,xp:xp});
-localStorage.setItem("results", JSON.stringify(results));
-
-// celebration UI
+// UI
 document.querySelector(".box").innerHTML=`
-<h1 style="font-size:42px;animation:pop .5s">🎉 Test Completed</h1>
-<h2 style="margin-top:10px">${student}</h2>
+<h1>🎉 Test Completed</h1>
+<h2>${student}</h2>
 <h2>Score: ${score}/${quiz.length}</h2>
 <h1 style="color:#22c55e">⭐ XP Earned: ${xp}</h1>
-
-<button onclick="window.location='leaderboard.html'">
-View Leaderboard
-</button>
-
+<h2 style="color:orange">🔥 Streak: ${streak} days</h2>
+<h3>${bonus}</h3>
+<button onclick="window.location='leaderboard.html'">Leaderboard</button>
 <canvas id="confetti"></canvas>
 `;
 
 startConfetti();
 }
 
-// confetti blast
+// confetti
 function startConfetti(){
 const canvas=document.getElementById("confetti");
-if(!canvas) return;
-
 const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
 let pieces=[];
 for(let i=0;i<120;i++){
-pieces.push({
-x:Math.random()*canvas.width,
-y:Math.random()*canvas.height,
-r:Math.random()*6+2,
-d:Math.random()*50,
-color:`hsl(${Math.random()*360},100%,50%)`
-});
+pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*6+2,d:Math.random()*50,color:`hsl(${Math.random()*360},100%,50%)`});
 }
 
 function draw(){
@@ -246,10 +228,7 @@ function update(){
 pieces.forEach(p=>{
 p.y+=Math.cos(p.d)+2;
 p.x+=Math.sin(p.d);
-if(p.y>canvas.height){
-p.y=0;
-p.x=Math.random()*canvas.width;
-}
+if(p.y>canvas.height){p.y=0;p.x=Math.random()*canvas.width;}
 });
 }
 draw();
