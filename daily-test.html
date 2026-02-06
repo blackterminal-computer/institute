@@ -14,6 +14,7 @@ display:flex;
 justify-content:center;
 align-items:center;
 min-height:100vh;
+overflow:hidden;
 }
 
 .box{
@@ -39,8 +40,6 @@ cursor:pointer;
 transition:.2s;
 border:2px solid transparent;
 }
-
-.opt:hover{transform:scale(1.02)}
 
 .locked{
 border:2px solid #22c55e;
@@ -69,6 +68,18 @@ color:white;
 font-size:16px;
 cursor:pointer;
 }
+
+@keyframes pop{
+from{transform:scale(.5);opacity:0}
+to{transform:scale(1);opacity:1}
+}
+
+canvas{
+position:fixed;
+top:0;
+left:0;
+pointer-events:none;
+}
 </style>
 </head>
 
@@ -88,7 +99,7 @@ cursor:pointer;
 
 <script>
 
-// ⭐ ask name first time
+// ask name first time
 let studentName = localStorage.getItem("studentName");
 if(!studentName){
 studentName = prompt("Enter your name");
@@ -132,7 +143,6 @@ function select(el,idx){
 if(locked) return;
 
 document.getElementById("clickSound").play();
-
 document.querySelectorAll(".opt").forEach(o=>o.classList.remove("locked"));
 
 setTimeout(()=>{
@@ -145,16 +155,14 @@ selected=idx;
 
 function next(){
 if(selected==-1){alert("Select option");return;}
-
 if(selected==quiz[i].a) score++;
 
 selected=-1;
 locked=false;
 i++;
 
-if(i<quiz.length){
-load();
-}else finish();
+if(i<quiz.length){load();}
+else finish();
 }
 
 // timer
@@ -167,7 +175,7 @@ finish();
 }
 },1000);
 
-// finish
+// finish + celebration
 function finish(){
 clearInterval(t);
 
@@ -180,17 +188,71 @@ if(!xpData[student]) xpData[student]=0;
 xpData[student]+=xp;
 localStorage.setItem("xpData", JSON.stringify(xpData));
 
-// result store
+// save result
 let results = JSON.parse(localStorage.getItem("results")) || [];
 results.push({name:student,score:score,xp:xp});
 localStorage.setItem("results", JSON.stringify(results));
 
-document.querySelector(".box").innerHTML=
-`<h1>Test Finished</h1>
-<h2>${student}</h2>
+// celebration UI
+document.querySelector(".box").innerHTML=`
+<h1 style="font-size:42px;animation:pop .5s">🎉 Test Completed</h1>
+<h2 style="margin-top:10px">${student}</h2>
 <h2>Score: ${score}/${quiz.length}</h2>
-<h2>⭐ XP Earned: ${xp}</h2>
-<button onclick="window.location='leaderboard.html'">Leaderboard</button>`;
+<h1 style="color:#22c55e">⭐ XP Earned: ${xp}</h1>
+
+<button onclick="window.location='leaderboard.html'">
+View Leaderboard
+</button>
+
+<canvas id="confetti"></canvas>
+`;
+
+startConfetti();
+}
+
+// confetti blast
+function startConfetti(){
+const canvas=document.getElementById("confetti");
+if(!canvas) return;
+
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let pieces=[];
+for(let i=0;i<120;i++){
+pieces.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+r:Math.random()*6+2,
+d:Math.random()*50,
+color:`hsl(${Math.random()*360},100%,50%)`
+});
+}
+
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+pieces.forEach(p=>{
+ctx.beginPath();
+ctx.fillStyle=p.color;
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+ctx.fill();
+});
+update();
+requestAnimationFrame(draw);
+}
+
+function update(){
+pieces.forEach(p=>{
+p.y+=Math.cos(p.d)+2;
+p.x+=Math.sin(p.d);
+if(p.y>canvas.height){
+p.y=0;
+p.x=Math.random()*canvas.width;
+}
+});
+}
+draw();
 }
 </script>
 
