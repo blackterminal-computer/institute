@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Daily MCQ Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f172a,#020617);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+/* intro animation */
+.intro{
+text-align:center;
+animation:fade 1s ease;
+}
+
+@keyframes fade{
+from{opacity:0;transform:scale(.9)}
+to{opacity:1;transform:scale(1)}
+}
+
+.start-btn{
+margin-top:20px;
+padding:14px 25px;
+background:#22c55e;
+border:none;
+border-radius:8px;
+color:white;
+font-size:18px;
+cursor:pointer;
+}
+
+.box{
+display:none;
+max-width:650px;
+width:95%;
+background:#111827;
+padding:25px;
+border-radius:14px;
+}
+
+.opt{
+background:#1f2937;
+padding:12px;
+margin-top:10px;
+border-radius:8px;
+cursor:pointer;
+}
+
+.timer{
+float:right;
+font-weight:bold;
+color:#22c55e;
+}
+button{
+margin-top:20px;
+padding:12px;
+width:100%;
+background:#4f46e5;
+border:none;
+color:white;
+border-radius:8px;
+font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- intro -->
+<div class="intro" id="intro">
+<h1>Daily MCQ Test</h1>
+<p id="date"></p>
+<button class="start-btn" onclick="startExam()">Start Test</button>
+</div>
+
+<!-- exam box -->
+<div class="box" id="examBox">
+<div class="timer">Time: <span id="time">300</span>s</div>
+<h3 id="qno"></h3>
+<h2 id="question"></h2>
+<div id="options"></div>
+<button onclick="next()">Next</button>
+</div>
+
+<script>
+
+// date show
+document.getElementById("date").innerHTML=
+"Today's Exam - "+new Date().toDateString();
+
+// questions (edit daily)
+let quiz=[
+{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Control Unit","Computer Unit"],a:1},
+{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
+{q:"1 KB = ?",o:["1000","1024","500","2048"],a:1},
+{q:"Excel is?",o:["Software","Game","OS","Browser"],a:0},
+{q:"WWW full form?",o:["World Wide Web","Web World","Wide Web","None"],a:0}
+];
+
+let i=0,score=0,selected=-1;
+let time=300; // 5 min
+
+function startExam(){
+document.getElementById("intro").style.display="none";
+document.getElementById("examBox").style.display="block";
+load();
+timerStart();
+}
+
+function load(){
+document.getElementById("qno").innerHTML="Question "+(i+1)+" / "+quiz.length;
+document.getElementById("question").innerHTML=quiz[i].q;
+
+let html="";
+quiz[i].o.forEach((x,idx)=>{
+html+=`<div class="opt" onclick="select(${idx})">${x}</div>`;
+});
+document.getElementById("options").innerHTML=html;
+}
+
+function select(x){selected=x;}
+
+function next(){
+if(selected==-1){alert("Select option");return;}
+
+if(selected==quiz[i].a) score++;
+selected=-1;
+i++;
+
+if(i<quiz.length) load();
+else finish();
+}
+
+function timerStart(){
+let t=setInterval(()=>{
+time--;
+document.getElementById("time").innerHTML=time;
+
+if(time<=0){
+clearInterval(t);
+finish();
+}
+},1000);
+}
+
+function finish(){
+document.querySelector(".box").innerHTML=
+`<h1>Test Finished</h1>
+<h2>Your Score: ${score}/${quiz.length}</h2>
+<button onclick="location.reload()">Back</button>`;
+}
+</script>
+
+</body>
+</html>
