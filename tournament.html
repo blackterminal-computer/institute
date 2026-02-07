@@ -2,111 +2,86 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Tournament</title>
+<title>Live Tournament</title>
 
 <style>
 body{
 background:#020617;
-font-family:Arial;
 color:white;
+font-family:Arial;
 text-align:center;
-margin:0;
 }
 
 .header{
+font-size:26px;
 padding:20px;
-font-size:24px;
 font-weight:bold;
 }
 
 .card{
 background:#0f172a;
 margin:20px;
-padding:25px;
+padding:20px;
 border-radius:16px;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-}
-
-.live{
-display:inline-block;
-padding:6px 14px;
-border-radius:20px;
-background:#022c22;
-color:#4ade80;
-font-weight:bold;
-animation:pulse 1s infinite;
-}
-
-@keyframes pulse{
-0%{opacity:1}
-50%{opacity:.4}
-100%{opacity:1}
-}
-
-.btn{
-margin-top:20px;
-padding:14px;
-width:90%;
-max-width:320px;
-border:none;
-border-radius:12px;
-font-size:16px;
-font-weight:bold;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
-color:white;
-}
-
-.scorebox{
-display:flex;
-justify-content:space-between;
-margin-top:20px;
-font-size:18px;
-}
-
-.question{
-margin-top:20px;
-font-size:20px;
-font-weight:bold;
-}
-
-.option{
-background:#1e293b;
-padding:14px;
-margin:10px;
-border-radius:10px;
 }
 
 .timer{
-font-size:22px;
+font-size:28px;
 color:#22c55e;
+margin:10px;
+}
+
+.q{
+font-size:20px;
+margin:15px;
+}
+
+.opt{
+background:#1e293b;
+margin:8px;
+padding:14px;
+border-radius:10px;
+}
+
+.btn{
+background:#2563eb;
+padding:14px;
+border:none;
+border-radius:12px;
+color:white;
+font-size:16px;
 margin-top:10px;
+}
+
+.rank{
+background:#111827;
+padding:12px;
+margin:6px;
+border-radius:8px;
 }
 </style>
 </head>
 <body>
 
-<div class="header">🏆 Daily Tournament</div>
+<div class="header">🏆 Live Tournament</div>
 
 <div class="card">
-<div class="live">● LIVE TOURNAMENT</div>
-<div class="timer" id="timer">60</div>
-
-<div class="scorebox">
-<div>XP: <span id="xp">0</span></div>
-<div>Score: <span id="score">0</span></div>
+<div class="timer">⏱ <span id="time">60</span>s</div>
+<div id="score">Score: 0</div>
+<div class="q" id="q">Click Start</div>
+<div id="opts"></div>
+<button class="btn" onclick="start()">Start Tournament</button>
 </div>
 
-<div class="question" id="question">Click Start</div>
-
-<div id="options"></div>
-
-<button class="btn" onclick="startTournament()">Start Tournament</button>
+<div class="card">
+<h3>🏆 Live Ranking</h3>
+<div id="board"></div>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc } 
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, onSnapshot, getDoc }
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -123,100 +98,91 @@ const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
 let score=0;
-let xp=0;
-let time=60;
-let qIndex=0;
+let t=60;
 let timer;
+let docId="";
 
 const questions=[
-{q:"Brain of computer?",o:["CPU","Mouse","RAM","Keyboard"],a:"CPU"},
-{q:"WWW stands for?",o:["World Wide Web","Wide Web","Web World","None"],a:"World Wide Web"},
-{q:"Full form of RAM?",o:["Random Access Memory","Read Access","Run Memory","None"],a:"Random Access Memory"},
+{q:"Brain of computer?",o:["CPU","RAM","Mouse","Keyboard"],a:"CPU"},
+{q:"WWW stands for?",o:["World Wide Web","Web World","Wide","None"],a:"World Wide Web"},
 {q:"Excel is?",o:["Spreadsheet","Game","OS","Browser"],a:"Spreadsheet"},
-{q:"Mouse is?",o:["Input","Output","Storage","CPU"],a:"Input"},
+{q:"Keyboard is?",o:["Input","Output","CPU","None"],a:"Input"},
 {q:"1 byte=?",o:["8 bit","4 bit","2 bit","16 bit"],a:"8 bit"},
 {q:"Monitor is?",o:["Output","Input","CPU","None"],a:"Output"},
-{q:"Keyboard type?",o:["Input","Output","Storage","None"],a:"Input"},
-{q:"Windows is?",o:["OS","Game","Browser","App"],a:"OS"},
-{q:"Internet works on?",o:["Network","CPU","RAM","Mouse"],a:"Network"}
+{q:"Full form RAM?",o:["Random Access Memory","Run Memory","Read","None"],a:"Random Access Memory"}
 ];
 
-async function loadXP(){
-let ref=doc(db,"students",student);
-let snap=await getDoc(ref);
-if(snap.exists()){
-xp=snap.data().xp||0;
-document.getElementById("xp").innerText=xp;
-}
-}
-loadXP();
+let qi=0;
 
-window.startTournament=function(){
-
-score=0;
-qIndex=0;
-time=60;
-
-document.getElementById("score").innerText=0;
-
-timer=setInterval(()=>{
-time--;
-document.getElementById("timer").innerText=time;
-
-if(time<=0){
-finishTournament();
-}
-},1000);
-
-showQuestion();
-}
-
-function showQuestion(){
-
-if(qIndex>=questions.length){
-finishTournament();
-return;
-}
-
-let q=questions[qIndex];
-document.getElementById("question").innerText=q.q;
+// ranking live
+onSnapshot(collection(db,"tournament"), async(snap)=>{
+let arr=[];
+snap.forEach(d=> arr.push(d.data()));
+arr.sort((a,b)=>b.score-a.score);
 
 let html="";
-q.o.forEach(opt=>{
-html+=`<div class="option" onclick="answer('${opt}')">${opt}</div>`;
+arr.forEach((p,i)=>{
+html+=`<div class="rank">#${i+1} ${p.name} — ${p.score}</div>`;
+});
+document.getElementById("board").innerHTML=html;
 });
 
-document.getElementById("options").innerHTML=html;
+window.start = async function(){
+
+score=0;
+qi=0;
+t=60;
+
+let ref=await addDoc(collection(db,"tournament"),{
+name:student,
+score:0
+});
+docId=ref.id;
+
+timer=setInterval(()=>{
+t--;
+document.getElementById("time").innerText=t;
+if(t<=0) finish();
+},1000);
+
+showQ();
 }
 
-window.answer=function(ans){
+function showQ(){
+if(qi>=questions.length){ finish(); return; }
 
-let correct=questions[qIndex].a;
+let q=questions[qi];
+document.getElementById("q").innerText=q.q;
 
-if(ans==correct){
+let html="";
+q.o.forEach(o=>{
+html+=`<div class="opt" onclick="ans('${o}')">${o}</div>`;
+});
+document.getElementById("opts").innerHTML=html;
+}
+
+window.ans = async function(a){
+
+let correct=questions[qi].a;
+if(a==correct){
 score++;
-document.getElementById("score").innerText=score;
+document.getElementById("score").innerText="Score: "+score;
+await updateDoc(doc(db,"tournament",docId),{score:score});
+}
+qi++;
+showQ();
 }
 
-qIndex++;
-showQuestion();
-}
-
-async function finishTournament(){
+async function finish(){
 clearInterval(timer);
 
-let reward=score*2;
-xp+=reward;
+let xpRef = doc(db,"students",student);
+let snap = await getDoc(xpRef);
+let xp=snap.data().xp||0;
+xp+=score*2;
+await updateDoc(xpRef,{xp:xp});
 
-let ref=doc(db,"students",student);
-await updateDoc(ref,{xp:xp});
-
-document.querySelector(".card").innerHTML=`
-<h2>🏆 Tournament Finished</h2>
-<h3>Your Score: ${score}</h3>
-<h3>XP Earned: +${reward}</h3>
-<button class="btn" onclick="location.reload()">Play Again</button>
-`;
+alert("Tournament finished! XP added");
 }
 
 </script>
