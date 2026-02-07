@@ -1,410 +1,117 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>1 vs 1 Battle</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Battle</title>
 
 <style>
 body{
 background:#020617;
 color:white;
-font-family:Poppins;
+font-family:Arial;
 text-align:center;
-margin:0;
+padding-top:120px;
 }
 
-.box{
-margin-top:60px;
+.card{
+background:#0f172a;
+padding:30px;
+border-radius:16px;
+width:90%;
+max-width:400px;
+margin:auto;
+box-shadow:0 0 30px rgba(0,0,0,0.5);
 }
 
-.player{
-display:flex;
-justify-content:space-between;
-padding:15px;
-background:#111827;
-margin:10px;
-border-radius:12px;
-align-items:center;
-}
-
-img{
-width:50px;
-height:50px;
-border-radius:50%;
-border:3px solid #22c55e;
-}
-
-.qbox{
-background:#111827;
-margin:20px;
-padding:20px;
-border-radius:15px;
-}
-
-.opt{
-background:#1f2937;
-margin:10px;
-padding:15px;
-border-radius:10px;
-cursor:pointer;
-}
-
-.timer{
-color:#22c55e;
-font-size:18px;
-}
-
-.win{
-font-size:28px;
-margin-top:40px;
-}
+h1{color:#22c55e}
 </style>
 </head>
-
 <body>
 
-<div class="box">
-
-<h2>⚔ Finding opponent...</h2>
-
-<div id="players"></div>
-
-<div id="quiz" style="display:none">
-<div class="timer">⏱ <span id="time">60</span>s</div>
-
-<div class="qbox">
-<h3 id="q">Question</h3>
-<div id="opts"></div>
-</div>
+<div class="card">
+<h2>🔍 Finding opponent...</h2>
+<p id="status">Connecting...</p>
 </div>
 
-<div id="result"></div>
-
-</div>
-
-
-<!-- FIREBASE -->
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDocs } 
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, onSnapshot }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey: "YOUR KEY",
-authDomain: "YOUR",
-projectId: "YOUR",
-storageBucket: "YOUR",
-messagingSenderId: "YOUR",
-appId: "YOUR"
+apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain: "black-terminal-f2c91.firebaseapp.com",
+projectId: "black-terminal-f2c91",
+storageBucket: "black-terminal-f2c91.appspot.com",
+messagingSenderId: "552489994197",
+appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------------- USER ----------------
 let student = localStorage.getItem("studentName");
-let photo = localStorage.getItem("photo") || "";
+if(!student){
+student = prompt("Enter your name");
+localStorage.setItem("studentName",student);
+}
 
-// ---------------- QUESTIONS --------------
-let quiz=[
-{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
-{q:"1 KB = ?",o:["1000","1024","500","200"],a:1},
-{q:"Excel is?",o:["Game","Software","OS","Browser"],a:1},
-{q:"WWW full form?",o:["World Wide Web","Web World","Wide","None"],a:0},
-{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Computer Unit","None"],a:1}
-];
+async function startMatch(){
 
-let battleId=null;
-let myScore=0;
-let oppScore=0;
-let index=0;
-let timer=60;
-let started=false;
+let rooms = await getDocs(collection(db,"matchmaking"));
+let joined=false;
 
-// ---------------- FIND OR CREATE BATTLE ----------------
-async function findBattle(){
+// join existing
+rooms.forEach(async(r)=>{
+let d=r.data();
 
-const snap = await getDocs(collection(db,"battles"));
-let found=false;
+if(!d.p2 && d.p1!=student && !joined){
+joined=true;
 
-snap.forEach(d=>{
-let data=d.data();
-if(!data.p2){
-battleId=d.id;
-updateDoc(doc(db,"battles",battleId),{
+await updateDoc(doc(db,"matchmaking",r.id),{
 p2:student,
-p2photo:photo,
-status:"start",
-score1:0,
-score2:0,
-q:0
+status:"start"
 });
-found=true;
+
+listenBattle(r.id);
 }
 });
 
-if(!found){
-let ref = await addDoc(collection(db,"battles"),{
+// create new
+if(!joined){
+let ref = await addDoc(collection(db,"matchmaking"),{
 p1:student,
-p1photo:photo,
 p2:"",
-status:"waiting",
-score1:0,
-score2:0,
-q:0
+status:"waiting"
 });
-battleId=ref.id;
+
+listenBattle(ref.id);
 }
 
-listenBattle();
 }
 
-findBattle();
+startMatch();
 
-// ---------------- LISTEN ----------------
-function listenBattle(){
+function listenBattle(id){
 
-onSnapshot(doc(db,"battles",battleId),(docu)=>{
-
-let d=docu.data();
+onSnapshot(doc(db,"matchmaking",id),(snap)=>{
+let d=snap.data();
 if(!d) return;
 
-if(d.status=="start" && !started){
-started=true;
-startGame(d);
-}
-
-if(d.score1!==undefined){
-myScore = (student==d.p1)?d.score1:d.score2;
-oppScore = (student==d.p1)?d.score2:d.score1;
-}
-
-if(d.status=="end"){
-showResult(d);
-}
-
-});
-
-}
-
-// ---------------- START GAME ----------------
-function startGame(d){
-
-document.querySelector("h2").innerHTML="⚔ Battle Started";
-document.getElementById("quiz").style.display="block";
-
-let oppName = (student==d.p1)?d.p2:d.p1;
-let oppPhoto = (student==d.p1)?d.p2photo:d.p1photo;
-
-document.getElementById("players").innerHTML=`
-<div class="player">
-<div><img src="${photo}"><br>${student}<br>⭐${myScore}</div>
-<div>VS</div>
-<div><img src="${oppPhoto}"><br>${oppName}<br>⭐${oppScore}</div>
-</div>`;
-
-loadQ();
-startTimer();
-}
-
-// ---------------- LOAD QUESTION ----------------
-function loadQ(){
-if(index>=quiz.length){ finish(); return; }
-
-let q=quiz[index];
-document.getElementById("q").innerText=q.q;
-
-let html="";
-q.o.forEach((opt,i)=>{
-html+=`<div class="opt" onclick="answer(${i})">${opt}</div>`;
-});
-document.getElementById("opts").innerHTML=html;
-}
-
-// ---------------- ANSWER ----------------
-window.answer=async(i)=>{
-
-let correct=quiz[index].a;
-if(i==correct) myScore++;
-
-let ref=doc(db,"battles",battleId);
-
-let d=(await getDocs(collection(db,"battles")));
-
-if(student){
-let docRef=doc(db,"battles",battleId);
-let snap=await getDocs(collection(db,"battles"));
-}
-
-let update={};
-if(student==localStorage.getItem("studentName")){
-let snap2 = await getDocs(collection(db,"battles"));
-}
-
-if(student){
-let snap3 = await getDocs(collection(db,"battles"));
-}
-
-let docSnap = await getDocs(collection(db,"battles"));
-
-let battleRef = doc(db,"battles",battleId);
-
-let current=(await getDocs(collection(db,"battles")));
-
-let bdoc=(await getDocs(collection(db,"battles")));
-
-let dataSnap=(await getDocs(collection(db,"battles")));
-
-let snapDoc = await getDocs(collection(db,"battles"));
-
-let finalDoc = doc(db,"battles",battleId);
-
-let ddd=(await getDocs(collection(db,"battles")));
-
-let dd=(await getDocs(collection(db,"battles")));
-
-let battle = doc(db,"battles",battleId);
-
-let snapFinal=(await getDocs(collection(db,"battles")));
-
-let refDoc=doc(db,"battles",battleId);
-
-let docData=(await getDocs(collection(db,"battles")));
-
-let updateData = {};
-
-if(student==localStorage.getItem("studentName")){
-// check role
-let snapRole = await getDocs(collection(db,"battles"));
-}
-
-let docx = doc(db,"battles",battleId);
-
-let snapRole2 = await getDocs(collection(db,"battles"));
-
-let finalSnap = await getDocs(collection(db,"battles"));
-
-let dnow = (await getDocs(collection(db,"battles")));
-
-let docReal = doc(db,"battles",battleId);
-
-let sn = await getDocs(collection(db,"battles"));
-
-let ddata = (await getDocs(collection(db,"battles")));
-
-let docFinal = doc(db,"battles",battleId);
-
-let battleSnap = await getDocs(collection(db,"battles"));
-
-let actual = (await getDocs(collection(db,"battles")));
-
-let dddx = (await getDocs(collection(db,"battles")));
-
-let docuRef = doc(db,"battles",battleId);
-
-let data=(await getDocs(collection(db,"battles")));
-
-let dddd=(await getDocs(collection(db,"battles")));
-
-let docRef2=doc(db,"battles",battleId);
-
-let battleData=(await getDocs(collection(db,"battles")));
-
-let finalData = (await getDocs(collection(db,"battles")));
-
-let roleSnap = await getDocs(collection(db,"battles"));
-
-let finalRole = (await getDocs(collection(db,"battles")));
-
-let snapBattle = await getDocs(collection(db,"battles"));
-
-let docBattle = doc(db,"battles",battleId);
-
-let dataBattle = (await getDocs(collection(db,"battles")));
-
-let docSnapReal = await getDocs(collection(db,"battles"));
-
-let realData=(await getDocs(collection(db,"battles")));
-
-let battleDoc = doc(db,"battles",battleId);
-
-let finalBattle = (await getDocs(collection(db,"battles")));
-
-let docFinalReal = doc(db,"battles",battleId);
-
-let snapReal=(await getDocs(collection(db,"battles")));
-
-let realDoc = doc(db,"battles",battleId);
-
-// role detect
-onSnapshot(doc(db,"battles",battleId),async(s)=>{
-let d=s.data();
-if(student==d.p1){
-await updateDoc(doc(db,"battles",battleId),{score1:myScore});
-}else{
-await updateDoc(doc(db,"battles",battleId),{score2:myScore});
-}
-});
-
-index++;
-loadQ();
-}
-
-// ---------------- TIMER ----------------
-function startTimer(){
-let t=setInterval(()=>{
-timer--;
-document.getElementById("time").innerText=timer;
-if(timer<=0){
-clearInterval(t);
-finish();
-}
-},1000);
-}
-
-// ---------------- FINISH ----------------
-async function finish(){
-
-let ref=doc(db,"battles",battleId);
-
-onSnapshot(ref,async(s)=>{
-let d=s.data();
-
-if(d.q==0){
-await updateDoc(ref,{q:1});
-return;
-}
-
-if(d.status!="end"){
-await updateDoc(ref,{status:"end"});
-}
-});
-
-}
-
-// ---------------- RESULT ----------------
-async function showResult(d){
-
-let my = (student==d.p1)?d.score1:d.score2;
-let opp = (student==d.p1)?d.score2:d.score1;
-
-let win="";
-if(my>opp) win="🏆 You Win +20XP";
-else if(my<opp) win="❌ You Lose -10XP";
-else win="🤝 Draw";
-
-document.getElementById("quiz").style.display="none";
-document.getElementById("result").innerHTML=`
-<div class="win">
-🏆 Battle Finished<br>
-${student}: ${my} | Opp: ${opp}<br>
-${win}
+if(d.status=="start"){
+document.body.innerHTML=`
+<div class="card">
+<h1>⚔ Battle Connected</h1>
+<h2>${d.p1} VS ${d.p2}</h2>
+<h3>Connection success ✅</h3>
 </div>
 `;
+}
+});
 
 }
-</script>
 
+</script>
 </body>
 </html>
