@@ -1,42 +1,42 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Notice</title>
+<title>Admin Notification Panel</title>
 
 <style>
 body{
 background:#020617;
-color:white;
 font-family:Arial;
+color:white;
 text-align:center;
 padding-top:80px;
 }
 
 .box{
 background:#0f172a;
-width:90%;
+width:92%;
 max-width:420px;
 margin:auto;
 padding:30px;
-border-radius:16px;
-box-shadow:0 0 30px rgba(0,0,0,0.6);
+border-radius:18px;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
 }
 
 input,textarea{
 width:90%;
-padding:12px;
-margin:10px;
-border-radius:10px;
+padding:14px;
+margin:12px;
+border-radius:12px;
 border:none;
 font-size:16px;
+outline:none;
 }
 
 button{
-padding:12px 18px;
+padding:13px 20px;
 border:none;
-border-radius:10px;
+border-radius:12px;
 margin:8px;
 font-size:16px;
 font-weight:bold;
@@ -44,34 +44,27 @@ background:linear-gradient(90deg,#6366f1,#06b6d4);
 color:white;
 }
 
-/* toast /
 .toast{
 position:fixed;
 bottom:30px;
 left:50%;
 transform:translateX(-50%);
-background:#111827;
+background:#22c55e;
 padding:14px 22px;
 border-radius:12px;
-font-weight:600;
-box-shadow:0 10px 30px rgba(0,0,0,0.5);
-opacity:0;
-transition:0.4s;
-z-index:9999;
-}
-
-.toast.show{
-opacity:1;
-bottom:60px;
+display:none;
+font-weight:bold;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
 }
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div class="box" id="login">
+<div class="box" id="loginBox">
 <h2>🔐 Admin Login</h2>
-<input type="password" id="pass" placeholder="Password">
+<input type="password" id="pass" placeholder="Enter password">
+<br>
 <button onclick="login()">Login</button>
 </div>
 
@@ -79,18 +72,18 @@ bottom:60px;
 <div class="box" id="panel" style="display:none">
 <h2>📢 Global Notification</h2>
 
-<textarea id="msg" placeholder="Enter notification text"></textarea><br>
+<textarea id="msg" placeholder="Enter notification text"></textarea>
+<br>
 
-<button onclick="onNotice()">🟢 ON</button>
-<button onclick="offNotice()">🔴 OFF</button>
+<button onclick="sendOn()">ON</button>
+<button onclick="sendOff()">OFF</button>
 </div>
 
-<!-- TOAST -->
-<div id="toast" class="toast">Done</div>
+<div class="toast" id="toast">Done</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, updateDoc }
+import { getFirestore, doc, setDoc, updateDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -105,56 +98,54 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/ LOGIN /
-window.login = function(){
-let p=document.getElementById("pass").value;
+window.login=function(){
+let p=document.getElementById("pass").value.trim();
 
-if(p=="admin5"){
-document.getElementById("login").style.display="none";
+if(p==="admin5"){
+document.getElementById("loginBox").style.display="none";
 document.getElementById("panel").style.display="block";
+showToast("Login success");
 }else{
-alert("Wrong password");
+showToast("Wrong password");
 }
 }
 
-/ toast /
-function showToast(msg,color){
-let t=document.getElementById("toast");
-t.innerHTML=msg;
-t.style.color=color;
-t.classList.add("show");
-
-setTimeout(()=>{
-t.classList.remove("show");
-},2500);
+window.sendOn = async function(){
+let t=document.getElementById("msg").value.trim();
+if(!t){
+showToast("Enter message first");
+return;
 }
-
-/ ON notice /
-window.onNotice = async function(){
-let t=document.getElementById("msg").value;
 
 try{
-await updateDoc(doc(db,"notices","main"),{
+await setDoc(doc(db,"notices","main"),{
 text:t,
 status:"on"
 });
-showToast("✔ Notification sent","#22c55e");
-}catch{
-showToast("❌ Not sent","#ef4444");
+showToast("Notification ON successfully");
+}catch(e){
+showToast("Error sending");
 }
 }
 
-/ OFF notice */
-window.offNotice = async function(){
+window.sendOff = async function(){
 try{
 await updateDoc(doc(db,"notices","main"),{
 status:"off"
 });
-showToast("🔕 Notification OFF","#facc15");
-}catch{
-showToast("❌ Error","#ef4444");
+showToast("Notification OFF");
+}catch(e){
+showToast("Error");
 }
+}
+
+function showToast(msg){
+let t=document.getElementById("toast");
+t.innerText=msg;
+t.style.display="block";
+setTimeout(()=>{t.style.display="none"},2500);
 }
 </script>
+
 </body>
 </html>
