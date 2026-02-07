@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Battle</title>
+<title>Simple Battle</title>
 
 <style>
 body{
@@ -20,17 +20,6 @@ border-radius:16px;
 width:92%;
 max-width:420px;
 margin:auto;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-}
-
-h2{margin-bottom:10px}
-
-.scorebox{
-display:flex;
-justify-content:space-between;
-margin:20px 0;
-font-size:22px;
-font-weight:bold;
 }
 
 button{
@@ -40,43 +29,35 @@ border-radius:10px;
 margin:8px;
 font-weight:bold;
 width:90%;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
+background:#2563eb;
 color:white;
-font-size:16px;
 }
 
-.win{color:#22c55e;font-size:22px;margin-top:15px}
-.lose{color:#ef4444;font-size:22px;margin-top:15px}
-.draw{color:orange;font-size:22px;margin-top:15px}
+.win{color:#22c55e;font-size:22px}
+.lose{color:#ef4444;font-size:22px}
+.draw{color:orange;font-size:22px}
 </style>
 </head>
 <body>
 
 <div class="card">
 
-<h2 id="status">🔍 Connecting battle...</h2>
+<h2 id="status">🔍 Finding opponent...</h2>
 
-<div class="scorebox">
-<div>YOU: <span id="myscore">0</span></div>
-<div>OPP: <span id="oppscore">0</span></div>
-</div>
+<h3 id="question"></h3>
+<div id="options"></div>
 
-<button onclick="answer(true)">✔ Correct</button>
-<button onclick="answer(false)">❌ Wrong</button>
-
-<br>
-<button onclick="finishBattle()">🏁 Finish Battle</button>
+<h3>Score: <span id="myscore">0</span></h3>
+<h3>Opponent: <span id="oppscore">0</span></h3>
 
 <h2 id="result"></h2>
 
 </div>
 
-
-
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc }
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, onSnapshot, getDoc }
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -98,154 +79,160 @@ localStorage.setItem("studentName",student);
 }
 
 let myScore=0;
-let oppScore=0;
 let battleId="";
-let finished=false;
+let qIndex=0;
 
-startMatchmaking();
+let questions=[
+{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:"CPU"},
+{q:"Copy shortcut?",o:["Ctrl+C","Ctrl+V","Ctrl+X","Ctrl+P"],a:"Ctrl+C"},
+{q:"WWW full form?",o:["World Wide Web","Web World","Wide Web","None"],a:"World Wide Web"},
+{q:"Excel file?",o:[".xls",".png",".mp3",".exe"],a:".xls"},
+{q:"Input device?",o:["Keyboard","Monitor","Speaker","Printer"],a:"Keyboard"}
+];
 
-async function startMatchmaking(){
+// MATCH
+async function findMatch(){
 
-document.getElementById("status").innerHTML="🔍 Finding opponent...";
-
-onSnapshot(collection(db,"matchmaking"), async (snap)=>{
-
-if(battleId) return;
-
-let players=[];
-snap.forEach(d=> players.push({id:d.id,...d.data()}));
-
-let me = players.find(p=>p.name==student);
-let opp = players.find(p=>p.name!=student);
-
-if(!me){
-await addDoc(collection(db,"matchmaking"),{name:student});
-return;
-}
-
-if(opp){
-
-let ref = await addDoc(collection(db,"battles"),{
-p1:student,
-p2:opp.name,
-score1:0,
-score2:0,
-finished:false,
-winner:""
-});
-
-battleId = ref.id;
-
-listenBattle();
-}
-
-});
-
-}
-
-
-function listenBattle(){
-
-onSnapshot(collection(db,"battles"), async(snap)=>{
+let snap=await getDocs(collection(db,"battles"));
+let found=false;
 
 snap.forEach(async(d)=>{
-
 let data=d.data();
-
-if(data.p1==student || data.p2==student){
+if(!data.p2 && data.p1!=student && !found){
+found=true;
 
 battleId=d.id;
 
-document.getElementById("status").innerHTML=
-"⚔ "+data.p1+" VS "+data.p2;
+await updateDoc(doc(db,"battles",battleId),{
+p2:student,
+score1:0,
+score2:0,
+finished:false
+});
 
-myScore = (student==data.p1)?data.score1:data.score2;
-oppScore = (student==data.p1)?data.score2:data.score1;
+listenBattle();
+}
+});
 
-document.getElementById("myscore").innerHTML=myScore;
-document.getElementById("oppscore").innerHTML=oppScore;
-
-if(data.finished && !finished){
-finished=true;
-showResult(data);
+if(!found){
+let ref=await addDoc(collection(db,"battles"),{
+p1:student,
+p2:"",
+score1:0,
+score2:0,
+finished:false
+});
+battleId=ref.id;
+listenBattle();
 }
 
+}
+
+findMatch();
+
+// LISTEN
+function listenBattle(){
+
+onSnapshot(doc(db,"battles",battleId),(snap)=>{
+
+let d=snap.data();
+if(!d) return;
+
+if(d.p2){
+document.getElementById("status").innerHTML="⚔ "+d.p1+" VS "+d.p2;
+showQuestion();
+}
+
+let my=(student==d.p1)?d.score1:d.score2;
+let opp=(student==d.p1)?d.score2:d.score1;
+
+document.getElementById("myscore").innerHTML=my;
+document.getElementById("oppscore").innerHTML=opp;
+
+if(d.finished){
+showResult(d);
 }
 
 });
 
-});
-
 }
 
+// QUESTION
+function showQuestion(){
 
+if(qIndex>=questions.length){
+finishBattle();
+return;
+}
 
-window.answer = async function(correct){
+let q=questions[qIndex];
+document.getElementById("question").innerHTML=q.q;
 
-if(!battleId) return;
+let html="";
+q.o.forEach(opt=>{
+html+=`<button onclick="answer('${opt}')">${opt}</button>`;
+});
 
-if(correct) myScore++;
+document.getElementById("options").innerHTML=html;
+}
 
-let ref = doc(db,"battles",battleId);
-let snap = await getDoc(ref);
-let data=snap.data();
+// ANSWER
+window.answer = async function(opt){
 
-if(student==data.p1){
+let q=questions[qIndex];
+if(opt==q.a) myScore++;
+
+let ref=doc(db,"battles",battleId);
+let snap=await getDoc(ref);
+let d=snap.data();
+
+if(student==d.p1){
 await updateDoc(ref,{score1:myScore});
 }else{
 await updateDoc(ref,{score2:myScore});
 }
 
+qIndex++;
+showQuestion();
 }
 
+// FINISH
+async function finishBattle(){
 
-
-window.finishBattle = async function(){
-
-let ref = doc(db,"battles",battleId);
-let snap = await getDoc(ref);
+let ref=doc(db,"battles",battleId);
+let snap=await getDoc(ref);
 let d=snap.data();
 
 if(d.finished) return;
 
 let winner="draw";
-
 if(d.score1>d.score2) winner=d.p1;
 if(d.score2>d.score1) winner=d.p2;
 
-await updateDoc(ref,{
-finished:true,
-winner:winner
-});
+await updateDoc(ref,{finished:true,winner:winner});
 
 }
 
+// RESULT
+function showResult(d){
 
+let my=(student==d.p1)?d.score1:d.score2;
+let opp=(student==d.p1)?d.score2:d.score1;
 
-async function showResult(d){
-
-let resultEl=document.getElementById("result");
-let xpRef = doc(db,"students",student);
-let s = await getDoc(xpRef);
-let xp = s.data()?.xp || 0;
+let res=document.getElementById("result");
 
 if(d.winner==student){
-xp+=20;
-resultEl.innerHTML="🏆 YOU WIN +20XP";
-resultEl.className="win";
+res.innerHTML="🏆 You Win";
+res.className="win";
 }
 else if(d.winner=="draw"){
-resultEl.innerHTML="🤝 DRAW";
-resultEl.className="draw";
+res.innerHTML="🤝 Draw";
+res.className="draw";
 }
 else{
-xp-=5;
-if(xp<0) xp=0;
-resultEl.innerHTML="😢 YOU LOSE -5XP";
-resultEl.className="lose";
+res.innerHTML="😢 You Lose";
+res.className="lose";
 }
-
-await updateDoc(xpRef,{xp:xp});
 
 }
 
