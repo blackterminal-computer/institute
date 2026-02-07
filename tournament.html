@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Tournament</title>
+<title>Daily Jackpot Tournament</title>
 
 <style>
 body{
@@ -15,38 +15,50 @@ padding:20px;
 
 .card{
 background:#0f172a;
-padding:25px;
+padding:22px;
+margin:15px auto;
 border-radius:16px;
-margin:20px auto;
-width:90%;
+width:92%;
 max-width:420px;
-box-shadow:0 0 25px rgba(0,0,0,0.5);
+box-shadow:0 0 25px rgba(0,0,0,.6);
 }
 
 button{
-padding:15px;
-margin:8px;
-width:90%;
-border:none;
-border-radius:12px;
-font-size:16px;
-color:white;
 background:linear-gradient(45deg,#6366f1,#06b6d4);
+border:none;
+padding:14px;
+margin:6px;
+border-radius:12px;
+color:white;
+font-size:16px;
+width:90%;
 }
 
-h1{margin-bottom:5px}
-#xp{color:#22c55e;font-weight:bold}
+.opt{
+background:#1e293b;
+padding:14px;
+margin:8px;
+border-radius:10px;
+}
+
+#pool{
+color:#facc15;
+font-weight:bold;
+font-size:18px;
+}
+
 </style>
 </head>
 <body>
 
-<h1>🏆 Live Tournament</h1>
-<h3>Your XP: <span id="xp">0</span></h3>
+<h1>🏆 Daily Jackpot Tournament</h1>
+<h3>🔥 Your XP: <span id="xp">0</span></h3>
 
 <div class="card">
-⏱ <span id="timer">60</span>s<br><br>
+<h3>💰 Jackpot Pool: <span id="pool">0</span> XP</h3>
+Entry Fee: 50 XP<br><br>
+⏱ Time: <span id="timer">60</span>s<br>
 Score: <span id="score">0</span><br><br>
-Entry fee: 50 XP<br><br>
 
 <button onclick="enterTournament()">Enter Tournament</button>
 </div>
@@ -63,111 +75,121 @@ Entry fee: 50 XP<br><br>
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit }
+import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain: "black-terminal-f2c91.firebaseapp.com",
-projectId: "black-terminal-f2c91",
-storageBucket: "black-terminal-f2c91.appspot.com",
-messagingSenderId: "552489994197",
-appId: "1:552489994197:web:7662331264c334ffbadf5c"
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
+if(!student){
+student=prompt("Enter name");
+localStorage.setItem("studentName",student);
+}
+
 let xp=0;
 let score=0;
 
 const xpRef = doc(db,"students",student);
+const poolRef = doc(db,"tournament_pool","daily");
 
+// load XP
 async function loadXP(){
-let snap = await getDoc(xpRef);
-if(snap.exists()){
-xp = snap.data().xp || 0;
+let s = await getDoc(xpRef);
+xp = s.data()?.xp || 0;
 document.getElementById("xp").innerHTML=xp;
-}
 }
 loadXP();
 
+// load pool
+async function loadPool(){
+let p = await getDoc(poolRef);
+document.getElementById("pool").innerHTML=p.data()?.pool||0;
+}
+loadPool();
+
 window.enterTournament = async function(){
 
-if(xp<50){
-alert("Need 50 XP to enter");
+if(xp < 50){
+alert("Need 50 XP");
 return;
 }
 
+// minus xp
 xp -= 50;
 await updateDoc(xpRef,{xp:xp});
 document.getElementById("xp").innerHTML=xp;
+
+// add pool
+let poolSnap = await getDoc(poolRef);
+let d = poolSnap.data();
+
+await updateDoc(poolRef,{
+pool:(d.pool||0)+50,
+players:(d.players||0)+1
+});
 
 alert("🔥 Entered Tournament");
 startGame();
 }
 
 let questions=[
-{q:"HTML full form?",a:["Hyper Text Markup Language","Home Tool","Hyperlinks"],c:0},
 {q:"CPU full form?",a:["Central Process Unit","Central Processing Unit","Computer"],c:1},
-{q:"1 KB = ?",a:["1024 bytes","100 bytes","1000"],c:0},
+{q:"1 KB=?",a:["1024 bytes","100","500"],c:0},
 {q:"Mouse is?",a:["Input","Output","CPU"],c:0},
-{q:"WWW full form?",a:["World Wide Web","Web World","Wide"],c:0},
-{q:"RAM is?",a:["Memory","Storage","Monitor"],c:0},
-{q:"Excel used for?",a:["Typing","Calculation","Game"],c:1},
-{q:"Keyboard?",a:["Input","Output","Printer"],c:0},
-{q:"Monitor?",a:["Input","Output","CPU"],c:1},
-{q:"Internet?",a:["Network","CPU","Game"],c:0}
+{q:"WWW full form?",a:["World Wide Web","Web","Wide"],c:0},
+{q:"RAM is?",a:["Memory","CPU","Printer"],c:0},
+{q:"Monitor?",a:["Input","Output","RAM"],c:1},
+{q:"Excel used?",a:["Game","Calculation","Video"],c:1},
+{q:"Keyboard?",a:["Input","Output","CPU"],c:0},
+{q:"Internet?",a:["Network","Game","RAM"],c:0},
+{q:"HTML?",a:["Markup","Game","CPU"],c:0}
 ];
 
-let currentQ=0;
+let qi=0;
 
 function showQuestion(){
+if(qi>=questions.length){ finishTournament(); return; }
 
-if(currentQ>=questions.length){
-finishTournament();
-return;
-}
+let q=questions[qi];
 
-let q=questions[currentQ];
-
-document.getElementById("questionBox").innerHTML=`
-<h3>${q.q}</h3>
-<button onclick="ans(0)">${q.a[0]}</button>
-<button onclick="ans(1)">${q.a[1]}</button>
-<button onclick="ans(2)">${q.a[2]}</button>
-`;
+let html=`<h3>${q.q}</h3>`;
+q.a.forEach((op,i)=>{
+html+=`<div class="opt" onclick="ans(${i})">${op}</div>`;
+});
+document.getElementById("questionBox").innerHTML=html;
 }
 
 window.ans=function(i){
-
-let q=questions[currentQ];
-
-if(i==q.c){
+if(i==questions[qi].c){
 score++;
 document.getElementById("score").innerHTML=score;
 }
-
-currentQ++;
+qi++;
 showQuestion();
 }
 
 function startGame(){
-
 showQuestion();
 
 let t=60;
 let timer=setInterval(()=>{
 t--;
 document.getElementById("timer").innerHTML=t;
-
 if(t<=0){
 clearInterval(timer);
 finishTournament();
 }
 },1000);
-
 }
 
 async function finishTournament(){
@@ -176,30 +198,55 @@ alert("Tournament finished. Score: "+score);
 
 await addDoc(collection(db,"tournament_scores"),{
 name:student,
-score:score,
-time:Date.now()
+score:score
 });
 
+// find winner
+let snap = await getDocs(collection(db,"tournament_scores"));
+let top=0;
+let winner="";
+
+snap.forEach(d=>{
+let data=d.data();
+if(data.score>top){
+top=data.score;
+winner=data.name;
+}
+});
+
+// get pool
+let poolSnap = await getDoc(poolRef);
+let totalPool = poolSnap.data().pool || 0;
+
+// winner gets pool
+if(winner==student){
+let s = await getDoc(xpRef);
+let userXP = s.data().xp || 0;
+userXP += totalPool;
+await updateDoc(xpRef,{xp:userXP});
+alert("🏆 YOU WON "+totalPool+" XP JACKPOT");
+}
+
+// reset pool
+await updateDoc(poolRef,{pool:0,players:0});
+
 loadRanking();
+loadPool();
 }
 
 async function loadRanking(){
-
-let q = query(collection(db,"tournament_scores"),orderBy("score","desc"),limit(10));
+let q = query(collection(db,"tournament_scores"),orderBy("score","desc"));
 let snap = await getDocs(q);
 
 let html="";
 let i=1;
-
 snap.forEach(d=>{
 let data=d.data();
 html+=`#${i} ${data.name} — ${data.score}<br>`;
 i++;
 });
-
 document.getElementById("rank").innerHTML=html;
 }
-
 loadRanking();
 
 </script>
