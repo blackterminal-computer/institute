@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Test</title>
+<title>Daily MCQ Test</title>
 
 <style>
 body{
 background:#020617;
-font-family:Arial;
 color:white;
+font-family:Arial;
 text-align:center;
 padding:20px;
 }
@@ -16,67 +16,50 @@ padding:20px;
 .card{
 background:#0f172a;
 padding:25px;
-border-radius:18px;
-max-width:420px;
+border-radius:16px;
+max-width:500px;
 margin:auto;
 box-shadow:0 0 40px rgba(0,0,0,0.6);
 }
 
-.option{
-background:#1e293b;
-padding:16px;
-border-radius:12px;
-margin:10px 0;
-cursor:pointer;
-transition:0.3s;
-}
-
-.option:hover{
-background:#334155;
-}
-
-.option.selected{
-border:2px solid #22c55e;
-box-shadow:0 0 15px #22c55e,0 0 40px #22c55e inset;
-animation:lock 0.3s ease;
-}
-
-@keyframes lock{
-0%{transform:scale(1)}
-50%{transform:scale(0.9)}
-100%{transform:scale(1)}
-}
-
 button{
-margin-top:15px;
-padding:14px;
-width:100%;
+width:90%;
+padding:15px;
+margin:8px;
 border:none;
 border-radius:12px;
-font-size:18px;
+font-size:16px;
 font-weight:bold;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
+background:#1e293b;
 color:white;
 }
 
-.timer{
-color:#22c55e;
-font-size:18px;
+.next{
+background:linear-gradient(90deg,#6366f1,#06b6d4);
 }
+
+h2{color:#22c55e}
+.timer{color:#22c55e;font-size:20px}
 </style>
 </head>
-
 <body>
 
-<div class="card" id="app">
+<div class="card">
+
 <h2>🧠 Daily Test</h2>
-<p>Loading...</p>
+<div>⏱ Time: <span class="timer" id="time">20</span>s</div>
+<h3 id="qtext">Loading...</h3>
+
+<div id="options"></div>
+
+<button class="next" onclick="nextQ()">Next</button>
+
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, updateDoc, getDoc }
+import { getFirestore, doc, getDoc, updateDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -92,114 +75,99 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
-let questions=[];
-let index=0;
+if(!student){
+student = prompt("Enter name");
+localStorage.setItem("studentName",student);
+}
+
+let qIndex=1;
 let score=0;
-let selected=null;
-let time=1200; // 20 min
+let timer;
+let timeLeft=20;
+let answered=false;
 
-start();
+loadQ();
 
-async function start(){
+async function loadQ(){
 
-let snap = await getDocs(collection(db,"daily_mcq"));
-snap.forEach(d=> questions.push(d.data()));
+answered=false;
+timeLeft=20;
+document.getElementById("time").innerHTML=timeLeft;
 
-questions = questions.sort(()=>0.5-Math.random()).slice(0,20);
+timer=setInterval(()=>{
+timeLeft--;
+document.getElementById("time").innerHTML=timeLeft;
 
-showQ();
-timer();
+if(timeLeft<=0){
+clearInterval(timer);
+nextQ();
 }
-
-function showQ(){
-
-if(index>=questions.length){
-finish();
-return;
-}
-
-let q=questions[index];
-
-document.getElementById("app").innerHTML=`
-<h2>🧠 Daily Test</h2>
-<div class="timer">⏱ ${time}s</div>
-<h3>Q${index+1}. ${q.q}</h3>
-
-<div class="option" onclick="selectOption(this,'A')">${q.a}</div>
-<div class="option" onclick="selectOption(this,'B')">${q.b}</div>
-<div class="option" onclick="selectOption(this,'C')">${q.c}</div>
-<div class="option" onclick="selectOption(this,'D')">${q.d}</div>
-
-<button onclick="nextQ()">Next</button>
-`;
-}
-
-window.selectOption = function(el,ans){
-
-document.querySelectorAll(".option").forEach(o=>{
-o.classList.remove("selected");
-});
-
-el.classList.add("selected");
-selected=ans;
-}
-
-window.nextQ = function(){
-
-if(!selected){
-alert("Select option");
-return;
-}
-
-if(selected==questions[index].correct){
-score++;
-}
-
-selected=null;
-index++;
-showQ();
-}
-
-function timer(){
-
-setInterval(()=>{
-time--;
-let t=document.querySelector(".timer");
-if(t) t.innerHTML="⏱ "+time+"s";
-
-if(time<=0) finish();
 },1000);
+
+let snap = await getDoc(doc(db,"daily_mcq","q"+qIndex));
+
+if(!snap.exists()){
+finishTest();
+return;
 }
 
-async function finish(){
+let d=snap.data();
 
-let xpEarn = score*2;
+document.getElementById("qtext").innerHTML=
+"Q"+qIndex+". "+d.question;
 
-// update xp
-let ref = doc(db,"students",student);
-let snap = await getDoc(ref);
-let xp = snap.data()?.xp || 0;
-
-await updateDoc(ref,{
-xp: xp + xpEarn
-});
-
-// leaderboard
-await updateDoc(ref,{
-lastScore:score
-});
-
-document.getElementById("app").innerHTML=`
-<h1>🏁 Test Finished</h1>
-<h2 style="color:#22c55e">Score: ${score}</h2>
-<h3>XP Earned: ${xpEarn}</h3>
-
-<button onclick="goHome()">🏠 Home</button>
+document.getElementById("options").innerHTML=`
+<button onclick="ans('A')">${d.a}</button>
+<button onclick="ans('B')">${d.b}</button>
+<button onclick="ans('C')">${d.c}</button>
+<button onclick="ans('D')">${d.d}</button>
 `;
+
+window.correctAns=d.correct;
+
 }
 
-window.goHome=function(){
-window.location.href="index.html";
+window.ans=function(a){
+if(answered) return;
+answered=true;
+
+if(a===correctAns){
+score+=2;
+}
+
+}
+
+window.nextQ=function(){
+clearInterval(timer);
+qIndex++;
+
+if(qIndex>20){
+finishTest();
+}else{
+loadQ();
+}
+}
+
+async function finishTest(){
+
+document.body.innerHTML=`
+<div class="card">
+<h1>🏁 Test Finished</h1>
+<h2>Score: ${score}</h2>
+<h3>XP Earned: ${score}</h3>
+</div>
+`;
+
+let ref=doc(db,"students",student);
+let s=await getDoc(ref);
+
+if(s.exists()){
+let xp=s.data().xp||0;
+xp+=score;
+
+await updateDoc(ref,{xp:xp});
+}
+
 }
 
 </script>
