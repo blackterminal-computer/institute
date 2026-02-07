@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel</title>
+<title>Admin Notice</title>
 
 <style>
 body{
@@ -16,11 +16,11 @@ padding-top:80px;
 .box{
 background:#0f172a;
 width:90%;
-max-width:400px;
+max-width:420px;
 margin:auto;
 padding:30px;
 border-radius:16px;
-box-shadow:0 0 30px rgba(0,0,0,0.5);
+box-shadow:0 0 30px rgba(0,0,0,0.6);
 }
 
 input,textarea{
@@ -29,12 +29,11 @@ padding:12px;
 margin:10px;
 border-radius:10px;
 border:none;
-outline:none;
 font-size:16px;
 }
 
 button{
-padding:12px 20px;
+padding:12px 18px;
 border:none;
 border-radius:10px;
 margin:8px;
@@ -47,48 +46,61 @@ color:white;
 </head>
 <body>
 
-<div class="box" id="loginBox">
-<h2>🔐 Admin Login</h2>
-<input type="password" id="pass" placeholder="Enter password">
-<br>
+<div class="box" id="login">
+<h2>Admin Login</h2>
+<input type="password" id="pass" placeholder="Password">
 <button onclick="login()">Login</button>
 </div>
 
 <div class="box" id="panel" style="display:none">
-<h2>📢 Notification Control</h2>
+<h2>📢 Global Notification</h2>
 
-<textarea id="msg" placeholder="Enter notice text"></textarea><br>
+<textarea id="msg" placeholder="Enter message"></textarea><br>
 
-<button onclick="turnOn()">🟢 ON</button>
-<button onclick="turnOff()">🔴 OFF</button>
-
+<button onclick="onNotice()">ON</button>
+<button onclick="offNotice()">OFF</button>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, updateDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 function login(){
 let p=document.getElementById("pass").value;
-
 if(p=="admin5"){
-document.getElementById("loginBox").style.display="none";
+document.getElementById("login").style.display="none";
 document.getElementById("panel").style.display="block";
-}else{
-alert("Wrong password");
-}
+}else alert("Wrong password");
 }
 
-function turnOn(){
-let text=document.getElementById("msg").value;
-localStorage.setItem("noticeText",text);
-localStorage.setItem("noticeStatus","on");
+window.onNotice=async function(){
+let t=document.getElementById("msg").value;
+await updateDoc(doc(db,"notices","main"),{
+text:t,
+status:"on"
+});
 alert("Notification ON");
 }
 
-function turnOff(){
-localStorage.setItem("noticeStatus","off");
+window.offNotice=async function(){
+await updateDoc(doc(db,"notices","main"),{
+status:"off"
+});
 alert("Notification OFF");
 }
-
 </script>
 </body>
 </html>
