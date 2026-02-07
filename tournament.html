@@ -6,249 +6,230 @@
 
 <style>
 body{
-background:#020617;
-color:white;
+margin:0;
 font-family:Arial;
-text-align:center;
-padding:20px;
+background:linear-gradient(180deg,#020617,#020617,#031036);
+color:white;
+}
+
+/* header */
+.header{
+padding:22px;
+font-size:26px;
+font-weight:bold;
+}
+
+.xpbox{
+float:right;
+background:#071428;
+padding:8px 14px;
+border-radius:12px;
+color:#22c55e;
+font-weight:bold;
+}
+
+/* main card */
+.main{
+padding:18px;
 }
 
 .card{
-background:#0f172a;
-padding:22px;
-margin:15px auto;
-border-radius:16px;
-width:92%;
-max-width:420px;
-box-shadow:0 0 25px rgba(0,0,0,.6);
+background:linear-gradient(145deg,#0f172a,#020617);
+padding:26px;
+border-radius:18px;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
+margin-bottom:20px;
+position:relative;
+overflow:hidden;
 }
 
-button{
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-border:none;
-padding:14px;
-margin:6px;
-border-radius:12px;
-color:white;
-font-size:16px;
-width:90%;
+/* animated border */
+.card::before{
+content:"";
+position:absolute;
+inset:-2px;
+border-radius:20px;
+background:linear-gradient(90deg,#06b6d4,#3b82f6,#8b5cf6,#06b6d4);
+background-size:300%;
+z-index:-1;
+animation:borderMove 6s linear infinite;
 }
 
-.opt{
-background:#1e293b;
-padding:14px;
-margin:8px;
-border-radius:10px;
+@keyframes borderMove{
+0%{background-position:0%}
+100%{background-position:300%}
 }
 
-#pool{
-color:#facc15;
+.title{
+font-size:22px;
 font-weight:bold;
-font-size:18px;
+margin-bottom:8px;
+}
+
+.sub{
+color:#94a3b8;
+margin-bottom:14px;
+}
+
+.pool{
+font-size:20px;
+color:#facc15;
+margin-bottom:10px;
+}
+
+/* live pulse */
+.live{
+display:inline-block;
+background:#052e1f;
+color:#22c55e;
+padding:8px 16px;
+border-radius:30px;
+font-weight:bold;
+animation:pulse 1.5s infinite;
+margin-top:10px;
+}
+
+@keyframes pulse{
+0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}
+70%{box-shadow:0 0 0 14px rgba(34,197,94,0)}
+100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
+}
+
+/* button */
+.btn{
+margin-top:20px;
+width:100%;
+padding:16px;
+border:none;
+border-radius:14px;
+font-size:17px;
+font-weight:bold;
+color:white;
+background:linear-gradient(90deg,#4f46e5,#06b6d4);
+box-shadow:0 10px 30px rgba(0,0,0,0.6);
+}
+
+.btn:active{
+transform:scale(.95);
+}
+
+/* ranking */
+.rankbox{
+background:linear-gradient(145deg,#0f172a,#020617);
+padding:20px;
+border-radius:18px;
+box-shadow:0 0 30px rgba(0,0,0,0.5);
+}
+
+.ranktitle{
+font-size:20px;
+margin-bottom:12px;
+}
+
+.rank{
+padding:10px;
+border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
 </style>
 </head>
+
 <body>
 
-<h1>🏆 Daily Jackpot Tournament</h1>
-<h3>🔥 Your XP: <span id="xp">0</span></h3>
-
-<div class="card">
-<h3>💰 Jackpot Pool: <span id="pool">0</span> XP</h3>
-Entry Fee: 50 XP<br><br>
-⏱ Time: <span id="timer">60</span>s<br>
-Score: <span id="score">0</span><br><br>
-
-<button onclick="enterTournament()">Enter Tournament</button>
+<div class="header">
+🏆 Daily Jackpot Tournament
+<span class="xpbox">🔥 XP: <span id="myxp">0</span></span>
 </div>
 
-<div class="card">
-<div id="questionBox">Enter tournament to start</div>
-</div>
+<div class="main">
 
 <div class="card">
-<h3>🏆 Live Ranking</h3>
-<div id="rank"></div>
+<div class="title">💰 Jackpot Pool: <span id="pool">0</span> XP</div>
+<div class="sub">Entry fee: 50 XP • Time: 60s</div>
+
+<div class="live">● LIVE TOURNAMENT</div>
+
+<button class="btn" onclick="enterTournament()">Enter Tournament</button>
 </div>
 
+<div class="rankbox">
+<div class="ranktitle">🏆 Live Ranking</div>
+<div id="ranking"></div>
+</div>
+
+</div>
+
+<!-- firebase -->
 <script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
+apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain: "black-terminal-f2c91.firebaseapp.com",
+projectId: "black-terminal-f2c91",
+storageBucket: "black-terminal-f2c91.appspot.com",
+messagingSenderId: "552489994197",
+appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
-if(!student){
-student=prompt("Enter name");
-localStorage.setItem("studentName",student);
-}
+let myxp=0;
 
-let xp=0;
-let score=0;
-
-const xpRef = doc(db,"students",student);
-const poolRef = doc(db,"tournament_pool","daily");
-
-// load XP
+/* load xp */
 async function loadXP(){
-let s = await getDoc(xpRef);
-xp = s.data()?.xp || 0;
-document.getElementById("xp").innerHTML=xp;
+let ref = doc(db,"students",student);
+let snap = await getDoc(ref);
+if(snap.exists()){
+myxp = snap.data().xp || 0;
+document.getElementById("myxp").innerText=myxp;
+}
 }
 loadXP();
 
-// load pool
-async function loadPool(){
-let p = await getDoc(poolRef);
-document.getElementById("pool").innerHTML=p.data()?.pool||0;
-}
-loadPool();
-
+/* enter tournament */
 window.enterTournament = async function(){
 
-if(xp < 50){
-alert("Need 50 XP");
+if(myxp<50){
+alert("Need 50 XP to enter");
 return;
 }
 
-// minus xp
-xp -= 50;
-await updateDoc(xpRef,{xp:xp});
-document.getElementById("xp").innerHTML=xp;
+/* minus xp */
+let ref = doc(db,"students",student);
+await updateDoc(ref,{xp:myxp-50});
 
-// add pool
-let poolSnap = await getDoc(poolRef);
-let d = poolSnap.data();
+alert("Entered Tournament 🚀");
 
-await updateDoc(poolRef,{
-pool:(d.pool||0)+50,
-players:(d.players||0)+1
-});
-
-alert("🔥 Entered Tournament");
-startGame();
-}
-
-let questions=[
-{q:"CPU full form?",a:["Central Process Unit","Central Processing Unit","Computer"],c:1},
-{q:"1 KB=?",a:["1024 bytes","100","500"],c:0},
-{q:"Mouse is?",a:["Input","Output","CPU"],c:0},
-{q:"WWW full form?",a:["World Wide Web","Web","Wide"],c:0},
-{q:"RAM is?",a:["Memory","CPU","Printer"],c:0},
-{q:"Monitor?",a:["Input","Output","RAM"],c:1},
-{q:"Excel used?",a:["Game","Calculation","Video"],c:1},
-{q:"Keyboard?",a:["Input","Output","CPU"],c:0},
-{q:"Internet?",a:["Network","Game","RAM"],c:0},
-{q:"HTML?",a:["Markup","Game","CPU"],c:0}
-];
-
-let qi=0;
-
-function showQuestion(){
-if(qi>=questions.length){ finishTournament(); return; }
-
-let q=questions[qi];
-
-let html=`<h3>${q.q}</h3>`;
-q.a.forEach((op,i)=>{
-html+=`<div class="opt" onclick="ans(${i})">${op}</div>`;
-});
-document.getElementById("questionBox").innerHTML=html;
-}
-
-window.ans=function(i){
-if(i==questions[qi].c){
-score++;
-document.getElementById("score").innerHTML=score;
-}
-qi++;
-showQuestion();
-}
-
-function startGame(){
-showQuestion();
-
-let t=60;
-let timer=setInterval(()=>{
-t--;
-document.getElementById("timer").innerHTML=t;
-if(t<=0){
-clearInterval(timer);
-finishTournament();
-}
-},1000);
-}
-
-async function finishTournament(){
-
-alert("Tournament finished. Score: "+score);
-
-await addDoc(collection(db,"tournament_scores"),{
+/* add score doc */
+await addDoc(collection(db,"tournament"),{
 name:student,
-score:score
+score:0
 });
 
-// find winner
-let snap = await getDocs(collection(db,"tournament_scores"));
-let top=0;
-let winner="";
+};
 
-snap.forEach(d=>{
-let data=d.data();
-if(data.score>top){
-top=data.score;
-winner=data.name;
-}
-});
+/* live ranking */
+onSnapshot(collection(db,"tournament"),(snap)=>{
+let arr=[];
+snap.forEach(d=> arr.push(d.data()));
 
-// get pool
-let poolSnap = await getDoc(poolRef);
-let totalPool = poolSnap.data().pool || 0;
-
-// winner gets pool
-if(winner==student){
-let s = await getDoc(xpRef);
-let userXP = s.data().xp || 0;
-userXP += totalPool;
-await updateDoc(xpRef,{xp:userXP});
-alert("🏆 YOU WON "+totalPool+" XP JACKPOT");
-}
-
-// reset pool
-await updateDoc(poolRef,{pool:0,players:0});
-
-loadRanking();
-loadPool();
-}
-
-async function loadRanking(){
-let q = query(collection(db,"tournament_scores"),orderBy("score","desc"));
-let snap = await getDocs(q);
+arr.sort((a,b)=>b.score-a.score);
 
 let html="";
-let i=1;
-snap.forEach(d=>{
-let data=d.data();
-html+=`#${i} ${data.name} — ${data.score}<br>`;
-i++;
+arr.forEach((p,i)=>{
+html+=`<div class="rank">#${i+1} ${p.name} — ${p.score}</div>`;
 });
-document.getElementById("rank").innerHTML=html;
-}
-loadRanking();
+
+document.getElementById("ranking").innerHTML=html;
+document.getElementById("pool").innerText=arr.length*50;
+
+});
 
 </script>
+
 </body>
 </html>
