@@ -24,53 +24,46 @@ box-shadow:0 0 25px rgba(0,0,0,0.5);
 }
 
 button{
-background:linear-gradient(45deg,#3b82f6,#06b6d4);
-border:none;
 padding:15px;
-width:100%;
-color:white;
-font-size:18px;
+margin:8px;
+width:90%;
+border:none;
 border-radius:12px;
-margin-top:15px;
+font-size:16px;
+color:white;
+background:linear-gradient(45deg,#6366f1,#06b6d4);
 }
 
-.live{
-color:#22c55e;
-font-weight:bold;
-animation:pulse 1s infinite;
-}
-
-@keyframes pulse{
-0%{opacity:1}
-50%{opacity:.4}
-100%{opacity:1}
-}
-
+h1{margin-bottom:5px}
+#xp{color:#22c55e;font-weight:bold}
 </style>
 </head>
 <body>
 
 <h1>🏆 Live Tournament</h1>
+<h3>Your XP: <span id="xp">0</span></h3>
 
 <div class="card">
-<h2>⏱ <span id="timer">60</span>s</h2>
-<h3>Score: <span id="score">0</span></h3>
+⏱ <span id="timer">60</span>s<br><br>
+Score: <span id="score">0</span><br><br>
+Entry fee: 50 XP<br><br>
 
-<h3 id="myxp">🔥 Your XP: loading...</h3>
-<p>Entry fee: 50 XP</p>
-
-<button onclick="enterTournament()">Enter Tournament (50 XP)</button>
+<button onclick="enterTournament()">Enter Tournament</button>
 </div>
 
 <div class="card">
-<h2>🏆 Live Ranking</h2>
-<div id="ranking">Loading...</div>
+<div id="questionBox">Enter tournament to start</div>
+</div>
+
+<div class="card">
+<h3>🏆 Live Ranking</h3>
+<div id="rank"></div>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit }
+import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -86,48 +79,83 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
-if(!student){
-student = prompt("Enter your name");
-localStorage.setItem("studentName",student);
-}
+let xp=0;
+let score=0;
 
-let myXP = 0;
-let score = 0;
+const xpRef = doc(db,"students",student);
 
 async function loadXP(){
-let ref = doc(db,"students",student);
-let snap = await getDoc(ref);
-
-if(!snap.exists()){
-document.getElementById("myxp").innerHTML="🔥 Your XP: 0";
-return;
+let snap = await getDoc(xpRef);
+if(snap.exists()){
+xp = snap.data().xp || 0;
+document.getElementById("xp").innerHTML=xp;
 }
-
-myXP = snap.data().xp || 0;
-document.getElementById("myxp").innerHTML="🔥 Your XP: "+myXP;
 }
-
 loadXP();
 
 window.enterTournament = async function(){
 
-if(myXP < 50){
-alert("❌ Need 50 XP to enter");
+if(xp<50){
+alert("Need 50 XP to enter");
 return;
 }
 
-let ref = doc(db,"students",student);
-
-await updateDoc(ref,{
-xp: myXP - 50
-});
+xp -= 50;
+await updateDoc(xpRef,{xp:xp});
+document.getElementById("xp").innerHTML=xp;
 
 alert("🔥 Entered Tournament");
-
 startGame();
 }
 
+let questions=[
+{q:"HTML full form?",a:["Hyper Text Markup Language","Home Tool","Hyperlinks"],c:0},
+{q:"CPU full form?",a:["Central Process Unit","Central Processing Unit","Computer"],c:1},
+{q:"1 KB = ?",a:["1024 bytes","100 bytes","1000"],c:0},
+{q:"Mouse is?",a:["Input","Output","CPU"],c:0},
+{q:"WWW full form?",a:["World Wide Web","Web World","Wide"],c:0},
+{q:"RAM is?",a:["Memory","Storage","Monitor"],c:0},
+{q:"Excel used for?",a:["Typing","Calculation","Game"],c:1},
+{q:"Keyboard?",a:["Input","Output","Printer"],c:0},
+{q:"Monitor?",a:["Input","Output","CPU"],c:1},
+{q:"Internet?",a:["Network","CPU","Game"],c:0}
+];
+
+let currentQ=0;
+
+function showQuestion(){
+
+if(currentQ>=questions.length){
+finishTournament();
+return;
+}
+
+let q=questions[currentQ];
+
+document.getElementById("questionBox").innerHTML=`
+<h3>${q.q}</h3>
+<button onclick="ans(0)">${q.a[0]}</button>
+<button onclick="ans(1)">${q.a[1]}</button>
+<button onclick="ans(2)">${q.a[2]}</button>
+`;
+}
+
+window.ans=function(i){
+
+let q=questions[currentQ];
+
+if(i==q.c){
+score++;
+document.getElementById("score").innerHTML=score;
+}
+
+currentQ++;
+showQuestion();
+}
+
 function startGame(){
+
+showQuestion();
 
 let t=60;
 let timer=setInterval(()=>{
@@ -140,30 +168,26 @@ finishTournament();
 }
 },1000);
 
-document.body.onclick=()=>{
-score++;
-document.getElementById("score").innerHTML=score;
-}
-
 }
 
 async function finishTournament(){
 
-await addDoc(collection(db,"tournamentScores"),{
+alert("Tournament finished. Score: "+score);
+
+await addDoc(collection(db,"tournament_scores"),{
 name:student,
-score:score
+score:score,
+time:Date.now()
 });
 
-alert("Tournament finished 🔥 Score saved");
 loadRanking();
-
 }
 
-function loadRanking(){
+async function loadRanking(){
 
-let q = query(collection(db,"tournamentScores"),orderBy("score","desc"),limit(5));
+let q = query(collection(db,"tournament_scores"),orderBy("score","desc"),limit(10));
+let snap = await getDocs(q);
 
-onSnapshot(q,(snap)=>{
 let html="";
 let i=1;
 
@@ -173,9 +197,7 @@ html+=`#${i} ${data.name} — ${data.score}<br>`;
 i++;
 });
 
-document.getElementById("ranking").innerHTML=html;
-});
-
+document.getElementById("rank").innerHTML=html;
 }
 
 loadRanking();
