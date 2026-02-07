@@ -68,9 +68,9 @@ border-radius:8px;
 <div class="card">
 <div class="timer">⏱ <span id="time">60</span>s</div>
 <div id="score">Score: 0</div>
-<div class="q" id="q">Click Start</div>
+<div class="q" id="q">Entry fee: 50 XP</div>
 <div id="opts"></div>
-<button class="btn" onclick="start()">Start Tournament</button>
+<button class="btn" onclick="start()">Enter Tournament (50 XP)</button>
 </div>
 
 <div class="card">
@@ -81,7 +81,7 @@ border-radius:8px;
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, onSnapshot, getDoc }
+import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, getDoc }
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -114,7 +114,7 @@ const questions=[
 
 let qi=0;
 
-// ranking live
+// live ranking
 onSnapshot(collection(db,"tournament"), async(snap)=>{
 let arr=[];
 snap.forEach(d=> arr.push(d.data()));
@@ -128,6 +128,20 @@ document.getElementById("board").innerHTML=html;
 });
 
 window.start = async function(){
+
+// check XP
+let xpRef = doc(db,"students",student);
+let snap = await getDoc(xpRef);
+let xp = snap.data().xp || 0;
+
+if(xp < 50){
+alert("❌ Need 50 XP to enter tournament");
+return;
+}
+
+// deduct entry
+xp -= 50;
+await updateDoc(xpRef,{xp:xp});
 
 score=0;
 qi=0;
@@ -176,13 +190,18 @@ showQ();
 async function finish(){
 clearInterval(timer);
 
+// reward xp
 let xpRef = doc(db,"students",student);
 let snap = await getDoc(xpRef);
 let xp=snap.data().xp||0;
-xp+=score*2;
+
+let reward = score*5; // reward per correct
+xp += reward;
+
 await updateDoc(xpRef,{xp:xp});
 
-alert("Tournament finished! XP added");
+alert("Tournament finished! XP earned: "+reward);
+location.reload();
 }
 
 </script>
