@@ -32,8 +32,6 @@ display:inline-block;
 margin:10px;
 }
 
-h2{color:#22c55e}
-
 .option{
 background:#1e293b;
 padding:14px;
@@ -42,15 +40,8 @@ border-radius:10px;
 cursor:pointer;
 }
 
-.option:active{
-transform:scale(0.96);
-}
-
-.timer{
-color:#22c55e;
-font-size:20px;
-margin:10px;
-}
+.timer{color:#22c55e;font-size:20px;margin:10px}
+h2{color:#22c55e}
 </style>
 </head>
 
@@ -58,14 +49,13 @@ margin:10px;
 
 <div class="card" id="screen">
 <h2>🔍 Searching opponent...</h2>
-<p>Please wait</p>
+<p>Please wait...</p>
 </div>
-
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc }
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -82,46 +72,41 @@ const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
 if(!student){
-student = prompt("Enter your name");
+student = prompt("Enter name");
 localStorage.setItem("studentName",student);
 }
 
-let myRoom="";
+let roomId="";
 let opponent="";
-let isHost=false;
+let joined=false;
 
 startMatch();
 
 async function startMatch(){
 
-document.getElementById("screen").innerHTML=`
-<h2>🔍 Searching opponent...</h2>
-<p>Please wait</p>
-`;
+const waitRef = collection(db,"battle_wait");
 
-let waiting = collection(db,"battle_wait");
+onSnapshot(waitRef, async(snap)=>{
 
-onSnapshot(waiting, async(snap)=>{
+if(joined) return;
 
 let players=[];
-snap.forEach(d=> players.push({id:d.id,...d.data()}));
+snap.forEach(d=>players.push({id:d.id,...d.data()}));
 
-let other = players.find(p=>p.name!=student);
+let other = players.find(p=>p.name!=student && p.status=="waiting");
 
-if(other && !myRoom){
+if(other){
+joined=true;
+roomId=other.id;
+opponent=other.name;
 
-// join opponent
-myRoom = other.id;
-opponent = other.name;
-
-await updateDoc(doc(db,"battle_wait",other.id),{
+await updateDoc(doc(db,"battle_wait",roomId),{
 p2:student,
 status:"start"
 });
 
-listenBattle(other.id);
+listenBattle(roomId);
 }
-
 });
 
 let ref = await addDoc(collection(db,"battle_wait"),{
@@ -129,9 +114,8 @@ name:student,
 status:"waiting"
 });
 
-myRoom = ref.id;
-listenBattle(ref.id);
-
+roomId=ref.id;
+listenBattle(roomId);
 }
 
 function listenBattle(id){
@@ -139,21 +123,15 @@ function listenBattle(id){
 onSnapshot(doc(db,"battle_wait",id),(snap)=>{
 let d=snap.data();
 if(!d) return;
-
 if(d.status=="start" && d.p2){
-if(d.name==student){
-opponent=d.p2;
-}else{
-opponent=d.name;
-}
 
+if(d.name==student){opponent=d.p2}else{opponent=d.name}
 startGame();
 }
 });
-
 }
 
-
+/* QUESTIONS */
 let questions=[
 {q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Keyboard",ans:"b"},
 {q:"Full form of HTML?",a:"Hyper Trainer",b:"Hyper Text Markup Language",c:"High Text",d:"None",ans:"b"},
@@ -167,125 +145,50 @@ let questions=[
 {q:"Internet needs?",a:"CPU",b:"Network",c:"RAM",d:"Mouse",ans:"b"}
 ];
 
-let qIndex=0;
-let myScore=0;
-let oppScore=0;
-let time=10;
-let timerInt;
+let i=0,score=0,time=10,timer;
 
 function startGame(){
-
 document.getElementById("screen").innerHTML=`
 <h2>⚔ ${student} vs ${opponent}</h2>
-<div class="avatar"></div>
-<div class="avatar"></div>
 <div class="timer">⏱ <span id="t">10</span></div>
 <h3 id="q"></h3>
-<div id="opts"></div>
-`;
-
+<div id="opts"></div>`;
 loadQ();
 }
 
 function loadQ(){
-
-if(qIndex>=10){
-finishBattle();
-return;
-}
-
-time=10;
-document.getElementById("t").innerText=time;
-
-let q=questions[qIndex];
-
-document.getElementById("q").innerText="Q"+(qIndex+1)+". "+q.q;
-
+if(i>=10){finish();return;}
+time=10;document.getElementById("t").innerText=time;
+let q=questions[i];
+document.getElementById("q").innerText=q.q;
 document.getElementById("opts").innerHTML=`
 <div class="option" onclick="ans('a')">${q.a}</div>
 <div class="option" onclick="ans('b')">${q.b}</div>
 <div class="option" onclick="ans('c')">${q.c}</div>
-<div class="option" onclick="ans('d')">${q.d}</div>
-`;
-
-clearInterval(timerInt);
-timerInt=setInterval(()=>{
-time--;
-document.getElementById("t").innerText=time;
-
-if(time<=0){
-qIndex++;
-loadQ();
-}
-},1000);
-
+<div class="option" onclick="ans('d')">${q.d}</div>`;
+clearInterval(timer);
+timer=setInterval(()=>{time--;document.getElementById("t").innerText=time;if(time<=0){i++;loadQ();}},1000);
 }
 
-window.ans=function(a){
+window.ans=(a)=>{if(a==questions[i].ans)score++;i++;loadQ();}
 
-let q=questions[qIndex];
-
-if(a==q.ans){
-myScore++;
-}
-
-qIndex++;
-loadQ();
-}
-
-async function finishBattle(){
-
-clearInterval(timerInt);
-
-// save my score to firebase
-await updateDoc(doc(db,"battle_wait",myRoom),{
-[student]:myScore
-});
-
-// wait 2 sec for opponent score
+async function finish(){
+clearInterval(timer);
+await updateDoc(doc(db,"battle_wait",roomId),{[student]:score});
 setTimeout(async()=>{
-
-let snap=await getDoc(doc(db,"battle_wait",myRoom));
+let snap=await getDoc(doc(db,"battle_wait",roomId));
 let d=snap.data();
-
-let p1=d.name;
-let p2=d.p2;
-
-let s1=d[p1]||0;
-let s2=d[p2]||0;
-
-let result="";
-let xpChange=0;
-
-if(student==p1){
-if(s1>s2){ result="🏆 You Win!"; xpChange=100;}
-else if(s1<s2){ result="😢 You Lose"; xpChange=-10;}
-else{ result="🤝 Draw"; xpChange=0;}
-}else{
-if(s2>s1){ result="🏆 You Win!"; xpChange=100;}
-else if(s2<s1){ result="😢 You Lose"; xpChange=-10;}
-else{ result="🤝 Draw"; xpChange=0;}
-}
-
-document.getElementById("screen").innerHTML=`
-<h1>${result}</h1>
-<h2>Your Score: ${myScore}</h2>
-<h3>XP ${xpChange>0?"+":""}${xpChange}</h3>
-<button onclick="location.href='index.html'">Home</button>
-`;
-
+let s1=d[d.name]||0,s2=d[d.p2]||0;
+let win=(student==d.name?(s1>s2):(s2>s1));
+let xp=win?100:-10;
+document.getElementById("screen").innerHTML=`<h1>${win?"🏆 You Win":"😢 You Lose"}</h1><h2>Score ${score}</h2><h3>XP ${xp}</h3><button onclick="location.href='index.html'">Home</button>`;
 let ref=doc(db,"students",student);
-let snap2=await getDoc(ref);
-
-if(snap2.exists()){
-let xp=snap2.data().xp||0;
-xp+=xpChange;
-if(xp<0) xp=0;
-await updateDoc(ref,{xp:xp});
-}
-
+let s=await getDoc(ref);
+if(s.exists()){let x=s.data().xp||0;x+=xp;if(x<0)x=0;await updateDoc(ref,{xp:x});}
+setTimeout(async()=>{try{await deleteDoc(doc(db,"battle_wait",roomId));}catch{}},4000);
 },2000);
 }
+
 </script>
 </body>
 </html>
