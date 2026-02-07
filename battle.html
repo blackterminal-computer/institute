@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Battle</title>
+
+<style>
+body{
+margin:0;
+background:#020617;
+font-family:Arial;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+#wait{text-align:center}
+
+.loader{
+border:5px solid #111;
+border-top:5px solid cyan;
+border-radius:50%;
+width:60px;height:60px;
+animation:spin 1s linear infinite;
+margin:auto;margin-top:20px;
+}
+@keyframes spin{100%{transform:rotate(360deg)}}
+
+#battle{
+display:none;
+width:95%;
+max-width:500px;
+background:#0f172a;
+padding:20px;
+border-radius:16px;
+}
+
+.top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.player{
+text-align:center;
+}
+
+.player img{
+width:60px;height:60px;
+border-radius:50%;
+border:2px solid cyan;
+}
+
+.score{
+font-size:22px;
+color:#22c55e;
+}
+
+#question{
+margin-top:15px;
+}
+
+.option{
+background:#1e293b;
+padding:14px;
+margin-top:10px;
+border-radius:10px;
+cursor:pointer;
+}
+
+.option:hover{background:#334155}
+.lock{background:#065f46}
+
+.timer{
+text-align:center;
+margin-top:10px;
+color:cyan;
+font-size:18px;
+}
+
+#result{
+display:none;
+text-align:center;
+}
+</style>
+</head>
+<body>
+
+<div id="wait">
+<h2>🔎 Finding opponent...</h2>
+<div class="loader"></div>
+</div>
+
+<div id="battle">
+
+<div class="top">
+<div class="player">
+<img id="meImg">
+<div id="meName"></div>
+<div class="score" id="meScore">0</div>
+</div>
+
+<div>VS</div>
+
+<div class="player">
+<img id="oppImg">
+<div id="oppName"></div>
+<div class="score" id="oppScore">0</div>
+</div>
+</div>
+
+<div class="timer">⏱ <span id="time">60</span>s</div>
+
+<h3 id="question"></h3>
+<div id="options"></div>
+<button onclick="next()">Next</button>
+
+</div>
+
+<div id="result">
+<h1 id="final"></h1>
+<button onclick="location.reload()">Play again</button>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getFirestore,collection,addDoc,getDocs,doc,setDoc,onSnapshot,deleteDoc,updateDoc,getDoc } 
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.firebasestorage.app",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let student=localStorage.getItem("studentName");
+let myPhoto=localStorage.getItem("photo_"+student)||"https://i.ibb.co/4pDNDk1/avatar.png";
+
+// join waiting
+await addDoc(collection(db,"battle_wait"),{
+name:student,photo:myPhoto,time:Date.now()
+});
+
+let started=false;
+let battleId="";
+let myRole="";
+let myXP=0;
+
+// match making
+onSnapshot(collection(db,"battle_wait"),async(snap)=>{
+if(started) return;
+
+let arr=[];
+snap.forEach(d=>arr.push({id:d.id,...d.data()}));
+
+if(arr.length>=2){
+
+started=true;
+
+let p1=arr[0];
+let p2=arr[1];
+battleId="battle_"+Date.now();
+
+await setDoc(doc(db,"battles",battleId),{
+p1:p1.name,p2:p2.name,
+img1:p1.photo,img2:p2.photo,
+score1:0,score2:0
+});
+
+await deleteDoc(doc(db,"battle_wait",p1.id));
+await deleteDoc(doc(db,"battle_wait",p2.id));
+
+startBattle(p1,p2);
+}
+});
+
+// listen other user battle
+onSnapshot(collection(db,"battles"),(snap)=>{
+if(started) return;
+
+snap.forEach(d=>{
+let data=d.data();
+if(data.p1==student||data.p2==student){
+started=true;
+battleId=d.id;
+
+let p1={name:data.p1,photo:data.img1};
+let p2={name:data.p2,photo:data.img2};
+startBattle(p1,p2);
+}
+});
+});
+
+async function startBattle(p1,p2){
+
+document.getElementById("wait").style.display="none";
+document.getElementById("battle").style.display="block";
+
+let me,opp;
+
+if(student==p1.name){
+me=p1; opp=p2; myRole="score1";
+}else{
+me=p2; opp=p1; myRole="score2";
+}
+
+document.getElementById("meImg").src=me.photo;
+document.getElementById("oppImg").src=opp.photo;
+document.getElementById("meName").innerText=me.name;
+document.getElementById("oppName").innerText=opp.name;
+
+// get xp
+let xpData=JSON.parse(localStorage.getItem("xpData"))||{};
+myXP=xpData[student]||0;
+
+// listen live score
+onSnapshot(doc(db,"battles",battleId),(snap)=>{
+let d=snap.data();
+document.getElementById("meScore").innerText=d.score1;
+document.getElementById("oppScore").innerText=d.score2;
+});
+
+startQuiz();
+}
+
+// questions
+const quiz=[
+{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
+{q:"1 KB = ?",o:["1000","1024","500","200"],a:1},
+{q:"Excel is?",o:["Software","Game","OS","Browser"],a:0},
+{q:"Mouse is?",o:["Input","Output","CPU","RAM"],a:0},
+{q:"Monitor?",o:["Output","Input","CPU","RAM"],a:0},
+{q:"RAM stands?",o:["Random Access Memory","Run","Read","None"],a:0},
+{q:"Windows is?",o:["OS","Game","CPU","Cable"],a:0},
+{q:"USB?",o:["Port","CPU","RAM","Mouse"],a:0},
+{q:"Printer?",o:["Output","Input","CPU","RAM"],a:0},
+{q:"Binary of 2?",o:["10","11","01","00"],a:0}
+];
+
+let i=0,selected=-1,time=60,myScore=0;
+
+function startQuiz(){ loadQ(); }
+
+function loadQ(){
+let q=quiz[i];
+document.getElementById("question").innerText=q.q;
+
+let html="";
+q.o.forEach((opt,index)=>{
+html+=`<div class="option" onclick="select(${index},this)">${opt}</div>`;
+});
+document.getElementById("options").innerHTML=html;
+}
+
+window.select=function(index,el){
+if(selected!=-1) return;
+selected=index;
+el.classList.add("lock");
+
+if(index==quiz[i].a){
+myScore++;
+updateDoc(doc(db,"battles",battleId),{[myRole]:myScore});
+}
+}
+
+window.next=function(){
+if(selected==-1){alert("Select option");return;}
+selected=-1;i++;
+if(i>=quiz.length){finish();return;}
+loadQ();
+}
+
+// timer
+setInterval(()=>{
+time--;
+document.getElementById("time").innerText=time;
+if(time<=0) finish();
+},1000);
+
+async function finish(){
+
+document.getElementById("battle").style.display="none";
+document.getElementById("result").style.display="block";
+
+onSnapshot(doc(db,"battles",battleId),(snap)=>{
+let d=snap.data();
+let s1=d.score1||0;
+let s2=d.score2||0;
+
+let my = myRole=="score1"?s1:s2;
+let opp = myRole=="score1"?s2:s1;
+
+let xpData=JSON.parse(localStorage.getItem("xpData"))||{};
+let xp=xpData[student]||0;
+
+let msg="Draw 🤝";
+
+if(my>opp){ xp+=20; msg="🏆 You Win +20 XP"; }
+if(my<opp){ xp-=10; if(xp<0) xp=0; msg="😢 You Lose -10 XP"; }
+
+xpData[student]=xp;
+localStorage.setItem("xpData",JSON.stringify(xpData));
+
+await updateDoc(doc(db,"students",student),{xp:xp});
+
+document.getElementById("final").innerHTML=
+`${msg}<br>Your XP: ${xp}`;
+});
+}
+</script>
+</body>
+</html>
