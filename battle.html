@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1 vs 1 Battle</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -20,137 +19,83 @@ flex-direction:column;
 }
 
 /* waiting */
-#wait{
-text-align:center;
-}
-
+#wait{text-align:center}
 .loader{
-margin-top:20px;
-width:60px;height:60px;
-border:5px solid #111;
-border-top:5px solid #06b6d4;
-border-radius:50%;
-animation:spin 1s linear infinite;
-margin:auto;
+margin-top:20px;width:60px;height:60px;
+border:5px solid #111;border-top:5px solid #06b6d4;
+border-radius:50%;animation:spin 1s linear infinite;margin:auto;
 }
+@keyframes spin{100%{transform:rotate(360deg)}}
 
-@keyframes spin{
-100%{transform:rotate(360deg)}
-}
-
-/* vs screen */
-#vsScreen{
-display:none;
-text-align:center;
-animation:fade 0.6s;
-}
-
-.vs{
-font-size:40px;
-margin:20px 0;
-color:#22c55e;
-}
+/* vs */
+#vsScreen{display:none;text-align:center}
+.vs{font-size:40px;margin:20px;color:#22c55e}
 
 /* quiz */
 #quiz{
-display:none;
-width:95%;
-max-width:500px;
-background:#0f172a;
-padding:25px;
-border-radius:16px;
+display:none;width:95%;max-width:500px;
+background:#0f172a;padding:25px;border-radius:16px;
 }
-
 .option{
-background:#1e293b;
-padding:14px;
-margin:10px 0;
-border-radius:10px;
-cursor:pointer;
-transition:.3s;
+background:#1e293b;padding:14px;margin:10px 0;
+border-radius:10px;cursor:pointer;transition:.3s;
 }
+.option:hover{background:#334155}
+.lock{background:#065f46 !important;border:2px solid #22c55e}
+.timer{float:right;color:#22c55e;font-weight:bold}
 
-.option:hover{
-background:#334155;
-}
-
-.lock{
-background:#065f46 !important;
-border:2px solid #22c55e;
-}
-
-.timer{
-float:right;
-color:#22c55e;
-font-weight:bold;
-}
-
-#result{
-display:none;
-text-align:center;
-}
-
+/* result */
+#result{display:none;text-align:center}
 button{
-margin-top:20px;
-padding:14px 24px;
-border:none;
-border-radius:10px;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-color:white;
-font-weight:bold;
+margin-top:20px;padding:14px 24px;border:none;
+border-radius:10px;background:linear-gradient(45deg,#6366f1,#06b6d4);
+color:white;font-weight:bold;
 }
-
 </style>
 </head>
+
 <body>
 
-<!-- waiting -->
 <div id="wait">
 <h2>🔎 Waiting for opponent...</h2>
 <div class="loader"></div>
 </div>
 
-<!-- vs -->
 <div id="vsScreen">
 <h1 id="p1"></h1>
 <div class="vs">VS</div>
 <h1 id="p2"></h1>
 </div>
 
-<!-- quiz -->
 <div id="quiz">
-<div>Question <span id="qno"></span>/15 
+<div>Question <span id="qno"></span>/10 
 <span class="timer">⏱ <span id="time">60</span>s</span></div>
 <h3 id="question" style="margin-top:15px"></h3>
 <div id="options"></div>
 <button onclick="next()">Next</button>
 </div>
 
-<!-- result -->
 <div id="result">
 <h1>🏆 Battle Finished</h1>
 <h2 id="winner"></h2>
 <button onclick="location.reload()">Play Again</button>
 </div>
 
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import {
-getFirestore, collection, addDoc, getDocs,
-doc, setDoc, onSnapshot, deleteDoc, updateDoc
-} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore,collection,addDoc,getDocs,doc,setDoc,onSnapshot,deleteDoc,updateDoc } 
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-const firebaseConfig = {
-apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain: "black-terminal-f2c91.firebaseapp.com",
-projectId: "black-terminal-f2c91",
-storageBucket: "black-terminal-f2c91.firebasestorage.app",
-messagingSenderId: "552489994197",
-appId: "1:552489994197:web:7662331264c334ffbadf5c"
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.firebasestorage.app",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-const app = initializeApp(firebaseConfig);
+const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
 let student=localStorage.getItem("studentName")||prompt("Enter name");
@@ -158,68 +103,71 @@ localStorage.setItem("studentName",student);
 
 // join waiting
 let myRef=await addDoc(collection(db,"battle_wait"),{
-name:student,
-time:Date.now()
+name:student,time:Date.now()
 });
 
-// check match
 let started=false;
+let battleId="";
+let myRole="";
+let myScore=0;
 
-setInterval(async()=>{
+// listen waiting match
+onSnapshot(collection(db,"battle_wait"),async(snapshot)=>{
+
 if(started) return;
 
-let snap=await getDocs(collection(db,"battle_wait"));
-let arr=[];
-snap.forEach(d=>arr.push({id:d.id,...d.data()}));
+let players=[];
+snapshot.forEach(doc=>players.push({id:doc.id,...doc.data()}));
 
-if(arr.length>=2){
+if(players.length>=2){
 
 started=true;
 
-let p1=arr[0];
-let p2=arr[1];
-let battleId="battle_"+Date.now();
+let p1=players[0];
+let p2=players[1];
+battleId="battle_"+Date.now();
 
 await setDoc(doc(db,"battles",battleId),{
-p1:p1.name,
-p2:p2.name,
-q:0,
-score1:0,
-score2:0,
-time:60
+p1:p1.name,p2:p2.name,score1:0,score2:0
 });
 
 await deleteDoc(doc(db,"battle_wait",p1.id));
 await deleteDoc(doc(db,"battle_wait",p2.id));
 
-startBattle(battleId,p1.name,p2.name);
-listenBattleStart();
+startBattle(p1.name,p2.name);
 }
-},2000);
+});
 
-async function startBattle(id,n1,n2){
+// listen if other user created battle
+onSnapshot(collection(db,"battles"),(snap)=>{
+if(started) return;
 
+snap.forEach(d=>{
+let data=d.data();
+if(data.p1==student||data.p2==student){
+started=true;
+battleId=d.id;
+startBattle(data.p1,data.p2);
+}
+});
+});
+
+function startBattle(n1,n2){
 document.getElementById("wait").style.display="none";
 document.getElementById("vsScreen").style.display="block";
-
 document.getElementById("p1").innerText=n1;
 document.getElementById("p2").innerText=n2;
+
+if(student==n1) myRole="score1"; else myRole="score2";
 
 setTimeout(()=>{
 document.getElementById("vsScreen").style.display="none";
 document.getElementById("quiz").style.display="block";
-},2500);
-
-listenBattle(id,n1,n2);
+loadQ();
+},2000);
 }
 
-
-
-let battleId="";
-let me="";
-let opp="";
-let myScore=0;
-
+// questions
 const quiz=[
 {q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Computer Unit","Control Unit"],a:1},
 {q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
@@ -230,91 +178,39 @@ const quiz=[
 {q:"Monitor is?",o:["Input","Output","Both","None"],a:1},
 {q:"Binary of 2?",o:["10","11","01","00"],a:0},
 {q:"Keyboard type?",o:["Input","Output","Storage","CPU"],a:0},
-{q:"ALU stands?",o:["Logic Unit","Arithmetic Logic Unit","Memory","None"],a:1},
-{q:"RAM type?",o:["Memory","CPU","Input","Output"],a:0},
-{q:"Hard disk?",o:["Storage","Input","Output","CPU"],a:0},
-{q:"Internet?",o:["Network","Software","Hardware","None"],a:0},
-{q:"USB?",o:["Port","CPU","RAM","Monitor"],a:0},
 {q:"OS example?",o:["Windows","Mouse","CPU","Cable"],a:0}
 ];
 
-
-
-function listenBattleStart(){
-
-onSnapshot(collection(db,"battles"),(snap)=>{
-snap.forEach(docu=>{
-let d=docu.data();
-
-if(d.p1==student || d.p2==student){
-if(!started){
-started=true;
-startBattle(docu.id,d.p1,d.p2);
-}
-}
-});
-});
-
-}
-
-
-
-function listenBattle(id,p1,p2){
-
-battleId=id;
-
-if(student==p1){
-me="p1";
-opp="p2";
-}else{
-me="p2";
-opp="p1";
-}
-
-let index=0;
-let selected=-1;
-let time=60;
-
-loadQ();
+let i=0,selected=-1,time=60;
 
 function loadQ(){
-let q=quiz[index];
-document.getElementById("qno").innerText=index+1;
+let q=quiz[i];
+document.getElementById("qno").innerText=i+1;
 document.getElementById("question").innerText=q.q;
 
 let html="";
-q.o.forEach((opt,i)=>{
-html+=`<div class="option" onclick="select(${i},this)">${opt}</div>`;
+q.o.forEach((opt,index)=>{
+html+=`<div class="option" onclick="select(${index},this)">${opt}</div>`;
 });
 document.getElementById("options").innerHTML=html;
 }
 
-window.select=function(i,el){
+window.select=function(index,el){
 if(selected!=-1) return;
-
-selected=i;
+selected=index;
 el.classList.add("lock");
 
-if(i==quiz[index].a){
+if(index==quiz[i].a){
 myScore++;
-updateDoc(doc(db,"battles",battleId),{
-[me=="p1"?"score1":"score2"]:myScore
-});
+updateDoc(doc(db,"battles",battleId),{[myRole]:myScore});
 }
 }
 
 window.next=function(){
-if(selected==-1){
-alert("Select option");
-return;
-}
-selected=-1;
-index++;
+if(selected==-1){alert("Select option");return;}
+selected=-1;i++;
 
-if(index>=quiz.length){
-finish();
-return;
-}
+if(i>=quiz.length){finish();return;}
 loadQ();
 }
 
@@ -322,36 +218,26 @@ loadQ();
 setInterval(()=>{
 time--;
 document.getElementById("time").innerText=time;
-
-if(time<=0){
-finish();
-}
+if(time<=0) finish();
 },1000);
 
+// finish
 function finish(){
-
 document.getElementById("quiz").style.display="none";
 document.getElementById("result").style.display="block";
 
 onSnapshot(doc(db,"battles",battleId),(snap)=>{
-
 let d=snap.data();
-
 let s1=d.score1||0;
 let s2=d.score2||0;
-
-let winText="Draw 🤝";
-
-if(s1>s2) winText=d.p1+" Wins 🏆";
-if(s2>s1) winText=d.p2+" Wins 🏆";
+let win="Draw 🤝";
+if(s1>s2) win=d.p1+" Wins 🏆";
+if(s2>s1) win=d.p2+" Wins 🏆";
 
 document.getElementById("winner").innerHTML=
-`${d.p1} : ${s1} | ${d.p2} : ${s2}<br>${winText}`;
-
+`${d.p1} : ${s1} | ${d.p2} : ${s2}<br>${win}`;
 });
-
 }
 </script>
-
 </body>
 </html>
