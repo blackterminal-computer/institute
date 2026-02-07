@@ -237,15 +237,34 @@ async function finishBattle(){
 
 clearInterval(timerInt);
 
+// save my score to firebase
+await updateDoc(doc(db,"battle_wait",myRoom),{
+[student]:myScore
+});
+
+// wait 2 sec for opponent score
+setTimeout(async()=>{
+
+let snap=await getDoc(doc(db,"battle_wait",myRoom));
+let d=snap.data();
+
+let p1=d.name;
+let p2=d.p2;
+
+let s1=d[p1]||0;
+let s2=d[p2]||0;
+
 let result="";
 let xpChange=0;
 
-if(myScore>oppScore){
-result="🏆 You Win!";
-xpChange=100;
+if(student==p1){
+if(s1>s2){ result="🏆 You Win!"; xpChange=100;}
+else if(s1<s2){ result="😢 You Lose"; xpChange=-10;}
+else{ result="🤝 Draw"; xpChange=0;}
 }else{
-result="😢 You Lose";
-xpChange=-10;
+if(s2>s1){ result="🏆 You Win!"; xpChange=100;}
+else if(s2<s1){ result="😢 You Lose"; xpChange=-10;}
+else{ result="🤝 Draw"; xpChange=0;}
 }
 
 document.getElementById("screen").innerHTML=`
@@ -256,15 +275,16 @@ document.getElementById("screen").innerHTML=`
 `;
 
 let ref=doc(db,"students",student);
-let snap=await getDoc(ref);
+let snap2=await getDoc(ref);
 
-if(snap.exists()){
-let xp=snap.data().xp||0;
+if(snap2.exists()){
+let xp=snap2.data().xp||0;
 xp+=xpChange;
 if(xp<0) xp=0;
 await updateDoc(ref,{xp:xp});
 }
 
+},2000);
 }
 </script>
 </body>
