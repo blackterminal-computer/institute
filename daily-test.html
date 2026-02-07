@@ -3,6 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Test</title>
+
 <style>
 body{
 background:#020617;
@@ -16,39 +17,34 @@ padding:20px;
 background:#0f172a;
 padding:25px;
 border-radius:18px;
-max-width:500px;
+max-width:420px;
 margin:auto;
-box-shadow:0 0 30px rgba(0,0,0,0.6);
+box-shadow:0 0 40px rgba(0,0,0,0.6);
 }
-
-h1{color:#22c55e}
 
 .option{
 background:#1e293b;
-padding:14px;
-margin:10px 0;
+padding:16px;
 border-radius:12px;
+margin:10px 0;
 cursor:pointer;
 transition:0.3s;
-border:2px solid transparent;
 }
 
-/* hover */
 .option:hover{
-border:2px solid #06b6d4;
+background:#334155;
 }
 
-/* neon selected */
 .option.selected{
 border:2px solid #22c55e;
-box-shadow:0 0 15px #22c55e,0 0 30px #22c55e inset;
-transform:scale(1.03);
+box-shadow:0 0 15px #22c55e,0 0 40px #22c55e inset;
+animation:lock 0.3s ease;
 }
 
-/* lock effect */
-.option.lock{
-opacity:0.5;
-pointer-events:none;
+@keyframes lock{
+0%{transform:scale(1)}
+50%{transform:scale(0.9)}
+100%{transform:scale(1)}
 }
 
 button{
@@ -64,20 +60,21 @@ color:white;
 }
 
 .timer{
-font-size:20px;
 color:#22c55e;
-margin-bottom:10px;
+font-size:18px;
 }
 </style>
 </head>
+
 <body>
-<div class="card" id="quizBox">
-<h1>🧠 Daily Test</h1>
-<div class="timer">⏱ <span id="time">20</span>s</div>
-<h3 id="qtext">Loading...</h3>
-<div id="options"></div>
+
+<div class="card" id="app">
+<h2>🧠 Daily Test</h2>
+<p>Loading...</p>
 </div>
+
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, updateDoc, getDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -94,92 +91,117 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let student = localStorage.getItem("studentName");
 let questions=[];
 let index=0;
 let score=0;
 let selected=null;
-let timer=20;
-let interval;
+let time=1200; // 20 min
 
-let student=localStorage.getItem("studentName")||"Guest";
+start();
 
-async function loadQ(){
-let snap=await getDocs(collection(db,"daily_mcq"));
-questions=[];
-snap.forEach(d=>questions.push(d.data()));
+async function start(){
 
-questions=questions.slice(0,20);
+let snap = await getDocs(collection(db,"daily_mcq"));
+snap.forEach(d=> questions.push(d.data()));
+
+questions = questions.sort(()=>0.5-Math.random()).slice(0,20);
+
 showQ();
+timer();
 }
 
 function showQ(){
-if(index>=questions.length){ finish(); return;}
 
-selected=null;
-timer=20;
-document.getElementById("time").innerText=timer;
-
-let q=questions[index];
-document.getElementById("qtext").innerText=(index+1)+". "+q.question;
-
-let html="";
-["a","b","c","d"].forEach(k=>{
-html+=`<div class="option" onclick="selectOpt(this,'${k}')">${q[k]}</div>`;
-});
-document.getElementById("options").innerHTML=html;
-
-clearInterval(interval);
-interval=setInterval(()=>{
-timer--;
-document.getElementById("time").innerText=timer;
-if(timer<=0) nextQ();
-},1000);
+if(index>=questions.length){
+finish();
+return;
 }
 
-window.selectOpt=function(el,val){
-if(selected) return;
+let q=questions[index];
 
-selected=val;
-el.classList.add("selected");
+document.getElementById("app").innerHTML=`
+<h2>🧠 Daily Test</h2>
+<div class="timer">⏱ ${time}s</div>
+<h3>Q${index+1}. ${q.q}</h3>
+
+<div class="option" onclick="selectOption(this,'A')">${q.a}</div>
+<div class="option" onclick="selectOption(this,'B')">${q.b}</div>
+<div class="option" onclick="selectOption(this,'C')">${q.c}</div>
+<div class="option" onclick="selectOption(this,'D')">${q.d}</div>
+
+<button onclick="nextQ()">Next</button>
+`;
+}
+
+window.selectOption = function(el,ans){
 
 document.querySelectorAll(".option").forEach(o=>{
-o.classList.add("lock");
+o.classList.remove("selected");
 });
+
+el.classList.add("selected");
+selected=ans;
 }
 
-window.nextQ=function(){
-let q=questions[index];
-if(selected && selected==q.correct.toLowerCase()) score+=2;
+window.nextQ = function(){
+
+if(!selected){
+alert("Select option");
+return;
+}
+
+if(selected==questions[index].correct){
+score++;
+}
+
+selected=null;
 index++;
 showQ();
 }
 
-async function finish(){
-clearInterval(interval);
+function timer(){
 
-let xpEarn=score;
+setInterval(()=>{
+time--;
+let t=document.querySelector(".timer");
+if(t) t.innerHTML="⏱ "+time+"s";
 
-let ref=doc(db,"students",student);
-let snap=await getDoc(ref);
-
-if(snap.exists()){
-let old=snap.data().xp||0;
-await updateDoc(ref,{xp:old+xpEarn});
-}else{
-await updateDoc(ref,{xp:xpEarn});
+if(time<=0) finish();
+},1000);
 }
 
-document.body.innerHTML=`
-<div class="card">
+async function finish(){
+
+let xpEarn = score*2;
+
+// update xp
+let ref = doc(db,"students",student);
+let snap = await getDoc(ref);
+let xp = snap.data()?.xp || 0;
+
+await updateDoc(ref,{
+xp: xp + xpEarn
+});
+
+// leaderboard
+await updateDoc(ref,{
+lastScore:score
+});
+
+document.getElementById("app").innerHTML=`
 <h1>🏁 Test Finished</h1>
 <h2 style="color:#22c55e">Score: ${score}</h2>
 <h3>XP Earned: ${xpEarn}</h3>
-<br>
-<button onclick="location.href='index.html'">🏠 Home</button>
-</div>`;
+
+<button onclick="goHome()">🏠 Home</button>
+`;
 }
 
-loadQ();
+window.goHome=function(){
+window.location.href="index.html";
+}
+
 </script>
 </body>
 </html>
