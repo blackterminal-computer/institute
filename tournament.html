@@ -10,79 +10,68 @@ background:#020617;
 color:white;
 font-family:Arial;
 text-align:center;
-}
-
-.header{
-font-size:26px;
 padding:20px;
-font-weight:bold;
 }
 
 .card{
 background:#0f172a;
-margin:20px;
-padding:20px;
+padding:25px;
 border-radius:16px;
+margin:20px auto;
+width:90%;
+max-width:420px;
+box-shadow:0 0 25px rgba(0,0,0,0.5);
 }
 
-.timer{
-font-size:28px;
-color:#22c55e;
-margin:10px;
-}
-
-.q{
-font-size:20px;
-margin:15px;
-}
-
-.opt{
-background:#1e293b;
-margin:8px;
-padding:14px;
-border-radius:10px;
-}
-
-.btn{
-background:#2563eb;
-padding:14px;
+button{
+background:linear-gradient(45deg,#3b82f6,#06b6d4);
 border:none;
-border-radius:12px;
+padding:15px;
+width:100%;
 color:white;
-font-size:16px;
-margin-top:10px;
+font-size:18px;
+border-radius:12px;
+margin-top:15px;
 }
 
-.rank{
-background:#111827;
-padding:12px;
-margin:6px;
-border-radius:8px;
+.live{
+color:#22c55e;
+font-weight:bold;
+animation:pulse 1s infinite;
 }
+
+@keyframes pulse{
+0%{opacity:1}
+50%{opacity:.4}
+100%{opacity:1}
+}
+
 </style>
 </head>
 <body>
 
-<div class="header">🏆 Live Tournament</div>
+<h1>🏆 Live Tournament</h1>
 
 <div class="card">
-<div class="timer">⏱ <span id="time">60</span>s</div>
-<div id="score">Score: 0</div>
-<div class="q" id="q">Entry fee: 50 XP</div>
-<div id="opts"></div>
-<button class="btn" onclick="start()">Enter Tournament (50 XP)</button>
+<h2>⏱ <span id="timer">60</span>s</h2>
+<h3>Score: <span id="score">0</span></h3>
+
+<h3 id="myxp">🔥 Your XP: loading...</h3>
+<p>Entry fee: 50 XP</p>
+
+<button onclick="enterTournament()">Enter Tournament (50 XP)</button>
 </div>
 
 <div class="card">
-<h3>🏆 Live Ranking</h3>
-<div id="board"></div>
+<h2>🏆 Live Ranking</h2>
+<div id="ranking">Loading...</div>
 </div>
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, getDoc }
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
 apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -97,112 +86,99 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
-let score=0;
-let t=60;
-let timer;
-let docId="";
+if(!student){
+student = prompt("Enter your name");
+localStorage.setItem("studentName",student);
+}
 
-const questions=[
-{q:"Brain of computer?",o:["CPU","RAM","Mouse","Keyboard"],a:"CPU"},
-{q:"WWW stands for?",o:["World Wide Web","Web World","Wide","None"],a:"World Wide Web"},
-{q:"Excel is?",o:["Spreadsheet","Game","OS","Browser"],a:"Spreadsheet"},
-{q:"Keyboard is?",o:["Input","Output","CPU","None"],a:"Input"},
-{q:"1 byte=?",o:["8 bit","4 bit","2 bit","16 bit"],a:"8 bit"},
-{q:"Monitor is?",o:["Output","Input","CPU","None"],a:"Output"},
-{q:"Full form RAM?",o:["Random Access Memory","Run Memory","Read","None"],a:"Random Access Memory"}
-];
+let myXP = 0;
+let score = 0;
 
-let qi=0;
+async function loadXP(){
+let ref = doc(db,"students",student);
+let snap = await getDoc(ref);
 
-// live ranking
-onSnapshot(collection(db,"tournament"), async(snap)=>{
-let arr=[];
-snap.forEach(d=> arr.push(d.data()));
-arr.sort((a,b)=>b.score-a.score);
-
-let html="";
-arr.forEach((p,i)=>{
-html+=`<div class="rank">#${i+1} ${p.name} — ${p.score}</div>`;
-});
-document.getElementById("board").innerHTML=html;
-});
-
-window.start = async function(){
-
-// check XP
-let xpRef = doc(db,"students",student);
-let snap = await getDoc(xpRef);
-let xp = snap.data().xp || 0;
-
-if(xp < 50){
-alert("❌ Need 50 XP to enter tournament");
+if(!snap.exists()){
+document.getElementById("myxp").innerHTML="🔥 Your XP: 0";
 return;
 }
 
-// deduct entry
-xp -= 50;
-await updateDoc(xpRef,{xp:xp});
+myXP = snap.data().xp || 0;
+document.getElementById("myxp").innerHTML="🔥 Your XP: "+myXP;
+}
 
-score=0;
-qi=0;
-t=60;
+loadXP();
 
-let ref=await addDoc(collection(db,"tournament"),{
-name:student,
-score:0
+window.enterTournament = async function(){
+
+if(myXP < 50){
+alert("❌ Need 50 XP to enter");
+return;
+}
+
+let ref = doc(db,"students",student);
+
+await updateDoc(ref,{
+xp: myXP - 50
 });
-docId=ref.id;
 
-timer=setInterval(()=>{
+alert("🔥 Entered Tournament");
+
+startGame();
+}
+
+function startGame(){
+
+let t=60;
+let timer=setInterval(()=>{
 t--;
-document.getElementById("time").innerText=t;
-if(t<=0) finish();
+document.getElementById("timer").innerHTML=t;
+
+if(t<=0){
+clearInterval(timer);
+finishTournament();
+}
 },1000);
 
-showQ();
-}
-
-function showQ(){
-if(qi>=questions.length){ finish(); return; }
-
-let q=questions[qi];
-document.getElementById("q").innerText=q.q;
-
-let html="";
-q.o.forEach(o=>{
-html+=`<div class="opt" onclick="ans('${o}')">${o}</div>`;
-});
-document.getElementById("opts").innerHTML=html;
-}
-
-window.ans = async function(a){
-
-let correct=questions[qi].a;
-if(a==correct){
+document.body.onclick=()=>{
 score++;
-document.getElementById("score").innerText="Score: "+score;
-await updateDoc(doc(db,"tournament",docId),{score:score});
-}
-qi++;
-showQ();
+document.getElementById("score").innerHTML=score;
 }
 
-async function finish(){
-clearInterval(timer);
-
-// reward xp
-let xpRef = doc(db,"students",student);
-let snap = await getDoc(xpRef);
-let xp=snap.data().xp||0;
-
-let reward = score*5; // reward per correct
-xp += reward;
-
-await updateDoc(xpRef,{xp:xp});
-
-alert("Tournament finished! XP earned: "+reward);
-location.reload();
 }
+
+async function finishTournament(){
+
+await addDoc(collection(db,"tournamentScores"),{
+name:student,
+score:score
+});
+
+alert("Tournament finished 🔥 Score saved");
+loadRanking();
+
+}
+
+function loadRanking(){
+
+let q = query(collection(db,"tournamentScores"),orderBy("score","desc"),limit(5));
+
+onSnapshot(q,(snap)=>{
+let html="";
+let i=1;
+
+snap.forEach(d=>{
+let data=d.data();
+html+=`#${i} ${data.name} — ${data.score}<br>`;
+i++;
+});
+
+document.getElementById("ranking").innerHTML=html;
+});
+
+}
+
+loadRanking();
 
 </script>
 </body>
