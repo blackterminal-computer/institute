@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin MCQ Control</title>
+<title>Admin MCQ Panel</title>
 
 <style>
 body{
@@ -11,63 +10,73 @@ background:#020617;
 color:white;
 font-family:Arial;
 text-align:center;
-padding:30px;
+padding-top:40px;
 }
 
 .box{
 background:#0f172a;
-padding:25px;
-border-radius:16px;
+width:92%;
 max-width:500px;
 margin:auto;
-box-shadow:0 0 30px rgba(0,0,0,0.6);
+padding:25px;
+border-radius:16px;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
 }
 
 input{
-width:90%;
-padding:10px;
-margin:6px;
-border-radius:8px;
+width:92%;
+padding:14px;
+margin:8px;
+border-radius:10px;
 border:none;
+font-size:16px;
 }
 
 button{
-padding:12px 20px;
+padding:14px 22px;
 border:none;
-border-radius:10px;
-margin-top:10px;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-color:white;
+border-radius:12px;
+margin:10px;
+font-size:16px;
 font-weight:bold;
+background:linear-gradient(90deg,#6366f1,#06b6d4);
+color:white;
+}
+
+#qno{
+font-size:22px;
+color:#22c55e;
+margin:10px;
 }
 </style>
 </head>
 <body>
 
-<div class="box">
-<h2>🔐 Admin MCQ Panel</h2>
-
-<input id="pass" placeholder="Password"><br>
+<div class="box" id="loginBox">
+<h2>🔐 Admin Login</h2>
+<input type="password" id="pass" placeholder="Enter password">
 <button onclick="login()">Login</button>
-
-<div id="panel" style="display:none">
-
-<h3>Add Question 1</h3>
-<input id="q" placeholder="Question"><br>
-<input id="a" placeholder="Option A"><br>
-<input id="b" placeholder="Option B"><br>
-<input id="c" placeholder="Option C"><br>
-<input id="d" placeholder="Option D"><br>
-<input id="ans" placeholder="Correct answer"><br>
-
-<button onclick="save()">Save Question</button>
-
 </div>
+
+<div class="box" id="panel" style="display:none">
+<h2>🧠 Daily MCQ Upload</h2>
+<div id="qno">Question 1</div>
+
+<input id="q" placeholder="Question">
+<input id="a" placeholder="Option A">
+<input id="b" placeholder="Option B">
+<input id="c" placeholder="Option C">
+<input id="d" placeholder="Option D">
+<input id="ans" placeholder="Correct answer (A/B/C/D)">
+
+<button onclick="saveQ()">Save & Next</button>
+<button onclick="resetAll()">Reset All Questions</button>
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, updateDoc }
+import { getFirestore, doc, setDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -82,23 +91,72 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let qIndex=1;
+
 window.login=function(){
 let p=document.getElementById("pass").value;
-if(p=="admin5"){
+
+if(p==="admin5"){
+document.getElementById("loginBox").style.display="none";
 document.getElementById("panel").style.display="block";
-}else alert("Wrong password");
+}else{
+alert("Wrong password");
+}
 }
 
-window.save = async function(){
-await updateDoc(doc(db,"daily_mcq","today"),{
-q1:document.getElementById("q").value,
-q1a:document.getElementById("a").value,
-q1b:document.getElementById("b").value,
-q1c:document.getElementById("c").value,
-q1d:document.getElementById("d").value,
-q1ans:document.getElementById("ans").value
-});
-alert("Saved");
+window.saveQ=async function(){
+
+let q=document.getElementById("q").value;
+let a=document.getElementById("a").value;
+let b=document.getElementById("b").value;
+let c=document.getElementById("c").value;
+let d=document.getElementById("d").value;
+let ans=document.getElementById("ans").value.toUpperCase();
+
+if(!q || !a || !b || !c || !d || !ans){
+alert("Fill all fields");
+return;
 }
+
+await setDoc(doc(db,"daily_mcq","q"+qIndex),{
+question:q,
+a:a,
+b:b,
+c:c,
+d:d,
+correct:ans
+});
+
+alert("Saved Question "+qIndex);
+
+qIndex++;
+
+if(qIndex>20){
+alert("All 20 questions uploaded");
+return;
+}
+
+document.getElementById("qno").innerHTML="Question "+qIndex;
+
+document.getElementById("q").value="";
+document.getElementById("a").value="";
+document.getElementById("b").value="";
+document.getElementById("c").value="";
+document.getElementById("d").value="";
+document.getElementById("ans").value="";
+}
+
+window.resetAll=async function(){
+for(let i=1;i<=20;i++){
+try{
+await deleteDoc(doc(db,"daily_mcq","q"+i));
+}catch{}
+}
+qIndex=1;
+document.getElementById("qno").innerHTML="Question 1";
+alert("All questions deleted");
+}
+
 </script>
-</body
+</body>
+</html>
