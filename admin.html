@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,24 +43,50 @@ font-weight:bold;
 background:linear-gradient(90deg,#6366f1,#06b6d4);
 color:white;
 }
+
+/* toast /
+.toast{
+position:fixed;
+bottom:30px;
+left:50%;
+transform:translateX(-50%);
+background:#111827;
+padding:14px 22px;
+border-radius:12px;
+font-weight:600;
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+opacity:0;
+transition:0.4s;
+z-index:9999;
+}
+
+.toast.show{
+opacity:1;
+bottom:60px;
+}
 </style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div class="box" id="login">
-<h2>Admin Login</h2>
+<h2>🔐 Admin Login</h2>
 <input type="password" id="pass" placeholder="Password">
 <button onclick="login()">Login</button>
 </div>
 
+<!-- PANEL -->
 <div class="box" id="panel" style="display:none">
 <h2>📢 Global Notification</h2>
 
-<textarea id="msg" placeholder="Enter message"></textarea><br>
+<textarea id="msg" placeholder="Enter notification text"></textarea><br>
 
-<button onclick="onNotice()">ON</button>
-<button onclick="offNotice()">OFF</button>
+<button onclick="onNotice()">🟢 ON</button>
+<button onclick="offNotice()">🔴 OFF</button>
 </div>
+
+<!-- TOAST -->
+<div id="toast" class="toast">Done</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -78,6 +105,7 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/ LOGIN /
 window.login = function(){
 let p=document.getElementById("pass").value;
 
@@ -89,20 +117,43 @@ alert("Wrong password");
 }
 }
 
-window.onNotice=async function(){
+/ toast /
+function showToast(msg,color){
+let t=document.getElementById("toast");
+t.innerHTML=msg;
+t.style.color=color;
+t.classList.add("show");
+
+setTimeout(()=>{
+t.classList.remove("show");
+},2500);
+}
+
+/ ON notice /
+window.onNotice = async function(){
 let t=document.getElementById("msg").value;
+
+try{
 await updateDoc(doc(db,"notices","main"),{
 text:t,
 status:"on"
 });
-alert("Notification ON");
+showToast("✔ Notification sent","#22c55e");
+}catch{
+showToast("❌ Not sent","#ef4444");
+}
 }
 
-window.offNotice=async function(){
+/ OFF notice */
+window.offNotice = async function(){
+try{
 await updateDoc(doc(db,"notices","main"),{
 status:"off"
 });
-alert("Notification OFF");
+showToast("🔕 Notification OFF","#facc15");
+}catch{
+showToast("❌ Error","#ef4444");
+}
 }
 </script>
 </body>
