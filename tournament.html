@@ -3,166 +3,64 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Jackpot Tournament</title>
-
 <style>
 body{
-margin:0;
-font-family:Arial;
-background:linear-gradient(180deg,#020617,#020617,#031036);
+background:#020617;
 color:white;
-}
-
-/* header */
-.header{
-padding:22px;
-font-size:26px;
-font-weight:bold;
-}
-
-.xpbox{
-float:right;
-background:#071428;
-padding:8px 14px;
-border-radius:12px;
-color:#22c55e;
-font-weight:bold;
-}
-
-/* main card */
-.main{
-padding:18px;
+font-family:Arial;
+text-align:center;
+padding:20px;
 }
 
 .card{
-background:linear-gradient(145deg,#0f172a,#020617);
-padding:26px;
+background:#0f172a;
+padding:25px;
 border-radius:18px;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-margin-bottom:20px;
-position:relative;
-overflow:hidden;
-}
-
-/* animated border */
-.card::before{
-content:"";
-position:absolute;
-inset:-2px;
-border-radius:20px;
-background:linear-gradient(90deg,#06b6d4,#3b82f6,#8b5cf6,#06b6d4);
-background-size:300%;
-z-index:-1;
-animation:borderMove 6s linear infinite;
-}
-
-@keyframes borderMove{
-0%{background-position:0%}
-100%{background-position:300%}
-}
-
-.title{
-font-size:22px;
-font-weight:bold;
-margin-bottom:8px;
-}
-
-.sub{
-color:#94a3b8;
-margin-bottom:14px;
-}
-
-.pool{
-font-size:20px;
-color:#facc15;
-margin-bottom:10px;
-}
-
-/* live pulse */
-.live{
-display:inline-block;
-background:#052e1f;
-color:#22c55e;
-padding:8px 16px;
-border-radius:30px;
-font-weight:bold;
-animation:pulse 1.5s infinite;
-margin-top:10px;
-}
-
-@keyframes pulse{
-0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}
-70%{box-shadow:0 0 0 14px rgba(34,197,94,0)}
-100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
-}
-
-/* button */
-.btn{
-margin-top:20px;
-width:100%;
-padding:16px;
-border:none;
-border-radius:14px;
-font-size:17px;
-font-weight:bold;
-color:white;
-background:linear-gradient(90deg,#4f46e5,#06b6d4);
-box-shadow:0 10px 30px rgba(0,0,0,0.6);
-}
-
-.btn:active{
-transform:scale(.95);
-}
-
-/* ranking */
-.rankbox{
-background:linear-gradient(145deg,#0f172a,#020617);
-padding:20px;
-border-radius:18px;
+width:92%;
+max-width:420px;
+margin:20px auto;
 box-shadow:0 0 30px rgba(0,0,0,0.5);
 }
 
-.ranktitle{
-font-size:20px;
-margin-bottom:12px;
-}
+h1{margin-top:10px}
 
-.rank{
-padding:10px;
-border-bottom:1px solid rgba(255,255,255,0.08);
+.btn{
+margin-top:20px;
+padding:14px 20px;
+border:none;
+border-radius:12px;
+background:linear-gradient(45deg,#6366f1,#06b6d4);
+color:white;
+font-size:16px;
+width:90%;
 }
-
+input{
+margin-top:15px;
+padding:14px;
+border-radius:12px;
+border:none;
+width:85%;
+}
 </style>
 </head>
-
 <body>
-
-<div class="header">
-🏆 Daily Jackpot Tournament
-<span class="xpbox">🔥 XP: <span id="myxp">0</span></span>
+<h1>🏆 Daily Jackpot Tournament</h1>
+<h3 id="myxp">🔥 Your XP: Loading...</h3>
+<div class="card" id="mainCard">
+<h2>💰 Jackpot Pool: <span id="pool">0</span> XP</h2>
+<p>Entry Fee: 50 XP</p>
+<p>⏱ Time: 60s</p>
+<p>Score: <span id="score">0</span></p>
 </div>
-
-<div class="main">
-
 <div class="card">
-<div class="title">💰 Jackpot Pool: <span id="pool">0</span> XP</div>
-<div class="sub">Entry fee: 50 XP • Time: 60s</div>
-
-<div class="live">● LIVE TOURNAMENT</div>
-
-<button class="btn" onclick="enterTournament()">Enter Tournament</button>
+<h2>🏆 Live Ranking</h2>
+<div id="ranking">Loading...</div>
 </div>
-
-<div class="rankbox">
-<div class="ranktitle">🏆 Live Ranking</div>
-<div id="ranking"></div>
-</div>
-
-</div>
-
-<!-- firebase -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc, getDocs } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
 apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -176,60 +74,138 @@ appId: "1:552489994197:web:7662331264c334ffbadf5c"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let student = localStorage.getItem("studentName");
+let student = localStorage.getItem("studentName") || "Guest";
+
+/* USER XP */
 let myxp=0;
-
-/* load xp */
-async function loadXP(){
-let ref = doc(db,"students",student);
-let snap = await getDoc(ref);
+const xpRef = doc(db,"students",student);
+const snap = await getDoc(xpRef);
 if(snap.exists()){
-myxp = snap.data().xp || 0;
-document.getElementById("myxp").innerText=myxp;
+myxp=snap.data().xp || 0;
 }
-}
-loadXP();
+document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
 
-/* enter tournament */
+/* QUESTIONS */
+const questions=[
+{q:"HTML full form?",a:"hyper"},
+{q:"CPU full form?",a:"central"},
+{q:"RAM kya hai?",a:"memory"},
+{q:"Mouse kya hai?",a:"input"},
+{q:"Internet kya hai?",a:"network"},
+{q:"1 byte = ?",a:"8"},
+{q:"Google kya hai?",a:"search"},
+{q:"Keyboard kya hai?",a:"input"},
+{q:"Monitor kya hai?",a:"output"},
+{q:"WWW full form?",a:"world"}
+];
+
+let qIndex=0;
+let score=0;
+let time=60;
+let playing=false;
+
+/* ENTER */
 window.enterTournament = async function(){
 
 if(myxp<50){
-alert("Need 50 XP to enter");
+alert("❌ Need 50 XP");
 return;
 }
 
 /* minus xp */
-let ref = doc(db,"students",student);
-await updateDoc(ref,{xp:myxp-50});
+await updateDoc(xpRef,{xp:myxp-50});
+myxp-=50;
+document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
 
-alert("Entered Tournament 🚀");
+alert("🔥 Tournament Started");
 
-/* add score doc */
-await addDoc(collection(db,"tournament"),{
-name:student,
-score:0
-});
-
+startGame();
 };
 
-/* live ranking */
-onSnapshot(collection(db,"tournament"),(snap)=>{
+/* GAME START */
+function startGame(){
+
+playing=true;
+
+document.getElementById("mainCard").innerHTML=`
+<h2 id="timer">⏱ 60s</h2>
+<h3 id="question">Loading...</h3>
+
+<input id="ans" placeholder="Type answer">
+
+<br>
+<button class="btn" onclick="submitAns()">Submit</button>
+`;
+
+nextQ();
+
+/* timer */
+let t=setInterval(()=>{
+time--;
+document.getElementById("timer").innerText="⏱ "+time+"s";
+
+if(time<=0){
+clearInterval(t);
+finishGame();
+}
+},1000);
+}
+
+/* NEXT Q */
+function nextQ(){
+if(qIndex>=questions.length) qIndex=0;
+document.getElementById("question").innerText=questions[qIndex].q;
+document.getElementById("ans").value="";
+}
+
+/* SUBMIT */
+window.submitAns=function(){
+
+let val=document.getElementById("ans").value.toLowerCase();
+
+if(val.includes(questions[qIndex].a)){
+score++;
+document.getElementById("score").innerText=score;
+}
+
+qIndex++;
+nextQ();
+};
+
+/* FINISH */
+async function finishGame(){
+
+document.getElementById("mainCard").innerHTML=
+`<h1>🏁 Finished</h1>
+<h2>Your Score: ${score}</h2>`;
+
+/* save score */
+await addDoc(collection(db,"tournament"),{
+name:student,
+score:score
+});
+
+loadRanking();
+}
+
+/* RANKING */
+async function loadRanking(){
+let snap=await getDocs(collection(db,"tournament"));
 let arr=[];
-snap.forEach(d=> arr.push(d.data()));
+snap.forEach(d=>arr.push(d.data()));
 
 arr.sort((a,b)=>b.score-a.score);
 
 let html="";
-arr.forEach((p,i)=>{
-html+=`<div class="rank">#${i+1} ${p.name} — ${p.score}</div>`;
+arr.slice(0,10).forEach((d,i)=>{
+html+=`#${i+1} ${d.name} — ${d.score}<br>`;
 });
 
 document.getElementById("ranking").innerHTML=html;
-document.getElementById("pool").innerText=arr.length*50;
+}
 
-});
+loadRanking();
 
 </script>
-
 </body>
 </html>
