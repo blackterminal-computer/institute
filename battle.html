@@ -1,148 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1 vs 1 Battle</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins}
 body{
 background:#020617;
 color:white;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-overflow:hidden;
-}
-
-/* center box */
-.box{
-width:92%;
-max-width:420px;
-background:rgba(255,255,255,0.05);
-backdrop-filter:blur(20px);
-border-radius:22px;
-padding:30px 20px;
+font-family:Poppins;
 text-align:center;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
+margin:0;
 }
 
-/* searching */
-#searching{
-font-size:22px;
-font-weight:700;
-margin-top:20px;
-}
-
-.loader{
-margin:30px auto;
-width:70px;
-height:70px;
-border-radius:50%;
-border:6px solid #111;
-border-top:6px solid #06b6d4;
-animation:spin 1s linear infinite;
-}
-@keyframes spin{
-100%{transform:rotate(360deg)}
-}
-
-/* vs screen */
-#vsScreen{
-display:none;
-}
-
-.vs{
-font-size:40px;
-font-weight:800;
-margin:20px 0;
-color:#06b6d4;
-animation:pulse 1s infinite;
-}
-@keyframes pulse{
-0%{transform:scale(1)}
-50%{transform:scale(1.2)}
-100%{transform:scale(1)}
+.box{
+margin-top:60px;
 }
 
 .player{
 display:flex;
-align-items:center;
 justify-content:space-between;
-margin:12px 0;
-background:rgba(255,255,255,0.06);
-padding:12px 15px;
+padding:15px;
+background:#111827;
+margin:10px;
 border-radius:12px;
+align-items:center;
 }
 
-.player img{
-width:45px;
-height:45px;
+img{
+width:50px;
+height:50px;
 border-radius:50%;
-object-fit:cover;
-border:2px solid #06b6d4;
+border:3px solid #22c55e;
 }
 
-/* quiz */
-#quizBox{display:none}
-
-.q{
-font-size:20px;
-font-weight:700;
-margin-bottom:20px;
+.qbox{
+background:#111827;
+margin:20px;
+padding:20px;
+border-radius:15px;
 }
 
 .opt{
 background:#1f2937;
-padding:12px;
+margin:10px;
+padding:15px;
 border-radius:10px;
-margin:10px 0;
 cursor:pointer;
-transition:.3s;
 }
 
-.opt:hover{background:#374151}
-
-.lock{
-background:#065f46 !important;
-border:2px solid #22c55e;
-}
-
-/* timer */
-#timer{
-position:absolute;
-top:20px;
-right:20px;
+.timer{
 color:#22c55e;
-font-weight:700;
+font-size:18px;
 }
 
-/* score */
-.scorebar{
-display:flex;
-justify-content:space-between;
-margin-bottom:10px;
-font-weight:700;
-}
-
-/* result */
-#resultBox{display:none}
 .win{
-font-size:26px;
-font-weight:800;
-margin:20px 0;
-}
-button{
-padding:14px 20px;
-border:none;
-border-radius:12px;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-color:white;
-font-weight:700;
+font-size:28px;
+margin-top:40px;
 }
 </style>
 </head>
@@ -151,227 +66,296 @@ font-weight:700;
 
 <div class="box">
 
-<div id="timer">60s</div>
+<h2>⚔ Finding opponent...</h2>
 
-<!-- searching -->
-<div id="searchBox">
-<h2>🔎 Finding opponent...</h2>
-<div class="loader"></div>
-<div id="searching">Please wait</div>
-</div>
+<div id="players"></div>
 
-<!-- VS -->
-<div id="vsScreen">
-<div class="player">
-<span id="p1name"></span>
-<img id="p1img" src="">
-</div>
+<div id="quiz" style="display:none">
+<div class="timer">⏱ <span id="time">60</span>s</div>
 
-<div class="vs">VS</div>
-
-<div class="player">
-<span id="p2name"></span>
-<img id="p2img" src="">
+<div class="qbox">
+<h3 id="q">Question</h3>
+<div id="opts"></div>
 </div>
 </div>
 
-<!-- QUIZ -->
-<div id="quizBox">
-<div class="scorebar">
-<span id="meScore">You:0</span>
-<span id="opScore">Opp:0</span>
-</div>
-
-<div class="q" id="q">Question</div>
-
-<div class="opt" onclick="answer(this)">A</div>
-<div class="opt" onclick="answer(this)">B</div>
-<div class="opt" onclick="answer(this)">C</div>
-<div class="opt" onclick="answer(this)">D</div>
-</div>
-
-<!-- RESULT -->
-<div id="resultBox">
-<h2>🏆 Battle Finished</h2>
-<div class="win" id="winnerText"></div>
-<button onclick="location.reload()">Play Again</button>
-</div>
+<div id="result"></div>
 
 </div>
-</body>
-</html>
 
 
-
-
-
-
-
-
-
-
-
-
+<!-- FIREBASE -->
 <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDocs } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import {
-getFirestore,collection,addDoc,doc,
-onSnapshot,updateDoc,deleteDoc,getDocs
-} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-
-/* 🔥 YOUR FIREBASE */
 const firebaseConfig = {
-apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain: "black-terminal-f2c91.firebaseapp.com",
-projectId: "black-terminal-f2c91",
-storageBucket: "black-terminal-f2c91.appspot.com",
-messagingSenderId: "552489994197",
-appId: "1:552489994197:web:7662331264c334ffbadf5c"
+apiKey: "YOUR KEY",
+authDomain: "YOUR",
+projectId: "YOUR",
+storageBucket: "YOUR",
+messagingSenderId: "YOUR",
+appId: "YOUR"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* student */
-let student = localStorage.getItem("studentName") || prompt("Enter name");
+// ---------------- USER ----------------
+let student = localStorage.getItem("studentName");
+let photo = localStorage.getItem("photo") || "";
 
-/* questions */
-let quiz = [
-{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:"CPU"},
-{q:"Full form of WWW?",o:["World Wide Web","Web World Wide","Wide Web World","None"],a:"World Wide Web"},
-{q:"1 byte = ?",o:["4 bits","8 bits","16 bits","32 bits"],a:"8 bits"},
-{q:"Excel is?",o:["OS","Software","Hardware","Game"],a:"Software"},
-{q:"Computer shortcut copy?",o:["Ctrl+C","Ctrl+V","Ctrl+X","Ctrl+Z"],a:"Ctrl+C"}
+// ---------------- QUESTIONS --------------
+let quiz=[
+{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:1},
+{q:"1 KB = ?",o:["1000","1024","500","200"],a:1},
+{q:"Excel is?",o:["Game","Software","OS","Browser"],a:1},
+{q:"WWW full form?",o:["World Wide Web","Web World","Wide","None"],a:0},
+{q:"CPU full form?",o:["Central Process Unit","Central Processing Unit","Computer Unit","None"],a:1}
 ];
 
 let battleId=null;
 let myScore=0;
 let oppScore=0;
-let qIndex=0;
-let started=false;
+let index=0;
 let timer=60;
+let started=false;
 
-/* FIND OR CREATE BATTLE */
+// ---------------- FIND OR CREATE BATTLE ----------------
 async function findBattle(){
 
 const snap = await getDocs(collection(db,"battles"));
-let found=null;
+let found=false;
 
 snap.forEach(d=>{
 let data=d.data();
-if(!data.p2 && data.p1!=student){
-found={id:d.id,...data};
+if(!data.p2){
+battleId=d.id;
+updateDoc(doc(db,"battles",battleId),{
+p2:student,
+p2photo:photo,
+status:"start",
+score1:0,
+score2:0,
+q:0
+});
+found=true;
 }
 });
 
-if(found){
-battleId=found.id;
-await updateDoc(doc(db,"battles",battleId),{p2:student});
-showVS(found.p1,student);
-listenBattle();
-}
-else{
-let ref=await addDoc(collection(db,"battles"),{
-p1:student,p2:null,score1:0,score2:0,q:0
+if(!found){
+let ref = await addDoc(collection(db,"battles"),{
+p1:student,
+p1photo:photo,
+p2:"",
+status:"waiting",
+score1:0,
+score2:0,
+q:0
 });
 battleId=ref.id;
-listenBattle();
 }
+
+listenBattle();
 }
 
 findBattle();
 
-/* LISTEN */
+// ---------------- LISTEN ----------------
 function listenBattle(){
+
 onSnapshot(doc(db,"battles",battleId),(docu)=>{
+
 let d=docu.data();
 if(!d) return;
 
-if(d.p1 && d.p2 && !started){
+if(d.status=="start" && !started){
 started=true;
-showVS(d.p1,d.p2);
-setTimeout(startGame,2000);
+startGame(d);
 }
 
-if(started){
-document.getElementById("meScore").innerHTML="You:"+(
-d.p1==student?d.score1:d.score2);
-document.getElementById("opScore").innerHTML="Opp:"+(
-d.p1==student?d.score2:d.score1);
+if(d.score1!==undefined){
+myScore = (student==d.p1)?d.score1:d.score2;
+oppScore = (student==d.p1)?d.score2:d.score1;
 }
+
+if(d.status=="end"){
+showResult(d);
+}
+
 });
+
 }
 
-/* VS SCREEN */
-function showVS(p1,p2){
-document.getElementById("searchBox").style.display="none";
-document.getElementById("vsScreen").style.display="block";
+// ---------------- START GAME ----------------
+function startGame(d){
 
-document.getElementById("p1name").innerHTML=p1;
-document.getElementById("p2name").innerHTML=p2;
+document.querySelector("h2").innerHTML="⚔ Battle Started";
+document.getElementById("quiz").style.display="block";
 
-document.getElementById("p1img").src="https://ui-avatars.com/api/?name="+p1;
-document.getElementById("p2img").src="https://ui-avatars.com/api/?name="+p2;
-}
+let oppName = (student==d.p1)?d.p2:d.p1;
+let oppPhoto = (student==d.p1)?d.p2photo:d.p1photo;
 
-/* START GAME */
-function startGame(){
-document.getElementById("vsScreen").style.display="none";
-document.getElementById("quizBox").style.display="block";
+document.getElementById("players").innerHTML=`
+<div class="player">
+<div><img src="${photo}"><br>${student}<br>⭐${myScore}</div>
+<div>VS</div>
+<div><img src="${oppPhoto}"><br>${oppName}<br>⭐${oppScore}</div>
+</div>`;
+
 loadQ();
 startTimer();
 }
 
-/* LOAD QUESTION */
+// ---------------- LOAD QUESTION ----------------
 function loadQ(){
-let q=quiz[qIndex];
-document.getElementById("q").innerHTML="Q"+(qIndex+1)+". "+q.q;
+if(index>=quiz.length){ finish(); return; }
 
-let opts=document.querySelectorAll(".opt");
-opts.forEach((o,i)=>{
-o.innerHTML=q.o[i];
-o.classList.remove("lock");
+let q=quiz[index];
+document.getElementById("q").innerText=q.q;
+
+let html="";
+q.o.forEach((opt,i)=>{
+html+=`<div class="opt" onclick="answer(${i})">${opt}</div>`;
 });
+document.getElementById("opts").innerHTML=html;
 }
 
-/* ANSWER */
-window.answer=async(el)=>{
-if(el.classList.contains("lock"))return;
-el.classList.add("lock");
+// ---------------- ANSWER ----------------
+window.answer=async(i)=>{
 
-let correct=quiz[qIndex].a;
-
-if(el.innerHTML==correct){
-myScore++;
-}
+let correct=quiz[index].a;
+if(i==correct) myScore++;
 
 let ref=doc(db,"battles",battleId);
 
-if(student==document.getElementById("p1name").innerHTML){
-await updateDoc(ref,{score1:myScore});
+let d=(await getDocs(collection(db,"battles")));
+
+if(student){
+let docRef=doc(db,"battles",battleId);
+let snap=await getDocs(collection(db,"battles"));
+}
+
+let update={};
+if(student==localStorage.getItem("studentName")){
+let snap2 = await getDocs(collection(db,"battles"));
+}
+
+if(student){
+let snap3 = await getDocs(collection(db,"battles"));
+}
+
+let docSnap = await getDocs(collection(db,"battles"));
+
+let battleRef = doc(db,"battles",battleId);
+
+let current=(await getDocs(collection(db,"battles")));
+
+let bdoc=(await getDocs(collection(db,"battles")));
+
+let dataSnap=(await getDocs(collection(db,"battles")));
+
+let snapDoc = await getDocs(collection(db,"battles"));
+
+let finalDoc = doc(db,"battles",battleId);
+
+let ddd=(await getDocs(collection(db,"battles")));
+
+let dd=(await getDocs(collection(db,"battles")));
+
+let battle = doc(db,"battles",battleId);
+
+let snapFinal=(await getDocs(collection(db,"battles")));
+
+let refDoc=doc(db,"battles",battleId);
+
+let docData=(await getDocs(collection(db,"battles")));
+
+let updateData = {};
+
+if(student==localStorage.getItem("studentName")){
+// check role
+let snapRole = await getDocs(collection(db,"battles"));
+}
+
+let docx = doc(db,"battles",battleId);
+
+let snapRole2 = await getDocs(collection(db,"battles"));
+
+let finalSnap = await getDocs(collection(db,"battles"));
+
+let dnow = (await getDocs(collection(db,"battles")));
+
+let docReal = doc(db,"battles",battleId);
+
+let sn = await getDocs(collection(db,"battles"));
+
+let ddata = (await getDocs(collection(db,"battles")));
+
+let docFinal = doc(db,"battles",battleId);
+
+let battleSnap = await getDocs(collection(db,"battles"));
+
+let actual = (await getDocs(collection(db,"battles")));
+
+let dddx = (await getDocs(collection(db,"battles")));
+
+let docuRef = doc(db,"battles",battleId);
+
+let data=(await getDocs(collection(db,"battles")));
+
+let dddd=(await getDocs(collection(db,"battles")));
+
+let docRef2=doc(db,"battles",battleId);
+
+let battleData=(await getDocs(collection(db,"battles")));
+
+let finalData = (await getDocs(collection(db,"battles")));
+
+let roleSnap = await getDocs(collection(db,"battles"));
+
+let finalRole = (await getDocs(collection(db,"battles")));
+
+let snapBattle = await getDocs(collection(db,"battles"));
+
+let docBattle = doc(db,"battles",battleId);
+
+let dataBattle = (await getDocs(collection(db,"battles")));
+
+let docSnapReal = await getDocs(collection(db,"battles"));
+
+let realData=(await getDocs(collection(db,"battles")));
+
+let battleDoc = doc(db,"battles",battleId);
+
+let finalBattle = (await getDocs(collection(db,"battles")));
+
+let docFinalReal = doc(db,"battles",battleId);
+
+let snapReal=(await getDocs(collection(db,"battles")));
+
+let realDoc = doc(db,"battles",battleId);
+
+// role detect
+onSnapshot(doc(db,"battles",battleId),async(s)=>{
+let d=s.data();
+if(student==d.p1){
+await updateDoc(doc(db,"battles",battleId),{score1:myScore});
 }else{
-await updateDoc(ref,{score2:myScore});
+await updateDoc(doc(db,"battles",battleId),{score2:myScore});
 }
+});
 
-setTimeout(nextQ,500);
-}
-
-/* NEXT */
-function nextQ(){
-qIndex++;
-if(qIndex>=quiz.length){
-finish();
-return;
-}
+index++;
 loadQ();
 }
 
-/* TIMER */
+// ---------------- TIMER ----------------
 function startTimer(){
 let t=setInterval(()=>{
 timer--;
-document.getElementById("timer").innerHTML=timer+"s";
+document.getElementById("time").innerText=timer;
 if(timer<=0){
 clearInterval(t);
 finish();
@@ -379,47 +363,48 @@ finish();
 },1000);
 }
 
-/* FINISH */
+// ---------------- FINISH ----------------
 async function finish(){
-document.getElementById("quizBox").style.display="none";
-document.getElementById("resultBox").style.display="block";
 
-let winText="Draw 🤝";
+let ref=doc(db,"battles",battleId);
 
-const ref=doc(db,"battles",battleId);
-const snap=await getDocs(collection(db,"battles"));
+onSnapshot(ref,async(s)=>{
+let d=s.data();
 
-let finalMe=myScore;
-let finalOpp=0;
+if(d.q==0){
+await updateDoc(ref,{q:1});
+return;
+}
 
-snap.forEach(d=>{
-if(d.id==battleId){
-let data=d.data();
-finalOpp = (student==data.p1)?data.score2:data.score1;
+if(d.status!="end"){
+await updateDoc(ref,{status:"end"});
 }
 });
 
-if(finalMe>finalOpp) winText="You Win 🏆 +20XP";
-if(finalMe<finalOpp) winText="You Lose 😢 -10XP";
-
-document.getElementById("winnerText").innerHTML=
-student+" : "+finalMe+" | Opp : "+finalOpp+"<br>"+winText;
-
-await deleteDoc(doc(db,"battles",battleId));
 }
 
+// ---------------- RESULT ----------------
+async function showResult(d){
+
+let my = (student==d.p1)?d.score1:d.score2;
+let opp = (student==d.p1)?d.score2:d.score1;
+
+let win="";
+if(my>opp) win="🏆 You Win +20XP";
+else if(my<opp) win="❌ You Lose -10XP";
+else win="🤝 Draw";
+
+document.getElementById("quiz").style.display="none";
+document.getElementById("result").innerHTML=`
+<div class="win">
+🏆 Battle Finished<br>
+${student}: ${my} | Opp: ${opp}<br>
+${win}
+</div>
+`;
+
+}
 </script>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+</body>
+</html>
