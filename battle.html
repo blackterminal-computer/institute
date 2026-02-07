@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simple Battle</title>
+<title>1 vs 1 Battle</title>
 
 <style>
 body{
@@ -15,58 +15,66 @@ padding-top:60px;
 
 .card{
 background:#0f172a;
-padding:20px;
+padding:25px;
 border-radius:16px;
 width:92%;
 max-width:420px;
 margin:auto;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
 }
 
-button{
+.avatar{
+width:70px;
+height:70px;
+border-radius:50%;
+background:#1e293b;
+display:inline-block;
+margin:10px;
+}
+
+h2{color:#22c55e}
+
+.option{
+background:#1e293b;
 padding:14px;
-border:none;
-border-radius:10px;
 margin:8px;
-font-weight:bold;
-width:90%;
-background:#2563eb;
-color:white;
+border-radius:10px;
+cursor:pointer;
 }
 
-.win{color:#22c55e;font-size:22px}
-.lose{color:#ef4444;font-size:22px}
-.draw{color:orange;font-size:22px}
+.option:active{
+transform:scale(0.96);
+}
+
+.timer{
+color:#22c55e;
+font-size:20px;
+margin:10px;
+}
 </style>
 </head>
+
 <body>
 
-<div class="card">
-
-<h2 id="status">🔍 Finding opponent...</h2>
-
-<h3 id="question"></h3>
-<div id="options"></div>
-
-<h3>Score: <span id="myscore">0</span></h3>
-<h3>Opponent: <span id="oppscore">0</span></h3>
-
-<h2 id="result"></h2>
-
+<div class="card" id="screen">
+<h2>🔍 Searching opponent...</h2>
+<p>Please wait</p>
 </div>
+
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, onSnapshot, getDoc }
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain: "black-terminal-f2c91.firebaseapp.com",
-projectId: "black-terminal-f2c91",
-storageBucket: "black-terminal-f2c91.appspot.com",
-messagingSenderId: "552489994197",
-appId: "1:552489994197:web:7662331264c334ffbadf5c"
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -74,168 +82,190 @@ const db = getFirestore(app);
 
 let student = localStorage.getItem("studentName");
 if(!student){
-student = prompt("Enter name");
+student = prompt("Enter your name");
 localStorage.setItem("studentName",student);
 }
 
-let myScore=0;
-let battleId="";
-let qIndex=0;
+let myRoom="";
+let opponent="";
+let isHost=false;
 
-let questions=[
-{q:"Brain of computer?",o:["RAM","CPU","Mouse","Keyboard"],a:"CPU"},
-{q:"Copy shortcut?",o:["Ctrl+C","Ctrl+V","Ctrl+X","Ctrl+P"],a:"Ctrl+C"},
-{q:"WWW full form?",o:["World Wide Web","Web World","Wide Web","None"],a:"World Wide Web"},
-{q:"Excel file?",o:[".xls",".png",".mp3",".exe"],a:".xls"},
-{q:"Input device?",o:["Keyboard","Monitor","Speaker","Printer"],a:"Keyboard"}
-];
+startMatch();
 
-// MATCH
-async function findMatch(){
+async function startMatch(){
 
-let snap=await getDocs(collection(db,"battles"));
-let found=false;
+document.getElementById("screen").innerHTML=`
+<h2>🔍 Searching opponent...</h2>
+<p>Please wait</p>
+`;
 
-snap.forEach(async(d)=>{
-let data=d.data();
-if(!data.p2 && data.p1!=student && !found){
-found=true;
+let waiting = collection(db,"battle_wait");
 
-battleId=d.id;
+onSnapshot(waiting, async(snap)=>{
 
-await updateDoc(doc(db,"battles",battleId),{
+let players=[];
+snap.forEach(d=> players.push({id:d.id,...d.data()}));
+
+let other = players.find(p=>p.name!=student);
+
+if(other && !myRoom){
+
+// join opponent
+myRoom = other.id;
+opponent = other.name;
+
+await updateDoc(doc(db,"battle_wait",other.id),{
 p2:student,
-score1:0,
-score2:0,
-finished:false
+status:"start"
 });
 
-listenBattle();
+listenBattle(other.id);
 }
+
 });
 
-if(!found){
-let ref=await addDoc(collection(db,"battles"),{
-p1:student,
-p2:"",
-score1:0,
-score2:0,
-finished:false
+let ref = await addDoc(collection(db,"battle_wait"),{
+name:student,
+status:"waiting"
 });
-battleId=ref.id;
-listenBattle();
-}
+
+myRoom = ref.id;
+listenBattle(ref.id);
 
 }
 
-findMatch();
+function listenBattle(id){
 
-// LISTEN
-function listenBattle(){
-
-onSnapshot(doc(db,"battles",battleId),(snap)=>{
-
+onSnapshot(doc(db,"battle_wait",id),(snap)=>{
 let d=snap.data();
 if(!d) return;
 
-if(d.p2){
-document.getElementById("status").innerHTML="⚔ "+d.p1+" VS "+d.p2;
-showQuestion();
+if(d.status=="start" && d.p2){
+if(d.name==student){
+opponent=d.p2;
+}else{
+opponent=d.name;
 }
 
-let my=(student==d.p1)?d.score1:d.score2;
-let opp=(student==d.p1)?d.score2:d.score1;
-
-document.getElementById("myscore").innerHTML=my;
-document.getElementById("oppscore").innerHTML=opp;
-
-if(d.finished){
-showResult(d);
+startGame();
 }
-
 });
 
 }
 
-// QUESTION
-function showQuestion(){
 
-if(qIndex>=questions.length){
+let questions=[
+{q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Keyboard",ans:"b"},
+{q:"Full form of HTML?",a:"Hyper Trainer",b:"Hyper Text Markup Language",c:"High Text",d:"None",ans:"b"},
+{q:"Which is input?",a:"Monitor",b:"Printer",c:"Keyboard",d:"Speaker",ans:"c"},
+{q:"1 KB = ?",a:"1000",b:"1024",c:"500",d:"2000",ans:"b"},
+{q:"Windows is?",a:"OS",b:"Game",c:"Browser",d:"File",ans:"a"},
+{q:"Excel is?",a:"OS",b:"Software",c:"Hardware",d:"None",ans:"b"},
+{q:"Mouse is?",a:"Output",b:"Input",c:"CPU",d:"RAM",ans:"b"},
+{q:"Printer is?",a:"Input",b:"Output",c:"CPU",d:"RAM",ans:"b"},
+{q:"Binary of 2?",a:"10",b:"11",c:"01",d:"00",ans:"a"},
+{q:"Internet needs?",a:"CPU",b:"Network",c:"RAM",d:"Mouse",ans:"b"}
+];
+
+let qIndex=0;
+let myScore=0;
+let oppScore=0;
+let time=10;
+let timerInt;
+
+function startGame(){
+
+document.getElementById("screen").innerHTML=`
+<h2>⚔ ${student} vs ${opponent}</h2>
+<div class="avatar"></div>
+<div class="avatar"></div>
+<div class="timer">⏱ <span id="t">10</span></div>
+<h3 id="q"></h3>
+<div id="opts"></div>
+`;
+
+loadQ();
+}
+
+function loadQ(){
+
+if(qIndex>=10){
 finishBattle();
 return;
 }
 
+time=10;
+document.getElementById("t").innerText=time;
+
 let q=questions[qIndex];
-document.getElementById("question").innerHTML=q.q;
 
-let html="";
-q.o.forEach(opt=>{
-html+=`<button onclick="answer('${opt}')">${opt}</button>`;
-});
+document.getElementById("q").innerText="Q"+(qIndex+1)+". "+q.q;
 
-document.getElementById("options").innerHTML=html;
+document.getElementById("opts").innerHTML=`
+<div class="option" onclick="ans('a')">${q.a}</div>
+<div class="option" onclick="ans('b')">${q.b}</div>
+<div class="option" onclick="ans('c')">${q.c}</div>
+<div class="option" onclick="ans('d')">${q.d}</div>
+`;
+
+clearInterval(timerInt);
+timerInt=setInterval(()=>{
+time--;
+document.getElementById("t").innerText=time;
+
+if(time<=0){
+qIndex++;
+loadQ();
+}
+},1000);
+
 }
 
-// ANSWER
-window.answer = async function(opt){
+window.ans=function(a){
 
 let q=questions[qIndex];
-if(opt==q.a) myScore++;
 
-let ref=doc(db,"battles",battleId);
-let snap=await getDoc(ref);
-let d=snap.data();
-
-if(student==d.p1){
-await updateDoc(ref,{score1:myScore});
-}else{
-await updateDoc(ref,{score2:myScore});
+if(a==q.ans){
+myScore++;
 }
 
 qIndex++;
-showQuestion();
+loadQ();
 }
 
-// FINISH
 async function finishBattle(){
 
-let ref=doc(db,"battles",battleId);
+clearInterval(timerInt);
+
+let result="";
+let xpChange=0;
+
+if(myScore>oppScore){
+result="🏆 You Win!";
+xpChange=100;
+}else{
+result="😢 You Lose";
+xpChange=-10;
+}
+
+document.getElementById("screen").innerHTML=`
+<h1>${result}</h1>
+<h2>Your Score: ${myScore}</h2>
+<h3>XP ${xpChange>0?"+":""}${xpChange}</h3>
+<button onclick="location.href='index.html'">Home</button>
+`;
+
+let ref=doc(db,"students",student);
 let snap=await getDoc(ref);
-let d=snap.data();
 
-if(d.finished) return;
-
-let winner="draw";
-if(d.score1>d.score2) winner=d.p1;
-if(d.score2>d.score1) winner=d.p2;
-
-await updateDoc(ref,{finished:true,winner:winner});
-
-}
-
-// RESULT
-function showResult(d){
-
-let my=(student==d.p1)?d.score1:d.score2;
-let opp=(student==d.p1)?d.score2:d.score1;
-
-let res=document.getElementById("result");
-
-if(d.winner==student){
-res.innerHTML="🏆 You Win";
-res.className="win";
-}
-else if(d.winner=="draw"){
-res.innerHTML="🤝 Draw";
-res.className="draw";
-}
-else{
-res.innerHTML="😢 You Lose";
-res.className="lose";
+if(snap.exists()){
+let xp=snap.data().xp||0;
+xp+=xpChange;
+if(xp<0) xp=0;
+await updateDoc(ref,{xp:xp});
 }
 
 }
-
 </script>
 </body>
 </html>
