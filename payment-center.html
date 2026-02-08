@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Center</title>
+<style>
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
+.card{background:#0f172a;padding:25px;border-radius:16px;max-width:420px;margin:auto;margin-top:20px}
+.status{font-size:22px;margin-top:10px;font-weight:bold}
+.green{color:#22c55e}
+.yellow{color:#facc15}
+.red{color:red;animation:blink 1s infinite}
+@keyframes blink{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>💰 Payment Center</h2>
+<h3>Monthly Fee: ₹500</h3>
+<div id="info"></div>
+<div class="status" id="status"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let student=localStorage.getItem("studentName");
+if(!student){
+student=prompt("Enter your name");
+localStorage.setItem("studentName",student);
+}
+
+load();
+
+async function load(){
+
+let ref=doc(db,"payments",student);
+let snap=await getDoc(ref);
+
+if(!snap.exists()){
+document.getElementById("info").innerHTML="No payment record";
+return;
+}
+
+let s=snap.data();
+
+let today=new Date();
+let cm=today.getMonth()+1;
+let cy=today.getFullYear();
+
+let parts=s.start.split("-");
+let sm=Number(parts[1]);
+let sy=Number(parts[0]);
+
+let passed=(cy-sy)*12+(cm-sm)+1;
+let due=passed-s.paidMonths;
+let remain=s.duration-s.paidMonths;
+
+document.getElementById("info").innerHTML=`
+Course: ${s.duration} months<br>
+Paid months: ${s.paidMonths}<br>
+Remaining: ${remain}<br>
+Total Paid: ₹${s.totalPaid}
+`;
+
+if(remain<=0){
+document.getElementById("status").innerHTML="<span class='green'>COURSE COMPLETE</span>";
+return;
+}
+
+if(due<=0){
+document.getElementById("status").innerHTML="<span class='green'>PAID</span>";
+}else if(due==1){
+document.getElementById("status").innerHTML="<span class='yellow'>PAYMENT DUE</span>";
+}else{
+document.getElementById("status").innerHTML="<span class='red'>OVERDUE</span>";
+}
+
+}
+</script>
+</body>
+</html>
