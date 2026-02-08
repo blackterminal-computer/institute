@@ -5,57 +5,11 @@
 <title>Leaderboard</title>
 
 <style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-text-align:center;
-padding:20px
-}
-
-.card{
-background:#0f172a;
-padding:20px;
-border-radius:16px;
-max-width:550px;
-margin:auto;
-margin-top:20px
-}
-
-.player{
-background:#111827;
-margin:10px;
-padding:12px;
-border-radius:14px;
-display:flex;
-align-items:center;
-justify-content:space-between
-}
-
-.left{
-display:flex;
-align-items:center;
-gap:10px
-}
-
-img{
-width:45px;
-height:45px;
-border-radius:50%;
-object-fit:cover;
-border:2px solid #22c55e
-}
-
-.rank{
-color:#22c55e;
-font-weight:bold;
-margin-right:6px
-}
-
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
+.card{background:#0f172a;padding:20px;border-radius:16px;max-width:500px;margin:auto;margin-top:20px}
+.player{background:#111827;margin:10px;padding:15px;border-radius:12px;font-size:18px;display:flex;justify-content:space-between}
+.rank{color:#22c55e;font-weight:bold}
 .xp{color:#facc15;font-weight:bold}
-.streak{color:#22c55e;font-size:14px}
-
-h2{color:#22c55e}
 </style>
 </head>
 
@@ -87,13 +41,13 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-/* ⚡ FAST LOAD LOCAL */
+/* ⚡ STEP 1: LOAD LOCAL FAST */
 let local=localStorage.getItem("leaderboard_cache");
 if(local){
 showBoard(JSON.parse(local));
 }
 
-/* 🔥 FIREBASE LOAD */
+/* ⚡ STEP 2: FETCH FIREBASE BACKGROUND */
 loadBoard();
 
 async function loadBoard(){
@@ -105,15 +59,17 @@ snap.forEach(d=>{
 let data=d.data();
 arr.push({
 name:d.id,
-xp:data.xp || 0,
-streak:data.streak || 0,
-photo:data.photo || "https://via.placeholder.com/50"
+xp:data.xp || 0
 });
 });
 
+// sort high to low
 arr.sort((a,b)=>b.xp-a.xp);
 
+// save cache
 localStorage.setItem("leaderboard_cache",JSON.stringify(arr));
+
+// show
 showBoard(arr);
 }
 
@@ -124,22 +80,12 @@ let html="";
 arr.forEach((s,i)=>{
 html+=`
 <div class="player">
-
-<div class="left">
-<div class="rank">#${i+1}</div>
-<img src="${s.photo}">
-<div>
-<b>${s.name}</b><br>
-<span class="streak">🔥 ${s.streak} day</span>
-</div>
-</div>
-
+<div class="rank">#${i+1} ${s.name}</div>
 <div class="xp">⭐ ${s.xp}</div>
-
 </div>`;
 });
 
-if(arr.length==0) html="No students";
+if(arr.length==0) html="No data";
 
 document.getElementById("board").innerHTML=html;
 }
