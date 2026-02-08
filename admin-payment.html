@@ -22,15 +22,6 @@ margin:auto;
 margin-top:20px
 }
 
-input{
-width:90%;
-padding:12px;
-margin:8px;
-border-radius:10px;
-border:none;
-font-size:16px
-}
-
 button{
 padding:12px 18px;
 border:none;
@@ -40,7 +31,6 @@ font-weight:bold;
 color:white
 }
 
-.add{background:linear-gradient(90deg,#6366f1,#06b6d4);width:90%}
 .paid{background:#22c55e}
 .complete{background:orange}
 .del{background:red}
@@ -61,12 +51,6 @@ border-radius:14px
 <body>
 
 <div class="card">
-<h2>➕ Add Student</h2>
-<input id="name" placeholder="Student name">
-<button class="add" onclick="addStudent()">Add Student</button>
-</div>
-
-<div class="card">
 <h2>👨‍💻 Students Payment Control (<span id="totalStudents">0</span>)</h2>
 <div id="list">Loading...</div>
 </div>
@@ -74,7 +58,7 @@ border-radius:14px
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDocs, collection, updateDoc, deleteDoc }
+import { getFirestore, doc, getDocs, collection, updateDoc, deleteDoc, setDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -91,22 +75,30 @@ const db=getFirestore(app);
 
 load();
 
-/* ADD STUDENT */
-window.addStudent=async function(){
-let name=document.getElementById("name").value.trim();
-if(!name){alert("Enter name");return;}
+/* AUTO FETCH FROM STUDENTS COLLECTION */
+async function autoFetchStudents(){
 
+let studentsSnap = await getDocs(collection(db,"students"));
+let paySnap = await getDocs(collection(db,"payments"));
+
+let existing = [];
+paySnap.forEach(d=>existing.push(d.id));
+
+studentsSnap.forEach(async(d)=>{
+let name=d.id;
+
+if(!existing.includes(name)){
 await setDoc(doc(db,"payments",name),{
 name:name,
 status:"OVERDUE",
 lastPaid:""
 });
-
-document.getElementById("name").value="";
-load();
 }
 
-/* MARK PAID */
+});
+
+}
+
 window.markPaid=async function(name){
 let today=new Date().toLocaleDateString();
 
@@ -118,7 +110,6 @@ lastPaid:today
 load();
 }
 
-/* COURSE COMPLETE */
 window.complete=async function(name){
 await updateDoc(doc(db,"payments",name),{
 status:"COMPLETED"
@@ -126,15 +117,15 @@ status:"COMPLETED"
 load();
 }
 
-/* DELETE */
 window.del=async function(name){
 if(!confirm("Delete student?")) return;
 await deleteDoc(doc(db,"payments",name));
 load();
 }
 
-/* LOAD LIST */
 async function load(){
+
+await autoFetchStudents();
 
 let snap=await getDocs(collection(db,"payments"));
 let html="";
