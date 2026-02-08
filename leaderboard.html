@@ -1,161 +1,122 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Live Leaderboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard</title>
 
 <style>
 body{
-margin:0;
-font-family:Poppins,Arial;
-background:radial-gradient(circle,#020617,#000);
+background:#020617;
 color:white;
+font-family:Arial;
 text-align:center;
+padding:20px;
 }
 
-.box{
-width:92%;
-max-width:700px;
-margin:40px auto;
+.card{
 background:#0f172a;
 padding:20px;
-border-radius:18px;
+border-radius:16px;
+max-width:500px;
+margin:auto;
+margin-top:20px;
 }
 
-h1{
-margin-bottom:20px;
-}
-
-.row{
+.player{
+background:#111827;
+margin:10px;
+padding:15px;
+border-radius:12px;
+font-size:18px;
 display:flex;
-align-items:center;
 justify-content:space-between;
-background:#020617;
-padding:12px;
-margin:12px 0;
-border-radius:14px;
-animation:fade .6s ease;
-}
-
-@keyframes fade{
-from{opacity:0;transform:translateY(20px)}
-to{opacity:1;transform:translateY(0)}
-}
-
-.left{
-display:flex;
 align-items:center;
-gap:12px;
-}
-
-.left img{
-width:50px;
-height:50px;
-border-radius:50%;
-border:2px solid #22c55e;
 }
 
 .rank{
-font-size:22px;
-width:40px;
-}
-
-.name{
-font-size:16px;
-}
-
-.streak{
-font-size:12px;
+font-weight:bold;
+font-size:18px;
 color:#22c55e;
 }
 
 .xp{
-font-size:18px;
-color:gold;
+color:#facc15;
+font-weight:bold;
 }
 
-/* home btn */
-.home{
-position:fixed;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-padding:14px 35px;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-border:none;
-border-radius:12px;
-color:white;
-font-size:16px;
-}
+h2{color:#22c55e}
 </style>
 </head>
 
 <body>
 
-<div class="box">
-<h1>🏆 Live Leaderboard</h1>
-<div id="list"></div>
+<div class="card">
+<h2>🏆 Live Leaderboard</h2>
+<div id="board">Loading...</div>
 </div>
 
-<button class="home" onclick="window.location='index.html'">🏠 Home</button>
+<br>
+<button onclick="location.href='index.html'" style="
+padding:12px 20px;
+border:none;
+border-radius:10px;
+background:linear-gradient(90deg,#6366f1,#06b6d4);
+color:white;
+font-size:16px">
+🏠 Home
+</button>
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
+const firebaseConfig={
 apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
 authDomain:"black-terminal-f2c91.firebaseapp.com",
 projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.firebasestorage.app",
+storageBucket:"black-terminal-f2c91.appspot.com",
 messagingSenderId:"552489994197",
 appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
 
-async function load(){
+async function loadBoard(){
+
 let snap = await getDocs(collection(db,"students"));
 let arr=[];
-snap.forEach(doc=>arr.push(doc.data()));
 
-// sort by xp
+snap.forEach(d=>{
+let data=d.data();
+arr.push({
+name:d.id,
+xp:data.xp || 0
+});
+});
+
+// sort by xp high to low
 arr.sort((a,b)=>b.xp-a.xp);
 
 let html="";
-arr.forEach((x,i)=>{
 
-let medal="🏅";
-if(i==0) medal="🥇";
-if(i==1) medal="🥈";
-if(i==2) medal="🥉";
-
+arr.forEach((s,i)=>{
 html+=`
-<div class="row">
-<div class="left">
-<div class="rank">${medal}</div>
-<img src="${x.photo || 'https://i.ibb.co/4pDNDk1/avatar.png'}">
-<div>
-<div class="name">${x.name}</div>
-<div class="streak">🔥 ${x.streak || 0} days</div>
-</div>
-</div>
-<div class="xp">⭐ ${x.xp}</div>
-</div>
-`;
+<div class="player">
+<div class="rank">#${i+1} ${s.name}</div>
+<div class="xp">⭐ ${s.xp}</div>
+</div>`;
 });
 
-document.getElementById("list").innerHTML=html;
+if(arr.length==0) html="No data";
+
+document.getElementById("board").innerHTML=html;
 }
 
-load();
-
-// auto refresh every 5 sec
-setInterval(load,5000);
+loadBoard();
 
 </script>
-
 </body>
 </html>
