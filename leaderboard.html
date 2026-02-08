@@ -69,7 +69,7 @@ font-size:16px">
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs }
+import { getFirestore, collection, getDocs, doc, setDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -84,7 +84,22 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
+/* 🔥 FIRST SYNC LOCAL XP → FIREBASE */
+async function syncLocalXP(){
+
+let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
+
+for(let name in xpData){
+await setDoc(doc(db,"students",name),{
+xp: xpData[name]
+},{merge:true});
+}
+}
+
+/* 🏆 LOAD LEADERBOARD */
 async function loadBoard(){
+
+await syncLocalXP();
 
 let snap = await getDocs(collection(db,"students"));
 let arr=[];
@@ -97,25 +112,35 @@ xp:data.xp || 0
 });
 });
 
-// sort by xp high to low
+// sort high xp first
 arr.sort((a,b)=>b.xp-a.xp);
 
 let html="";
 
 arr.forEach((s,i)=>{
+
+let medal="";
+
+if(i==0) medal="🥇";
+else if(i==1) medal="🥈";
+else if(i==2) medal="🥉";
+
 html+=`
 <div class="player">
-<div class="rank">#${i+1} ${s.name}</div>
+<div class="rank">${medal} #${i+1} ${s.name}</div>
 <div class="xp">⭐ ${s.xp}</div>
 </div>`;
 });
 
-if(arr.length==0) html="No data";
+if(arr.length==0) html="No players yet";
 
 document.getElementById("board").innerHTML=html;
 }
 
 loadBoard();
+
+/* 🔄 AUTO REFRESH */
+setInterval(loadBoard,5000);
 
 </script>
 </body>
