@@ -31,9 +31,7 @@ object-fit:cover;
 border:3px solid #22c55e;
 }
 
-input{
-margin-top:10px;
-}
+input{margin-top:10px;}
 
 button{
 margin-top:15px;
@@ -54,7 +52,6 @@ color:white;
 <h2>👤 My Profile</h2>
 
 <img id="photo" src="https://via.placeholder.com/110">
-
 <input type="file" onchange="uploadPhoto(event)">
 
 <input id="nameInput" placeholder="Enter your name"
@@ -79,29 +76,47 @@ Checking payment...
 
 </div>
 
-<script>
+<script type="module">
 
+/* 🔥 FIREBASE */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+/* USER NAME */
 let student = localStorage.getItem("studentName") || "Student";
 document.getElementById("name").innerHTML=student;
 document.getElementById("nameInput").value=student;
 
-// xp
+/* XP */
 let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
 let xp = xpData[student] || 0;
 document.getElementById("xp").innerHTML="⭐ XP: "+xp;
 
-// streak
+/* STREAK */
 let streakData = JSON.parse(localStorage.getItem("streakData")) || {};
 let streak = streakData[student] ? streakData[student].streak : 0;
 document.getElementById("streak").innerHTML="🔥 Streak: "+streak+" days";
 
-// photo load
+/* PHOTO */
 let photo = localStorage.getItem("photo_"+student);
 if(photo){
 document.getElementById("photo").src=photo;
 }
 
-function uploadPhoto(e){
+window.uploadPhoto=function(e){
 let file = e.target.files[0];
 let reader = new FileReader();
 reader.onload=function(){
@@ -111,46 +126,35 @@ document.getElementById("photo").src=reader.result;
 reader.readAsDataURL(file);
 }
 
-
-
-function saveName(){
+/* SAVE NAME */
+window.saveName=function(){
 let newName = document.getElementById("nameInput").value;
 
 if(!newName){
-alert("Enter name");
-return;
+alert("Enter name");return;
 }
 
 localStorage.setItem("studentName", newName);
-document.getElementById("name").innerHTML=newName;
-
 alert("Name saved!");
 location.reload();
 }
 
-
-
-
-
-
-
-
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/* 🔥 PAYMENT STATUS CHECK */
+async function checkPayment(){
 
 let studentName = localStorage.getItem("studentName");
-
-async function checkPayment(){
 if(!studentName) return;
 
 let snap = await getDoc(doc(db,"payments",studentName));
 
 if(!snap.exists()){
-document.getElementById("paymentStatus").innerHTML="Status: Not found";
+document.getElementById("paymentStatus").innerHTML=
+"💳 Payment Status: NOT ADDED";
 return;
 }
 
 let data=snap.data();
-let status=data.status;
+let status=data.status || "PAID";
 
 let color="#22c55e";
 
@@ -158,7 +162,7 @@ if(status=="OVERDUE") color="red";
 if(status=="COMPLETED") color="#38bdf8";
 
 document.getElementById("paymentStatus").innerHTML=
-`Payment Status: <span style="color:${color}">${status}</span>`;
+`💳 Payment Status: <span style="color:${color}">${status}</span>`;
 }
 
 checkPayment();
