@@ -2,58 +2,32 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Payment System</title>
+<title>Admin Payment Control</title>
 
 <style>
 body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
-.card{background:#0f172a;padding:25px;border-radius:16px;max-width:500px;margin:auto;margin-top:20px}
-input{width:90%;padding:12px;margin:8px;border-radius:10px;border:none;font-size:16px}
-
-button{
-padding:10px 16px;
-border:none;
-border-radius:10px;
-margin:6px;
-font-size:15px;
-font-weight:bold;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
-color:white;
-}
-
+.card{background:#0f172a;padding:25px;border-radius:16px;max-width:520px;margin:auto;margin-top:20px}
+h2{color:#22c55e}
 .student{background:#111827;padding:14px;margin:10px;border-radius:12px}
-
 .overdue{color:red;font-weight:bold}
 .paid{color:#22c55e;font-weight:bold}
 .completed{color:#38bdf8;font-weight:bold}
-
-.del{background:red}
-.completeBtn{background:orange}
-
-h2{color:#22c55e}
+button{padding:10px 16px;margin:6px;border:none;border-radius:10px;font-weight:bold}
+.pay{background:#22c55e;color:white}
+.done{background:orange;color:white}
+.del{background:red;color:white}
 </style>
 </head>
 <body>
 
 <div class="card">
-<h2>➕ Add Student</h2>
-<input id="name" placeholder="Student name">
-<button onclick="addStudent()">Add Student</button>
-</div>
-
-<div class="card">
-<h2>📊 Active Students</h2>
-<div id="list"></div>
-</div>
-
-<div class="card">
-<h2>💰 Paid This Month</h2>
-<h1 id="total">₹0</h1>
+<h2>👨‍💻 Students Payment Control</h2>
+<div id="list">Loading...</div>
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, deleteDoc }
+import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -68,114 +42,86 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-const monthlyFee = 500;
-
-/* ADD STUDENT */
-window.addStudent = async function(){
-
-let name=document.getElementById("name").value.trim();
-if(!name){alert("Enter name");return;}
-
-await setDoc(doc(db,"students_pay",name),{
-name:name,
-lastPaidMonth:"",
-lastPaidDate:"",
-completed:false
-});
-
-document.getElementById("name").value="";
-load();
-}
-
-/* MARK PAID */
-window.markPaid = async function(name){
-
-let today=new Date();
-let m=today.getMonth()+1;
-let y=today.getFullYear();
-let monthKey=y+"-"+m;
-
-await updateDoc(doc(db,"students_pay",name),{
-lastPaidMonth:monthKey,
-lastPaidDate:today.toLocaleDateString()
-});
-
-load();
-}
-
-/* COURSE COMPLETE */
-window.completeCourse = async function(name){
-if(!confirm("Mark course completed?")) return;
-
-await updateDoc(doc(db,"students_pay",name),{
-completed:true
-});
-
-load();
-}
-
-/* DELETE */
-window.delStudent = async function(name){
-if(!confirm("Delete student?")) return;
-await deleteDoc(doc(db,"students_pay",name));
-load();
-}
-
-/* LOAD */
 async function load(){
 
-let snap=await getDocs(collection(db,"students_pay"));
+let studentsSnap=await getDocs(collection(db,"students"));
 let html="";
-let total=0;
 
 let today=new Date();
-let m=today.getMonth()+1;
-let y=today.getFullYear();
-let monthKey=y+"-"+m;
+let day=today.getDate();
 
-snap.forEach(d=>{
+studentsSnap.forEach(async d=>{
 
-let s=d.data();
-let status="";
-let cls="";
-let btn="";
+let name=d.id;
 
-if(s.completed){
-status="COURSE COMPLETED";
-cls="completed";
-btn="";
+// payment doc
+let payRef=doc(db,"payments",name);
+let paySnap=await getDoc(payRef);
+
+let status="PAID";
+
+if(paySnap.exists()){
+let data=paySnap.data();
+status=data.status||"PAID";
+}else{
+// first time create
+await setDoc(payRef,{status:"PAID",date:new Date().toLocaleDateString()});
 }
-else if(s.lastPaidMonth===monthKey){
-status="PAID";
-cls="paid";
-total+=monthlyFee;
-btn=`<button onclick="markPaid('${s.name}')">Mark Paid</button>`;
-}
-else{
+
+if(day>=1 && day<=31){
+let snap2=await getDoc(payRef);
+let s=snap2.data().status;
+
+if(s!="PAID" && s!="COMPLETED"){
 status="OVERDUE";
-cls="overdue";
-btn=`<button onclick="markPaid('${s.name}')">Mark Paid</button>`;
+await updateDoc(payRef,{status:"OVERDUE"});
+}else{
+status=s;
 }
+}
+
+let colorClass = status=="PAID"?"paid": status=="COMPLETED"?"completed":"overdue";
 
 html+=`
 <div class="student">
-<b>${s.name}</b><br>
-Status: <span class="${cls}">${status}</span><br>
-${s.lastPaidDate?`Paid Date: ${s.lastPaidDate}<br>`:""}
-${btn}
-<button class="completeBtn" onclick="completeCourse('${s.name}')">Course Completed</button>
-<button class="del" onclick="delStudent('${s.name}')">Delete</button>
+<b>${name}</b><br>
+Status: <span class="${colorClass}">${status}</span><br>
+
+<button class="pay" onclick="markPaid('${name}')">Mark Paid</button>
+<button class="done" onclick="courseDone('${name}')">Course Completed</button>
+<button class="del" onclick="delStudent('${name}')">Delete</button>
 </div>
 `;
 
+document.getElementById("list").innerHTML=html;
+
 });
 
-document.getElementById("list").innerHTML=html;
-document.getElementById("total").innerHTML="₹"+total;
+}
+
+window.markPaid=async function(name){
+await setDoc(doc(db,"payments",name),{
+status:"PAID",
+date:new Date().toLocaleDateString()
+});
+load();
+}
+
+window.courseDone=async function(name){
+await updateDoc(doc(db,"payments",name),{
+status:"COMPLETED"
+});
+load();
+}
+
+window.delStudent=async function(name){
+if(!confirm("Delete student?")) return;
+await deleteDoc(doc(db,"students",name));
+await deleteDoc(doc(db,"payments",name));
+load();
 }
 
 load();
-
 </script>
 </body>
 </html>
