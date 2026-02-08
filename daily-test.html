@@ -85,7 +85,7 @@ let selected="";
 let locked=false;
 let time=20;
 
-/* 🔥 LOAD 20 QUESTIONS */
+/* LOAD QUESTIONS */
 async function loadQ(){
 let snap=await getDocs(collection(db,"daily_mcq"));
 
@@ -94,7 +94,7 @@ questions.push(d.data());
 });
 
 questions.sort(()=>Math.random()-0.5);
-questions=questions.slice(0,20); // 🔥 20 questions
+questions=questions.slice(0,20);
 
 showQ();
 timer();
@@ -121,10 +121,8 @@ locked=false;
 time=20;
 }
 
-/* OPTION LOCK */
 window.select=function(v,el){
 if(locked) return;
-
 selected=v;
 locked=true;
 
@@ -132,7 +130,6 @@ document.querySelectorAll(".opt").forEach(o=>o.classList.add("lock"));
 el.style.background="#22c55e";
 }
 
-/* NEXT */
 window.nextQ=function(){
 if(!locked) return alert("Select option");
 
@@ -143,7 +140,6 @@ index++;
 showQ();
 }
 
-/* TIMER */
 function timer(){
 setInterval(()=>{
 time--;
@@ -157,21 +153,47 @@ time=20;
 },1000);
 }
 
-/* FINISH */
+/* 🔥 FINISH */
 function finish(){
 
-// lock today
-localStorage.setItem("daily_done_"+student,new Date().toDateString());
+let todayDate=new Date();
+let todayStr=todayDate.toDateString();
 
-// XP ADD
+// save done today
+localStorage.setItem("daily_done_"+student,todayStr);
+
+/* ⭐ XP ADD */
 let xpData=JSON.parse(localStorage.getItem("xpData"))||{};
 xpData[student]=(xpData[student]||0)+100;
 localStorage.setItem("xpData",JSON.stringify(xpData));
 
-// 🔥 leaderboard refresh trick
-localStorage.setItem("xp_update_time",Date.now());
+/* 🔥 STREAK SYSTEM */
+let streakData=JSON.parse(localStorage.getItem("streakData"))||{};
+let lastPlay=streakData[student]?.lastDate;
+let streak=streakData[student]?.streak||0;
 
-alert("🏆 Test Completed!\nScore: "+score+"/20\n+100 XP added");
+let yesterday=new Date();
+yesterday.setDate(todayDate.getDate()-1);
+let yStr=yesterday.toDateString();
+
+if(lastPlay==yStr){
+streak+=1; // continue streak
+}else if(lastPlay==todayStr){
+}else{
+streak=1; // reset
+}
+
+streakData[student]={
+streak:streak,
+lastDate:todayStr
+};
+
+localStorage.setItem("streakData",JSON.stringify(streakData));
+
+alert(`🏆 Test Completed!
+Score: ${score}/20
++100 XP added
+🔥 Streak: ${streak} days`);
 
 window.location="leaderboard.html";
 }
