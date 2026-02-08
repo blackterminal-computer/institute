@@ -32,25 +32,6 @@ font-size:16px;
 font-weight:bold;
 background:#1e293b;
 color:white;
-transition:0.2s;
-}
-
-/* CLICK EFFECT */
-button:active{
-transform:scale(0.96);
-}
-
-/* SELECTED OPTION */
-.selected{
-background:#22c55e !important;
-color:black;
-transform:scale(0.97);
-}
-
-/* LOCK ALL OPTIONS */
-.locked{
-opacity:0.5;
-pointer-events:none;
 }
 
 .next{
@@ -59,29 +40,27 @@ background:linear-gradient(90deg,#6366f1,#06b6d4);
 
 h2{color:#22c55e}
 .timer{color:#22c55e;font-size:20px}
+.lock{color:red;font-size:22px}
 </style>
 </head>
+
 <body>
 
-<div class="card">
-
+<div class="card" id="screen">
 <h2>🧠 Daily Test</h2>
 <div>⏱ Time: <span class="timer" id="time">20</span>s</div>
 <h3 id="qtext">Loading...</h3>
-
 <div id="options"></div>
-
 <button class="next" onclick="nextQ()">Next</button>
-
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc }
+import { getFirestore, doc, getDoc, setDoc, updateDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
+const firebaseConfig={
 apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
 authDomain:"black-terminal-f2c91.firebaseapp.com",
 projectId:"black-terminal-f2c91",
@@ -90,8 +69,8 @@ messagingSenderId:"552489994197",
 appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
 
 let student = localStorage.getItem("studentName");
 if(!student){
@@ -99,102 +78,121 @@ student = prompt("Enter name");
 localStorage.setItem("studentName",student);
 }
 
-let qIndex=1;
-let score=0;
-let timer;
-let timeLeft=20;
-let answered=false;
+let ref = doc(db,"students",student);
+let snap = await getDoc(ref);
 
-loadQ();
+let lastTest=0;
+let xp=0;
 
-async function loadQ(){
-
-answered=false;
-timeLeft=20;
-document.getElementById("time").innerHTML=timeLeft;
-
-timer=setInterval(()=>{
-timeLeft--;
-document.getElementById("time").innerHTML=timeLeft;
-
-if(timeLeft<=0){
-clearInterval(timer);
-nextQ();
-}
-},1000);
-
-let snap = await getDoc(doc(db,"daily_mcq","q"+qIndex));
-
-if(!snap.exists()){
-finishTest();
-return;
+if(snap.exists()){
+lastTest = snap.data().lastTest || 0;
+xp = snap.data().xp || 0;
+}else{
+await setDoc(ref,{xp:0,lastTest:0});
 }
 
-let d=snap.data();
+/* 🔥 CHECK DAILY LOCK */
+let now = Date.now();
+let today = new Date();
+let midnight = new Date(today.getFullYear(),today.getMonth(),today.getDate()).getTime();
 
-document.getElementById("qtext").innerHTML=
-"Q"+qIndex+". "+d.question;
-
-document.getElementById("options").innerHTML=`
-<button onclick="ans(this,'A')">${d.a}</button>
-<button onclick="ans(this,'B')">${d.b}</button>
-<button onclick="ans(this,'C')">${d.c}</button>
-<button onclick="ans(this,'D')">${d.d}</button>
-`;
-
-window.correctAns=d.correct;
-
-}
-
-window.ans=function(btn,a){
-if(answered) return;
-answered=true;
-
-/* highlight selected */
-btn.classList.add("selected");
-
-/* lock all buttons */
-document.querySelectorAll("#options button").forEach(b=>{
-b.classList.add("locked");
-});
-
-if(a===correctAns){
-score+=2;
-}
-}
-
-window.nextQ=function(){
-clearInterval(timer);
-qIndex++;
-
-if(qIndex>20){
-finishTest();
+if(lastTest > midnight){
+showLock();
 }else{
 loadQ();
 }
-}
 
-async function finishTest(){
+/* LOCK SCREEN */
+function showLock(){
 
-document.body.innerHTML=`
-<div class="card">
-<h1>🏁 Test Finished</h1>
-<h2>Score: ${score}</h2>
-<h3>XP Earned: ${score}</h3>
-<br>
-<button onclick="location.href='index.html'">🏠 Home</button>
-</div>
+document.getElementById("screen").innerHTML=`
+<h2 class="lock">🔒 Test Already Done</h2>
+<h3>Come tomorrow</h3>
+<h2 id="count"></h2>
 `;
 
-let ref=doc(db,"students",student);
-let s=await getDoc(ref);
+let next = new Date();
+next.setHours(24,0,0,0);
 
-if(s.exists()){
-let xp=s.data().xp||0;
-xp+=score;
-await updateDoc(ref,{xp:xp});
+setInterval(()=>{
+let diff = next - Date.now();
+
+if(diff<=0) location.reload();
+
+let h=Math.floor(diff/3600000);
+let m=Math.floor((diff%3600000)/60000);
+let s=Math.floor((diff%60000)/1000);
+
+document.getElementById("count").innerHTML=
+`${h}h ${m}m ${s}s`;
+
+},1000);
 }
 
+/* QUESTIONS */
+let questions=[
+{q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Keyboard",ans:"b"},
+{q:"HTML full form?",a:"Hyper Trainer",b:"Hyper Text Markup Language",c:"High Text",d:"None",ans:"b"},
+{q:"Keyboard is?",a:"Input",b:"Output",c:"CPU",d:"RAM",ans:"a"},
+{q:"1KB?",a:"1000",b:"1024",c:"500",d:"2000",ans:"b"},
+{q:"Windows?",a:"OS",b:"Game",c:"File",d:"None",ans:"a"}
+];
+
+let i=0,score=0,time=20,timer;
+
+function loadQ(){
+if(i>=questions.length){finish();return;}
+
+time=20;
+document.getElementById("time").innerText=time;
+
+let q=questions[i];
+document.getElementById("qtext").innerText=q.q;
+
+document.getElementById("options").innerHTML=`
+<button onclick="ans('a')">${q.a}</button>
+<button onclick="ans('b')">${q.b}</button>
+<button onclick="ans('c')">${q.c}</button>
+<button onclick="ans('d')">${q.d}</button>
+`;
+
+clearInterval(timer);
+timer=setInterval(()=>{
+time--;
+document.getElementById("time").innerText=time;
+if(time<=0){i++;loadQ();}
+},1000);
+}
+
+window.ans=(a)=>{
+if(a==questions[i].ans) score++;
+i++;
+loadQ();
+}
+
+window.nextQ=function(){
+i++;
+loadQ();
+}
+
+/* FINISH */
+async function finish(){
+clearInterval(timer);
+
+// 🔥 +100 XP FIXED
+xp += 100;
+
+await updateDoc(ref,{
+xp:xp,
+lastTest:Date.now()
+});
+
+document.getElementById("screen").innerHTML=`
+<h1>🎉 Test Finished</h1>
+<h2>+100 XP Added</h2>
+<h2>Total XP: ${xp}</h2>
+<button onclick="location.href='index.html'">Home</button>
+`;
 }
 
 </script>
