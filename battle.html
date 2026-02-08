@@ -3,20 +3,24 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1 vs 1 Battle</title>
+
 <style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding-top:60px}
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding-top:50px}
 .card{background:#0f172a;padding:25px;border-radius:16px;width:92%;max-width:420px;margin:auto}
 .option{background:#1e293b;padding:14px;margin:8px;border-radius:10px;cursor:pointer}
 .timer{color:#22c55e;font-size:20px;margin:10px}
 </style>
 </head>
 <body>
+
 <div class="card" id="screen">
-<h2>🔍 Searching opponent...</h2>
+<h2>🔍 Searching for opponent...</h2>
 </div>
+
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc }
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -36,76 +40,68 @@ localStorage.setItem("studentName",student);
 
 let roomId="";
 let opponent="";
-let started=false;
+let myRole="";
 
-/* 🔥 ENTER MATCHMAKING */
-async function enter(){
+startMatch();
 
-const ref = await addDoc(collection(db,"battle_wait"),{
-name:student,
+async function startMatch(){
+
+// STEP 1: try join existing room
+let rooms = await getDocs(collection(db,"battle_rooms"));
+
+for(const r of rooms.docs){
+let d=r.data();
+
+if(d.status=="waiting" && d.player1!=student){
+
+await updateDoc(doc(db,"battle_rooms",r.id),{
+player2:student,
+status:"start"
+});
+
+roomId=r.id;
+myRole="player2";
+listenRoom();
+return;
+}
+}
+
+// STEP 2: create new room
+const ref = await addDoc(collection(db,"battle_rooms"),{
+player1:student,
+player2:"",
 status:"waiting",
-score1:0,
-score2:0,
 time:Date.now()
 });
 
 roomId=ref.id;
-
-listenMatch();
-joinOther();
-
+myRole="player1";
+listenRoom();
 }
 
-/* 🔥 LISTEN MY ROOM */
-function listenMatch(){
-onSnapshot(doc(db,"battle_wait",roomId),(snap)=>{
+// realtime check
+function listenRoom(){
+
+const check=setInterval(async()=>{
+
+let snap=await getDoc(doc(db,"battle_rooms",roomId));
+if(!snap.exists()) return;
+
 let d=snap.data();
-if(!d || started) return;
 
-if(d.status=="start" && d.p2){
-started=true;
-opponent = (d.name==student)?d.p2:d.name;
-startGame();
-}
-});
-}
+if(d.status=="start" && d.player2!=""){
 
-/* 🔥 JOIN OTHER */
-async function joinOther(){
+clearInterval(check);
 
-onSnapshot(collection(db,"battle_wait"), async(snap)=>{
+opponent = (d.player1==student)? d.player2 : d.player1;
 
-if(started) return;
-
-snap.forEach(async(docu)=>{
-let d=docu.data();
-
-if(
-docu.id!=roomId &&
-d.status=="waiting" &&
-d.name!=student &&
-!started
-){
-started=true;
-
-await updateDoc(doc(db,"battle_wait",docu.id),{
-p2:student,
-status:"start"
-});
-
-roomId=docu.id;
-opponent=d.name;
 startGame();
 }
 
-});
+},1000);
 
-});
 }
 
-enter();
-
-/* QUESTIONS */
 let questions=[
 {q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Keyboard",ans:"b"},
 {q:"HTML full form?",a:"Hyper Trainer",b:"Hyper Text Markup Language",c:"High Text",d:"None",ans:"b"},
@@ -154,48 +150,58 @@ if(time<=0){i++;loadQ();}
 }
 
 window.ans=(a)=>{
-if(a==questions[i].ans) score++;
+if(a==questions[i].ans)score++;
 i++;
 loadQ();
 }
 
 async function finish(){
+
 clearInterval(timer);
 
-await updateDoc(doc(db,"battle_wait",roomId),{
+await updateDoc(doc(db,"battle_rooms",roomId),{
 [student]:score
 });
 
 setTimeout(async()=>{
-let snap=await getDoc(doc(db,"battle_wait",roomId));
+
+let snap=await getDoc(doc(db,"battle_rooms",roomId));
 let d=snap.data();
 
-let s1=d[d.name]||0;
-let s2=d[d.p2]||0;
+let s1=d[d.player1]||0;
+let s2=d[d.player2]||0;
 
-let win=(student==d.name?(s1>s2):(s2>s1));
+let win=false;
+
+if(student==d.player1) win=s1>s2;
+else win=s2>s1;
+
 let xp=win?100:-10;
 
 document.getElementById("screen").innerHTML=`
 <h1>${win?"🏆 You Win":"😢 You Lose"}</h1>
-<h2>Score ${score}</h2>
+<h2>Score: ${score}</h2>
 <h3>XP ${xp}</h3>
-<button onclick="location.href='index.html'">Home</button>`;
+<button onclick="location.href='index.html'">Home</button>
+`;
 
 let ref=doc(db,"students",student);
 let s=await getDoc(ref);
 if(s.exists()){
 let x=s.data().xp||0;
-x+=xp;if(x<0)x=0;
+x+=xp;
+if(x<0)x=0;
 await updateDoc(ref,{xp:x});
 }
 
 setTimeout(async()=>{
-try{await deleteDoc(doc(db,"battle_wait",roomId));}catch{}
+try{await deleteDoc(doc(db,"battle_rooms",roomId));}catch{}
 },4000);
 
 },2000);
+
 }
+
 </script>
 </body>
 </html>
