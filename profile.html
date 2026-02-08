@@ -66,6 +66,15 @@ style="padding:10px;width:100%;border-radius:8px;border:none;margin-top:12px">
 <p id="xp"></p>
 <p id="streak"></p>
 
+<div id="paymentStatus" style="
+margin-top:15px;
+padding:12px;
+border-radius:12px;
+background:#111827;
+font-weight:bold">
+Checking payment...
+</div>
+
 <button onclick="window.location='index.html'">Home</button>
 
 </div>
@@ -118,6 +127,41 @@ document.getElementById("name").innerHTML=newName;
 alert("Name saved!");
 location.reload();
 }
+
+
+
+
+
+
+
+
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+let studentName = localStorage.getItem("studentName");
+
+async function checkPayment(){
+if(!studentName) return;
+
+let snap = await getDoc(doc(db,"payments",studentName));
+
+if(!snap.exists()){
+document.getElementById("paymentStatus").innerHTML="Status: Not found";
+return;
+}
+
+let data=snap.data();
+let status=data.status;
+
+let color="#22c55e";
+
+if(status=="OVERDUE") color="red";
+if(status=="COMPLETED") color="#38bdf8";
+
+document.getElementById("paymentStatus").innerHTML=
+`Payment Status: <span style="color:${color}">${status}</span>`;
+}
+
+checkPayment();
 
 </script>
 
