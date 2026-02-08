@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily MCQ Test</title>
+<title>Daily Test</title>
 
 <style>
 body{
@@ -16,48 +16,53 @@ padding:20px;
 .card{
 background:#0f172a;
 padding:25px;
-border-radius:16px;
-max-width:500px;
+border-radius:18px;
+max-width:600px;
 margin:auto;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
+margin-top:30px;
 }
 
 button{
-width:90%;
-padding:15px;
+padding:12px 18px;
 margin:8px;
 border:none;
-border-radius:12px;
+border-radius:10px;
 font-size:16px;
-font-weight:bold;
-background:#1e293b;
+background:linear-gradient(90deg,#6366f1,#06b6d4);
 color:white;
 }
 
-.next{
-background:linear-gradient(90deg,#6366f1,#06b6d4);
+.opt{
+display:block;
+background:#111827;
+margin:8px;
+padding:12px;
+border-radius:10px;
+cursor:pointer;
 }
 
-h2{color:#22c55e}
-.timer{color:#22c55e;font-size:20px}
-.lock{color:red;font-size:22px}
+.timer{
+font-size:20px;
+color:#22c55e;
+}
 </style>
 </head>
-
 <body>
 
-<div class="card" id="screen">
-<h2>🧠 Daily Test</h2>
-<div>⏱ Time: <span class="timer" id="time">20</span>s</div>
-<h3 id="qtext">Loading...</h3>
+<div class="card">
+<h2>🧠 Daily Exam</h2>
+<div class="timer" id="timer">Loading...</div>
+<h3 id="q">Loading question...</h3>
+
 <div id="options"></div>
-<button class="next" onclick="nextQ()">Next</button>
+
+<button onclick="nextQ()">Next</button>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc }
+import { getFirestore, collection, getDocs }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -72,128 +77,99 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-let student = localStorage.getItem("studentName");
-if(!student){
-student = prompt("Enter name");
-localStorage.setItem("studentName",student);
+let questions=[];
+let index=0;
+let score=0;
+let selected="";
+let time=20;
+
+/* LOAD QUESTIONS */
+async function loadQ(){
+
+let snap=await getDocs(collection(db,"daily_mcq"));
+snap.forEach(d=>{
+questions.push(d.data());
+});
+
+// shuffle
+questions.sort(()=>Math.random()-0.5);
+
+// take 15 only
+questions=questions.slice(0,15);
+
+showQ();
+startTimer();
 }
 
-let ref = doc(db,"students",student);
-let snap = await getDoc(ref);
+function showQ(){
 
-let lastTest=0;
-let xp=0;
-
-if(snap.exists()){
-lastTest = snap.data().lastTest || 0;
-xp = snap.data().xp || 0;
-}else{
-await setDoc(ref,{xp:0,lastTest:0});
+if(index>=questions.length){
+finish();
+return;
 }
 
-/* 🔥 CHECK DAILY LOCK */
-let now = Date.now();
-let today = new Date();
-let midnight = new Date(today.getFullYear(),today.getMonth(),today.getDate()).getTime();
-
-if(lastTest > midnight){
-showLock();
-}else{
-loadQ();
-}
-
-/* LOCK SCREEN */
-function showLock(){
-
-document.getElementById("screen").innerHTML=`
-<h2 class="lock">🔒 Test Already Done</h2>
-<h3>Come tomorrow</h3>
-<h2 id="count"></h2>
-`;
-
-let next = new Date();
-next.setHours(24,0,0,0);
-
-setInterval(()=>{
-let diff = next - Date.now();
-
-if(diff<=0) location.reload();
-
-let h=Math.floor(diff/3600000);
-let m=Math.floor((diff%3600000)/60000);
-let s=Math.floor((diff%60000)/1000);
-
-document.getElementById("count").innerHTML=
-`${h}h ${m}m ${s}s`;
-
-},1000);
-}
-
-/* QUESTIONS */
-let questions=[
-{q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Keyboard",ans:"b"},
-{q:"HTML full form?",a:"Hyper Trainer",b:"Hyper Text Markup Language",c:"High Text",d:"None",ans:"b"},
-{q:"Keyboard is?",a:"Input",b:"Output",c:"CPU",d:"RAM",ans:"a"},
-{q:"1KB?",a:"1000",b:"1024",c:"500",d:"2000",ans:"b"},
-{q:"Windows?",a:"OS",b:"Game",c:"File",d:"None",ans:"a"}
-];
-
-let i=0,score=0,time=20,timer;
-
-function loadQ(){
-if(i>=questions.length){finish();return;}
-
-time=20;
-document.getElementById("time").innerText=time;
-
-let q=questions[i];
-document.getElementById("qtext").innerText=q.q;
+let q=questions[index];
+document.getElementById("q").innerHTML=
+`Q${index+1}. ${q.question}`;
 
 document.getElementById("options").innerHTML=`
-<button onclick="ans('a')">${q.a}</button>
-<button onclick="ans('b')">${q.b}</button>
-<button onclick="ans('c')">${q.c}</button>
-<button onclick="ans('d')">${q.d}</button>
+<div class="opt" onclick="select('A')">A. ${q.a}</div>
+<div class="opt" onclick="select('B')">B. ${q.b}</div>
+<div class="opt" onclick="select('C')">C. ${q.c}</div>
+<div class="opt" onclick="select('D')">D. ${q.d}</div>
 `;
 
-clearInterval(timer);
-timer=setInterval(()=>{
-time--;
-document.getElementById("time").innerText=time;
-if(time<=0){i++;loadQ();}
-},1000);
+selected="";
+time=20;
 }
 
-window.ans=(a)=>{
-if(a==questions[i].ans) score++;
-i++;
-loadQ();
+window.select=function(v){
+selected=v;
 }
 
+/* NEXT */
 window.nextQ=function(){
-i++;
-loadQ();
+
+let q=questions[index];
+
+if(selected==q.correct){
+score++;
+}
+
+index++;
+showQ();
+}
+
+/* TIMER */
+function startTimer(){
+setInterval(()=>{
+time--;
+document.getElementById("timer").innerHTML="⏱ "+time+"s";
+
+if(time<=0){
+index++;
+showQ();
+time=20;
+}
+},1000);
 }
 
 /* FINISH */
-async function finish(){
-clearInterval(timer);
+function finish(){
 
-// 🔥 +100 XP FIXED
-xp += 100;
+let student=localStorage.getItem("studentName")||"Student";
 
-await updateDoc(ref,{
-xp:xp,
-lastTest:Date.now()
-});
+// XP add
+let xpData=JSON.parse(localStorage.getItem("xpData"))||{};
+xpData[student]=(xpData[student]||0)+100;
+localStorage.setItem("xpData",JSON.stringify(xpData));
 
-document.getElementById("screen").innerHTML=`
-<h1>🎉 Test Finished</h1>
-<h2>+100 XP Added</h2>
-<h2>Total XP: ${xp}</h2>
-<button onclick="location.href='index.html'">Home</button>
-`;
+alert("Test finished 🎉 Score: "+score+"/15 (+100 XP)");
+
+window.location="leaderboard.html";
 }
+
+loadQ();
 
 </script>
 </body>
