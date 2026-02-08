@@ -31,8 +31,6 @@ object-fit:cover;
 border:3px solid #22c55e;
 }
 
-input{margin-top:10px;}
-
 button{
 margin-top:15px;
 padding:12px;
@@ -48,7 +46,6 @@ color:white;
 <body>
 
 <div class="box">
-
 <h2>👤 My Profile</h2>
 
 <img id="photo" src="https://via.placeholder.com/110">
@@ -59,9 +56,7 @@ style="padding:10px;width:100%;border-radius:8px;border:none;margin-top:12px">
 
 <button onclick="saveName()">Save Name</button>
 
-<h3 id="name" style="margin-top:10px"></h3>
-<p id="xp"></p>
-<p id="streak"></p>
+<h3 id="name"></h3>
 
 <div id="paymentStatus" style="
 margin-top:15px;
@@ -73,14 +68,12 @@ Checking payment...
 </div>
 
 <button onclick="window.location='index.html'">Home</button>
-
 </div>
 
 <script type="module">
 
-/* 🔥 FIREBASE */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc } 
+import { getFirestore, doc, getDoc, setDoc } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -95,26 +88,13 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-/* USER NAME */
-let student = localStorage.getItem("studentName") || "Student";
+let student = localStorage.getItem("studentName") || "";
 document.getElementById("name").innerHTML=student;
 document.getElementById("nameInput").value=student;
 
-/* XP */
-let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
-let xp = xpData[student] || 0;
-document.getElementById("xp").innerHTML="⭐ XP: "+xp;
-
-/* STREAK */
-let streakData = JSON.parse(localStorage.getItem("streakData")) || {};
-let streak = streakData[student] ? streakData[student].streak : 0;
-document.getElementById("streak").innerHTML="🔥 Streak: "+streak+" days";
-
-/* PHOTO */
+// photo
 let photo = localStorage.getItem("photo_"+student);
-if(photo){
-document.getElementById("photo").src=photo;
-}
+if(photo){document.getElementById("photo").src=photo;}
 
 window.uploadPhoto=function(e){
 let file = e.target.files[0];
@@ -126,26 +106,38 @@ document.getElementById("photo").src=reader.result;
 reader.readAsDataURL(file);
 }
 
-/* SAVE NAME */
-window.saveName=function(){
-let newName = document.getElementById("nameInput").value;
+// ⭐ SAVE NAME + AUTO ADD TO PAYMENT
+window.saveName=async function(){
 
-if(!newName){
-alert("Enter name");return;
+let newName=document.getElementById("nameInput").value.trim();
+if(!newName){alert("Enter name");return;}
+
+localStorage.setItem("studentName",newName);
+document.getElementById("name").innerHTML=newName;
+
+// 🔥 auto create payment record if not exist
+let ref=doc(db,"payments",newName);
+let snap=await getDoc(ref);
+
+if(!snap.exists()){
+await setDoc(ref,{
+name:newName,
+status:"OVERDUE",
+lastPaid:""
+});
 }
 
-localStorage.setItem("studentName", newName);
-alert("Name saved!");
+alert("Saved & Added to payment system");
 location.reload();
 }
 
-/* 🔥 PAYMENT STATUS CHECK */
+// ⭐ CHECK PAYMENT STATUS
 async function checkPayment(){
 
-let studentName = localStorage.getItem("studentName");
-if(!studentName) return;
+let name=localStorage.getItem("studentName");
+if(!name) return;
 
-let snap = await getDoc(doc(db,"payments",studentName));
+let snap=await getDoc(doc(db,"payments",name));
 
 if(!snap.exists()){
 document.getElementById("paymentStatus").innerHTML=
@@ -153,21 +145,18 @@ document.getElementById("paymentStatus").innerHTML=
 return;
 }
 
-let data=snap.data();
-let status=data.status || "PAID";
-
+let d=snap.data();
 let color="#22c55e";
 
-if(status=="OVERDUE") color="red";
-if(status=="COMPLETED") color="#38bdf8";
+if(d.status=="OVERDUE") color="red";
+if(d.status=="COMPLETED") color="#38bdf8";
 
 document.getElementById("paymentStatus").innerHTML=
-`💳 Payment Status: <span style="color:${color}">${status}</span>`;
+`💳 Payment Status: <span style="color:${color}">${d.status}</span>`;
 }
 
 checkPayment();
 
 </script>
-
 </body>
 </html>
