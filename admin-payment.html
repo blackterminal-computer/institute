@@ -3,15 +3,11 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Payment Pro</title>
+
 <style>
 body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
 .card{background:#0f172a;padding:25px;border-radius:16px;max-width:540px;margin:auto;margin-top:20px}
 input,select{width:90%;padding:12px;margin:8px;border-radius:10px;border:none;font-size:16px}
-button{padding:10px 16px;border:none;border-radius:10px;margin:6px;font-size:15px;font-weight:bold;background:linear-gradient(90deg,#6366f1,#06b6d4);color:white}
-h2{color:#22c55e}
-.student{background:#111827;padding:14px;margin:10px;border-radius:12px}
-.overdue{color:red;font-weight:bold}
-.del{background:red}
 
 button{
 width:90%;
@@ -26,29 +22,45 @@ background:linear-gradient(90deg,#6366f1,#06b6d4);
 color:white;
 }
 
+h2{color:#22c55e}
+.student{background:#111827;padding:14px;margin:10px;border-radius:12px}
+.overdue{color:red;font-weight:bold}
+.del{background:red}
 </style>
 </head>
 <body>
+
 <div class="card">
 <h2>➕ Add Student Payment</h2>
+
 <input id="name" placeholder="Student name">
+
 <select id="duration">
 <option value="3">3 Month</option>
 <option value="6">6 Month</option>
 <option value="12">12 Month</option>
 </select>
-<input type="month" id="admissionMonth" placeholder="Admission Month">
+
+<input type="month" id="admissionMonth">
 <input type="number" id="admissionFee" placeholder="Admission Fee">
+
+<!-- 🔥 ADD BUTTON -->
+<button onclick="addStudent()">➕ Add Student</button>
+
 </div>
+
 <div class="card">
 <h2>📊 Students Payment Control</h2>
 <div id="list"></div>
 </div>
+
 <div class="card">
 <h2>💰 Total Collection</h2>
 <h1 id="total">0</h1>
 </div>
+
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -65,10 +77,9 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-/* ADD STUDENT */
 window.addStudent=async function(){
 
-let name=document.getElementById("name").value;
+let name=document.getElementById("name").value.trim();
 let duration=Number(document.getElementById("duration").value);
 let admissionMonth=document.getElementById("admissionMonth").value;
 let admissionFee=Number(document.getElementById("admissionFee").value);
@@ -101,21 +112,21 @@ paidMonths:monthsPassed,
 totalPaid:totalPaid
 });
 
-alert("Student added with auto calculation");
+alert("Student Added ✅");
 load();
 }
 
-/* MARK MONTH PAID */
+/* MONTHLY PAID */
 window.markPaid=async function(name){
 let ref=doc(db,"payments",name);
 let snap=await getDocs(collection(db,"payments"));
-let s;
+let data;
 
-snap.forEach(d=>{if(d.id==name){s=d.data();}});
+snap.forEach(d=>{if(d.id==name){data=d.data();}});
 
 await updateDoc(ref,{
-paidMonths:s.paidMonths+1,
-totalPaid:s.totalPaid+500
+paidMonths:data.paidMonths+1,
+totalPaid:data.totalPaid+500
 });
 
 load();
@@ -125,28 +136,28 @@ load();
 window.fullPaid=async function(name){
 let ref=doc(db,"payments",name);
 let snap=await getDocs(collection(db,"payments"));
-let s;
+let data;
 
-snap.forEach(d=>{if(d.id==name){s=d.data();}});
+snap.forEach(d=>{if(d.id==name){data=d.data();}});
 
-let total=s.admissionFee+(s.duration*500);
+let total=data.admissionFee+(data.duration*500);
 
 await updateDoc(ref,{
-paidMonths:s.duration,
+paidMonths:data.duration,
 totalPaid:total
 });
 
 load();
 }
 
-/* DELETE STUDENT */
+/* DELETE */
 window.delStudent=async function(name){
 if(!confirm("Delete student?")) return;
 await deleteDoc(doc(db,"payments",name));
 load();
 }
 
-/* LOAD LIST */
+/* LOAD */
 async function load(){
 let snap=await getDocs(collection(db,"payments"));
 let html="";
@@ -167,7 +178,7 @@ let sy=Number(parts[0]);
 let passed=(cy-sy)*12+(cm-sm)+1;
 let due=passed-s.paidMonths;
 
-let overdue= due>0 ? `<span class="overdue">OVERDUE</span>`:"";
+let overdue= due>0 ? `<span class="overdue">⚠ OVERDUE</span>`:"";
 
 html+=`
 <div class="student">
@@ -187,6 +198,7 @@ document.getElementById("total").innerHTML="₹"+total;
 }
 
 load();
+
 </script>
 </body>
 </html>
