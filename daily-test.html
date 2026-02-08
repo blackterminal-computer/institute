@@ -49,7 +49,7 @@ const db=getFirestore(app);
 
 let student=localStorage.getItem("studentName")||"Student";
 
-/* 🔒 DAILY LOCK CHECK */
+/* 🔒 DAILY LOCK */
 let last=localStorage.getItem("daily_done_"+student);
 let today=new Date().toDateString();
 
@@ -85,13 +85,16 @@ let selected="";
 let locked=false;
 let time=20;
 
-/* LOAD QUESTIONS */
+/* 🔥 LOAD 20 QUESTIONS */
 async function loadQ(){
 let snap=await getDocs(collection(db,"daily_mcq"));
-snap.forEach(d=>questions.push(d.data()));
+
+snap.forEach(d=>{
+questions.push(d.data());
+});
 
 questions.sort(()=>Math.random()-0.5);
-questions=questions.slice(0,15);
+questions=questions.slice(0,20); // 🔥 20 questions
 
 showQ();
 timer();
@@ -118,9 +121,10 @@ locked=false;
 time=20;
 }
 
-/* SELECT LOCK */
+/* OPTION LOCK */
 window.select=function(v,el){
 if(locked) return;
+
 selected=v;
 locked=true;
 
@@ -156,16 +160,19 @@ time=20;
 /* FINISH */
 function finish(){
 
+// lock today
 localStorage.setItem("daily_done_"+student,new Date().toDateString());
 
-// XP add
+// XP ADD
 let xpData=JSON.parse(localStorage.getItem("xpData"))||{};
 xpData[student]=(xpData[student]||0)+100;
 localStorage.setItem("xpData",JSON.stringify(xpData));
 
-alert("🎉 Test completed!\nScore: "+score+"/15\n+100 XP added");
+// 🔥 leaderboard refresh trick
+localStorage.setItem("xp_update_time",Date.now());
 
-// leaderboard auto
+alert("🏆 Test Completed!\nScore: "+score+"/20\n+100 XP added");
+
 window.location="leaderboard.html";
 }
 
