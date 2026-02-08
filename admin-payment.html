@@ -74,7 +74,7 @@ border-radius:12px;
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDocs, collection, updateDoc }
+import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -89,71 +89,79 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-/* ADD STUDENT */
-window.addStudent=async function(){
+let monthlyFee = 500;
+
+window.addStudent = async function(){
 let name=document.getElementById("name").value.trim();
 if(!name){alert("Enter name");return;}
 
-await setDoc(doc(db,"fees",name),{
+await setDoc(doc(db,"students_pay",name),{
 name:name,
-status:"unpaid",
-lastPaidMonth:"",
-paidDate:""
+lastPaidMonth:0,
+lastPaidYear:0,
+paidDate:"",
+totalPaid:0
 });
 
-document.getElementById("name").value="";
+alert("Student added");
 load();
 }
 
-/* MARK PAID */
-window.markPaid=async function(name){
-
+window.markPaid = async function(name){
 let today=new Date();
-let month=today.getMonth()+1+"-"+today.getFullYear();
+let m=today.getMonth()+1;
+let y=today.getFullYear();
 let date=today.toLocaleDateString();
 
-await updateDoc(doc(db,"fees",name),{
-status:"paid",
-lastPaidMonth:month,
-paidDate:date
+let ref=doc(db,"students_pay",name);
+let snap=await getDocs(collection(db,"students_pay"));
+let data;
+
+snap.forEach(d=>{if(d.id==name){data=d.data();}});
+
+await updateDoc(ref,{
+lastPaidMonth:m,
+lastPaidYear:y,
+paidDate:date,
+totalPaid:(data.totalPaid||0)+monthlyFee
 });
 
 load();
 }
 
-/* LOAD */
-async function load(){
+window.delStudent = async function(name){
+if(!confirm("Delete?")) return;
+await deleteDoc(doc(db,"students_pay",name));
+load();
+}
 
-let snap=await getDocs(collection(db,"fees"));
+async function load(){
+let snap=await getDocs(collection(db,"students_pay"));
 let html="";
 let total=0;
 
 let today=new Date();
-let currentMonth=today.getMonth()+1+"-"+today.getFullYear();
+let cm=today.getMonth()+1;
+let cy=today.getFullYear();
 
 snap.forEach(d=>{
 let s=d.data();
 
-let overdue = (s.lastPaidMonth!==currentMonth);
-let statusText="";
-let btn="";
+let paid = (s.lastPaidMonth==cm && s.lastPaidYear==cy);
+let status = paid 
+? `<span style="color:#22c55e">PAID</span>`
+: `<span style="color:red">OVERDUE</span>`;
 
-if(overdue){
-statusText=`<span class="red">OVERDUE</span>`;
-btn=`<button onclick="markPaid('${s.name}')">Mark Paid</button>`;
-}else{
-statusText=`<span class="green">PAID</span>`;
-total+=500;
-}
+if(paid) total+=monthlyFee;
 
 html+=`
 <div class="student">
 <b>${s.name}</b><br>
-Status: ${statusText}<br>
+Status: ${status}<br>
 Paid Date: ${s.paidDate||"-"}<br>
-${btn}
-</div>
-`;
+<button onclick="markPaid('${s.name}')">Mark Paid</button>
+<button class="del" onclick="delStudent('${s.name}')">Delete</button>
+</div>`;
 });
 
 document.getElementById("list").innerHTML=html;
@@ -161,6 +169,7 @@ document.getElementById("total").innerHTML="₹"+total;
 }
 
 load();
+
 </script>
 </body>
 </html>
