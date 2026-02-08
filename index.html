@@ -352,7 +352,27 @@ transform:scale(1.06);
 <div class="grid">
   
   
+<!-- 🔴 PAYMENT ALERT -->
+<div id="paymentAlert" style="
+display:none;
+background:#7f1d1d;
+color:white;
+padding:14px;
+border-radius:12px;
+margin:15px;
+font-weight:bold;
+animation:blink 1s infinite;
+text-align:center">
+⚠ Payment Pending
+</div>
 
+<style>
+@keyframes blink{
+0%{opacity:1}
+50%{opacity:0.3}
+100%{opacity:1}
+}
+</style>
 
 <a href="daily-test.html" style="text-decoration:none;color:white">
 <div class="card">
@@ -638,7 +658,48 @@ document.getElementById("globalNotice").style.display="none";
 });
 </script>
 
+<script type="module">
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let student = localStorage.getItem("studentName");
+
+async function checkPayment(){
+
+if(!student) return;
+
+let snap = await getDoc(doc(db,"payments",student));
+
+if(!snap.exists()) return;
+
+let data = snap.data();
+let status = data.status;
+
+if(status=="OVERDUE"){
+let box=document.getElementById("paymentAlert");
+box.style.display="block";
+box.innerHTML="⚠ Payment Pending for this month";
+}
+
+}
+
+checkPayment();
+
+</script>
 
 </body>
 </html>
