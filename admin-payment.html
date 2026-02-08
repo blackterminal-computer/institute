@@ -10,36 +10,47 @@ background:#020617;
 color:white;
 font-family:Arial;
 text-align:center;
-padding:20px;
+padding:20px
 }
 
 .card{
 background:#0f172a;
 padding:25px;
 border-radius:16px;
-max-width:500px;
+max-width:520px;
 margin:auto;
-margin-top:20px;
+margin-top:20px
 }
 
-.student{
-background:#111827;
-padding:15px;
-margin:12px;
-border-radius:12px;
+input{
+width:90%;
+padding:12px;
+margin:8px;
+border-radius:10px;
+border:none;
+font-size:16px
 }
 
 button{
-padding:10px 14px;
+padding:12px 18px;
 border:none;
 border-radius:10px;
-margin:6px;
+margin:5px;
 font-weight:bold;
+color:white
 }
 
-.paid{background:#22c55e;color:black}
-.del{background:red;color:white}
-.complete{background:orange;color:black}
+.add{background:linear-gradient(90deg,#6366f1,#06b6d4);width:90%}
+.paid{background:#22c55e}
+.complete{background:orange}
+.del{background:red}
+
+.student{
+background:#111827;
+padding:18px;
+margin:12px;
+border-radius:14px
+}
 
 .overdue{color:red;font-weight:bold}
 .paidtxt{color:#22c55e;font-weight:bold}
@@ -50,14 +61,20 @@ font-weight:bold;
 <body>
 
 <div class="card">
-<h2>👨‍💻 Students Payment Control</h2>
+<h2>➕ Add Student</h2>
+<input id="name" placeholder="Student name">
+<button class="add" onclick="addStudent()">Add Student</button>
+</div>
+
+<div class="card">
+<h2>👨‍💻 Students Payment Control (<span id="totalStudents">0</span>)</h2>
 <div id="list">Loading...</div>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc }
+import { getFirestore, doc, setDoc, getDocs, collection, updateDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -72,13 +89,60 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
+load();
+
+/* ADD STUDENT */
+window.addStudent=async function(){
+let name=document.getElementById("name").value.trim();
+if(!name){alert("Enter name");return;}
+
+await setDoc(doc(db,"payments",name),{
+name:name,
+status:"OVERDUE",
+lastPaid:""
+});
+
+document.getElementById("name").value="";
+load();
+}
+
+/* MARK PAID */
+window.markPaid=async function(name){
+let today=new Date().toLocaleDateString();
+
+await updateDoc(doc(db,"payments",name),{
+status:"PAID",
+lastPaid:today
+});
+
+load();
+}
+
+/* COURSE COMPLETE */
+window.complete=async function(name){
+await updateDoc(doc(db,"payments",name),{
+status:"COMPLETED"
+});
+load();
+}
+
+/* DELETE */
+window.del=async function(name){
+if(!confirm("Delete student?")) return;
+await deleteDoc(doc(db,"payments",name));
+load();
+}
+
+/* LOAD LIST */
 async function load(){
 
 let snap=await getDocs(collection(db,"payments"));
 let html="";
+let count=1;
 
 if(snap.empty){
 document.getElementById("list").innerHTML="No students";
+document.getElementById("totalStudents").innerText=0;
 return;
 }
 
@@ -92,40 +156,22 @@ else statusHtml=`<span class="overdue">OVERDUE</span>`;
 
 html+=`
 <div class="student">
-<h3>${s.name}</h3>
-Status: ${statusHtml}<br><br>
+<h3>${count}. ${s.name}</h3>
+Status: ${statusHtml}<br>
+${s.lastPaid ? "Paid Date: "+s.lastPaid : ""}<br><br>
 
 <button class="paid" onclick="markPaid('${s.name}')">Mark Paid</button>
 <button class="complete" onclick="complete('${s.name}')">Course Completed</button>
 <button class="del" onclick="del('${s.name}')">Delete</button>
 </div>`;
+
+count++;
 });
 
 document.getElementById("list").innerHTML=html;
-}
+document.getElementById("totalStudents").innerText=count-1;
 
-window.markPaid=async function(name){
-await updateDoc(doc(db,"payments",name),{
-status:"PAID",
-lastPaid:new Date().toLocaleDateString()
-});
-load();
 }
-
-window.complete=async function(name){
-await updateDoc(doc(db,"payments",name),{
-status:"COMPLETED"
-});
-load();
-}
-
-window.del=async function(name){
-if(!confirm("Delete student?")) return;
-await deleteDoc(doc(db,"payments",name));
-load();
-}
-
-load();
 
 </script>
 </body>
