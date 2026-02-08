@@ -2,18 +2,39 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Payment Pro</title>
+<title>Payment Admin</title>
 
 <style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
-.card{background:#0f172a;padding:25px;border-radius:16px;max-width:540px;margin:auto;margin-top:20px}
-input,select{width:90%;padding:12px;margin:8px;border-radius:10px;border:none;font-size:16px}
+body{
+background:#020617;
+color:white;
+font-family:Arial;
+text-align:center;
+padding:20px;
+}
+
+.card{
+background:#0f172a;
+padding:20px;
+border-radius:16px;
+max-width:500px;
+margin:auto;
+margin-top:20px;
+}
+
+input{
+width:90%;
+padding:12px;
+margin:8px;
+border:none;
+border-radius:10px;
+font-size:16px;
+}
 
 button{
-width:90%;
+width:92%;
 padding:14px;
-margin-top:15px;
-margin-bottom:10px;
+margin-top:10px;
 border:none;
 border-radius:12px;
 font-size:16px;
@@ -22,45 +43,43 @@ background:linear-gradient(90deg,#6366f1,#06b6d4);
 color:white;
 }
 
-h2{color:#22c55e}
-.student{background:#111827;padding:14px;margin:10px;border-radius:12px}
-.overdue{color:#ff4d4d;font-weight:bold}
-.del{background:red}
+.student{
+background:#111827;
+padding:14px;
+margin:10px;
+border-radius:12px;
+}
+
+.del{
+background:red;
+margin-top:8px;
+}
 </style>
 </head>
 <body>
 
 <div class="card">
-<h2>➕ Add Student Payment</h2>
+<h2>➕ Add Student</h2>
 
 <input id="name" placeholder="Student name">
-
-<select id="duration">
-<option value="3">3 Month</option>
-<option value="6">6 Month</option>
-<option value="12">12 Month</option>
-</select>
-
-<input type="month" id="admissionMonth">
-<input type="number" id="admissionFee" placeholder="Admission Fee">
-
-<button onclick="addStudent()">➕ Add Student</button>
+<input type="month" id="join">
+<button onclick="addStudent()">Add Student</button>
 </div>
 
 <div class="card">
-<h2>📊 Students Payment Control</h2>
+<h2>📊 Students</h2>
 <div id="list"></div>
 </div>
 
 <div class="card">
-<h2>💰 Total Collection</h2>
+<h2>💰 Total Monthly Income</h2>
 <h1 id="total">0</h1>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, deleteDoc }
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -75,132 +94,51 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
+/* ADD STUDENT */
 window.addStudent=async function(){
 
 let name=document.getElementById("name").value.trim();
-let duration=Number(document.getElementById("duration").value);
-let admissionMonth=document.getElementById("admissionMonth").value;
-let admissionFee=Number(document.getElementById("admissionFee").value);
+let join=document.getElementById("join").value;
 
-if(!name||!admissionMonth||!admissionFee){
-alert("Fill all fields");return;
+if(!name||!join){
+alert("Fill all");return;
 }
 
-let today=new Date();
-let cm=today.getMonth()+1;
-let cy=today.getFullYear();
-
-let parts=admissionMonth.split("-");
-let sm=Number(parts[1]);
-let sy=Number(parts[0]);
-
-let monthsPassed=(cy-sy)*12+(cm-sm)+1;
-if(monthsPassed<0) monthsPassed=0;
-
-let totalMonthly=monthsPassed*500;
-let totalPaid=admissionFee+totalMonthly;
-
-await setDoc(doc(db,"payments",name),{
+await addDoc(collection(db,"students_pay"),{
 name:name,
-duration:duration,
-monthly:500,
-admissionMonth:admissionMonth,
-admissionFee:admissionFee,
-paidMonths:monthsPassed,
-totalPaid:totalPaid
+join:join,
+monthly:500
 });
 
-alert("Student Added Successfully ✅");
-
+alert("Added ✅");
 document.getElementById("name").value="";
-document.getElementById("admissionFee").value="";
-load();
-}
-
-/* MONTHLY PAID */
-window.markPaid=async function(name){
-
-let ref=doc(db,"payments",name);
-let snap=await getDocs(collection(db,"payments"));
-let data;
-
-snap.forEach(d=>{
-if(d.id==name){data=d.data();}
-});
-
-await updateDoc(ref,{
-paidMonths:data.paidMonths+1,
-totalPaid:data.totalPaid+500
-});
-
-load();
-}
-
-/* FULL PAID */
-window.fullPaid=async function(name){
-
-let ref=doc(db,"payments",name);
-let snap=await getDocs(collection(db,"payments"));
-let data;
-
-snap.forEach(d=>{
-if(d.id==name){data=d.data();}
-});
-
-let total=data.admissionFee+(data.duration*500);
-
-await updateDoc(ref,{
-paidMonths:data.duration,
-totalPaid:total
-});
-
 load();
 }
 
 /* DELETE */
-window.delStudent=async function(name){
-if(!confirm("Delete student?")) return;
-await deleteDoc(doc(db,"payments",name));
+window.del=async function(id){
+await deleteDoc(doc(db,"students_pay",id));
 load();
 }
 
-/* LOAD LIST */
+/* LOAD */
 async function load(){
 
-let snap=await getDocs(collection(db,"payments"));
+let snap=await getDocs(collection(db,"students_pay"));
 let html="";
 let total=0;
-
-let today=new Date();
-let cm=today.getMonth()+1;
-let cy=today.getFullYear();
 
 snap.forEach(d=>{
 
 let s=d.data();
-total+=s.totalPaid;
-
-let parts=s.admissionMonth.split("-");
-let sm=Number(parts[1]);
-let sy=Number(parts[0]);
-
-let passed=(cy-sy)*12+(cm-sm)+1;
-let due=passed-s.paidMonths;
-
-let overdue= due>0 ? `<span class="overdue">⚠ OVERDUE</span>`:"";
+total+=500;
 
 html+=`
 <div class="student">
 <b>${s.name}</b><br>
-Admission Fee: ₹${s.admissionFee}<br>
-Paid: ${s.paidMonths}/${s.duration} months<br>
-Collected: ₹${s.totalPaid}<br>
-${overdue}<br>
-<button onclick="markPaid('${s.name}')">Monthly Paid</button>
-<button onclick="fullPaid('${s.name}')">Full Paid</button>
-<button class="del" onclick="delStudent('${s.name}')">Delete</button>
-</div>
-`;
+Monthly Fee: ₹500<br>
+<button class="del" onclick="del('${d.id}')">Delete</button>
+</div>`;
 });
 
 document.getElementById("list").innerHTML=html;
