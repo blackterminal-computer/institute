@@ -5,46 +5,11 @@
 <title>Leaderboard</title>
 
 <style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-text-align:center;
-padding:20px;
-}
-
-.card{
-background:#0f172a;
-padding:20px;
-border-radius:16px;
-max-width:500px;
-margin:auto;
-margin-top:20px;
-}
-
-.player{
-background:#111827;
-margin:10px;
-padding:15px;
-border-radius:12px;
-font-size:18px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.rank{
-font-weight:bold;
-font-size:18px;
-color:#22c55e;
-}
-
-.xp{
-color:#facc15;
-font-weight:bold;
-}
-
-h2{color:#22c55e}
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
+.card{background:#0f172a;padding:20px;border-radius:16px;max-width:500px;margin:auto;margin-top:20px}
+.player{background:#111827;margin:10px;padding:15px;border-radius:12px;font-size:18px;display:flex;justify-content:space-between}
+.rank{color:#22c55e;font-weight:bold}
+.xp{color:#facc15;font-weight:bold}
 </style>
 </head>
 
@@ -56,20 +21,12 @@ h2{color:#22c55e}
 </div>
 
 <br>
-<button onclick="location.href='index.html'" style="
-padding:12px 20px;
-border:none;
-border-radius:10px;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
-color:white;
-font-size:16px">
-🏠 Home
-</button>
+<button onclick="location.href='index.html'">🏠 Home</button>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, setDoc }
+import { getFirestore, collection, getDocs }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -84,22 +41,16 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-/* 🔥 FIRST SYNC LOCAL XP → FIREBASE */
-async function syncLocalXP(){
-
-let xpData = JSON.parse(localStorage.getItem("xpData")) || {};
-
-for(let name in xpData){
-await setDoc(doc(db,"students",name),{
-xp: xpData[name]
-},{merge:true});
-}
+/* ⚡ STEP 1: LOAD LOCAL FAST */
+let local=localStorage.getItem("leaderboard_cache");
+if(local){
+showBoard(JSON.parse(local));
 }
 
-/* 🏆 LOAD LEADERBOARD */
+/* ⚡ STEP 2: FETCH FIREBASE BACKGROUND */
+loadBoard();
+
 async function loadBoard(){
-
-await syncLocalXP();
 
 let snap = await getDocs(collection(db,"students"));
 let arr=[];
@@ -112,35 +63,32 @@ xp:data.xp || 0
 });
 });
 
-// sort high xp first
+// sort high to low
 arr.sort((a,b)=>b.xp-a.xp);
+
+// save cache
+localStorage.setItem("leaderboard_cache",JSON.stringify(arr));
+
+// show
+showBoard(arr);
+}
+
+function showBoard(arr){
 
 let html="";
 
 arr.forEach((s,i)=>{
-
-let medal="";
-
-if(i==0) medal="🥇";
-else if(i==1) medal="🥈";
-else if(i==2) medal="🥉";
-
 html+=`
 <div class="player">
-<div class="rank">${medal} #${i+1} ${s.name}</div>
+<div class="rank">#${i+1} ${s.name}</div>
 <div class="xp">⭐ ${s.xp}</div>
 </div>`;
 });
 
-if(arr.length==0) html="No players yet";
+if(arr.length==0) html="No data";
 
 document.getElementById("board").innerHTML=html;
 }
-
-loadBoard();
-
-/* 🔄 AUTO REFRESH */
-setInterval(loadBoard,5000);
 
 </script>
 </body>
