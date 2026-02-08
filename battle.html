@@ -16,7 +16,7 @@ body{background:#020617;color:white;font-family:Arial;text-align:center;padding-
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc }
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -36,90 +36,76 @@ localStorage.setItem("studentName",student);
 
 let roomId="";
 let opponent="";
+let started=false;
 
-start();
+/* 🔥 ENTER MATCHMAKING */
+async function enter(){
 
-async function start(){
-
-// 🔥 always create fresh room
 const ref = await addDoc(collection(db,"battle_wait"),{
 name:student,
 status:"waiting",
+score1:0,
+score2:0,
 time:Date.now()
 });
 
-roomId = ref.id;
+roomId=ref.id;
 
-// 🔥 keep checking for opponent
-const check = setInterval(async()=>{
+listenMatch();
+joinOther();
 
-let snap = await getDoc(doc(db,"battle_wait",roomId));
-let d = snap.data();
-
-if(!d) return;
-
-if(d.p2 && d.status=="start"){
-clearInterval(check);
-
-if(d.name==student){
-opponent=d.p2;
-}else{
-opponent=d.name;
 }
 
+/* 🔥 LISTEN MY ROOM */
+function listenMatch(){
+onSnapshot(doc(db,"battle_wait",roomId),(snap)=>{
+let d=snap.data();
+if(!d || started) return;
+
+if(d.status=="start" && d.p2){
+started=true;
+opponent = (d.name==student)?d.p2:d.name;
 startGame();
 }
+});
+}
 
-},1500);
+/* 🔥 JOIN OTHER */
+async function joinOther(){
 
+onSnapshot(collection(db,"battle_wait"), async(snap)=>{
 
-// 🔥 join any fresh waiting room
-let snapAll = await getDocs(collection(db,"battle_wait"));
-snapAll.forEach(async(docu)=>{
-if(docu.id===roomId) return;
-let data = docu.data();
+if(started) return;
 
-// join only fresh room (5 sec)
-if(data.status=="waiting" 
-&& data.name!=student 
-&& (Date.now()-data.time)<5000){
+snap.forEach(async(docu)=>{
+let d=docu.data();
 
-try{
+if(
+docu.id!=roomId &&
+d.status=="waiting" &&
+d.name!=student &&
+!started
+){
+started=true;
+
 await updateDoc(doc(db,"battle_wait",docu.id),{
 p2:student,
 status:"start"
 });
-}catch{}
 
-}
-
-});
-}
-
-/* 🔥 ALSO CHECK IF I JOINED SOMEONE */
-setInterval(async()=>{
-
-let snap=await getDocs(collection(db,"battle_wait"));
-
-snap.forEach(async(r)=>{
-let d=r.data();
-
-if(d.status=="start" && d.p2==student){
-roomId=r.id;
+roomId=docu.id;
 opponent=d.name;
 startGame();
 }
 
-if(d.status=="start" && d.name==student){
-roomId=r.id;
-opponent=d.p2;
-startGame();
-}
-
 });
 
-},1500);
+});
+}
 
+enter();
+
+/* QUESTIONS */
 let questions=[
 {q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Keyboard",ans:"b"},
 {q:"HTML full form?",a:"Hyper Trainer",b:"Hyper Text Markup Language",c:"High Text",d:"None",ans:"b"},
@@ -148,28 +134,45 @@ function loadQ(){
 if(i>=10){finish();return;}
 time=10;
 document.getElementById("t").innerText=time;
+
 let q=questions[i];
 document.getElementById("q").innerText=q.q;
+
 document.getElementById("opts").innerHTML=`
 <div class="option" onclick="ans('a')">${q.a}</div>
 <div class="option" onclick="ans('b')">${q.b}</div>
 <div class="option" onclick="ans('c')">${q.c}</div>
-<div class="option" onclick="ans('d')">${q.d}</div>`;
+<div class="option" onclick="ans('d')">${q.d}</div>
+`;
+
 clearInterval(timer);
-timer=setInterval(()=>{time--;document.getElementById("t").innerText=time;if(time<=0){i++;loadQ();}},1000);
+timer=setInterval(()=>{
+time--;
+document.getElementById("t").innerText=time;
+if(time<=0){i++;loadQ();}
+},1000);
 }
 
-window.ans=(a)=>{if(a==questions[i].ans)score++;i++;loadQ();}
+window.ans=(a)=>{
+if(a==questions[i].ans) score++;
+i++;
+loadQ();
+}
 
 async function finish(){
 clearInterval(timer);
-await updateDoc(doc(db,"battle_wait",roomId),{[student]:score});
+
+await updateDoc(doc(db,"battle_wait",roomId),{
+[student]:score
+});
 
 setTimeout(async()=>{
 let snap=await getDoc(doc(db,"battle_wait",roomId));
 let d=snap.data();
+
 let s1=d[d.name]||0;
 let s2=d[d.p2]||0;
+
 let win=(student==d.name?(s1>s2):(s2>s1));
 let xp=win?100:-10;
 
@@ -187,7 +190,9 @@ x+=xp;if(x<0)x=0;
 await updateDoc(ref,{xp:x});
 }
 
-setTimeout(async()=>{try{await deleteDoc(doc(db,"battle_wait",roomId));}catch{}},4000);
+setTimeout(async()=>{
+try{await deleteDoc(doc(db,"battle_wait",roomId));}catch{}
+},4000);
 
 },2000);
 }
