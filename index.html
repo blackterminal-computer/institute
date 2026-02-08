@@ -314,6 +314,32 @@ box-shadow:0 0 18px rgba(250,204,21,0.8);
 transform:scale(1.06);
 }
 }
+
+.payCard{
+background:linear-gradient(90deg,#0f172a,#020617);
+border-radius:16px;
+padding:18px;
+margin:20px;
+text-align:center;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
+animation:fadeIn 1s ease;
+}
+
+.payTitle{
+font-size:18px;
+margin-bottom:6px;
+color:#38bdf8;
+font-weight:bold;
+}
+
+.paid{color:#22c55e;font-weight:bold}
+.over{color:red;font-weight:bold}
+.done{color:#38bdf8;font-weight:bold}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(20px)}
+to{opacity:1;transform:translateY(0)}
+}
 </style>
 </head>
 
@@ -348,6 +374,13 @@ transform:scale(1.06);
 
 <section class="features">
 <div class="grid">
+  
+  
+<!-- 💳 PAYMENT STATUS CARD -->
+<div class="payCard" id="payCard" style="display:none;">
+<div class="payTitle">💳 Monthly Payment</div>
+<div id="payStatusText">Loading...</div>
+</div>
 
 <a href="daily-test.html" style="text-decoration:none;color:white">
 <div class="card">
@@ -633,6 +666,56 @@ document.getElementById("globalNotice").style.display="none";
 });
 </script>
 
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let student=localStorage.getItem("studentName");
+if(!student) return;
+
+let ref=doc(db,"students_pay",student);
+let snap=await getDoc(ref);
+
+if(!snap.exists()) return;
+
+let data=snap.data();
+
+document.getElementById("payCard").style.display="block";
+
+let today=new Date();
+let m=today.getMonth()+1;
+let y=today.getFullYear();
+let current=y+"-"+m;
+
+let text="";
+
+if(data.completed){
+text=`<span class="done">Course Completed 🎓</span>`;
+}
+else if(data.lastPaidMonth===current){
+text=`<span class="paid">Paid for this month ✅</span>`;
+}
+else{
+text=`<span class="over">Payment Overdue ⚠</span>`;
+}
+
+document.getElementById("payStatusText").innerHTML=text;
+
+</script>
 
 </body>
 </html>
