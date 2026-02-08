@@ -2,61 +2,31 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Test</title>
+<title>Daily Exam</title>
 
 <style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-text-align:center;
-padding:20px;
-}
-
-.card{
-background:#0f172a;
-padding:25px;
-border-radius:18px;
-max-width:600px;
-margin:auto;
-margin-top:30px;
-}
-
-button{
-padding:12px 18px;
-margin:8px;
-border:none;
-border-radius:10px;
-font-size:16px;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
-color:white;
-}
-
-.opt{
-display:block;
-background:#111827;
-margin:8px;
-padding:12px;
-border-radius:10px;
-cursor:pointer;
-}
-
-.timer{
-font-size:20px;
-color:#22c55e;
-}
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
+.card{background:#0f172a;padding:25px;border-radius:18px;max-width:600px;margin:auto;margin-top:30px}
+.opt{display:block;background:#111827;margin:8px;padding:14px;border-radius:12px;cursor:pointer}
+.lock{opacity:0.5;pointer-events:none}
+button{padding:12px 18px;margin-top:15px;border:none;border-radius:10px;font-size:16px;background:linear-gradient(90deg,#6366f1,#06b6d4);color:white}
+.timer{font-size:20px;color:#22c55e}
 </style>
 </head>
 <body>
 
-<div class="card">
+<div class="card" id="examBox">
 <h2>🧠 Daily Exam</h2>
 <div class="timer" id="timer">Loading...</div>
-<h3 id="q">Loading question...</h3>
-
+<h3 id="q">Loading...</h3>
 <div id="options"></div>
-
 <button onclick="nextQ()">Next</button>
+</div>
+
+<div class="card" id="lockBox" style="display:none">
+<h2>🔒 Test Completed</h2>
+<h3>Next test unlock in</h3>
+<h1 id="count"></h1>
 </div>
 
 <script type="module">
@@ -77,71 +47,100 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
+let student=localStorage.getItem("studentName")||"Student";
+
+/* 🔒 DAILY LOCK CHECK */
+let last=localStorage.getItem("daily_done_"+student);
+let today=new Date().toDateString();
+
+if(last==today){
+lockScreen();
+}else{
+loadQ();
+}
+
+function lockScreen(){
+document.getElementById("examBox").style.display="none";
+document.getElementById("lockBox").style.display="block";
+
+setInterval(()=>{
+let now=new Date();
+let tomorrow=new Date();
+tomorrow.setHours(24,0,0,0);
+
+let diff=tomorrow-now;
+let h=Math.floor(diff/1000/60/60);
+let m=Math.floor(diff/1000/60)%60;
+let s=Math.floor(diff/1000)%60;
+
+document.getElementById("count").innerHTML=
+h+"h "+m+"m "+s+"s";
+},1000);
+}
+
 let questions=[];
 let index=0;
 let score=0;
 let selected="";
+let locked=false;
 let time=20;
 
 /* LOAD QUESTIONS */
 async function loadQ(){
-
 let snap=await getDocs(collection(db,"daily_mcq"));
-snap.forEach(d=>{
-questions.push(d.data());
-});
+snap.forEach(d=>questions.push(d.data()));
 
-// shuffle
 questions.sort(()=>Math.random()-0.5);
-
-// take 15 only
 questions=questions.slice(0,15);
 
 showQ();
-startTimer();
+timer();
 }
 
 function showQ(){
-
 if(index>=questions.length){
 finish();
 return;
 }
 
 let q=questions[index];
-document.getElementById("q").innerHTML=
-`Q${index+1}. ${q.question}`;
+document.getElementById("q").innerHTML=`Q${index+1}. ${q.question}`;
 
 document.getElementById("options").innerHTML=`
-<div class="opt" onclick="select('A')">A. ${q.a}</div>
-<div class="opt" onclick="select('B')">B. ${q.b}</div>
-<div class="opt" onclick="select('C')">C. ${q.c}</div>
-<div class="opt" onclick="select('D')">D. ${q.d}</div>
+<div class="opt" onclick="select('A',this)">A. ${q.a}</div>
+<div class="opt" onclick="select('B',this)">B. ${q.b}</div>
+<div class="opt" onclick="select('C',this)">C. ${q.c}</div>
+<div class="opt" onclick="select('D',this)">D. ${q.d}</div>
 `;
 
 selected="";
+locked=false;
 time=20;
 }
 
-window.select=function(v){
+/* SELECT LOCK */
+window.select=function(v,el){
+if(locked) return;
 selected=v;
+locked=true;
+
+document.querySelectorAll(".opt").forEach(o=>o.classList.add("lock"));
+el.style.background="#22c55e";
 }
 
 /* NEXT */
 window.nextQ=function(){
+if(!locked) return alert("Select option");
 
 let q=questions[index];
-
-if(selected==q.correct){
-score++;
-}
+if(selected==q.correct) score++;
 
 index++;
 showQ();
 }
 
 /* TIMER */
-function startTimer(){
+function timer(){
 setInterval(()=>{
 time--;
 document.getElementById("timer").innerHTML="⏱ "+time+"s";
@@ -157,19 +156,18 @@ time=20;
 /* FINISH */
 function finish(){
 
-let student=localStorage.getItem("studentName")||"Student";
+localStorage.setItem("daily_done_"+student,new Date().toDateString());
 
 // XP add
 let xpData=JSON.parse(localStorage.getItem("xpData"))||{};
 xpData[student]=(xpData[student]||0)+100;
 localStorage.setItem("xpData",JSON.stringify(xpData));
 
-alert("Test finished 🎉 Score: "+score+"/15 (+100 XP)");
+alert("🎉 Test completed!\nScore: "+score+"/15\n+100 XP added");
 
+// leaderboard auto
 window.location="leaderboard.html";
 }
-
-loadQ();
 
 </script>
 </body>
