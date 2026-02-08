@@ -24,7 +24,7 @@ color:white;
 
 h2{color:#22c55e}
 .student{background:#111827;padding:14px;margin:10px;border-radius:12px}
-.overdue{color:red;font-weight:bold}
+.overdue{color:#ff4d4d;font-weight:bold}
 .del{background:red}
 </style>
 </head>
@@ -44,9 +44,7 @@ h2{color:#22c55e}
 <input type="month" id="admissionMonth">
 <input type="number" id="admissionFee" placeholder="Admission Fee">
 
-<!-- 🔥 ADD BUTTON -->
 <button onclick="addStudent()">➕ Add Student</button>
-
 </div>
 
 <div class="card">
@@ -112,17 +110,23 @@ paidMonths:monthsPassed,
 totalPaid:totalPaid
 });
 
-alert("Student Added ✅");
+alert("Student Added Successfully ✅");
+
+document.getElementById("name").value="";
+document.getElementById("admissionFee").value="";
 load();
 }
 
 /* MONTHLY PAID */
 window.markPaid=async function(name){
+
 let ref=doc(db,"payments",name);
 let snap=await getDocs(collection(db,"payments"));
 let data;
 
-snap.forEach(d=>{if(d.id==name){data=d.data();}});
+snap.forEach(d=>{
+if(d.id==name){data=d.data();}
+});
 
 await updateDoc(ref,{
 paidMonths:data.paidMonths+1,
@@ -134,11 +138,14 @@ load();
 
 /* FULL PAID */
 window.fullPaid=async function(name){
+
 let ref=doc(db,"payments",name);
 let snap=await getDocs(collection(db,"payments"));
 let data;
 
-snap.forEach(d=>{if(d.id==name){data=d.data();}});
+snap.forEach(d=>{
+if(d.id==name){data=d.data();}
+});
 
 let total=data.admissionFee+(data.duration*500);
 
@@ -157,8 +164,9 @@ await deleteDoc(doc(db,"payments",name));
 load();
 }
 
-/* LOAD */
+/* LOAD LIST */
 async function load(){
+
 let snap=await getDocs(collection(db,"payments"));
 let html="";
 let total=0;
@@ -168,6 +176,7 @@ let cm=today.getMonth()+1;
 let cy=today.getFullYear();
 
 snap.forEach(d=>{
+
 let s=d.data();
 total+=s.totalPaid;
 
@@ -190,7 +199,8 @@ ${overdue}<br>
 <button onclick="markPaid('${s.name}')">Monthly Paid</button>
 <button onclick="fullPaid('${s.name}')">Full Paid</button>
 <button class="del" onclick="delStudent('${s.name}')">Delete</button>
-</div>`;
+</div>
+`;
 });
 
 document.getElementById("list").innerHTML=html;
