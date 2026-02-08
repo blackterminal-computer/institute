@@ -41,58 +41,60 @@ start();
 
 async function start(){
 
-/* CLEAN OLD ROOMS */
-let old = await getDocs(collection(db,"battle_wait"));
-old.forEach(async(d)=>{
-let data=d.data();
-if(data.status!="start"){
-try{ await deleteDoc(doc(db,"battle_wait",d.id)); }catch{}
-}
+// 🔥 always create fresh room
+const ref = await addDoc(collection(db,"battle_wait"),{
+name:student,
+status:"waiting",
+time:Date.now()
 });
 
-let snap=await getDocs(collection(db,"battle_wait"));
-let rooms=[];
-snap.forEach(d=>rooms.push({id:d.id,...d.data()}));
+roomId = ref.id;
 
-let waiting=rooms.find(r=>r.status=="waiting" && r.name!=student);
+// 🔥 keep checking for opponent
+const check = setInterval(async()=>{
 
-if(waiting){
-// join
-roomId=waiting.id;
-opponent=waiting.name;
+let snap = await getDoc(doc(db,"battle_wait",roomId));
+let d = snap.data();
 
-await updateDoc(doc(db,"battle_wait",roomId),{
+if(!d) return;
+
+if(d.p2 && d.status=="start"){
+clearInterval(check);
+
+if(d.name==student){
+opponent=d.p2;
+}else{
+opponent=d.name;
+}
+
+startGame();
+}
+
+},1500);
+
+
+// 🔥 join any fresh waiting room
+let snapAll = await getDocs(collection(db,"battle_wait"));
+snapAll.forEach(async(docu)=>{
+
+let data = docu.data();
+
+// join only fresh room (5 sec)
+if(data.status=="waiting" 
+&& data.name!=student 
+&& (Date.now()-data.time)<5000){
+
+try{
+await updateDoc(doc(db,"battle_wait",docu.id),{
 p2:student,
 status:"start"
 });
+}catch{}
 
-startGame();
 }
-else{
-// create
-let ref=await addDoc(collection(db,"battle_wait"),{
-name:student,
-status:"waiting",
-score1:0,
-score2:0
+
 });
-roomId=ref.id;
 
-// wait opponent
-checkJoin();
-}
-}
-
-async function checkJoin(){
-let int=setInterval(async()=>{
-let snap=await getDoc(doc(db,"battle_wait",roomId));
-let d=snap.data();
-if(d.status=="start"){
-clearInterval(int);
-opponent=d.p2;
-startGame();
-}
-},1500);
 }
 
 let questions=[
