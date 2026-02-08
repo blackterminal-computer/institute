@@ -1,0 +1,130 @@
+<!-- ============================= -->
+<!-- ADMIN PAYMENT PANEL PART 1   -->
+<!-- File name: admin-payment.html -->
+<!-- ============================= -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Payment Panel</title>
+<style>
+body{
+background:#020617;
+color:white;
+font-family:Arial;
+text-align:center;
+padding:20px;
+}
+
+.card{
+background:#0f172a;
+padding:25px;
+border-radius:16px;
+max-width:500px;
+margin:auto;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
+margin-top:20px;
+}
+
+input,select{
+width:90%;
+padding:12px;
+margin:8px;
+border-radius:10px;
+border:none;
+font-size:16px;
+}
+
+button{
+padding:12px 18px;
+border:none;
+border-radius:10px;
+margin:8px;
+font-size:16px;
+font-weight:bold;
+background:linear-gradient(90deg,#6366f1,#06b6d4);
+color:white;
+}
+h2{color:#22c55e}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>💰 Payment Admin Panel</h2>
+<input type="text" id="name" placeholder="Student name">
+<select id="duration">
+<option value="3">3 Month</option>
+<option value="6">6 Month</option>
+<option value="12">12 Month</option>
+</select>
+<input type="month" id="start">
+</div>
+<div class="card">
+<h2>📊 Students List</h2>
+<div id="list"></div>
+</div>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, collection, getDocs }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.addStudent = async function(){
+
+let name=document.getElementById("name").value;
+let duration=document.getElementById("duration").value;
+let start=document.getElementById("start").value;
+
+if(!name||!start){
+alert("Fill all");
+return;
+}
+
+await setDoc(doc(db,"payments",name),{
+name:name,
+duration:Number(duration),
+monthly:500,
+start:start,
+paidMonths:0,
+totalPaid:0
+});
+
+alert("Student added");
+loadList();
+}
+
+async function loadList(){
+
+let snap=await getDocs(collection(db,"payments"));
+let html="";
+
+snap.forEach(d=>{
+let s=d.data();
+html+=`
+<div style="background:#111827;padding:10px;margin:8px;border-radius:10px">
+<b>${s.name}</b><br>
+Duration: ${s.duration} months<br>
+Paid Months: ${s.paidMonths}
+</div>`;
+});
+
+document.getElementById("list").innerHTML=html;
+}
+
+loadList();
+
+</script>
+</body>
+</html>
