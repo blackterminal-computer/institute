@@ -2,20 +2,49 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Payment Control</title>
+<title>Students Payment Control</title>
 
 <style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
-.card{background:#0f172a;padding:25px;border-radius:16px;max-width:520px;margin:auto;margin-top:20px}
-h2{color:#22c55e}
-.student{background:#111827;padding:14px;margin:10px;border-radius:12px}
-.overdue{color:red;font-weight:bold}
-.paid{color:#22c55e;font-weight:bold}
-.completed{color:#38bdf8;font-weight:bold}
-button{padding:10px 16px;margin:6px;border:none;border-radius:10px;font-weight:bold}
-.pay{background:#22c55e;color:white}
-.done{background:orange;color:white}
+body{
+background:#020617;
+color:white;
+font-family:Arial;
+text-align:center;
+padding:20px;
+}
+
+.card{
+background:#0f172a;
+padding:25px;
+border-radius:16px;
+max-width:500px;
+margin:auto;
+margin-top:20px;
+}
+
+.student{
+background:#111827;
+padding:15px;
+margin:12px;
+border-radius:12px;
+}
+
+button{
+padding:10px 14px;
+border:none;
+border-radius:10px;
+margin:6px;
+font-weight:bold;
+}
+
+.paid{background:#22c55e;color:black}
 .del{background:red;color:white}
+.complete{background:orange;color:black}
+
+.overdue{color:red;font-weight:bold}
+.paidtxt{color:#22c55e;font-weight:bold}
+.completeTxt{color:#38bdf8;font-weight:bold}
+
 </style>
 </head>
 <body>
@@ -26,8 +55,9 @@ button{padding:10px 16px;margin:6px;border:none;border-radius:10px;font-weight:b
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc }
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -44,84 +74,59 @@ const db=getFirestore(app);
 
 async function load(){
 
-let studentsSnap=await getDocs(collection(db,"students"));
+let snap=await getDocs(collection(db,"payments"));
 let html="";
 
-let today=new Date();
-let day=today.getDate();
-
-studentsSnap.forEach(async d=>{
-
-let name=d.id;
-
-// payment doc
-let payRef=doc(db,"payments",name);
-let paySnap=await getDoc(payRef);
-
-let status="PAID";
-
-if(paySnap.exists()){
-let data=paySnap.data();
-status=data.status||"PAID";
-}else{
-// first time create
-await setDoc(payRef,{status:"PAID",date:new Date().toLocaleDateString()});
+if(snap.empty){
+document.getElementById("list").innerHTML="No students";
+return;
 }
 
-if(day>=1 && day<=31){
-let snap2=await getDoc(payRef);
-let s=snap2.data().status;
+snap.forEach(d=>{
+let s=d.data();
 
-if(s!="PAID" && s!="COMPLETED"){
-status="OVERDUE";
-await updateDoc(payRef,{status:"OVERDUE"});
-}else{
-status=s;
-}
-}
-
-let colorClass = status=="PAID"?"paid": status=="COMPLETED"?"completed":"overdue";
+let statusHtml="";
+if(s.status=="PAID") statusHtml=`<span class="paidtxt">PAID</span>`;
+else if(s.status=="COMPLETED") statusHtml=`<span class="completeTxt">COURSE COMPLETED</span>`;
+else statusHtml=`<span class="overdue">OVERDUE</span>`;
 
 html+=`
 <div class="student">
-<b>${name}</b><br>
-Status: <span class="${colorClass}">${status}</span><br>
+<h3>${s.name}</h3>
+Status: ${statusHtml}<br><br>
 
-<button class="pay" onclick="markPaid('${name}')">Mark Paid</button>
-<button class="done" onclick="courseDone('${name}')">Course Completed</button>
-<button class="del" onclick="delStudent('${name}')">Delete</button>
-</div>
-`;
-
-document.getElementById("list").innerHTML=html;
-
+<button class="paid" onclick="markPaid('${s.name}')">Mark Paid</button>
+<button class="complete" onclick="complete('${s.name}')">Course Completed</button>
+<button class="del" onclick="del('${s.name}')">Delete</button>
+</div>`;
 });
 
+document.getElementById("list").innerHTML=html;
 }
 
 window.markPaid=async function(name){
-await setDoc(doc(db,"payments",name),{
+await updateDoc(doc(db,"payments",name),{
 status:"PAID",
-date:new Date().toLocaleDateString()
+lastPaid:new Date().toLocaleDateString()
 });
 load();
 }
 
-window.courseDone=async function(name){
+window.complete=async function(name){
 await updateDoc(doc(db,"payments",name),{
 status:"COMPLETED"
 });
 load();
 }
 
-window.delStudent=async function(name){
+window.del=async function(name){
 if(!confirm("Delete student?")) return;
-await deleteDoc(doc(db,"students",name));
 await deleteDoc(doc(db,"payments",name));
 load();
 }
 
 load();
+
 </script>
 </body>
 </html>
