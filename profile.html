@@ -1,79 +1,159 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>My Profile</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile</title>
 
 <style>
 body{
-font-family:Arial;
 background:#020617;
 color:white;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-}
-
-.box{
-background:#0f172a;
-padding:30px;
-border-radius:18px;
-width:320px;
+font-family:Arial;
 text-align:center;
+padding:20px;
 }
 
-img{
-width:110px;
-height:110px;
+.card{
+background:#0f172a;
+padding:25px;
+border-radius:18px;
+max-width:520px;
+margin:auto;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
+}
+
+/* avatar */
+.avatarWrap{
+position:relative;
+width:160px;
+height:160px;
+margin:auto;
+}
+
+.avatar{
+width:150px;
+height:150px;
 border-radius:50%;
 object-fit:cover;
-border:3px solid #22c55e;
+border:4px solid #22c55e;
+box-shadow:0 0 25px #22c55e;
+}
+
+.level{
+position:absolute;
+bottom:-5px;
+left:50%;
+transform:translateX(-50%);
+background:gold;
+color:black;
+padding:5px 12px;
+border-radius:20px;
+font-weight:bold;
+}
+
+/* xp bar */
+.xpbar{
+background:#111827;
+height:10px;
+border-radius:10px;
+margin:12px 0;
+overflow:hidden;
+}
+.fill{
+background:linear-gradient(90deg,#22c55e,#06b6d4);
+height:100%;
+}
+
+/* grid */
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:20px;
+}
+
+.stat{
+background:#111827;
+padding:14px;
+border-radius:12px;
+}
+
+.badges{
+margin-top:18px;
+}
+
+.badge{
+display:inline-block;
+background:#111827;
+padding:8px 12px;
+border-radius:10px;
+margin:5px;
+font-size:13px;
+}
+
+input,textarea{
+width:90%;
+padding:12px;
+border:none;
+border-radius:10px;
+margin:8px;
 }
 
 button{
-margin-top:15px;
-padding:12px;
-width:100%;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
+padding:12px 20px;
 border:none;
-border-radius:10px;
+border-radius:12px;
+margin:8px;
+font-weight:bold;
+background:linear-gradient(90deg,#6366f1,#06b6d4);
 color:white;
+box-shadow:0 0 20px rgba(99,102,241,.5);
 }
+
 </style>
 </head>
-
 <body>
 
-<div class="box">
+<div class="card">
+
 <h2>👤 My Profile</h2>
 
-<img id="photo" src="https://via.placeholder.com/110">
-<input type="file" onchange="uploadPhoto(event)">
-
-<input id="nameInput" placeholder="Enter your name"
-style="padding:10px;width:100%;border-radius:8px;border:none;margin-top:12px">
-
-<button onclick="saveName()">Save Name</button>
-
-<h3 id="name"></h3>
-
-<div id="paymentStatus" style="
-margin-top:15px;
-padding:12px;
-border-radius:12px;
-background:#111827;
-font-weight:bold">
-Checking payment...
+<div class="avatarWrap">
+<img id="photo" class="avatar" src="">
+<div class="level" id="level">Lvl 1</div>
 </div>
 
-<button onclick="window.location='index.html'">Home</button>
+<input type="file" id="file">
+
+<h3 id="name">Loading...</h3>
+
+<div class="xpbar">
+<div class="fill" id="xpfill" style="width:10%"></div>
+</div>
+<div id="xptext">0/1000 XP</div>
+
+<textarea id="bio" placeholder="Write your bio..."></textarea>
+<br>
+<button onclick="saveBio()">Save Bio</button>
+
+<div class="grid">
+<div class="stat">🔥 Streak<br><b id="streak">0</b></div>
+<div class="stat">⚔️ Battles<br><b id="battle">0</b></div>
+<div class="stat">📚 Exams<br><b id="exams">0</b></div>
+<div class="stat">🏆 Rank<br><b id="rank">--</b></div>
+</div>
+
+<div class="badges" id="badges"></div>
+
+<br>
+<button onclick="location.href='index.html'">🏠 Home</button>
+
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc } 
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -88,74 +168,81 @@ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-let student = localStorage.getItem("studentName") || "";
-document.getElementById("name").innerHTML=student;
-document.getElementById("nameInput").value=student;
+let student=localStorage.getItem("studentName")||"Student";
+document.getElementById("name").innerText=student;
 
-// photo
-let photo = localStorage.getItem("photo_"+student);
-if(photo){document.getElementById("photo").src=photo;}
-
-window.uploadPhoto=function(e){
-let file = e.target.files[0];
-let reader = new FileReader();
-reader.onload=function(){
-localStorage.setItem("photo_"+student,reader.result);
-document.getElementById("photo").src=reader.result;
-}
-reader.readAsDataURL(file);
-}
-
-// ⭐ SAVE NAME + AUTO ADD TO PAYMENT
-window.saveName=async function(){
-
-let newName=document.getElementById("nameInput").value.trim();
-if(!newName){alert("Enter name");return;}
-
-localStorage.setItem("studentName",newName);
-document.getElementById("name").innerHTML=newName;
-
-// 🔥 auto create payment record if not exist
-let ref=doc(db,"payments",newName);
+const ref=doc(db,"students",student);
 let snap=await getDoc(ref);
 
-if(!snap.exists()){
-await setDoc(ref,{
-name:newName,
-status:"OVERDUE",
-lastPaid:""
-});
-}
+let xp=0,streak=0,battle=0,exams=0,bio="",photo="";
 
-alert("Saved & Added to payment system");
-location.reload();
-}
-
-// ⭐ CHECK PAYMENT STATUS
-async function checkPayment(){
-
-let name=localStorage.getItem("studentName");
-if(!name) return;
-
-let snap=await getDoc(doc(db,"payments",name));
-
-if(!snap.exists()){
-document.getElementById("paymentStatus").innerHTML=
-"💳 Payment Status: NOT ADDED";
-return;
-}
-
+if(snap.exists()){
 let d=snap.data();
-let color="#22c55e";
-
-if(d.status=="OVERDUE") color="red";
-if(d.status=="COMPLETED") color="#38bdf8";
-
-document.getElementById("paymentStatus").innerHTML=
-`💳 Payment Status: <span style="color:${color}">${d.status}</span>`;
+xp=d.xp||0;
+streak=d.streak||0;
+battle=d.battle||0;
+exams=d.exams||0;
+bio=d.bio||"";
+photo=d.photo||"";
 }
 
-checkPayment();
+document.getElementById("streak").innerText=streak;
+document.getElementById("battle").innerText=battle;
+document.getElementById("exams").innerText=exams;
+document.getElementById("bio").value=bio;
+
+if(photo) document.getElementById("photo").src=photo;
+else document.getElementById("photo").src="https://i.imgur.com/6VBx3io.png";
+
+/* LEVEL */
+let level=Math.floor(xp/1000)+1;
+document.getElementById("level").innerText="Lvl "+level;
+
+/* XP BAR */
+let need=1000;
+let current=xp%1000;
+let percent=(current/need)*100;
+document.getElementById("xpfill").style.width=percent+"%";
+document.getElementById("xptext").innerText=current+"/"+need+" XP";
+
+/* RANK */
+let snapAll=await getDocs(collection(db,"students"));
+let arr=[];
+snapAll.forEach(d=>{
+arr.push({name:d.id,xp:d.data().xp||0});
+});
+arr.sort((a,b)=>b.xp-a.xp);
+
+let rank=arr.findIndex(x=>x.name==student)+1;
+document.getElementById("rank").innerText="#"+rank;
+
+/* BADGES */
+let badgeHTML="";
+if(streak>=7) badgeHTML+=`<div class="badge">🔥 7 Day Streak</div>`;
+if(xp>=5000) badgeHTML+=`<div class="badge">💎 Pro Student</div>`;
+if(rank==1) badgeHTML+=`<div class="badge">👑 Topper</div>`;
+if(exams>=50) badgeHTML+=`<div class="badge">📚 Exam Master</div>`;
+
+document.getElementById("badges").innerHTML=badgeHTML||"No badges yet";
+
+/* SAVE BIO */
+window.saveBio=async function(){
+let b=document.getElementById("bio").value;
+await setDoc(ref,{bio:b},{merge:true});
+alert("Bio saved");
+}
+
+/* PHOTO */
+document.getElementById("file").addEventListener("change",function(e){
+let file=e.target.files[0];
+let reader=new FileReader();
+reader.onload=async function(){
+let base=reader.result;
+document.getElementById("photo").src=base;
+await setDoc(ref,{photo:base},{merge:true});
+}
+reader.readAsDataURL(file);
+});
 
 </script>
 </body>
