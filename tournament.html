@@ -3,6 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Jackpot Tournament</title>
+
 <style>
 body{
 background:#020617;
@@ -18,15 +19,13 @@ padding:25px;
 border-radius:18px;
 width:92%;
 max-width:420px;
-margin:20px auto;
-box-shadow:0 0 30px rgba(0,0,0,0.5);
+margin:18px auto;
+box-shadow:0 0 30px rgba(0,0,0,0.6);
 }
 
-h1{margin-top:10px}
-
 .btn{
-margin-top:20px;
-padding:14px 20px;
+margin-top:18px;
+padding:14px;
 border:none;
 border-radius:12px;
 background:linear-gradient(45deg,#6366f1,#06b6d4);
@@ -34,6 +33,7 @@ color:white;
 font-size:16px;
 width:90%;
 }
+
 input{
 margin-top:15px;
 padding:14px;
@@ -41,74 +41,88 @@ border-radius:12px;
 border:none;
 width:85%;
 }
+
+.rankbox{margin-top:15px}
 </style>
 </head>
 <body>
+
 <h1>🏆 Daily Jackpot Tournament</h1>
-<h3 id="myxp">🔥 Your XP: Loading...</h3>
-<div class="card" id="mainCard">
+
+<h3 id="lastWinner">Last Winner: Loading...</h3>
+<h3 id="myxp">🔥 Your XP: 0</h3>
+
+<div class="card">
 <h2>💰 Jackpot Pool: <span id="pool">0</span> XP</h2>
-<p>Entry Fee: 50 XP</p>
-<p>⏱ Time: 60s</p>
-<p>Score: <span id="score">0</span></p>
+<h3>👥 Joined Players: <span id="players">0</span></h3>
+<button class="btn" onclick="enter()">Enter Tournament (50 XP)</button>
 </div>
+
+<div class="card" id="gameBox" style="display:none">
+<h2 id="timer">⏱ 60</h2>
+<h3 id="q">Question</h3>
+<input id="ans" placeholder="Type answer">
+<button class="btn" onclick="submitAns()">Submit</button>
+<h3>Score: <span id="score">0</span></h3>
+</div>
+
 <div class="card">
 <h2>🏆 Live Ranking</h2>
 <div id="ranking">Loading...</div>
 </div>
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc, getDocs } 
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
-apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain: "black-terminal-f2c91.firebaseapp.com",
-projectId: "black-terminal-f2c91",
-storageBucket: "black-terminal-f2c91.appspot.com",
-messagingSenderId: "552489994197",
-appId: "1:552489994197:web:7662331264c334ffbadf5c"
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
 
-let student = localStorage.getItem("studentName") || "Guest";
-
-/* USER XP */
+let student=localStorage.getItem("studentName")||"Guest";
+let xpRef=doc(db,"students",student);
 let myxp=0;
-const xpRef = doc(db,"students",student);
-const snap = await getDoc(xpRef);
-if(snap.exists()){
-myxp=snap.data().xp || 0;
-}
+let score=0;
+
+/* 🔥 LOAD USER XP */
+let snap=await getDoc(xpRef);
+if(snap.exists()) myxp=snap.data().xp||0;
 document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
 
-/* QUESTIONS */
-const questions=[
-{q:"HTML full form?",a:"hyper"},
-{q:"CPU full form?",a:"central"},
-{q:"RAM kya hai?",a:"memory"},
-{q:"Mouse kya hai?",a:"input"},
-{q:"Internet kya hai?",a:"network"},
-{q:"1 byte = ?",a:"8"},
-{q:"Google kya hai?",a:"search"},
-{q:"Keyboard kya hai?",a:"input"},
-{q:"Monitor kya hai?",a:"output"},
-{q:"WWW full form?",a:"world"}
-];
+/* 🔥 LOAD POOL + PLAYERS */
+async function loadPool(){
+let snap=await getDocs(collection(db,"tournament_today"));
+let total=0;
+let count=0;
 
-let qIndex=0;
-let score=0;
-let time=60;
-let playing=false;
+snap.forEach(d=>{
+let data=d.data();
+total+=data.entry||0;
+count++;
+});
 
-/* ENTER */
-window.enterTournament = async function(){
+document.getElementById("pool").innerText=total;
+document.getElementById("players").innerText=count;
+
+loadRanking();
+}
+loadPool();
+
+/* 🔥 ENTER */
+window.enter=async function(){
 
 if(myxp<50){
-alert("❌ Need 50 XP");
+alert("Need 50 XP");
 return;
 }
 
@@ -117,72 +131,119 @@ await updateDoc(xpRef,{xp:myxp-50});
 myxp-=50;
 document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
 
-alert("🔥 Tournament Started");
+/* join */
+await addDoc(collection(db,"tournament_today"),{
+name:student,
+score:0,
+entry:50
+});
+
+alert("Joined Tournament 🔥");
 
 startGame();
-};
+loadPool();
+}
 
-/* GAME START */
+/* QUESTIONS (50) */
+const questions=[
+{q:"HTML full form?",a:"hyper"},
+{q:"CPU full form?",a:"central"},
+{q:"RAM?",a:"memory"},
+{q:"Mouse?",a:"input"},
+{q:"Keyboard?",a:"input"},
+{q:"Monitor?",a:"output"},
+{q:"Internet?",a:"network"},
+{q:"1 byte?",a:"8"},
+{q:"Google?",a:"search"},
+{q:"Windows?",a:"os"},
+{q:"Excel?",a:"sheet"},
+{q:"Binary of 2?",a:"10"},
+{q:"WWW?",a:"world"},
+{q:"USB?",a:"bus"},
+{q:"ROM?",a:"read"},
+{q:"LAN?",a:"local"},
+{q:"WAN?",a:"wide"},
+{q:"Printer?",a:"output"},
+{q:"Scanner?",a:"input"},
+{q:"Modem?",a:"net"},
+{q:"Harddisk?",a:"storage"},
+{q:"File?",a:"data"},
+{q:"Folder?",a:"store"},
+{q:"Cloud?",a:"internet"},
+{q:"AI?",a:"intelligence"},
+{q:"PDF?",a:"document"},
+{q:"Powerpoint?",a:"slide"},
+{q:"C?",a:"language"},
+{q:"Java?",a:"language"},
+{q:"Python?",a:"language"},
+{q:"Keyboard keys?",a:"input"},
+{q:"Monitor size?",a:"inch"},
+{q:"Zoom?",a:"meeting"},
+{q:"Email?",a:"mail"},
+{q:"Chrome?",a:"browser"},
+{q:"Edge?",a:"browser"},
+{q:"Facebook?",a:"social"},
+{q:"Whatsapp?",a:"chat"},
+{q:"YouTube?",a:"video"},
+{q:"Instagram?",a:"social"},
+{q:"Wifi?",a:"internet"},
+{q:"Router?",a:"network"},
+{q:"IP?",a:"address"},
+{q:"Password?",a:"secure"},
+{q:"Login?",a:"enter"},
+{q:"Logout?",a:"exit"},
+{q:"Software?",a:"program"},
+{q:"Hardware?",a:"device"},
+{q:"CPU brain?",a:"yes"}
+];
+
+let qIndex=0;
+let time=60;
+
+/* START GAME */
 function startGame(){
-
-playing=true;
-
-document.getElementById("mainCard").innerHTML=`
-<h2 id="timer">⏱ 60s</h2>
-<h3 id="question">Loading...</h3>
-
-<input id="ans" placeholder="Type answer">
-
-<br>
-<button class="btn" onclick="submitAns()">Submit</button>
-`;
-
+document.getElementById("gameBox").style.display="block";
 nextQ();
 
-/* timer */
 let t=setInterval(()=>{
 time--;
-document.getElementById("timer").innerText="⏱ "+time+"s";
+document.getElementById("timer").innerText="⏱ "+time;
 
 if(time<=0){
 clearInterval(t);
-finishGame();
+finish();
 }
 },1000);
 }
 
-/* NEXT Q */
 function nextQ(){
 if(qIndex>=questions.length) qIndex=0;
-document.getElementById("question").innerText=questions[qIndex].q;
+document.getElementById("q").innerText=questions[qIndex].q;
 document.getElementById("ans").value="";
 }
 
-/* SUBMIT */
 window.submitAns=function(){
-
 let val=document.getElementById("ans").value.toLowerCase();
-
 if(val.includes(questions[qIndex].a)){
 score++;
 document.getElementById("score").innerText=score;
 }
-
 qIndex++;
 nextQ();
-};
+}
 
 /* FINISH */
-async function finishGame(){
+async function finish(){
 
-document.getElementById("mainCard").innerHTML=
-`<h1>🏁 Finished</h1>
-<h2>Your Score: ${score}</h2>`;
+document.getElementById("gameBox").innerHTML=
+`<h2>Finished</h2><h1>Score: ${score}</h1>`;
 
-/* save score */
-await addDoc(collection(db,"tournament"),{
-name:student,
-score:score
+let snap=await getDocs(collection(db,"tournament_today"));
+snap.forEach(async(d)=>{
+let data=d.data();
+if(data.name==student){
+await updateDoc(doc(db,"tournament_today",d.id),{score:score});
+}
 });
 
 loadRanking();
@@ -190,22 +251,101 @@ loadRanking();
 
 /* RANKING */
 async function loadRanking(){
-let snap=await getDocs(collection(db,"tournament"));
+let snap=await getDocs(collection(db,"tournament_today"));
 let arr=[];
 snap.forEach(d=>arr.push(d.data()));
-
 arr.sort((a,b)=>b.score-a.score);
 
 let html="";
-arr.slice(0,10).forEach((d,i)=>{
+arr.forEach((d,i)=>{
 html+=`#${i+1} ${d.name} — ${d.score}<br>`;
 });
-
-document.getElementById("ranking").innerHTML=html;
+document.getElementById("ranking").innerHTML=html||"No players";
 }
 
-loadRanking();
 
+/* ================================
+🔥 AUTO WINNER SYSTEM (12AM)
+================================ */
+
+async function checkWinner(){
+
+let now = new Date();
+let hour = now.getHours();
+let minute = now.getMinutes();
+
+/* 12:00 night */
+if(hour===0 && minute===0){
+
+let snap = await getDocs(collection(db,"tournament_today"));
+let arr=[];
+let pool=0;
+
+snap.forEach(d=>{
+let data=d.data();
+arr.push(data);
+pool+=data.entry||0;
+});
+
+if(arr.length<2) return; // min 2 players
+
+/* sort winner */
+arr.sort((a,b)=>b.score-a.score);
+let winner = arr[0];
+
+/* add xp to winner */
+let winRef = doc(db,"students",winner.name);
+let wSnap = await getDoc(winRef);
+
+if(wSnap.exists()){
+let xp = wSnap.data().xp || 0;
+xp += pool;
+await updateDoc(winRef,{xp:xp});
+}
+
+/* save last winner */
+await setDoc(doc(db,"tournament_history","last"),{
+name:winner.name,
+xp:pool,
+date:new Date().toDateString()
+});
+
+/* clear today tournament */
+let delSnap = await getDocs(collection(db,"tournament_today"));
+delSnap.forEach(async(d)=>{
+await updateDoc(doc(db,"tournament_today",d.id),{
+finished:true
+});
+});
+
+alert("🏆 Winner Declared: "+winner.name+" won "+pool+" XP");
+}
+}
+
+/* check every 30 sec */
+setInterval(checkWinner,30000);
+
+
+/* ================================
+🔥 LOAD LAST WINNER
+================================ */
+
+async function loadLastWinner(){
+
+let snap = await getDoc(doc(db,"tournament_history","last"));
+
+if(!snap.exists()){
+document.getElementById("lastWinner").innerText="No winner yet";
+return;
+}
+
+let d=snap.data();
+
+document.getElementById("lastWinner").innerText=
+"🏆 Last Winner: "+d.name+" won "+d.xp+" XP";
+}
+
+loadLastWinner();
 </script>
 </body>
 </html>
