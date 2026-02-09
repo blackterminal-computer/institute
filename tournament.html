@@ -1,241 +1,264 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Jackpot Tournament</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Jackpot Arena</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-<style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
+    <style>
+        :root {
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --bg: #020617;
+            --gold: #facc15;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
 
-.card{
-background:#0f172a;
-padding:25px;
-border-radius:18px;
-width:92%;
-max-width:420px;
-margin:18px auto;
-box-shadow:0 0 30px rgba(0,0,0,0.6);
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: var(--bg); color: #f8fafc; min-height: 100vh; padding: 20px;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
+        }
 
-.btn{
-margin-top:18px;
-padding:14px;
-border:none;
-border-radius:12px;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-color:white;
-font-size:16px;
-width:90%;
-}
+        /* 🏆 HEADER & WINNER BOX */
+        .winner-ticker {
+            background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.2);
+            padding: 12px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px;
+            margin-bottom: 25px; font-size: 13px; font-weight: 700; color: var(--gold);
+        }
 
-.opt{
-display:block;
-background:#111827;
-padding:14px;
-margin:8px;
-border-radius:12px;
-cursor:pointer;
-}
+        /* 💰 JACKPOT POOL CARD */
+        .pool-card {
+            background: linear-gradient(135deg, #1e1b4b, #0f172a);
+            border: 2px solid var(--glass-border); border-radius: 30px;
+            padding: 30px 20px; text-align: center; position: relative; overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); margin-bottom: 25px;
+        }
+        .pool-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(transparent, transparent, var(--accent), transparent);
+            animation: rotate 6s linear infinite; z-index: -1;
+        }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
 
-.opt:hover{background:#1f2937}
+        .pool-amount { font-size: 42px; font-weight: 800; color: white; text-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
+        .pool-label { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
 
-</style>
+        /* 🎮 GAME BOX */
+        .game-card {
+            background: var(--glass); backdrop-filter: blur(20px); border-radius: 28px;
+            padding: 25px; border: 1px solid var(--glass-border); margin-bottom: 25px;
+            display: none; animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .timer-circle {
+            width: 70px; height: 70px; border: 4px solid var(--accent); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+            font-size: 20px; font-weight: 800; box-shadow: 0 0 15px var(--accent);
+        }
+
+        .opt {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+            padding: 16px; border-radius: 18px; margin-top: 10px; text-align: left;
+            cursor: pointer; transition: 0.2s; font-weight: 600;
+        }
+        .opt:active { transform: scale(0.96); background: var(--primary); }
+
+        /* 🎖️ RANKING BOARD */
+        .rank-card {
+            background: var(--glass); border-radius: 28px; padding: 20px; border: 1px solid var(--glass-border);
+        }
+        .rank-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .rank-item:last-child { border: none; }
+        .rank-num { width: 30px; font-weight: 800; color: var(--accent); }
+        .rank-name { flex: 1; font-weight: 600; margin-left: 10px; }
+        .rank-score { background: rgba(99, 102, 241, 0.1); padding: 4px 12px; border-radius: 50px; font-weight: 800; color: var(--primary); }
+
+        /* BUTTONS */
+        .btn-join {
+            width: 100%; padding: 18px; border: none; border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; font-weight: 800; font-size: 16px; cursor: pointer;
+            margin-top: 20px; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+        }
+
+    </style>
 </head>
 <body>
 
-<h1>🏆 Daily Jackpot Tournament</h1>
-<h3 id="lastWinner">Last Winner: Loading...</h3>
-<h3 id="myxp">🔥 Your XP: 0</h3>
+    <div class="winner-ticker" id="lastWinner">
+        <i class="ri-trophy-fill"></i> <span>Last Winner: Loading...</span>
+    </div>
 
-<div class="card">
-<h2>💰 Jackpot Pool: <span id="pool">0</span> XP</h2>
-<h3>👥 Joined Players: <span id="players">0</span></h3>
-<button class="btn" onclick="enter()">Enter Competition (50 XP)</button>
-</div>
+    <div class="pool-card">
+        <div class="pool-label">Jackpot Pool</div>
+        <div class="pool-amount" id="pool">0</div>
+        <div style="font-size: 13px; opacity: 0.7; margin-top: 5px;">🔥 <span id="players">0</span> Players Joined</div>
+        <div style="font-size: 11px; margin-top: 15px; color: var(--accent);" id="myxp">My XP: 0</div>
+        <button class="btn-join" onclick="enter()">ENTER ARENA (50 XP)</button>
+    </div>
 
-<div class="card" id="gameBox" style="display:none">
-<h2 id="timer">⏱ 60</h2>
-<h3 id="q">Question</h3>
-<div id="options"></div>
-<h3>Score: <span id="score">0</span></h3>
-</div>
+    <div class="game-card" id="gameBox">
+        <div class="timer-circle" id="timer">60</div>
+        <h3 id="q" style="margin-bottom: 20px; line-height: 1.4;">Question loading...</h3>
+        <div id="options"></div>
+        <div style="margin-top: 20px; font-weight: 800; color: var(--accent);">Score: <span id="score">0</span></div>
+    </div>
 
-<div class="card">
-<h2>🏆 Live Ranking</h2>
-<div id="ranking">Loading...</div>
-</div>
+    <div class="rank-card">
+        <h3 style="margin-bottom: 15px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+            <i class="ri-bar-chart-fill" style="color:var(--accent)"></i> Live Ranking
+        </h3>
+        <div id="ranking">
+            <p style="text-align: center; opacity: 0.5; padding: 20px;">Fetching warriors...</p>
+        </div>
+    </div>
 
-<script type="module">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+        let student = localStorage.getItem("studentName") || "Guest";
+        let myxp = 0;
+        let score = 0;
+        let qIndex = 0;
+        let timeLeft = 60;
 
-let student=localStorage.getItem("studentName")||"Guest";
-let xpRef=doc(db,"students",student);
-let myxp=0;
-let score=0;
+        // LOAD INITIAL DATA
+        async function init() {
+            const snap = await getDoc(doc(db, "students", student));
+            if (snap.exists()) myxp = snap.data().xp || 0;
+            document.getElementById("myxp").innerText = "MY XP: " + myxp;
+            
+            loadPool();
+            loadLastWinner();
+        }
+        init();
 
-/* 🔥 USER XP */
-let snap=await getDoc(xpRef);
-if(snap.exists()) myxp=snap.data().xp||0;
-document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
+        async function loadPool() {
+            const snap = await getDocs(collection(db, "tournament_today"));
+            let total = 0, count = 0;
+            snap.forEach(d => { total += d.data().entry || 0; count++; });
+            document.getElementById("pool").innerText = total + " XP";
+            document.getElementById("players").innerText = count;
+            loadRanking();
+        }
 
-/* 🔥 LOAD POOL */
-async function loadPool(){
-let snap=await getDocs(collection(db,"tournament_today"));
-let total=0,count=0;
-snap.forEach(d=>{
-total+=d.data().entry||0;
-count++;
-});
-document.getElementById("pool").innerText=total;
-document.getElementById("players").innerText=count;
-loadRanking();
-}
-loadPool();
+        window.enter = async function() {
+            if (myxp < 50) return alert("❌ Need 50 XP to enter!");
+            
+            await updateDoc(doc(db, "students", student), { xp: myxp - 50 });
+            myxp -= 50;
+            document.getElementById("myxp").innerText = "MY XP: " + myxp;
 
-/* ENTER */
-window.enter=async function(){
+            await addDoc(collection(db, "tournament_today"), {
+                name: student, score: 0, entry: 50
+            });
 
-if(myxp<50) return alert("Need 50 XP");
+            document.querySelector(".btn-join").style.display = "none";
+            startGame();
+            loadPool();
+        }
 
-await updateDoc(xpRef,{xp:myxp-50});
-myxp-=50;
-document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
+        const questions = [
+            {q:"Which is the main memory of a computer?", a:"RAM", b:"Hard Disk", c:"DVD", d:"UPS", ans:"A"},
+            {q:"Who is the father of Computer?", a:"Bill Gates", b:"Charles Babbage", c:"Newton", d:"Einstein", ans:"B"},
+            {q:"1 Kilobyte (KB) is equal to?", a:"1000 Bytes", b:"1024 Bytes", c:"1024 bits", d:"100 Bytes", ans:"B"},
+            {q:"VDU stands for?", a:"Video Display Unit", b:"Visual Display Unit", c:"Virtual Display Unit", d:"View Display Unit", ans:"B"},
+            {q:"What is the shortcut to Copy?", a:"Ctrl+C", b:"Ctrl+V", c:"Ctrl+X", d:"Ctrl+Z", ans:"A"}
+        ];
+        while(questions.length < 50) questions.push(...questions); // Repeat for 50
 
-await addDoc(collection(db,"tournament_today"),{
-name:student,
-score:0,
-entry:50
-});
+        function startGame() {
+            document.getElementById("gameBox").style.display = "block";
+            showQuestion();
+            const timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = timeLeft;
+                if (timeLeft <= 10) document.getElementById("timer").style.color = "#ef4444";
+                if (timeLeft <= 0) { clearInterval(timer); finish(); }
+            }, 1000);
+        }
 
-alert("Joined Tournament 🔥");
-startGame();
-loadPool();
-}
+        function showQuestion() {
+            if (qIndex >= 50) return finish();
+            const q = questions[qIndex];
+            document.getElementById("q").innerText = `Q${qIndex+1}. ${q.q}`;
+            document.getElementById("options").innerHTML = `
+                <div class="opt" onclick="check('A')">A. ${q.a}</div>
+                <div class="opt" onclick="check('B')">B. ${q.b}</div>
+                <div class="opt" onclick="check('C')">C. ${q.c}</div>
+                <div class="opt" onclick="check('D')">D. ${q.d}</div>
+            `;
+        }
 
-/* 🔥 MCQ QUESTIONS 50 */
-const questions=[
-{q:"HTML full form?",a:"Hyper Text Markup Language",b:"High Text",c:"Hyper Tool",d:"Home Tool",ans:"A"},
-{q:"CPU full form?",a:"Central Process Unit",b:"Central Processing Unit",c:"Computer Unit",d:"Control Unit",ans:"B"},
-{q:"RAM is?",a:"Storage",b:"Memory",c:"Input",d:"Output",ans:"B"},
-{q:"Mouse is?",a:"Input",b:"Output",c:"Storage",d:"CPU",ans:"A"},
-{q:"Monitor is?",a:"Input",b:"Output",c:"CPU",d:"Storage",ans:"B"},
-{q:"Keyboard is?",a:"Output",b:"Input",c:"CPU",d:"Memory",ans:"B"},
-{q:"1 byte=?",a:"4 bit",b:"16 bit",c:"8 bit",d:"2 bit",ans:"C"},
-{q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Monitor",ans:"B"},
-{q:"WWW full form?",a:"World Wide Web",b:"World Web",c:"Web World",d:"Wide Web",ans:"A"},
-{q:"Excel is?",a:"Browser",b:"Sheet software",c:"Game",d:"OS",ans:"B"}
-];
+        window.check = function(v) {
+            if (v == questions[qIndex].ans) {
+                score++;
+                document.getElementById("score").innerText = score;
+            }
+            qIndex++;
+            showQuestion();
+        }
 
-/* auto repeat to make 50 */
-while(questions.length<50){
-questions.push(...questions);
-}
-questions.length=50;
+        async function finish() {
+            document.getElementById("gameBox").innerHTML = `
+                <div style="padding:20px;">
+                    <h2 style="color:var(--gold)">BATTLE ENDED</h2>
+                    <h1 style="font-size:40px;">Score: ${score}</h1>
+                    <p style="opacity:0.6">Updating leaderboard...</p>
+                </div>`;
+            
+            const snap = await getDocs(collection(db, "tournament_today"));
+            snap.forEach(async (d) => {
+                if (d.data().name == student) await updateDoc(doc(db, "tournament_today", d.id), { score: score });
+            });
+            setTimeout(loadRanking, 2000);
+        }
 
-let qIndex=0;
-let time=60;
+        async function loadRanking() {
+            const snap = await getDocs(collection(db, "tournament_today"));
+            let users = [];
+            snap.forEach(d => users.push(d.data()));
+            users.sort((a, b) => b.score - a.score);
 
-/* START GAME */
-function startGame(){
-document.getElementById("gameBox").style.display="block";
-nextQ();
+            document.getElementById("ranking").innerHTML = users.map((u, i) => `
+                <div class="rank-item">
+                    <span class="rank-num">#${i+1}</span>
+                    <span class="rank-name">${u.name}</span>
+                    <span class="rank-score">${u.score} pts</span>
+                </div>
+            `).join('') || "<p style='padding:20px; opacity:0.5;'>No warriors yet.</p>";
+        }
 
-let t=setInterval(()=>{
-time--;
-document.getElementById("timer").innerText="⏱ "+time;
-
-if(time<=0){
-clearInterval(t);
-finish();
-}
-},1000);
-}
-
-function nextQ(){
-if(qIndex>=questions.length) return finish();
-
-let q=questions[qIndex];
-
-document.getElementById("q").innerText="Q"+(qIndex+1)+". "+q.q;
-
-document.getElementById("options").innerHTML=`
-<div class="opt" onclick="select('A')">A. ${q.a}</div>
-<div class="opt" onclick="select('B')">B. ${q.b}</div>
-<div class="opt" onclick="select('C')">C. ${q.c}</div>
-<div class="opt" onclick="select('D')">D. ${q.d}</div>
-`;
-}
-
-window.select=function(v){
-let q=questions[qIndex];
-if(v==q.ans){
-score++;
-document.getElementById("score").innerText=score;
-}
-qIndex++;
-nextQ();
-}
-
-/* FINISH */
-async function finish(){
-
-document.getElementById("gameBox").innerHTML=
-`<h2>Finished</h2><h1>Score: ${score}</h1>`;
-
-/* update score */
-let snap=await getDocs(collection(db,"tournament_today"));
-snap.forEach(async(d)=>{
-let data=d.data();
-if(data.name==student){
-await updateDoc(doc(db,"tournament_today",d.id),{score:score});
-}
-});
-
-loadRanking();
-}
-
-/* RANKING */
-async function loadRanking(){
-let snap=await getDocs(collection(db,"tournament_today"));
-let arr=[];
-snap.forEach(d=>arr.push(d.data()));
-arr.sort((a,b)=>b.score-a.score);
-
-let html="";
-arr.forEach((d,i)=>{
-html+=`#${i+1} ${d.name} — ${d.score}<br>`;
-});
-document.getElementById("ranking").innerHTML=html||"No players";
-}
-
-/* LAST WINNER */
-async function loadLastWinner(){
-let snap=await getDoc(doc(db,"tournament_history","last"));
-if(!snap.exists()){
-document.getElementById("lastWinner").innerText="No winner yet";
-return;
-}
-let d=snap.data();
-document.getElementById("lastWinner").innerText=
-"🏆 Last Winner: "+d.name+" won "+d.xp+" XP";
-}
-loadLastWinner();
-
-</script>
+        async function loadLastWinner() {
+            const snap = await getDoc(doc(db, "tournament_history", "last"));
+            if (snap.exists()) {
+                const d = snap.data();
+                document.getElementById("lastWinner").innerHTML = `<i class="ri-trophy-fill"></i> Last Winner: ${d.name} (+${d.xp} XP)`;
+            }
+        }
+    </script>
 </body>
 </html>
