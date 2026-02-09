@@ -1,151 +1,199 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Notification Panel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Terminal Admin</title>
 
-<style>
-body{
-background:#020617;
-font-family:Arial;
-color:white;
-text-align:center;
-padding-top:80px;
-}
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --bg: #020617;
+            --card: #0f172a;
+            --text: #f8fafc;
+        }
 
-.box{
-background:#0f172a;
-width:92%;
-max-width:420px;
-margin:auto;
-padding:30px;
-border-radius:18px;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        
+        body {
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-input,textarea{
-width:90%;
-padding:14px;
-margin:12px;
-border-radius:12px;
-border:none;
-font-size:16px;
-outline:none;
-}
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card);
+            padding: 30px 20px;
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
 
-button{
-padding:13px 20px;
-border:none;
-border-radius:12px;
-margin:8px;
-font-size:16px;
-font-weight:bold;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
-color:white;
-}
+        h2 { font-size: 24px; margin-bottom: 25px; letter-spacing: -0.5px; }
+        h2 i { color: var(--accent); margin-right: 8px; }
 
-.toast{
-position:fixed;
-bottom:30px;
-left:50%;
-transform:translateX(-50%);
-background:#22c55e;
-padding:14px 22px;
-border-radius:12px;
-display:none;
-font-weight:bold;
-box-shadow:0 0 20px rgba(0,0,0,0.5);
-}
-</style>
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 12px; font-weight: 700; color: #64748b; margin-left: 12px; margin-bottom: 8px; text-transform: uppercase; }
+
+        input, textarea {
+            width: 100%;
+            padding: 16px;
+            background: rgba(2, 6, 23, 0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        button:active { transform: scale(0.96); }
+
+        /* Toast Styling */
+        .toast {
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: #22c55e; color: white; padding: 14px 25px; border-radius: 50px;
+            font-weight: 700; font-size: 14px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); z-index: 10000;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        .section-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 30px 0; position: relative; }
+        .section-divider::after { content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card); padding: 0 10px; font-size: 10px; color: #475569; }
+    </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="box" id="loginBox">
-<h2>🔐 Admin Login</h2>
-<input type="password" id="pass" placeholder="Enter password">
-<br>
-<button onclick="login()">Login</button>
-</div>
+    <div id="toast" class="toast">Action Successful</div>
 
-<!-- PANEL -->
-<div class="box" id="panel" style="display:none">
-<h2>📢 Global Notification</h2>
+    <div class="container" id="loginBox">
+        <h2><i class="ri-shield-user-fill"></i> Admin Login</h2>
+        <div class="input-group">
+            <label>Master Password</label>
+            <input type="password" id="pass" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" onclick="login()">Enter Terminal <i class="ri-arrow-right-line"></i></button>
+    </div>
 
-<textarea id="msg" placeholder="Enter notification text"></textarea>
-<br>
+    <div class="container" id="panel" style="display:none">
+        <h2><i class="ri-dashboard-3-fill"></i> System Control</h2>
 
-<button onclick="sendOn()">ON</button>
-<button onclick="sendOff()">OFF</button>
-</div>
+        <div class="input-group">
+            <label>Drop-down Notice (Apple Style)</label>
+            <textarea id="msg" rows="2" placeholder="Ex: Exam will start at 9 PM..."></textarea>
+            <div class="btn-row">
+                <button class="btn-primary" onclick="sendOn()"><i class="ri-notification-badge-line"></i> NOTICE ON</button>
+                <button class="btn-danger" onclick="sendOff()"><i class="ri-notification-off-line"></i> OFF</button>
+            </div>
+        </div>
 
-<div class="toast" id="toast">Done</div>
+        <div class="section-divider"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, updateDoc }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        <div class="input-group">
+            <label>Scrolling News (Marquee)</label>
+            <input type="text" id="marqueeVal" placeholder="Ex: Welcome to the new session 2026!">
+            <button class="btn-primary" style="margin-top:12px; background: #1e293b;" onclick="updateMarquee()">
+                <i class="ri-broadcast-line"></i> UPDATE MARQUEE
+            </button>
+        </div>
+    </div>
 
-const firebaseConfig = {
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-window.login=function(){
-let p=document.getElementById("pass").value.trim();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-if(p==="admin5"){
-document.getElementById("loginBox").style.display="none";
-document.getElementById("panel").style.display="block";
-showToast("Login success");
-}else{
-showToast("Wrong password");
-}
-}
+        window.login = function() {
+            const p = document.getElementById("pass").value;
+            if(p === "admin5") {
+                document.getElementById("loginBox").style.display = "none";
+                document.getElementById("panel").style.display = "block";
+                showToast("Terminal Unlocked", "#22c55e");
+            } else {
+                showToast("Access Denied", "#ef4444");
+            }
+        }
 
-window.sendOn = async function(){
-let t=document.getElementById("msg").value.trim();
-if(!t){
-showToast("Enter message first");
-return;
-}
+        // --- Notification Actions ---
+        window.sendOn = async function() {
+            const t = document.getElementById("msg").value.trim();
+            if(!t) return showToast("Message is empty", "#ef4444");
 
-try{
-await setDoc(doc(db,"notices","main"),{
-text:t,
-status:"on"
-});
-showToast("Notification ON successfully");
-}catch(e){
-showToast("Error sending");
-}
-}
+            try {
+                await updateDoc(doc(db, "notices", "main"), { text: t, status: "on" });
+                showToast("Notice sent live!");
+            } catch(e) { 
+                // Using setDoc if doc doesn't exist
+                await setDoc(doc(db, "notices", "main"), { text: t, status: "on" }, { merge: true });
+                showToast("Notice sent live!");
+            }
+        }
 
-window.sendOff = async function(){
-try{
-await updateDoc(doc(db,"notices","main"),{
-status:"off"
-});
-showToast("Notification OFF");
-}catch(e){
-showToast("Error");
-}
-}
+        window.sendOff = async function() {
+            try {
+                await updateDoc(doc(db, "notices", "main"), { status: "off" });
+                showToast("Notice hidden");
+            } catch(e) { showToast("Error", "#ef4444"); }
+        }
 
-function showToast(msg){
-let t=document.getElementById("toast");
-t.innerText=msg;
-t.style.display="block";
-setTimeout(()=>{t.style.display="none"},2500);
-}
-</script>
+        // --- Marquee Action ---
+        window.updateMarquee = async function() {
+            const m = document.getElementById("marqueeVal").value.trim();
+            if(!m) return showToast("Enter marquee text", "#ef4444");
 
+            try {
+                await updateDoc(doc(db, "notices", "main"), { marquee: m });
+                showToast("Marquee updated!");
+            } catch(e) { showToast("Error updating marquee", "#ef4444"); }
+        }
+
+        function showToast(msg, color = "#22c55e") {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.style.background = color;
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 2500);
+        }
+    </script>
 </body>
 </html>
