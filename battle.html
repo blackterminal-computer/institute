@@ -1,207 +1,272 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>1 vs 1 Battle</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Battle Arena</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-<style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding-top:50px}
-.card{background:#0f172a;padding:25px;border-radius:16px;width:92%;max-width:420px;margin:auto}
-.option{background:#1e293b;padding:14px;margin:8px;border-radius:10px;cursor:pointer}
-.timer{color:#22c55e;font-size:20px;margin:10px}
-</style>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: var(--bg); color: #f8fafc; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background-image: radial-gradient(circle at center, #1e1b4b, #020617);
+            overflow: hidden;
+        }
+
+        /* 1. MATCHMAKING UI */
+        .searching-box { text-align: center; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .radar {
+            width: 120px; height: 120px; border: 2px solid var(--primary);
+            border-radius: 50%; margin: 20px auto; position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .radar::after {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            border: 2px solid var(--primary); border-radius: 50%;
+            animation: ripple 1.5s linear infinite;
+        }
+        @keyframes ripple { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+
+        /* 2. VERSUS HEADERS */
+        .vs-container {
+            display: flex; align-items: center; justify-content: space-around;
+            width: 100%; max-width: 500px; margin-bottom: 30px;
+        }
+        .player-card { text-align: center; width: 40%; }
+        .avatar {
+            width: 60px; height: 60px; background: var(--glass); 
+            border: 2px solid var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin: 0 auto 10px;
+        }
+        .vs-badge {
+            background: var(--danger); color: white; padding: 5px 12px;
+            border-radius: 8px; font-weight: 900; font-size: 14px;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+
+        /* 3. BATTLE CARD */
+        .battle-card {
+            width: 92%; max-width: 450px; background: var(--glass);
+            border: 1px solid var(--glass-border); border-radius: 32px;
+            padding: 25px; backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .timer-bar {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.05);
+            border-radius: 10px; margin: 15px 0; overflow: hidden;
+        }
+        #timer-fill { height: 100%; width: 100%; background: var(--success); transition: 1s linear; }
+
+        .option {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
+            padding: 16px; border-radius: 18px; margin-top: 12px;
+            cursor: pointer; transition: 0.2s; font-weight: 600; text-align: left;
+        }
+        .option:active { background: var(--primary); transform: scale(0.97); }
+
+        /* 4. RESULT SCREEN */
+        .result-screen { text-align: center; }
+        .win-text { font-size: 32px; font-weight: 800; color: var(--gold); text-shadow: 0 0 20px gold; }
+        .lose-text { font-size: 32px; font-weight: 800; color: var(--danger); }
+
+        .btn-home {
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            color: white; border: none; padding: 15px 40px; border-radius: 20px;
+            font-weight: 800; margin-top: 25px; cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-<div class="card" id="screen">
-<h2>🔍 Searching for opponent...</h2>
-</div>
+    <div id="game-ui" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div id="loader" class="searching-box">
+            <div class="radar"><i class="ri-sword-fill" style="font-size: 40px; color: var(--primary);"></i></div>
+            <h2 style="letter-spacing: 1px;">FINDING OPPONENT</h2>
+            <p style="opacity: 0.5; font-size: 12px; margin-top: 10px;">Looking for an elite warrior...</p>
+        </div>
 
-<script type="module">
+        <div id="battle-area" style="display: none; width: 100%;">
+            <div class="vs-container">
+                <div class="player-card">
+                    <div class="avatar" style="border-color: var(--primary);"><i class="ri-user-3-fill"></i></div>
+                    <p id="p1-name" style="font-size: 12px; font-weight: 800; text-transform: uppercase;"></p>
+                </div>
+                <div class="vs-badge">VS</div>
+                <div class="player-card">
+                    <div class="avatar" style="border-color: var(--danger);"><i class="ri-user-smile-fill"></i></div>
+                    <p id="p2-name" style="font-size: 12px; font-weight: 800; text-transform: uppercase;"></p>
+                </div>
+            </div>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+            <div class="battle-card">
+                <div class="timer-bar"><div id="timer-fill"></div></div>
+                <h3 id="question" style="font-size: 18px; line-height: 1.4; margin-bottom: 10px;">Question?</h3>
+                <div id="options-box"></div>
+                <div style="margin-top: 20px; display: flex; justify-content: space-between; font-weight: 800; font-size: 13px;">
+                    <span style="color:var(--primary);">SCORE: <span id="my-score">0</span></span>
+                    <span id="q-count" style="opacity: 0.5;">Q 1/10</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-let student=localStorage.getItem("studentName")||prompt("Enter name");
-localStorage.setItem("studentName",student);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-let roomId="";
-let opponent="";
-let myRole="";
+        let student = localStorage.getItem("studentName") || prompt("Enter warrior name");
+        localStorage.setItem("studentName", student);
 
-startMatch();
+        let roomId = "", opponent = "", myRole = "";
+        let questions = [
+            {q:"Shortcut for Refresh?", a:"F2", b:"F5", c:"F7", d:"F10", ans:"b"},
+            {q:"First computer name?", a:"ENIAC", b:"DELL", c:"HP", d:"IBM", ans:"a"},
+            {q:"Volatile memory is?", a:"ROM", b:"RAM", c:"SSD", d:"HDD", ans:"b"},
+            {q:"Google is a?", a:"Browser", b:"Search Engine", c:"OS", d:"Software", ans:"b"},
+            {q:"Binary digit is?", a:"0 & 1", b:"1 & 2", c:"9 & 0", d:"All", ans:"a"},
+            {q:"Brain of PC?", a:"Monitor", b:"CPU", c:"UPS", d:"RAM", ans:"b"},
+            {q:"1MB is?", a:"1024KB", b:"1000KB", c:"512KB", d:"100KB", ans:"a"},
+            {q:"USB full form?", a:"Universal Serial Bus", b:"Unit Serial Bus", c:"Ultra Smart Bus", d:"None", ans:"a"},
+            {q:"Input device?", a:"Printer", b:"Keyboard", c:"Monitor", d:"Speaker", ans:"b"},
+            {q:"PDF full form?", a:"Portable Doc Format", b:"Print Doc File", c:"Private Data File", d:"None", ans:"a"}
+        ];
 
-async function startMatch(){
+        let i = 0, score = 0, time = 10, timer;
 
-// STEP 1: try join existing room
-let rooms = await getDocs(collection(db,"battle_rooms"));
+        async function matchmake() {
+            let rooms = await getDocs(collection(db, "battle_rooms"));
+            for (let r of rooms.docs) {
+                let d = r.data();
+                if (d.status == "waiting" && d.player1 != student) {
+                    roomId = r.id; myRole = "player2";
+                    await updateDoc(doc(db, "battle_rooms", roomId), { player2: student, status: "start" });
+                    listenMatch(); return;
+                }
+            }
+            let ref = await addDoc(collection(db, "battle_rooms"), { player1: student, player2: "", status: "waiting" });
+            roomId = ref.id; myRole = "player1";
+            listenMatch();
+        }
 
-for(const r of rooms.docs){
-let d=r.data();
+        function listenMatch() {
+            const unsub = onSnapshot(doc(db, "battle_rooms", roomId), (snap) => {
+                let d = snap.data();
+                if (d && d.status == "start") {
+                    opponent = (d.player1 == student) ? d.player2 : d.player1;
+                    unsub();
+                    startUI(d.player1, d.player2);
+                }
+            });
+        }
 
-if(d.status=="waiting" && d.player1!=student){
+        function startUI(p1, p2) {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("battle-area").style.display = "block";
+            document.getElementById("p1-name").innerText = p1;
+            document.getElementById("p2-name").innerText = p2;
+            loadQuestion();
+        }
 
-await updateDoc(doc(db,"battle_rooms",r.id),{
-player2:student,
-status:"start"
-});
+        function loadQuestion() {
+            if (i >= 10) { finishBattle(); return; }
+            time = 10;
+            document.getElementById("timer-fill").style.transition = "none";
+            document.getElementById("timer-fill").style.width = "100%";
+            setTimeout(() => {
+                document.getElementById("timer-fill").style.transition = "10s linear";
+                document.getElementById("timer-fill").style.width = "0%";
+            }, 50);
 
-roomId=r.id;
-myRole="player2";
-listenRoom();
-return;
-}
-}
+            let q = questions[i];
+            document.getElementById("q-count").innerText = `Q ${i+1}/10`;
+            document.getElementById("question").innerText = q.q;
+            document.getElementById("options-box").innerHTML = ['a','b','c','d'].map(opt => `
+                <div class="option" onclick="submitAns('${opt}')">${q[opt]}</div>
+            `).join('');
 
-// STEP 2: create new room
-const ref = await addDoc(collection(db,"battle_rooms"),{
-player1:student,
-player2:"",
-status:"waiting",
-time:Date.now()
-});
+            clearInterval(timer);
+            timer = setInterval(() => {
+                time--;
+                if (time <= 0) { i++; loadQuestion(); }
+            }, 1000);
+        }
 
-roomId=ref.id;
-myRole="player1";
-listenRoom();
-}
+        window.submitAns = (choice) => {
+            if (choice == questions[i].ans) {
+                score++;
+                document.getElementById("my-score").innerText = score;
+            }
+            i++;
+            loadQuestion();
+        }
 
-// realtime check
-function listenRoom(){
+        async function finishBattle() {
+            clearInterval(timer);
+            document.getElementById("battle-area").innerHTML = `<div class="searching-box"><h2>Finishing Match...</h2></div>`;
+            
+            await updateDoc(doc(db, "battle_rooms", roomId), { [student]: score });
 
-const check=setInterval(async()=>{
+            setTimeout(async () => {
+                let snap = await getDoc(doc(db, "battle_rooms", roomId));
+                let d = snap.data();
+                let s1 = d[d.player1] || 0;
+                let s2 = d[d.player2] || 0;
 
-let snap=await getDoc(doc(db,"battle_rooms",roomId));
-if(!snap.exists()) return;
+                let win = (student == d.player1) ? s1 > s2 : s2 > s1;
+                let draw = s1 == s2;
+                let xpChange = draw ? 10 : (win ? 100 : -20);
 
-let d=snap.data();
+                document.getElementById("game-ui").innerHTML = `
+                    <div class="battle-card result-screen">
+                        <h1 class="${win ? 'win-text' : 'lose-text'}">${draw ? 'DRAW!' : (win ? '🏆 VICTORY' : '💀 DEFEAT')}</h1>
+                        <p style="margin: 15px 0; opacity: 0.7;">Your Score: ${score}</p>
+                        <h2 style="color:var(--primary); font-size: 24px;">${xpChange >= 0 ? '+' : ''}${xpChange} XP</h2>
+                        <button class="btn-home" onclick="location.href='index.html'">CONTINUE</button>
+                    </div>`;
 
-if(d.status=="start" && d.player2!=""){
+                let sRef = doc(db, "students", student);
+                let userSnap = await getDoc(sRef);
+                if (userSnap.exists()) {
+                    let newXp = (userSnap.data().xp || 0) + xpChange;
+                    await updateDoc(sRef, { xp: Math.max(0, newXp) });
+                }
+                
+                // Self-destruct room
+                setTimeout(async () => { try { await deleteDoc(doc(db, "battle_rooms", roomId)); } catch(e) {} }, 5000);
+            }, 3000);
+        }
 
-clearInterval(check);
-
-opponent = (d.player1==student)? d.player2 : d.player1;
-
-startGame();
-}
-
-},1000);
-
-}
-
-let questions=[
-{q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Keyboard",ans:"b"},
-{q:"HTML full form?",a:"Hyper Trainer",b:"Hyper Text Markup Language",c:"High Text",d:"None",ans:"b"},
-{q:"Keyboard is?",a:"Input",b:"Output",c:"CPU",d:"RAM",ans:"a"},
-{q:"1KB?",a:"1000",b:"1024",c:"500",d:"2000",ans:"b"},
-{q:"Windows?",a:"OS",b:"Game",c:"File",d:"None",ans:"a"},
-{q:"Excel?",a:"Software",b:"Game",c:"OS",d:"None",ans:"a"},
-{q:"Mouse?",a:"Input",b:"Output",c:"CPU",d:"RAM",ans:"a"},
-{q:"Printer?",a:"Output",b:"Input",c:"CPU",d:"RAM",ans:"a"},
-{q:"Binary of 2?",a:"10",b:"11",c:"01",d:"00",ans:"a"},
-{q:"Internet needs?",a:"CPU",b:"Network",c:"RAM",d:"Mouse",ans:"b"}
-];
-
-let i=0,score=0,time=10,timer;
-
-function startGame(){
-document.getElementById("screen").innerHTML=`
-<h2>⚔ ${student} vs ${opponent}</h2>
-<div class="timer">⏱ <span id="t">10</span></div>
-<h3 id="q"></h3>
-<div id="opts"></div>`;
-loadQ();
-}
-
-function loadQ(){
-if(i>=10){finish();return;}
-time=10;
-document.getElementById("t").innerText=time;
-
-let q=questions[i];
-document.getElementById("q").innerText=q.q;
-
-document.getElementById("opts").innerHTML=`
-<div class="option" onclick="ans('a')">${q.a}</div>
-<div class="option" onclick="ans('b')">${q.b}</div>
-<div class="option" onclick="ans('c')">${q.c}</div>
-<div class="option" onclick="ans('d')">${q.d}</div>
-`;
-
-clearInterval(timer);
-timer=setInterval(()=>{
-time--;
-document.getElementById("t").innerText=time;
-if(time<=0){i++;loadQ();}
-},1000);
-}
-
-window.ans=(a)=>{
-if(a==questions[i].ans)score++;
-i++;
-loadQ();
-}
-
-async function finish(){
-
-clearInterval(timer);
-
-await updateDoc(doc(db,"battle_rooms",roomId),{
-[student]:score
-});
-
-setTimeout(async()=>{
-
-let snap=await getDoc(doc(db,"battle_rooms",roomId));
-let d=snap.data();
-
-let s1=d[d.player1]||0;
-let s2=d[d.player2]||0;
-
-let win=false;
-
-if(student==d.player1) win=s1>s2;
-else win=s2>s1;
-
-let xp=win?100:-10;
-
-document.getElementById("screen").innerHTML=`
-<h1>${win?"🏆 You Win":"😢 You Lose"}</h1>
-<h2>Score: ${score}</h2>
-<h3>XP ${xp}</h3>
-<button onclick="location.href='index.html'">Home</button>
-`;
-
-let ref=doc(db,"students",student);
-let s=await getDoc(ref);
-if(s.exists()){
-let x=s.data().xp||0;
-x+=xp;
-if(x<0)x=0;
-await updateDoc(ref,{xp:x});
-}
-
-setTimeout(async()=>{
-try{await deleteDoc(doc(db,"battle_rooms",roomId));}catch{}
-},4000);
-
-},2000);
-
-}
-
-</script>
+        matchmake();
+    </script>
 </body>
 </html>
