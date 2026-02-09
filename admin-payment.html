@@ -5,13 +5,7 @@
 <title>Students Payment Control</title>
 
 <style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-text-align:center;
-padding:20px
-}
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
 
 .card{
 background:#0f172a;
@@ -34,6 +28,7 @@ color:white
 .paid{background:#22c55e}
 .complete{background:orange}
 .del{background:red}
+.reset{background:#6366f1}
 
 .student{
 background:#111827;
@@ -45,7 +40,7 @@ border-radius:14px
 .overdue{color:red;font-weight:bold}
 .paidtxt{color:#22c55e;font-weight:bold}
 .completeTxt{color:#38bdf8;font-weight:bold}
-
+.xp{color:#facc15;font-weight:bold}
 </style>
 </head>
 <body>
@@ -75,7 +70,7 @@ const db=getFirestore(app);
 
 load();
 
-/* AUTO FETCH FROM STUDENTS COLLECTION */
+/* AUTO ADD STUDENTS TO PAYMENT */
 async function autoFetchStudents(){
 
 let studentsSnap = await getDocs(collection(db,"students"));
@@ -94,11 +89,10 @@ status:"OVERDUE",
 lastPaid:""
 });
 }
-
 });
-
 }
 
+/* MARK PAID */
 window.markPaid=async function(name){
 let today=new Date().toLocaleDateString();
 
@@ -106,10 +100,10 @@ await updateDoc(doc(db,"payments",name),{
 status:"PAID",
 lastPaid:today
 });
-
 load();
 }
 
+/* COURSE COMPLETE */
 window.complete=async function(name){
 await updateDoc(doc(db,"payments",name),{
 status:"COMPLETED"
@@ -117,28 +111,50 @@ status:"COMPLETED"
 load();
 }
 
+/* DELETE */
 window.del=async function(name){
 if(!confirm("Delete student?")) return;
 await deleteDoc(doc(db,"payments",name));
 load();
 }
 
+/* 🔥 RESET XP */
+window.resetXP=async function(name){
+if(!confirm("Reset XP of "+name+" ?")) return;
+
+await updateDoc(doc(db,"students",name),{
+xp:0
+});
+
+alert("XP Reset Done");
+load();
+}
+
+/* LOAD */
 async function load(){
 
 await autoFetchStudents();
 
-let snap=await getDocs(collection(db,"payments"));
+let paySnap=await getDocs(collection(db,"payments"));
+let studentSnap=await getDocs(collection(db,"students"));
+
+let xpMap={};
+studentSnap.forEach(d=>{
+xpMap[d.id]=d.data().xp || 0;
+});
+
 let html="";
 let count=1;
 
-if(snap.empty){
+if(paySnap.empty){
 document.getElementById("list").innerHTML="No students";
 document.getElementById("totalStudents").innerText=0;
 return;
 }
 
-snap.forEach(d=>{
+paySnap.forEach(d=>{
 let s=d.data();
+let xp=xpMap[s.name] || 0;
 
 let statusHtml="";
 if(s.status=="PAID") statusHtml=`<span class="paidtxt">PAID</span>`;
@@ -148,14 +164,18 @@ else statusHtml=`<span class="overdue">OVERDUE</span>`;
 html+=`
 <div class="student">
 <h3>${count}. ${s.name}</h3>
+
+<div class="xp">⭐ XP: ${xp}</div><br>
+
 Status: ${statusHtml}<br>
 ${s.lastPaid ? "Paid Date: "+s.lastPaid : ""}<br><br>
 
 <button class="paid" onclick="markPaid('${s.name}')">Mark Paid</button>
 <button class="complete" onclick="complete('${s.name}')">Course Completed</button>
+<button class="reset" onclick="resetXP('${s.name}')">Reset XP</button>
 <button class="del" onclick="del('${s.name}')">Delete</button>
-</div>`;
-
+</div>
+`;
 count++;
 });
 
