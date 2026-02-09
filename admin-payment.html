@@ -1,199 +1,189 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Students Payment Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Admin | Payment Control</title>
+    <style>
+        :root {
+            --bg: #020617;
+            --card: #0f172a;
+            --primary: #6366f1;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; }
+        
+        .header { position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 10; border-bottom: 1px solid #1e293b; margin-bottom: 20px; }
+        .header h2 { margin: 0; font-size: 20px; }
+        
+        /* Summary Box */
+        .summary { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .sum-card { background: var(--card); padding: 10px 20px; border-radius: 12px; min-width: 100px; border: 1px solid #1e293b; }
+        .sum-card small { opacity: 0.6; font-size: 11px; text-transform: uppercase; }
+        .sum-card div { font-size: 18px; font-weight: bold; color: var(--primary); }
 
-<style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
+        /* Search Bar */
+        #search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #1e293b; background: var(--card); color: white; box-sizing: border-box; margin-bottom: 15px; }
 
-.card{
-background:#0f172a;
-padding:25px;
-border-radius:16px;
-max-width:520px;
-margin:auto;
-margin-top:20px
-}
+        /* Student Card */
+        .student-list { display: flex; flex-direction: column; gap: 12px; }
+        .student-card { background: var(--card); border-radius: 16px; padding: 16px; border: 1px solid #1e293b; position: relative; }
+        
+        .s-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .s-name { font-size: 18px; font-weight: bold; margin: 0; }
+        .s-xp { font-size: 12px; background: rgba(250, 204, 21, 0.1); color: #facc15; padding: 2px 8px; border-radius: 6px; }
 
-button{
-padding:12px 18px;
-border:none;
-border-radius:10px;
-margin:5px;
-font-weight:bold;
-color:white
-}
+        /* Status Tags */
+        .badge { font-size: 10px; padding: 4px 8px; border-radius: 5px; font-weight: bold; text-transform: uppercase; }
+        .badge-overdue { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .badge-paid { background: rgba(34, 197, 94, 0.1); color: var(--success); }
+        .badge-complete { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
 
-.paid{background:#22c55e}
-.complete{background:orange}
-.del{background:red}
-.reset{background:#6366f1}
+        .date-text { font-size: 11px; opacity: 0.5; margin-top: 5px; }
 
-.student{
-background:#111827;
-padding:18px;
-margin:12px;
-border-radius:14px
-}
+        /* Action Buttons Grid */
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .btn { border: none; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-paid { background: var(--success); }
+        .btn-comp { background: var(--primary); }
+        .btn-reset { background: #334155; }
+        .btn-del { background: var(--danger); grid-column: span 2; opacity: 0.8; }
+        .btn:active { transform: scale(0.95); }
 
-.overdue{color:red;font-weight:bold}
-.paidtxt{color:#22c55e;font-weight:bold}
-.completeTxt{color:#38bdf8;font-weight:bold}
-.xp{color:#facc15;font-weight:bold}
-</style>
+    </style>
 </head>
 <body>
 
-<div class="card">
-<h2>👨‍💻 Students Payment Control (<span id="totalStudents">0</span>)</h2>
-<div id="list">Loading...</div>
+<div class="header">
+    <h2>💳 Payment Control</h2>
 </div>
+
+<div class="summary">
+    <div class="sum-card"><small>Total</small><div id="totalCount">0</div></div>
+    <div class="sum-card"><small>Paid</small><div id="paidCount" style="color: var(--success)">0</div></div>
+    <div class="sum-card"><small>Overdue</small><div id="overdueCount" style="color: var(--danger)">0</div></div>
+</div>
+
+<input type="text" id="search" placeholder="🔍 Search student name..." oninput="filterStudents()">
+
+<div id="list" class="student-list">Loading Database...</div>
 
 <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDocs, collection, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDocs, collection, updateDoc, deleteDoc, setDoc }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.appspot.com",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+    let allData = [];
 
-load();
+    async function autoFetchStudents() {
+        let studentsSnap = await getDocs(collection(db, "students"));
+        let paySnap = await getDocs(collection(db, "payments"));
+        let existing = paySnap.docs.map(d => d.id);
 
-/* AUTO ADD STUDENTS */
-async function autoFetchStudents(){
+        for (let d of studentsSnap.docs) {
+            if (!existing.includes(d.id)) {
+                await setDoc(doc(db, "payments", d.id), { name: d.id, status: "OVERDUE", lastPaid: "" });
+            }
+        }
+    }
 
-let studentsSnap = await getDocs(collection(db,"students"));
-let paySnap = await getDocs(collection(db,"payments"));
+    window.markPaid = async function(name) {
+        let today = new Date().toLocaleDateString('en-GB');
+        await updateDoc(doc(db, "payments", name), { status: "PAID", lastPaid: today });
+        load();
+    }
 
-let existing = [];
-paySnap.forEach(d=>existing.push(d.id));
+    window.complete = async function(name) {
+        await updateDoc(doc(db, "payments", name), { status: "COMPLETED" });
+        load();
+    }
 
-studentsSnap.forEach(async(d)=>{
-let name=d.id;
+    window.resetXP = async function(name) {
+        if (confirm(`Reset XP for ${name}?`)) {
+            await updateDoc(doc(db, "students", name), { xp: 0 });
+            load();
+        }
+    }
 
-if(!existing.includes(name)){
-await setDoc(doc(db,"payments",name),{
-name:name,
-status:"OVERDUE",
-lastPaid:""
-});
-}
-});
-}
+    window.del = async function(name) {
+        if (confirm(`Permanent Delete ${name}?`)) {
+            await deleteDoc(doc(db, "payments", name));
+            await deleteDoc(doc(db, "students", name));
+            load();
+        }
+    }
 
-/* MARK PAID */
-window.markPaid=async function(name){
-let today=new Date().toLocaleDateString();
+    async function load() {
+        await autoFetchStudents();
+        const paySnap = await getDocs(collection(db, "payments"));
+        const studentSnap = await getDocs(collection(db, "students"));
 
-await updateDoc(doc(db,"payments",name),{
-status:"PAID",
-lastPaid:today
-});
-load();
-}
+        let xpMap = {};
+        studentSnap.forEach(d => xpMap[d.id] = d.data().xp || 0);
 
-/* COMPLETE */
-window.complete=async function(name){
-await updateDoc(doc(db,"payments",name),{
-status:"COMPLETED"
-});
-load();
-}
+        allData = [];
+        paySnap.forEach(d => {
+            allData.push({ ...d.data(), xp: xpMap[d.id] || 0 });
+        });
 
-/* 🔥 DELETE FULL STUDENT */
-window.del=async function(name){
+        render(allData);
+    }
 
-if(!confirm("Delete "+name+" completely?")) return;
+    function render(data) {
+        let html = "";
+        let paid = 0, overdue = 0;
 
-try{
-await deleteDoc(doc(db,"payments",name)); // payment delete
-}catch{}
+        data.forEach((s, index) => {
+            let badge = `<span class="badge badge-overdue">Overdue</span>`;
+            if (s.status == "PAID") { badge = `<span class="badge badge-paid">Paid</span>`; paid++; }
+            else if (s.status == "COMPLETED") { badge = `<span class="badge badge-complete">Completed</span>`; }
+            else { overdue++; }
 
-try{
-await deleteDoc(doc(db,"students",name)); // student xp delete
-}catch{}
+            html += `
+            <div class="student-card">
+                <div class="s-header">
+                    <div>
+                        <p class="s-name">${index + 1}. ${s.name}</p>
+                        <span class="s-xp">⭐ ${s.xp} XP</span>
+                    </div>
+                    ${badge}
+                </div>
+                <div class="date-text">${s.lastPaid ? "Last payment: " + s.lastPaid : "No payment record"}</div>
+                
+                <div class="actions">
+                    <button class="btn btn-paid" onclick="markPaid('${s.name}')">Mark Paid</button>
+                    <button class="btn btn-comp" onclick="complete('${s.name}')">Finish</button>
+                    <button class="btn btn-reset" onclick="resetXP('${s.name}')">Reset XP</button>
+                    <button class="btn btn-del" onclick="del('${s.name}')">Remove Student</button>
+                </div>
+            </div>`;
+        });
 
-alert("Deleted "+name);
-load();
-}
+        document.getElementById("list").innerHTML = html || "<p style='text-align:center'>No students found.</p>";
+        document.getElementById("totalCount").innerText = data.length;
+        document.getElementById("paidCount").innerText = paid;
+        document.getElementById("overdueCount").innerText = overdue;
+    }
 
-/* RESET XP */
-window.resetXP=async function(name){
-if(!confirm("Reset XP of "+name+" ?")) return;
+    window.filterStudents = function() {
+        let val = document.getElementById("search").value.toLowerCase();
+        let filtered = allData.filter(s => s.name.toLowerCase().includes(val));
+        render(filtered);
+    }
 
-await updateDoc(doc(db,"students",name),{
-xp:0
-});
-
-alert("XP Reset Done");
-load();
-}
-
-/* LOAD */
-async function load(){
-
-await autoFetchStudents();
-
-let paySnap=await getDocs(collection(db,"payments"));
-let studentSnap=await getDocs(collection(db,"students"));
-
-let xpMap={};
-studentSnap.forEach(d=>{
-xpMap[d.id]=d.data().xp || 0;
-});
-
-let html="";
-let count=1;
-
-if(paySnap.empty){
-document.getElementById("list").innerHTML="No students";
-document.getElementById("totalStudents").innerText=0;
-return;
-}
-
-paySnap.forEach(d=>{
-let s=d.data();
-let xp=xpMap[s.name] || 0;
-
-let statusHtml="";
-if(s.status=="PAID") statusHtml=`<span class="paidtxt">PAID</span>`;
-else if(s.status=="COMPLETED") statusHtml=`<span class="completeTxt">COURSE COMPLETED</span>`;
-else statusHtml=`<span class="overdue">OVERDUE</span>`;
-
-html+=`
-<div class="student">
-<h3>${count}. ${s.name}</h3>
-
-<div class="xp">⭐ XP: ${xp}</div><br>
-
-Status: ${statusHtml}<br>
-${s.lastPaid ? "Paid Date: "+s.lastPaid : ""}<br><br>
-
-<button class="paid" onclick="markPaid('${s.name}')">Mark Paid</button>
-<button class="complete" onclick="complete('${s.name}')">Course Completed</button>
-<button class="reset" onclick="resetXP('${s.name}')">Reset XP</button>
-<button class="del" onclick="del('${s.name}')">Delete Student</button>
-</div>
-`;
-count++;
-});
-
-document.getElementById("list").innerHTML=html;
-document.getElementById("totalStudents").innerText=count-1;
-
-}
-
+    load();
 </script>
 </body>
 </html>
