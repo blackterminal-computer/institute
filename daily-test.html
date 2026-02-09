@@ -32,7 +32,7 @@ button{padding:12px 18px;margin-top:15px;border:none;border-radius:10px;font-siz
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs }
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -154,41 +154,46 @@ time=20;
 }
 
 /* 🔥 FINISH */
-function finish(){
+async function finish(){
 
 let todayDate=new Date();
 let todayStr=todayDate.toDateString();
 
-// save done today
+// lock today
 localStorage.setItem("daily_done_"+student,todayStr);
 
-/* ⭐ XP ADD */
-let xpData=JSON.parse(localStorage.getItem("xpData"))||{};
-xpData[student]=(xpData[student]||0)+100;
-localStorage.setItem("xpData",JSON.stringify(xpData));
+/* 🔥 XP + STREAK FIREBASE */
+let xpRef = doc(db,"students",student);
+let snap = await getDoc(xpRef);
 
-/* 🔥 STREAK SYSTEM */
-let streakData=JSON.parse(localStorage.getItem("streakData"))||{};
-let lastPlay=streakData[student]?.lastDate;
-let streak=streakData[student]?.streak||0;
+let currentXP=0;
+let streak=1;
 
-let yesterday=new Date();
-yesterday.setDate(todayDate.getDate()-1);
-let yStr=yesterday.toDateString();
-
-if(lastPlay==yStr){
-streak+=1; // continue streak
-}else if(lastPlay==todayStr){
-}else{
-streak=1; // reset
+if(snap.exists()){
+currentXP=snap.data().xp||0;
+streak=snap.data().streak||0;
 }
 
-streakData[student]={
-streak:streak,
-lastDate:todayStr
-};
+currentXP+=100;
 
-localStorage.setItem("streakData",JSON.stringify(streakData));
+/* streak calc */
+let lastPlay=localStorage.getItem("last_play_"+student);
+let yesterday=new Date();
+yesterday.setDate(todayDate.getDate()-1);
+
+if(lastPlay==yesterday.toDateString()){
+streak+=1;
+}else if(lastPlay==todayStr){
+}else{
+streak=1;
+}
+
+localStorage.setItem("last_play_"+student,todayStr);
+
+await setDoc(xpRef,{
+xp:currentXP,
+streak:streak
+},{merge:true});
 
 alert(`🏆 Test Completed!
 Score: ${score}/20
