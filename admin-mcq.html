@@ -1,162 +1,249 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin MCQ Panel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | MCQ Manager</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --bg: #020617;
+            --card: #0f172a;
+            --success: #22c55e;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
 
-<style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-text-align:center;
-padding-top:40px;
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        
+        body {
+            background: var(--bg);
+            color: white;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
+        }
 
-.box{
-background:#0f172a;
-width:92%;
-max-width:500px;
-margin:auto;
-padding:25px;
-border-radius:16px;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-}
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card);
+            padding: 30px 20px;
+            border-radius: 28px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            height: fit-content;
+            margin-top: 20px;
+        }
 
-input{
-width:92%;
-padding:14px;
-margin:8px;
-border-radius:10px;
-border:none;
-font-size:16px;
-}
+        h2 { font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; justify-content: center; }
+        h2 i { color: var(--accent); }
 
-button{
-padding:14px 22px;
-border:none;
-border-radius:12px;
-margin:10px;
-font-size:16px;
-font-weight:bold;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
-color:white;
-}
+        /* Progress Bar */
+        .progress-container {
+            background: rgba(255,255,255,0.05);
+            height: 6px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        #progress-bar { height: 100%; width: 5%; background: var(--primary); transition: 0.4s; }
 
-#qno{
-font-size:22px;
-color:#22c55e;
-margin:10px;
-}
-</style>
+        .input-group { margin-bottom: 15px; position: relative; }
+        label { font-size: 11px; font-weight: 700; color: #64748b; margin-left: 10px; text-transform: uppercase; }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(2, 6, 23, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            margin-top: 5px;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
+
+        .btn-save {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #64748b;
+            border: 1px solid #1e293b;
+            margin-top: 15px;
+            font-size: 13px;
+            padding: 10px;
+            width: 100%;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        #qno-badge {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        /* Toast Message */
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: var(--success); color: white; padding: 12px 25px; border-radius: 50px;
+            font-weight: 700; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        #toast.active { transform: translateX(-50%) translateY(0); }
+    </style>
 </head>
 <body>
 
-<div class="box" id="loginBox">
-<h2>🔐 Admin Login</h2>
-<input type="password" id="pass" placeholder="Enter password">
-<button onclick="login()">Login</button>
-</div>
+    <div id="toast">Saved Successfully</div>
 
-<div class="box" id="panel" style="display:none">
-<h2>🧠 Daily MCQ Upload</h2>
-<div id="qno">Question 1</div>
+    <div class="container" id="loginBox">
+        <h2><i class="ri-lock-password-fill"></i> Admin Access</h2>
+        <input type="password" id="pass" placeholder="Enter Terminal Password">
+        <button class="btn-save" onclick="login()" style="margin-top:20px">Login</button>
+    </div>
 
-<input id="q" placeholder="Question">
-<input id="a" placeholder="Option A">
-<input id="b" placeholder="Option B">
-<input id="c" placeholder="Option C">
-<input id="d" placeholder="Option D">
-<input id="ans" placeholder="Correct answer (A/B/C/D)">
+    <div class="container" id="panel" style="display:none">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2><i class="ri-edit-2-fill"></i> MCQ Uploader</h2>
+            <span id="qno-badge">Q1 / 20</span>
+        </div>
 
-<button onclick="saveQ()">Save & Next</button>
-<button onclick="resetAll()">Reset All Questions</button>
-</div>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
 
-<script type="module">
+        <div class="input-group">
+            <label>Question Statement</label>
+            <input id="q" placeholder="Enter question here...">
+        </div>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, deleteDoc }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="input-group"><label>Option A</label><input id="a" placeholder="Option A"></div>
+            <div class="input-group"><label>Option B</label><input id="b" placeholder="Option B"></div>
+            <div class="input-group"><label>Option C</label><input id="c" placeholder="Option C"></div>
+            <div class="input-group"><label>Option D</label><input id="d" placeholder="Option D"></div>
+        </div>
 
-const firebaseConfig = {
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+        <div class="input-group">
+            <label>Correct Answer (A, B, C, or D)</label>
+            <input id="ans" maxlength="1" style="text-align: center; font-weight: 800; color: var(--accent);" placeholder="e.g. A">
+        </div>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+        <button class="btn-save" onclick="saveQ()">
+            <span>Save & Next Question</span> <i class="ri-arrow-right-line"></i>
+        </button>
 
-let qIndex=1;
+        <button class="btn-reset" onclick="resetAll()">
+            <i class="ri-delete-bin-7-line"></i> Reset All 20 Questions
+        </button>
+    </div>
 
-window.login=function(){
-let p=document.getElementById("pass").value;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-if(p==="admin5"){
-document.getElementById("loginBox").style.display="none";
-document.getElementById("panel").style.display="block";
-}else{
-alert("Wrong password");
-}
-}
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-window.saveQ=async function(){
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let qIndex = 1;
 
-let q=document.getElementById("q").value;
-let a=document.getElementById("a").value;
-let b=document.getElementById("b").value;
-let c=document.getElementById("c").value;
-let d=document.getElementById("d").value;
-let ans=document.getElementById("ans").value.toUpperCase();
+        window.login = function() {
+            if(document.getElementById("pass").value === "admin5") {
+                document.getElementById("loginBox").style.display = "none";
+                document.getElementById("panel").style.display = "block";
+            } else { alert("Access Denied"); }
+        }
 
-if(!q || !a || !b || !c || !d || !ans){
-alert("Fill all fields");
-return;
-}
+        window.saveQ = async function() {
+            const fields = ['q', 'a', 'b', 'c', 'd', 'ans'];
+            const data = {};
+            let empty = false;
 
-await setDoc(doc(db,"daily_mcq","q"+qIndex),{
-question:q,
-a:a,
-b:b,
-c:c,
-d:d,
-correct:ans
-});
+            fields.forEach(f => {
+                const val = document.getElementById(f).value.trim();
+                if(!val) empty = true;
+                data[f] = val;
+            });
 
-alert("Saved Question "+qIndex);
+            if(empty) return alert("Please fill all fields!");
 
-qIndex++;
+            try {
+                await setDoc(doc(db, "daily_mcq", "q" + qIndex), {
+                    question: data.q,
+                    a: data.a, b: data.b, c: data.c, d: data.d,
+                    correct: data.ans.toUpperCase()
+                });
 
-if(qIndex>20){
-alert("All 20 questions uploaded");
-return;
-}
+                showToast(`Question ${qIndex} Saved!`);
+                qIndex++;
 
-document.getElementById("qno").innerHTML="Question "+qIndex;
+                if(qIndex > 20) {
+                    alert("✅ All 20 questions uploaded successfully!");
+                    qIndex = 20; // stay at 20
+                }
 
-document.getElementById("q").value="";
-document.getElementById("a").value="";
-document.getElementById("b").value="";
-document.getElementById("c").value="";
-document.getElementById("d").value="";
-document.getElementById("ans").value="";
-}
+                updateUI();
+            } catch(e) { alert("Error saving: " + e.message); }
+        }
 
-window.resetAll=async function(){
-for(let i=1;i<=20;i++){
-try{
-await deleteDoc(doc(db,"daily_mcq","q"+i));
-}catch{}
-}
-qIndex=1;
-document.getElementById("qno").innerHTML="Question 1";
-alert("All questions deleted");
-}
+        function updateUI() {
+            document.getElementById("qno-badge").innerText = `Q${qIndex} / 20`;
+            document.getElementById("progress-bar").style.width = (qIndex / 20 * 100) + "%";
+            ['q', 'a', 'b', 'c', 'd', 'ans'].forEach(f => document.getElementById(f).value = "");
+            document.getElementById("q").focus();
+        }
 
-</script>
+        window.resetAll = async function() {
+            if(!confirm("Are you sure? This will delete all 20 questions!")) return;
+            for(let i=1; i<=20; i++) {
+                await deleteDoc(doc(db, "daily_mcq", "q" + i));
+            }
+            qIndex = 1;
+            updateUI();
+            alert("Database Cleared!");
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.classList.add("active");
+            setTimeout(() => t.classList.remove("active"), 2000);
+        }
+    </script>
 </body>
 </html>
