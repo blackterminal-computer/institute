@@ -332,6 +332,24 @@ justify-content:space-between;
 font-size:18px;
 padding:10px;
 }
+
+
+.unitCard{
+background:linear-gradient(135deg,#1e293b,#020617);
+border:1px solid rgba(255,255,255,0.1);
+box-shadow:0 0 25px rgba(0,0,0,0.6);
+}
+
+.locked{
+color:#ef4444;
+font-weight:bold;
+}
+
+.unlocked{
+color:#22c55e;
+font-weight:bold;
+}
+
 </style>
 </head>
 
@@ -396,6 +414,13 @@ text-align:center">
 <p>Fresh questions everyday with performance tracking.</p>
 </div>
 </a>
+
+<!-- UNIT TEST CARD -->
+<div class="card unitCard" onclick="openUnitTest()">
+  <h2>📚 Unit Wise Test</h2>
+  <p>Unlock advanced unit tests</p>
+  <h3 id="unitStatus">Checking access...</h3>
+</div>
 
 <a href="battle.html" style="text-decoration:none;color:white">
 <div class="card">
@@ -798,5 +823,58 @@ document.getElementById("topStudents").innerHTML=html;
 }
 
 </script>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let student=localStorage.getItem("studentName")||"Guest";
+let userXP=0;
+
+/* 🔥 LOAD XP */
+const snap = await getDoc(doc(db,"students",student));
+
+if(snap.exists()){
+userXP=snap.data().xp||0;
+}
+
+/* CHECK ACCESS */
+if(userXP>=5000){
+document.getElementById("unitStatus").innerHTML=
+"🟢 Unlocked — Enter Now";
+document.getElementById("unitStatus").className="unlocked";
+}else{
+document.getElementById("unitStatus").innerHTML=
+"🔒 Locked — Required 5000 XP";
+document.getElementById("unitStatus").className="locked";
+}
+
+/* CLICK */
+window.openUnitTest=function(){
+
+if(userXP<5000){
+alert("🔒 Need 5000 XP to unlock Unit Test");
+return;
+}
+
+location.href="unit-test.html"; // your unit test page
+}
+
+</script>
+
 </body>
 </html>
