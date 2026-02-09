@@ -1,266 +1,175 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>My Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Black Terminal | Profile</title>
+    <style>
+        :root {
+            --neon-green: #22c55e;
+            --neon-blue: #06b6d4;
+            --dark-bg: #020617;
+            --card-bg: #0f172a;
+        }
+        body { background: var(--dark-bg); color: white; font-family: 'Segoe UI', Arial; margin: 0; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 420px; padding: 15px; padding-bottom: 100px; }
+        
+        /* Profile Card */
+        .card { background: var(--card-bg); padding: 25px; border-radius: 28px; border: 1px solid #1e293b; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* Avatar & Level Ring */
+        .avatar-container { position: relative; width: 150px; height: 150px; margin: 0 auto 15px; }
+        .avatar { 
+            width: 100%; height: 100%; border-radius: 50%; 
+            border: 4px solid var(--neon-green); object-fit: cover;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); cursor: pointer;
+        }
+        .level-badge {
+            position: absolute; bottom: 0; right: 0;
+            background: var(--neon-green); color: black; font-weight: bold;
+            padding: 5px 12px; border-radius: 20px; font-size: 14px;
+        }
 
-<style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-margin:0;
-padding:0;
-display:flex;
-justify-content:center;
-}
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .stat-item { background: var(--dark-bg); padding: 12px; border-radius: 15px; border: 1px solid #1e293b; text-align: center; }
+        .stat-val { display: block; font-size: 18px; font-weight: bold; color: var(--neon-blue); }
+        .stat-label { font-size: 12px; opacity: 0.6; }
 
-.container{
-width:100%;
-max-width:420px;
-padding:18px;
-padding-bottom:90px;
-}
+        input, textarea { width: 90%; padding: 12px; margin-top: 10px; border-radius: 10px; border: 1px solid #1e293b; background: #020617; color: white; outline: none; }
+        
+        button { width: 100%; padding: 12px; border: none; border-radius: 12px; margin-top: 10px; font-weight: bold; background: linear-gradient(90deg, #6366f1, #06b6d4); color: white; cursor: pointer; }
+        .save-btn { background: #1e293b; border: 1px solid #334155; font-size: 12px; width: auto; padding: 5px 15px; }
 
-.card{
-background:#0f172a;
-padding:22px;
-border-radius:22px;
-margin-top:20px;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-text-align:center;
-}
-
-/* avatar */
-.avatarBox{
-display:flex;
-justify-content:center;
-margin-top:10px;
-}
-
-.avatar{
-width:140px;
-height:140px;
-border-radius:50%;
-border:4px solid #22c55e;
-object-fit:cover;
-box-shadow:0 0 25px #22c55e;
-cursor:pointer;
-transition:.3s;
-}
-
-.avatar:active{
-transform:scale(0.95);
-}
-
-/* inputs */
-input,textarea{
-width:100%;
-padding:14px;
-margin-top:14px;
-border-radius:12px;
-border:none;
-font-size:16px;
-outline:none;
-background:#020617;
-color:white;
-}
-
-/* buttons */
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:12px;
-margin-top:14px;
-font-size:16px;
-font-weight:bold;
-background:linear-gradient(90deg,#6366f1,#06b6d4);
-color:white;
-box-shadow:0 0 20px rgba(0,255,255,0.3);
-}
-
-/* stats */
-.stats{
-background:#020617;
-padding:16px;
-border-radius:14px;
-margin-top:18px;
-font-size:17px;
-text-align:left;
-line-height:1.8;
-}
-
-/* name */
-.name{
-font-size:22px;
-font-weight:bold;
-margin-top:10px;
-}
-
-.bio{
-opacity:.8;
-margin-top:8px;
-}
-
-/* home btn fix */
-.homeBtn{
-position:fixed;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-width:90%;
-max-width:380px;
-}
-
-</style>
+        .homeBtn { position: fixed; bottom: 20px; width: 90%; max-width: 380px; z-index: 100; }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
+    <div class="card">
+        <div class="avatar-container">
+            <img id="photo" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" onclick="document.getElementById('file').click()">
+            <div class="level-badge" id="lvl-txt">Lvl 1</div>
+            <input type="file" id="file" accept="image/*" hidden>
+        </div>
 
-<div class="card">
+        <h2 id="showName" style="margin: 10px 0 5px 0;">Student</h2>
+        <p id="showBio" style="font-size: 14px; opacity: 0.7; margin-bottom: 20px;">No bio yet</p>
 
-<h2>👤 My Profile</h2>
+        <div class="stats-grid">
+            <div class="stat-item"><span class="stat-val" id="xp">0</span><span class="stat-label">Total XP</span></div>
+            <div class="stat-item"><span class="stat-val" id="streak">0</span><span class="stat-label">🔥 Streak</span></div>
+            <div class="stat-item"><span class="stat-val" id="rank">#--</span><span class="stat-label">Global Rank</span></div>
+            <div class="stat-item"><span class="stat-val" id="lvl-num">1</span><span class="stat-label">Level</span></div>
+        </div>
 
-<!-- PHOTO -->
-<div class="avatarBox">
-<img id="photo" class="avatar"
-src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
-onclick="document.getElementById('file').click()">
-<input type="file" id="file" accept="image/*" hidden>
-</div>
+        <hr style="border: 0.5px solid #1e293b; margin: 25px 0;">
 
-<!-- NAME -->
-<input id="nameInput" placeholder="Enter name">
-<button onclick="saveName()">Save Name</button>
-
-<div class="name" id="showName">Student</div>
-
-<!-- BIO -->
-<textarea id="bioInput" placeholder="Write bio..."></textarea>
-<button onclick="saveBio()">Save Bio</button>
-
-<div class="bio" id="showBio">No bio yet</div>
-
-<!-- STATS -->
-<div class="stats">
-⭐ XP: <span id="xp">0</span><br>
-🔥 Streak: <span id="streak">0</span><br>
-🏆 Rank: <span id="rank">#0</span>
-</div>
-
-</div>
-
+        <h4 style="text-align: left; margin-bottom: 5px;">Edit Profile</h4>
+        <input id="nameInput" placeholder="Update Name">
+        <button class="save-btn" onclick="saveName()">Update Name</button>
+        
+        <textarea id="bioInput" placeholder="Write something cool..."></textarea>
+        <button class="save-btn" onclick="saveBio()">Update Bio</button>
+    </div>
 </div>
 
 <button class="homeBtn" onclick="location.href='index.html'">🏠 Home</button>
 
 <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.appspot.com",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+    // Ye zaroori hai: current user check karne ke liye
+    let student = localStorage.getItem("studentName");
 
-let student=localStorage.getItem("studentName")||"Student";
+    async function loadProfile() {
+        if(!student) return;
 
-/* LOAD */
-async function loadProfile(){
+        const ref = doc(db, "students", student);
+        const snap = await getDoc(ref);
 
-let ref=doc(db,"students",student);
-let snap=await getDoc(ref);
+        if (snap.exists()) {
+            const d = snap.data();
+            
+            // Photo Fix: Direct UI Update
+            if (d.photo) {
+                document.getElementById("photo").src = d.photo;
+            }
 
-if(snap.exists()){
-let d=snap.data();
+            document.getElementById("showName").innerText = student;
+            document.getElementById("showBio").innerText = d.bio || "No bio yet";
+            document.getElementById("xp").innerText = d.xp || 0;
+            document.getElementById("streak").innerText = d.streak || 0;
 
-document.getElementById("showName").innerText=student;
-document.getElementById("nameInput").value=student;
+            // Level Logic (e.g., Every 500 XP = 1 Level)
+            let level = Math.floor((d.xp || 0) / 500) + 1;
+            document.getElementById("lvl-txt").innerText = "Lvl " + level;
+            document.getElementById("lvl-num").innerText = level;
+        }
 
-document.getElementById("showBio").innerText=d.bio||"No bio yet";
-document.getElementById("bioInput").value=d.bio||"";
+        // Global Rank calculation
+        const snap2 = await getDocs(collection(db, "students"));
+        let arr = [];
+        snap2.forEach(s => arr.push({ name: s.id, xp: s.data().xp || 0 }));
+        arr.sort((a, b) => b.xp - a.xp);
+        let r = arr.findIndex(x => x.name == student) + 1;
+        if (r > 0) document.getElementById("rank").innerText = "#" + r;
+    }
 
-document.getElementById("xp").innerText=d.xp||0;
-document.getElementById("streak").innerText=d.streak||0;
+    window.onload = loadProfile;
 
-if(d.photo) document.getElementById("photo").src=d.photo;
-}
+    window.saveName = async function() {
+        let newName = document.getElementById("nameInput").value.trim();
+        if (!newName) return;
+        localStorage.setItem("studentName", newName);
+        student = newName; // update variable
+        await setDoc(doc(db, "students", newName), { xp: 0 }, { merge: true });
+        location.reload();
+    };
 
-/* rank */
-let snap2=await getDocs(collection(db,"students"));
-let arr=[];
-snap2.forEach(s=>{
-arr.push({name:s.id,xp:s.data().xp||0});
-});
+    window.saveBio = async function() {
+        let bio = document.getElementById("bioInput").value;
+        await setDoc(doc(db, "students", student), { bio: bio }, { merge: true });
+        document.getElementById("showBio").innerText = bio;
+        alert("Bio Updated!");
+    };
 
-arr.sort((a,b)=>b.xp-a.xp);
-let r=arr.findIndex(x=>x.name==student)+1;
-if(r>0) document.getElementById("rank").innerText="#"+r;
-}
+    // Photo Upload Fix
+    document.getElementById("file").addEventListener("change", function(e) {
+        let file = e.target.files[0];
+        if (!file) return;
 
-loadProfile();
+        let reader = new FileReader();
+        reader.onload = async function(event) {
+            let base64 = event.target.result;
+            
+            // 1. Pehle UI update karo (instant feel)
+            document.getElementById("photo").src = base64;
 
-/* SAVE NAME */
-window.saveName=async function(){
-let newName=document.getElementById("nameInput").value.trim();
-if(!newName) return;
-
-localStorage.setItem("studentName",newName);
-
-await setDoc(doc(db,"students",newName),{
-xp:0,
-streak:0
-},{merge:true});
-
-alert("Reload page");
-}
-
-/* SAVE BIO */
-window.saveBio=async function(){
-let bio=document.getElementById("bioInput").value;
-
-await setDoc(doc(db,"students",student),{
-bio:bio
-},{merge:true});
-
-document.getElementById("showBio").innerText=bio;
-alert("Bio saved");
-}
-
-/* PHOTO */
-document.getElementById("file").addEventListener("change",async function(e){
-
-let file=e.target.files[0];
-if(!file) return;
-
-let reader=new FileReader();
-
-reader.onload=async function(event){
-let base64=event.target.result;
-document.getElementById("photo").src=base64;
-
-await setDoc(doc(db,"students",student),{
-photo:base64
-},{merge:true});
-
-alert("Photo updated 🔥");
-};
-
-reader.readAsDataURL(file);
-});
-
+            // 2. Firebase mein save karo
+            try {
+                await setDoc(doc(db, "students", student), { photo: base64 }, { merge: true });
+                alert("Profile Photo Updated! 🔥");
+            } catch (err) {
+                console.error(err);
+                alert("Photo too large! Try a smaller image.");
+            }
+        };
+        reader.readAsDataURL(file);
+    });
 </script>
 </body>
 </html>
