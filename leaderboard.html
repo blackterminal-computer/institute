@@ -1,95 +1,170 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leaderboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Global Ranks</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-<style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
-.card{background:#0f172a;padding:20px;border-radius:16px;max-width:500px;margin:auto;margin-top:20px}
-.player{background:#111827;margin:10px;padding:15px;border-radius:12px;font-size:18px;display:flex;justify-content:space-between}
-.rank{color:#22c55e;font-weight:bold}
-.xp{color:#facc15;font-weight:bold}
-</style>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --gold: #facc15;
+            --silver: #cbd5e1;
+            --bronze: #fb923c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body { 
+            background: var(--bg); color: #f8fafc; min-height: 100vh; padding: 20px;
+            background-image: radial-gradient(circle at top, #1e1b4b, transparent);
+        }
+
+        header { text-align: center; margin-bottom: 30px; margin-top: 10px; }
+        header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+        header p { font-size: 12px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
+
+        /* 🥇 TOP 3 STYLING */
+        .top-three {
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 15px; margin-bottom: 40px; padding: 10px;
+        }
+        .podium {
+            background: var(--glass); border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 20px 10px; text-align: center;
+            flex: 1; position: relative; transition: 0.3s;
+        }
+        .podium.rank-1 { height: 160px; border-color: var(--gold); background: rgba(250, 204, 21, 0.05); }
+        .podium.rank-2 { height: 140px; border-color: var(--silver); }
+        .podium.rank-3 { height: 130px; border-color: var(--bronze); }
+        
+        .crown { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 24px; }
+        .podium-name { font-size: 13px; font-weight: 800; margin-top: 10px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .podium-xp { font-size: 11px; color: var(--accent); font-weight: 700; }
+
+        /* 📜 LIST STYLING */
+        .board-container {
+            max-width: 500px; margin: 0 auto;
+        }
+        .player-row {
+            background: var(--glass); border: 1px solid var(--glass-border);
+            margin-bottom: 12px; padding: 16px 20px; border-radius: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            animation: slideIn 0.5s ease-out both;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+        .player-info { display: flex; align-items: center; gap: 15px; }
+        .rank-tag { font-weight: 800; color: #64748b; width: 25px; font-size: 14px; }
+        .player-name { font-weight: 600; font-size: 15px; }
+        .xp-tag { font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 5px; font-size: 14px; }
+
+        /* 🏠 HOME BUTTON */
+        .home-btn {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--primary); color: white; border: none;
+            padding: 14px 30px; border-radius: 50px; font-weight: 800;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            text-decoration: none; z-index: 100;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="card">
-<h2>🏆 Live Leaderboard</h2>
-<div id="board">Loading...</div>
-</div>
+    <header>
+        <h1>Global <span>Ranks</span></h1>
+        <p>Terminal Warriors</p>
+    </header>
 
-<br>
-<button onclick="location.href='index.html'">🏠 Home</button>
+    <div id="podium-area" class="top-three">
+        </div>
 
-<script type="module">
+    <div class="board-container" id="board">
+        </div>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <a href="index.html" class="home-btn"><i class="ri-home-5-line"></i> Home</a>
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-/* ⚡ STEP 1: LOAD LOCAL FAST */
-let local=localStorage.getItem("leaderboard_cache");
-if(local){
-showBoard(JSON.parse(local));
-}
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-/* ⚡ STEP 2: FETCH FIREBASE BACKGROUND */
-loadBoard();
+        // Fast Load Cache
+        let local = localStorage.getItem("leaderboard_cache");
+        if(local) showBoard(JSON.parse(local));
 
-async function loadBoard(){
+        async function loadBoard() {
+            try {
+                const snap = await getDocs(collection(db, "students"));
+                let arr = [];
+                snap.forEach(d => {
+                    arr.push({ name: d.id, xp: d.data().xp || 0 });
+                });
+                arr.sort((a, b) => b.xp - a.xp);
+                localStorage.setItem("leaderboard_cache", JSON.stringify(arr));
+                showBoard(arr);
+            } catch(e) { console.log(e); }
+        }
+        loadBoard();
 
-let snap = await getDocs(collection(db,"students"));
-let arr=[];
+        function showBoard(arr) {
+            if(arr.length === 0) return;
 
-snap.forEach(d=>{
-let data=d.data();
-arr.push({
-name:d.id,
-xp:data.xp || 0
-});
-});
+            // 1. Handle Top 3 Podium
+            const top = arr.slice(0, 3);
+            const podiumHtml = `
+                <div class="podium rank-2">
+                    <span class="crown">🥈</span>
+                    <span class="podium-name">${top[1]?.name || '---'}</span>
+                    <span class="podium-xp">${top[1]?.xp || 0} XP</span>
+                </div>
+                <div class="podium rank-1">
+                    <span class="crown">👑</span>
+                    <span class="podium-name">${top[0]?.name || '---'}</span>
+                    <span class="podium-xp">${top[0]?.xp || 0} XP</span>
+                </div>
+                <div class="podium rank-3">
+                    <span class="crown">🥉</span>
+                    <span class="podium-name">${top[2]?.name || '---'}</span>
+                    <span class="podium-xp">${top[2]?.xp || 0} XP</span>
+                </div>
+            `;
+            document.getElementById("podium-area").innerHTML = podiumHtml;
 
-// sort high to low
-arr.sort((a,b)=>b.xp-a.xp);
-
-// save cache
-localStorage.setItem("leaderboard_cache",JSON.stringify(arr));
-
-// show
-showBoard(arr);
-}
-
-function showBoard(arr){
-
-let html="";
-
-arr.forEach((s,i)=>{
-html+=`
-<div class="player">
-<div class="rank">#${i+1} ${s.name}</div>
-<div class="xp">⭐ ${s.xp}</div>
-</div>`;
-});
-
-if(arr.length==0) html="No data";
-
-document.getElementById("board").innerHTML=html;
-}
-
-</script>
+            // 2. Handle the rest of the list
+            let listHtml = "";
+            arr.slice(3).forEach((s, i) => {
+                listHtml += `
+                    <div class="player-row" style="animation-delay: ${i * 0.05}s">
+                        <div class="player-info">
+                            <span class="rank-tag">#${i + 4}</span>
+                            <span class="player-name">${s.name}</span>
+                        </div>
+                        <div class="xp-tag">⭐ ${s.xp}</div>
+                    </div>
+                `;
+            });
+            document.getElementById("board").innerHTML = listHtml || "<p style='opacity:0.5'>No more players</p>";
+        }
+    </script>
 </body>
 </html>
