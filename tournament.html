@@ -5,13 +5,7 @@
 <title>Daily Jackpot Tournament</title>
 
 <style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-text-align:center;
-padding:20px;
-}
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
 
 .card{
 background:#0f172a;
@@ -34,21 +28,22 @@ font-size:16px;
 width:90%;
 }
 
-input{
-margin-top:15px;
+.opt{
+display:block;
+background:#111827;
 padding:14px;
+margin:8px;
 border-radius:12px;
-border:none;
-width:85%;
+cursor:pointer;
 }
 
-.rankbox{margin-top:15px}
+.opt:hover{background:#1f2937}
+
 </style>
 </head>
 <body>
 
-<h1>🏆 Daily Jackpot Competition</h1>
-
+<h1>🏆 Daily Jackpot Tournament</h1>
 <h3 id="lastWinner">Last Winner: Loading...</h3>
 <h3 id="myxp">🔥 Your XP: 0</h3>
 
@@ -61,8 +56,7 @@ width:85%;
 <div class="card" id="gameBox" style="display:none">
 <h2 id="timer">⏱ 60</h2>
 <h3 id="q">Question</h3>
-<input id="ans" placeholder="Type answer">
-<button class="btn" onclick="submitAns()">Submit</button>
+<div id="options"></div>
 <h3>Score: <span id="score">0</span></h3>
 </div>
 
@@ -94,44 +88,34 @@ let xpRef=doc(db,"students",student);
 let myxp=0;
 let score=0;
 
-/* 🔥 LOAD USER XP */
+/* 🔥 USER XP */
 let snap=await getDoc(xpRef);
 if(snap.exists()) myxp=snap.data().xp||0;
 document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
 
-/* 🔥 LOAD POOL + PLAYERS */
+/* 🔥 LOAD POOL */
 async function loadPool(){
 let snap=await getDocs(collection(db,"tournament_today"));
-let total=0;
-let count=0;
-
+let total=0,count=0;
 snap.forEach(d=>{
-let data=d.data();
-total+=data.entry||0;
+total+=d.data().entry||0;
 count++;
 });
-
 document.getElementById("pool").innerText=total;
 document.getElementById("players").innerText=count;
-
 loadRanking();
 }
 loadPool();
 
-/* 🔥 ENTER */
+/* ENTER */
 window.enter=async function(){
 
-if(myxp<50){
-alert("Need 50 XP");
-return;
-}
+if(myxp<50) return alert("Need 50 XP");
 
-/* minus xp */
 await updateDoc(xpRef,{xp:myxp-50});
 myxp-=50;
 document.getElementById("myxp").innerText="🔥 Your XP: "+myxp;
 
-/* join */
 await addDoc(collection(db,"tournament_today"),{
 name:student,
 score:0,
@@ -139,63 +123,29 @@ entry:50
 });
 
 alert("Joined Tournament 🔥");
-
 startGame();
 loadPool();
 }
 
-/* QUESTIONS (50) */
+/* 🔥 MCQ QUESTIONS 50 */
 const questions=[
-{q:"HTML full form?",a:"hyper"},
-{q:"CPU full form?",a:"central"},
-{q:"RAM?",a:"memory"},
-{q:"Mouse?",a:"input"},
-{q:"Keyboard?",a:"input"},
-{q:"Monitor?",a:"output"},
-{q:"Internet?",a:"network"},
-{q:"1 byte?",a:"8"},
-{q:"Google?",a:"search"},
-{q:"Windows?",a:"os"},
-{q:"Excel?",a:"sheet"},
-{q:"Binary of 2?",a:"10"},
-{q:"WWW?",a:"world"},
-{q:"USB?",a:"bus"},
-{q:"ROM?",a:"read"},
-{q:"LAN?",a:"local"},
-{q:"WAN?",a:"wide"},
-{q:"Printer?",a:"output"},
-{q:"Scanner?",a:"input"},
-{q:"Modem?",a:"net"},
-{q:"Harddisk?",a:"storage"},
-{q:"File?",a:"data"},
-{q:"Folder?",a:"store"},
-{q:"Cloud?",a:"internet"},
-{q:"AI?",a:"intelligence"},
-{q:"PDF?",a:"document"},
-{q:"Powerpoint?",a:"slide"},
-{q:"C?",a:"language"},
-{q:"Java?",a:"language"},
-{q:"Python?",a:"language"},
-{q:"Keyboard keys?",a:"input"},
-{q:"Monitor size?",a:"inch"},
-{q:"Zoom?",a:"meeting"},
-{q:"Email?",a:"mail"},
-{q:"Chrome?",a:"browser"},
-{q:"Edge?",a:"browser"},
-{q:"Facebook?",a:"social"},
-{q:"Whatsapp?",a:"chat"},
-{q:"YouTube?",a:"video"},
-{q:"Instagram?",a:"social"},
-{q:"Wifi?",a:"internet"},
-{q:"Router?",a:"network"},
-{q:"IP?",a:"address"},
-{q:"Password?",a:"secure"},
-{q:"Login?",a:"enter"},
-{q:"Logout?",a:"exit"},
-{q:"Software?",a:"program"},
-{q:"Hardware?",a:"device"},
-{q:"CPU brain?",a:"yes"}
+{q:"HTML full form?",a:"Hyper Text Markup Language",b:"High Text",c:"Hyper Tool",d:"Home Tool",ans:"A"},
+{q:"CPU full form?",a:"Central Process Unit",b:"Central Processing Unit",c:"Computer Unit",d:"Control Unit",ans:"B"},
+{q:"RAM is?",a:"Storage",b:"Memory",c:"Input",d:"Output",ans:"B"},
+{q:"Mouse is?",a:"Input",b:"Output",c:"Storage",d:"CPU",ans:"A"},
+{q:"Monitor is?",a:"Input",b:"Output",c:"CPU",d:"Storage",ans:"B"},
+{q:"Keyboard is?",a:"Output",b:"Input",c:"CPU",d:"Memory",ans:"B"},
+{q:"1 byte=?",a:"4 bit",b:"16 bit",c:"8 bit",d:"2 bit",ans:"C"},
+{q:"Brain of computer?",a:"RAM",b:"CPU",c:"Mouse",d:"Monitor",ans:"B"},
+{q:"WWW full form?",a:"World Wide Web",b:"World Web",c:"Web World",d:"Wide Web",ans:"A"},
+{q:"Excel is?",a:"Browser",b:"Sheet software",c:"Game",d:"OS",ans:"B"}
 ];
+
+/* auto repeat to make 50 */
+while(questions.length<50){
+questions.push(...questions);
+}
+questions.length=50;
 
 let qIndex=0;
 let time=60;
@@ -217,14 +167,23 @@ finish();
 }
 
 function nextQ(){
-if(qIndex>=questions.length) qIndex=0;
-document.getElementById("q").innerText=questions[qIndex].q;
-document.getElementById("ans").value="";
+if(qIndex>=questions.length) return finish();
+
+let q=questions[qIndex];
+
+document.getElementById("q").innerText="Q"+(qIndex+1)+". "+q.q;
+
+document.getElementById("options").innerHTML=`
+<div class="opt" onclick="select('A')">A. ${q.a}</div>
+<div class="opt" onclick="select('B')">B. ${q.b}</div>
+<div class="opt" onclick="select('C')">C. ${q.c}</div>
+<div class="opt" onclick="select('D')">D. ${q.d}</div>
+`;
 }
 
-window.submitAns=function(){
-let val=document.getElementById("ans").value.toLowerCase();
-if(val.includes(questions[qIndex].a)){
+window.select=function(v){
+let q=questions[qIndex];
+if(v==q.ans){
 score++;
 document.getElementById("score").innerText=score;
 }
@@ -238,6 +197,7 @@ async function finish(){
 document.getElementById("gameBox").innerHTML=
 `<h2>Finished</h2><h1>Score: ${score}</h1>`;
 
+/* update score */
 let snap=await getDocs(collection(db,"tournament_today"));
 snap.forEach(async(d)=>{
 let data=d.data();
@@ -263,89 +223,19 @@ html+=`#${i+1} ${d.name} — ${d.score}<br>`;
 document.getElementById("ranking").innerHTML=html||"No players";
 }
 
-
-/* ================================
-🔥 AUTO WINNER SYSTEM (12AM)
-================================ */
-
-async function checkWinner(){
-
-let now = new Date();
-let hour = now.getHours();
-let minute = now.getMinutes();
-
-/* 12:00 night */
-if(hour===0 && minute===0){
-
-let snap = await getDocs(collection(db,"tournament_today"));
-let arr=[];
-let pool=0;
-
-snap.forEach(d=>{
-let data=d.data();
-arr.push(data);
-pool+=data.entry||0;
-});
-
-if(arr.length<2) return; // min 2 players
-
-/* sort winner */
-arr.sort((a,b)=>b.score-a.score);
-let winner = arr[0];
-
-/* add xp to winner */
-let winRef = doc(db,"students",winner.name);
-let wSnap = await getDoc(winRef);
-
-if(wSnap.exists()){
-let xp = wSnap.data().xp || 0;
-xp += pool;
-await updateDoc(winRef,{xp:xp});
-}
-
-/* save last winner */
-await setDoc(doc(db,"tournament_history","last"),{
-name:winner.name,
-xp:pool,
-date:new Date().toDateString()
-});
-
-/* clear today tournament */
-let delSnap = await getDocs(collection(db,"tournament_today"));
-delSnap.forEach(async(d)=>{
-await updateDoc(doc(db,"tournament_today",d.id),{
-finished:true
-});
-});
-
-alert("🏆 Winner Declared: "+winner.name+" won "+pool+" XP");
-}
-}
-
-/* check every 30 sec */
-setInterval(checkWinner,30000);
-
-
-/* ================================
-🔥 LOAD LAST WINNER
-================================ */
-
+/* LAST WINNER */
 async function loadLastWinner(){
-
-let snap = await getDoc(doc(db,"tournament_history","last"));
-
+let snap=await getDoc(doc(db,"tournament_history","last"));
 if(!snap.exists()){
 document.getElementById("lastWinner").innerText="No winner yet";
 return;
 }
-
 let d=snap.data();
-
 document.getElementById("lastWinner").innerText=
 "🏆 Last Winner: "+d.name+" won "+d.xp+" XP";
 }
-
 loadLastWinner();
+
 </script>
 </body>
 </html>
