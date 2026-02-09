@@ -1,231 +1,275 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Exam</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Terminal Exam</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-<style>
-body{background:#020617;color:white;font-family:Arial;text-align:center;padding:20px}
-.card{background:#0f172a;padding:25px;border-radius:18px;max-width:600px;margin:auto;margin-top:30px}
-.opt{display:block;background:#111827;margin:8px;padding:14px;border-radius:12px;cursor:pointer}
-.lock{opacity:0.5;pointer-events:none}
-button{padding:12px 18px;margin-top:15px;border:none;border-radius:10px;font-size:16px;background:linear-gradient(90deg,#6366f1,#06b6d4);color:white}
-.timer{font-size:20px;color:#22c55e}
-</style>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: var(--bg); color: #f8fafc; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
+        }
+
+        /* 1. TOP STATS BAR */
+        .stats-bar {
+            width: 100%; max-width: 600px; display: flex; justify-content: space-between;
+            align-items: center; padding: 15px; margin-bottom: 20px;
+        }
+        .timer-pill {
+            background: rgba(34, 197, 94, 0.1); color: var(--success);
+            padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(34, 197, 94, 0.2);
+            font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 14px;
+        }
+
+        /* 2. EXAM CARD */
+        .card {
+            width: 100%; max-width: 600px; background: var(--glass);
+            border: 1px solid var(--glass-border); padding: 30px 20px;
+            border-radius: 30px; backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        #q-num { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        #q { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 25px; }
+
+        /* 3. OPTIONS */
+        .options-grid { display: grid; gap: 12px; }
+        .opt {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
+            padding: 18px; border-radius: 18px; cursor: pointer;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; font-weight: 600; font-size: 15px;
+        }
+        .opt:active { transform: scale(0.97); }
+        .opt.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
+        .opt.correct { background: rgba(34, 197, 94, 0.1) !important; border-color: var(--success) !important; color: var(--success); }
+        .opt.wrong { background: rgba(239, 68, 68, 0.1) !important; border-color: var(--danger) !important; color: var(--danger); }
+        .opt.lock { pointer-events: none; opacity: 0.7; }
+
+        /* 4. FOOTER ACTION */
+        .footer {
+            width: 100%; max-width: 600px; margin-top: 25px;
+            display: flex; justify-content: flex-end;
+        }
+        button {
+            padding: 16px 35px; border: none; border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; font-weight: 800; font-size: 16px; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); transition: 0.3s;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: scale(1) !important; }
+
+        /* 5. LOCK SCREEN (FINISHED) */
+        .lock-card {
+            text-align: center; padding: 50px 20px;
+        }
+        .lock-card i { font-size: 60px; color: var(--gold); display: block; margin-bottom: 20px; }
+        .countdown { font-size: 32px; font-weight: 800; color: var(--accent); margin-top: 15px; }
+
+        /* PROGRESS LINE */
+        .progress-line {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.05);
+            border-radius: 10px; margin-bottom: 30px; overflow: hidden;
+        }
+        #p-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.5s; }
+
+    </style>
 </head>
 <body>
 
-<div class="card" id="examBox">
-<h2>🧠 Daily Exam</h2>
-<div class="timer" id="timer">Loading...</div>
-<h3 id="q">Loading...</h3>
-<div id="options"></div>
-<button onclick="nextQ()">Next</button>
-</div>
+    <div class="stats-bar">
+        <div style="font-weight: 800; font-size: 18px;">Daily<span style="color:var(--accent)">Exam</span></div>
+        <div class="timer-pill" id="timer-box">
+            <i class="ri-time-line"></i> <span id="timer">20s</span>
+        </div>
+    </div>
 
-<div class="card" id="lockBox" style="display:none">
-<h2>🔒 Test Completed</h2>
-<h3>Next test unlock in</h3>
-<h1 id="count"></h1>
-</div>
+    <div class="card" id="examBox">
+        <div class="progress-line"><div id="p-fill"></div></div>
+        
+        <span id="q-num">Question 1 of 20</span>
+        <h3 id="q">Loading system questions...</h3>
 
-<script type="module">
+        <div class="options-grid" id="options">
+            </div>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        <div class="footer">
+            <button id="nextBtn" onclick="nextQ()" disabled>Next Question <i class="ri-arrow-right-line"></i></button>
+        </div>
+    </div>
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+    <div class="card lock-card" id="lockBox" style="display:none">
+        <i class="ri-shield-check-fill"></i>
+        <h2 style="font-size: 24px;">Test Completed!</h2>
+        <p style="opacity: 0.6; margin-top: 10px;">Great job! Your XP has been updated. Come back tomorrow for the next challenge.</p>
+        
+        <div style="margin-top: 30px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+            <p style="font-size: 12px; font-weight: 800; color: #64748b;">NEXT UNLOCK IN</p>
+            <div class="countdown" id="count">00h 00m 00s</div>
+        </div>
+        
+        <button onclick="window.location='index.html'" style="margin-top: 30px; background: rgba(255,255,255,0.05); box-shadow: none;">Back to Dashboard</button>
+    </div>
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-let student=localStorage.getItem("studentName")||"Student";
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-/* DAILY LOCK */
-let last=localStorage.getItem("daily_done_"+student);
-let today=new Date().toDateString();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let student = localStorage.getItem("studentName") || "Student";
 
-if(last==today){
-lockScreen();
-}else{
-loadQ();
-}
+        let questions = [];
+        let index = 0;
+        let score = 0;
+        let selected = "";
+        let locked = false;
+        let time = 20;
+        let timerInterval;
 
-function lockScreen(){
-document.getElementById("examBox").style.display="none";
-document.getElementById("lockBox").style.display="block";
+        // CHECK IF ALREADY DONE
+        let last = localStorage.getItem("daily_done_" + student);
+        let today = new Date().toDateString();
 
-setInterval(()=>{
-let now=new Date();
-let tomorrow=new Date();
-tomorrow.setHours(24,0,0,0);
+        if (last == today) {
+            lockScreen();
+        } else {
+            loadQ();
+        }
 
-let diff=tomorrow-now;
-let h=Math.floor(diff/1000/60/60);
-let m=Math.floor(diff/1000/60)%60;
-let s=Math.floor(diff/1000)%60;
+        async function loadQ() {
+            const snap = await getDocs(collection(db, "daily_mcq"));
+            snap.forEach(d => questions.push(d.data()));
+            questions.sort(() => Math.random() - 0.5);
+            questions = questions.slice(0, 20);
+            showQ();
+            startTimer();
+        }
 
-document.getElementById("count").innerHTML=
-h+"h "+m+"m "+s+"s";
-},1000);
-}
+        function showQ() {
+            if (index >= questions.length) { finish(); return; }
 
-let questions=[];
-let index=0;
-let score=0;
-let selected="";
-let locked=false;
-let time=20;
+            const q = questions[index];
+            document.getElementById("q-num").innerText = `Question ${index + 1} of ${questions.length}`;
+            document.getElementById("p-fill").style.width = ((index + 1) / questions.length * 100) + "%";
+            document.getElementById("q").innerText = q.question;
+            document.getElementById("nextBtn").disabled = true;
 
-/* LOAD QUESTIONS */
-async function loadQ(){
-let snap=await getDocs(collection(db,"daily_mcq"));
+            const opts = [
+                { id: 'A', val: q.a }, { id: 'B', val: q.b },
+                { id: 'C', val: q.c }, { id: 'D', val: q.d }
+            ];
 
-snap.forEach(d=>{
-questions.push(d.data());
-});
+            document.getElementById("options").innerHTML = opts.map(o => `
+                <div class="opt" onclick="handleSelect('${o.id}', this)">
+                    <span style="color:var(--accent); margin-right:12px;">${o.id}.</span> ${o.val}
+                </div>
+            `).join('');
 
-questions.sort(()=>Math.random()-0.5);
-questions=questions.slice(0,20);
+            locked = false;
+            time = 20;
+        }
 
-showQ();
-timer();
-}
+        window.handleSelect = (v, el) => {
+            if (locked) return;
+            locked = true;
+            selected = v;
+            document.getElementById("nextBtn").disabled = false;
 
-function showQ(){
-if(index>=questions.length){
-finish();
-return;
-}
+            const correct = questions[index].correct;
+            const allOpts = document.querySelectorAll(".opt");
 
-let q=questions[index];
-document.getElementById("q").innerHTML=`Q${index+1}. ${q.question}`;
+            allOpts.forEach(o => o.classList.add("lock"));
 
-document.getElementById("options").innerHTML=`
-<div class="opt" onclick="select('A',this)">A. ${q.a}</div>
-<div class="opt" onclick="select('B',this)">B. ${q.b}</div>
-<div class="opt" onclick="select('C',this)">C. ${q.c}</div>
-<div class="opt" onclick="select('D',this)">D. ${q.d}</div>
-`;
+            if (v == correct) {
+                el.classList.add("correct");
+                score++;
+            } else {
+                el.classList.add("wrong");
+                allOpts.forEach(o => {
+                    if (o.innerText.includes(correct + ".")) o.classList.add("correct");
+                });
+            }
+        };
 
-selected="";
-locked=false;
-time=20;
-}
+        window.nextQ = () => {
+            index++;
+            showQ();
+        };
 
-/* OPTION CLICK COLOR SYSTEM */
-window.select=function(v,el){
-if(locked) return;
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                time--;
+                document.getElementById("timer").innerText = time + "s";
+                if (time <= 5) document.getElementById("timer-box").style.color = "var(--danger)";
+                else document.getElementById("timer-box").style.color = "var(--success)";
 
-selected=v;
-locked=true;
+                if (time <= 0) {
+                    locked = true; // prevent late selection
+                    setTimeout(() => nextQ(), 500);
+                }
+            }, 1000);
+        }
 
-let q=questions[index];
-let correct=q.correct;
+        async function finish() {
+            clearInterval(timerInterval);
+            localStorage.setItem("daily_done_" + student, new Date().toDateString());
 
-/* lock all */
-document.querySelectorAll(".opt").forEach(o=>{
-o.classList.add("lock");
-});
+            // XP Update Logic
+            const xpRef = doc(db, "students", student);
+            const snap = await getDoc(xpRef);
+            let curXP = snap.exists() ? snap.data().xp || 0 : 0;
+            let streak = snap.exists() ? snap.data().streak || 1 : 1;
 
-/* correct */
-if(v==correct){
-el.style.background="#22c55e";
-}
-/* wrong */
-else{
-el.style.background="red";
+            await setDoc(xpRef, { xp: curXP + 100, streak: streak }, { merge: true });
+            
+            alert(`Test Finished! Score: ${score}/20 \n+100 XP Earned!`);
+            lockScreen();
+        }
 
-/* show correct */
-document.querySelectorAll(".opt").forEach(o=>{
-if(o.innerText.startsWith(correct)){
-o.style.background="#22c55e";
-}
-});
-}
-}
-
-window.nextQ=function(){
-if(!locked) return alert("Select option");
-
-let q=questions[index];
-if(selected==q.correct) score++;
-
-index++;
-showQ();
-}
-
-/* TIMER */
-function timer(){
-setInterval(()=>{
-time--;
-document.getElementById("timer").innerHTML="⏱ "+time+"s";
-
-if(time<=0){
-index++;
-showQ();
-time=20;
-}
-},1000);
-}
-
-/* FINISH */
-async function finish(){
-
-let todayDate=new Date();
-let todayStr=todayDate.toDateString();
-
-localStorage.setItem("daily_done_"+student,todayStr);
-
-/* FIREBASE XP + STREAK */
-let xpRef = doc(db,"students",student);
-let snap = await getDoc(xpRef);
-
-let currentXP=0;
-let streak=1;
-
-if(snap.exists()){
-currentXP=snap.data().xp||0;
-streak=snap.data().streak||0;
-}
-
-currentXP+=100;
-
-/* streak */
-let lastPlay=localStorage.getItem("last_play_"+student);
-let yesterday=new Date();
-yesterday.setDate(todayDate.getDate()-1);
-
-if(lastPlay==yesterday.toDateString()){
-streak+=1;
-}else if(lastPlay==todayStr){
-}else{
-streak=1;
-}
-
-localStorage.setItem("last_play_"+student,todayStr);
-
-await setDoc(xpRef,{
-xp:currentXP,
-streak:streak
-},{merge:true});
-
-alert(`🏆 Test Completed!
-Score: ${score}/20
-+100 XP added
-🔥 Streak: ${streak} days`);
-
-window.location="leaderboard.html";
-}
-
-</script>
+        function lockScreen() {
+            document.getElementById("examBox").style.display = "none";
+            document.getElementById("lockBox").style.display = "block";
+            
+            setInterval(() => {
+                let now = new Date();
+                let tomorrow = new Date();
+                tomorrow.setHours(24, 0, 0, 0);
+                let diff = tomorrow - now;
+                let h = String(Math.floor(diff/3600000)).padStart(2, '0');
+                let m = String(Math.floor((diff/60000)%60)).padStart(2, '0');
+                let s = String(Math.floor((diff/1000)%60)).padStart(2, '0');
+                document.getElementById("count").innerText = `${h}h ${m}m ${s}s`;
+            }, 1000);
+        }
+    </script>
 </body>
 </html>
