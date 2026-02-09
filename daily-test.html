@@ -49,7 +49,7 @@ const db=getFirestore(app);
 
 let student=localStorage.getItem("studentName")||"Student";
 
-/* 🔒 DAILY LOCK */
+/* DAILY LOCK */
 let last=localStorage.getItem("daily_done_"+student);
 let today=new Date().toDateString();
 
@@ -121,13 +121,36 @@ locked=false;
 time=20;
 }
 
+/* OPTION CLICK COLOR SYSTEM */
 window.select=function(v,el){
 if(locked) return;
+
 selected=v;
 locked=true;
 
-document.querySelectorAll(".opt").forEach(o=>o.classList.add("lock"));
+let q=questions[index];
+let correct=q.correct;
+
+/* lock all */
+document.querySelectorAll(".opt").forEach(o=>{
+o.classList.add("lock");
+});
+
+/* correct */
+if(v==correct){
 el.style.background="#22c55e";
+}
+/* wrong */
+else{
+el.style.background="red";
+
+/* show correct */
+document.querySelectorAll(".opt").forEach(o=>{
+if(o.innerText.startsWith(correct)){
+o.style.background="#22c55e";
+}
+});
+}
 }
 
 window.nextQ=function(){
@@ -140,6 +163,7 @@ index++;
 showQ();
 }
 
+/* TIMER */
 function timer(){
 setInterval(()=>{
 time--;
@@ -153,16 +177,15 @@ time=20;
 },1000);
 }
 
-/* 🔥 FINISH */
+/* FINISH */
 async function finish(){
 
 let todayDate=new Date();
 let todayStr=todayDate.toDateString();
 
-// lock today
 localStorage.setItem("daily_done_"+student,todayStr);
 
-/* 🔥 XP + STREAK FIREBASE */
+/* FIREBASE XP + STREAK */
 let xpRef = doc(db,"students",student);
 let snap = await getDoc(xpRef);
 
@@ -176,7 +199,7 @@ streak=snap.data().streak||0;
 
 currentXP+=100;
 
-/* streak calc */
+/* streak */
 let lastPlay=localStorage.getItem("last_play_"+student);
 let yesterday=new Date();
 yesterday.setDate(todayDate.getDate()-1);
