@@ -70,7 +70,7 @@ const db=getFirestore(app);
 
 load();
 
-/* AUTO ADD STUDENTS TO PAYMENT */
+/* AUTO ADD STUDENTS */
 async function autoFetchStudents(){
 
 let studentsSnap = await getDocs(collection(db,"students"));
@@ -103,7 +103,7 @@ lastPaid:today
 load();
 }
 
-/* COURSE COMPLETE */
+/* COMPLETE */
 window.complete=async function(name){
 await updateDoc(doc(db,"payments",name),{
 status:"COMPLETED"
@@ -111,14 +111,24 @@ status:"COMPLETED"
 load();
 }
 
-/* DELETE */
+/* 🔥 DELETE FULL STUDENT */
 window.del=async function(name){
-if(!confirm("Delete student?")) return;
-await deleteDoc(doc(db,"payments",name));
+
+if(!confirm("Delete "+name+" completely?")) return;
+
+try{
+await deleteDoc(doc(db,"payments",name)); // payment delete
+}catch{}
+
+try{
+await deleteDoc(doc(db,"students",name)); // student xp delete
+}catch{}
+
+alert("Deleted "+name);
 load();
 }
 
-/* 🔥 RESET XP */
+/* RESET XP */
 window.resetXP=async function(name){
 if(!confirm("Reset XP of "+name+" ?")) return;
 
@@ -173,7 +183,7 @@ ${s.lastPaid ? "Paid Date: "+s.lastPaid : ""}<br><br>
 <button class="paid" onclick="markPaid('${s.name}')">Mark Paid</button>
 <button class="complete" onclick="complete('${s.name}')">Course Completed</button>
 <button class="reset" onclick="resetXP('${s.name}')">Reset XP</button>
-<button class="del" onclick="del('${s.name}')">Delete</button>
+<button class="del" onclick="del('${s.name}')">Delete Student</button>
 </div>
 `;
 count++;
