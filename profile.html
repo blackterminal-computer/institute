@@ -22,14 +22,6 @@ margin:auto;
 box-shadow:0 0 40px rgba(0,0,0,0.6);
 }
 
-/* avatar */
-.avatarWrap{
-position:relative;
-width:160px;
-height:160px;
-margin:auto;
-}
-
 .avatar{
 width:150px;
 height:150px;
@@ -37,58 +29,7 @@ border-radius:50%;
 object-fit:cover;
 border:4px solid #22c55e;
 box-shadow:0 0 25px #22c55e;
-}
-
-.level{
-position:absolute;
-bottom:-5px;
-left:50%;
-transform:translateX(-50%);
-background:gold;
-color:black;
-padding:5px 12px;
-border-radius:20px;
-font-weight:bold;
-}
-
-/* xp bar */
-.xpbar{
-background:#111827;
-height:10px;
-border-radius:10px;
-margin:12px 0;
-overflow:hidden;
-}
-.fill{
-background:linear-gradient(90deg,#22c55e,#06b6d4);
-height:100%;
-}
-
-/* grid */
-.grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-margin-top:20px;
-}
-
-.stat{
-background:#111827;
-padding:14px;
-border-radius:12px;
-}
-
-.badges{
-margin-top:18px;
-}
-
-.badge{
-display:inline-block;
-background:#111827;
-padding:8px 12px;
-border-radius:10px;
-margin:5px;
-font-size:13px;
+margin-top:10px;
 }
 
 input,textarea{
@@ -97,6 +38,7 @@ padding:12px;
 border:none;
 border-radius:10px;
 margin:8px;
+font-size:16px;
 }
 
 button{
@@ -107,9 +49,14 @@ margin:8px;
 font-weight:bold;
 background:linear-gradient(90deg,#6366f1,#06b6d4);
 color:white;
-box-shadow:0 0 20px rgba(99,102,241,.5);
 }
 
+.statBox{
+background:#111827;
+padding:12px;
+border-radius:12px;
+margin-top:10px;
+}
 </style>
 </head>
 <body>
@@ -118,32 +65,25 @@ box-shadow:0 0 20px rgba(99,102,241,.5);
 
 <h2>👤 My Profile</h2>
 
-<div class="avatarWrap">
 <img id="photo" class="avatar" src="">
-<div class="level" id="level">Lvl 1</div>
-</div>
 
+<br>
 <input type="file" id="file">
 
-<h3 id="name">Loading...</h3>
-
-<div class="xpbar">
-<div class="fill" id="xpfill" style="width:10%"></div>
-</div>
-<div id="xptext">0/1000 XP</div>
-
-<textarea id="bio" placeholder="Write your bio..."></textarea>
+<!-- NAME -->
+<input id="nameInput" placeholder="Enter your name">
 <br>
+<button onclick="saveName()">Save Name</button>
+
+<h3 id="showName">Loading...</h3>
+
+<!-- BIO -->
+<textarea id="bio" placeholder="Write your bio..."></textarea>
 <button onclick="saveBio()">Save Bio</button>
 
-<div class="grid">
-<div class="stat">🔥 Streak<br><b id="streak">0</b></div>
-<div class="stat">⚔️ Battles<br><b id="battle">0</b></div>
-<div class="stat">📚 Exams<br><b id="exams">0</b></div>
-<div class="stat">🏆 Rank<br><b id="rank">--</b></div>
-</div>
-
-<div class="badges" id="badges"></div>
+<div class="statBox">⭐ XP: <span id="xp">0</span></div>
+<div class="statBox">🔥 Streak: <span id="streak">0</span></div>
+<div class="statBox">🏆 Rank: <span id="rank">--</span></div>
 
 <br>
 <button onclick="location.href='index.html'">🏠 Home</button>
@@ -153,7 +93,7 @@ box-shadow:0 0 20px rgba(99,102,241,.5);
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs }
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
@@ -169,61 +109,40 @@ const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
 let student=localStorage.getItem("studentName")||"Student";
-document.getElementById("name").innerText=student;
-
 const ref=doc(db,"students",student);
+
 let snap=await getDoc(ref);
 
-let xp=0,streak=0,battle=0,exams=0,bio="",photo="";
+let xp=0,streak=0,name=student,bio="",photo="";
 
 if(snap.exists()){
 let d=snap.data();
 xp=d.xp||0;
 streak=d.streak||0;
-battle=d.battle||0;
-exams=d.exams||0;
+name=d.name||student;
 bio=d.bio||"";
 photo=d.photo||"";
 }
 
+/* SHOW */
+document.getElementById("xp").innerText=xp;
 document.getElementById("streak").innerText=streak;
-document.getElementById("battle").innerText=battle;
-document.getElementById("exams").innerText=exams;
+document.getElementById("showName").innerText=name;
+document.getElementById("nameInput").value=name;
 document.getElementById("bio").value=bio;
 
 if(photo) document.getElementById("photo").src=photo;
 else document.getElementById("photo").src="https://i.imgur.com/6VBx3io.png";
 
-/* LEVEL */
-let level=Math.floor(xp/1000)+1;
-document.getElementById("level").innerText="Lvl "+level;
+/* SAVE NAME */
+window.saveName=async function(){
+let n=document.getElementById("nameInput").value.trim();
+if(!n) return alert("Enter name");
 
-/* XP BAR */
-let need=1000;
-let current=xp%1000;
-let percent=(current/need)*100;
-document.getElementById("xpfill").style.width=percent+"%";
-document.getElementById("xptext").innerText=current+"/"+need+" XP";
-
-/* RANK */
-let snapAll=await getDocs(collection(db,"students"));
-let arr=[];
-snapAll.forEach(d=>{
-arr.push({name:d.id,xp:d.data().xp||0});
-});
-arr.sort((a,b)=>b.xp-a.xp);
-
-let rank=arr.findIndex(x=>x.name==student)+1;
-document.getElementById("rank").innerText="#"+rank;
-
-/* BADGES */
-let badgeHTML="";
-if(streak>=7) badgeHTML+=`<div class="badge">🔥 7 Day Streak</div>`;
-if(xp>=5000) badgeHTML+=`<div class="badge">💎 Pro Student</div>`;
-if(rank==1) badgeHTML+=`<div class="badge">👑 Topper</div>`;
-if(exams>=50) badgeHTML+=`<div class="badge">📚 Exam Master</div>`;
-
-document.getElementById("badges").innerHTML=badgeHTML||"No badges yet";
+await setDoc(ref,{name:n},{merge:true});
+document.getElementById("showName").innerText=n;
+alert("Name saved");
+}
 
 /* SAVE BIO */
 window.saveBio=async function(){
@@ -243,6 +162,17 @@ await setDoc(ref,{photo:base},{merge:true});
 }
 reader.readAsDataURL(file);
 });
+
+/* RANK */
+let snapAll=await getDocs(collection(db,"students"));
+let arr=[];
+snapAll.forEach(d=>{
+arr.push({name:d.id,xp:d.data().xp||0});
+});
+arr.sort((a,b)=>b.xp-a.xp);
+
+let rank=arr.findIndex(x=>x.name==student)+1;
+document.getElementById("rank").innerText="#"+rank;
 
 </script>
 </body>
