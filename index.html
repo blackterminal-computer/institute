@@ -425,10 +425,9 @@ text-align:center">
 <section class="section">
 <h2 style="text-align:center;margin-bottom:25px;">Top Students</h2>
 
-<div class="leader">
-<div><span>Abhinash</span><span>2450 pts</span></div>
-<div><span>Rahul</span><span>2310 pts</span></div>
-<div><span>Amit</span><span>2100 pts</span></div>
+<div class="topCard">
+<h2>Top Students</h2>
+<div id="topStudents">Loading...</div>
 </div>
 
 <div class="stats">
@@ -725,5 +724,63 @@ z-index:999;">
 💬 Chat
 </a>
 
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+authDomain:"black-terminal-f2c91.firebaseapp.com",
+projectId:"black-terminal-f2c91",
+storageBucket:"black-terminal-f2c91.appspot.com",
+messagingSenderId:"552489994197",
+appId:"1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+loadTop();
+
+/* 🔥 LOAD TOP STUDENTS */
+async function loadTop(){
+
+let snap = await getDocs(collection(db,"students"));
+let arr=[];
+
+snap.forEach(d=>{
+let data=d.data();
+arr.push({
+name:d.id,
+xp:data.xp || 0
+});
+});
+
+/* sort highest xp */
+arr.sort((a,b)=>b.xp-a.xp);
+
+/* top 3 only */
+arr=arr.slice(0,3);
+
+let html="";
+
+arr.forEach(s=>{
+html+=`
+<div class="topRow">
+<span>${s.name}</span>
+<span>${s.xp} pts</span>
+</div>
+<hr>`;
+});
+
+if(arr.length==0) html="No data";
+
+document.getElementById("topStudents").innerHTML=html;
+}
+
+</script>
 </body>
 </html>
