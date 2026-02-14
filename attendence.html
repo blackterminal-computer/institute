@@ -73,7 +73,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -87,15 +87,21 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- CONFIG: SET YOUR CENTER LOCATION HERE ---
+        // --- CENTER LOCATION (Example: Baripada Center) ---
         const INST_LAT = 21.9312; 
         const INST_LON = 86.7513; 
-        const ALLOWED_RANGE = 0.05; // 50 Meters
+        const ALLOWED_RANGE = 0.1; // Approx 100 Meters for safety
 
         const statusBox = document.getElementById('status');
         const btn = document.getElementById('checkin-btn');
+        const student = localStorage.getItem('studentName');
 
         function initLocation() {
+            if (!student || student === "Guest") {
+                statusBox.innerHTML = "⚠️ Please update your name in Profile first";
+                return;
+            }
+
             if (!navigator.geolocation) {
                 statusBox.innerHTML = "Geolocation not supported";
                 return;
@@ -113,8 +119,8 @@
                     statusBox.innerHTML = `<i class="ri-error-warning-fill"></i> Out of Range (${(dist*1000).toFixed(0)}m away)`;
                 }
             }, err => {
-                statusBox.innerHTML = "⚠️ Please allow location access";
-            });
+                statusBox.innerHTML = "⚠️ Please allow location access to mark attendance";
+            }, { enableHighAccuracy: true });
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -126,32 +132,36 @@
         }
 
         window.markAttendance = async () => {
-            const phone = localStorage.getItem('userPhone');
-            const name = localStorage.getItem('userName') || "Student";
-            
-            if(!phone) {
-                alert("Please Login First!");
+            if(!student || student === "Guest") {
+                alert("Login/Set Name in Profile First!");
                 return;
             }
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Processing...';
+            btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Verifying...';
 
             const today = new Date().toISOString().split('T')[0];
+            const attID = `${student}_${today}`; // Consistent with Dashboard Logic
+
             try {
-                // Unique ID: phone_date (taaki ek student ek din mein ek hi baar kare)
-                await setDoc(doc(db, "attendance", `${phone}_${today}`), {
-                    phone: phone,
-                    userName: name,
+                await setDoc(doc(db, "attendance", attID), {
+                    studentName: student,
                     date: today,
-                    timestamp: serverTimestamp()
+                    timestamp: serverTimestamp(),
+                    status: "present"
                 });
 
                 statusBox.innerHTML = "✅ Attendance Marked Successfully!";
                 btn.innerHTML = 'CHECKED IN TODAY';
-                alert("Success! Your attendance has been recorded.");
+                btn.style.background = "#22c55e";
+                alert("Success! Your attendance is recorded.");
+                
+                // Redirect back after 2 seconds
+                setTimeout(() => { window.location.href = "index.html"; }, 2000);
+
             } catch (e) {
-                alert("Error marking attendance. Try again.");
+                console.error(e);
+                alert("Error! Could not connect to database.");
                 btn.disabled = false;
                 btn.innerHTML = 'MARK ATTENDANCE <i class="ri-fingerprint-line"></i>';
             }
@@ -161,4 +171,3 @@
     </script>
 </body>
 </html>
-
