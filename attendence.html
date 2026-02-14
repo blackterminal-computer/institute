@@ -1,1 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Smart Attendance</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
+            --card: #0f172a; --glass: rgba(255, 255, 255, 0.03);
+            --success: #22c55e; --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+
+        .att-container {
+            width: 100%; max-width: 400px; background: var(--card); padding: 40px 25px;
+            border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .loc-icon {
+            width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1);
+            color: var(--primary); border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 40px; margin: 0 auto 20px;
+            border: 2px dashed var(--primary);
+        }
+
+        h2 { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+        p { font-size: 13px; opacity: 0.6; line-height: 1.6; margin-bottom: 25px; }
+
+        .status-box {
+            background: var(--glass); padding: 15px; border-radius: 18px;
+            margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05);
+            font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+
+        #checkin-btn {
+            width: 100%; padding: 18px; border: none; border-radius: 18px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; font-weight: 800; font-size: 15px; cursor: pointer;
+            transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        }
+
+        #checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        #checkin-btn:active { transform: scale(0.96); }
+
+        .back-home { margin-top: 20px; display: inline-block; font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <div class="att-container">
+        <div class="loc-icon"><i class="ri-map-pin-user-fill"></i></div>
+        <h2>Smart Attendance</h2>
+        <p>Verification is required. Please ensure you are inside the institution premises.</p>
+
+        <div id="status" class="status-box">
+            <i class="ri-loader-4-line ri-spin"></i> Checking Location...
+        </div>
+
+        <button id="checkin-btn" onclick="markAttendance()" disabled>
+            MARK ATTENDANCE <i class="ri-fingerprint-line"></i>
+        </button>
+
+        <a href="index.html" class="back-home"><i class="ri-arrow-left-line"></i> Back to Dashboard</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- CONFIG: SET YOUR CENTER LOCATION HERE ---
+        const INST_LAT = 21.9312; 
+        const INST_LON = 86.7513; 
+        const ALLOWED_RANGE = 0.05; // 50 Meters
+
+        const statusBox = document.getElementById('status');
+        const btn = document.getElementById('checkin-btn');
+
+        function initLocation() {
+            if (!navigator.geolocation) {
+                statusBox.innerHTML = "Geolocation not supported";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(pos => {
+                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, INST_LAT, INST_LON);
+                
+                if(dist <= ALLOWED_RANGE) {
+                    statusBox.style.color = "#22c55e";
+                    statusBox.innerHTML = '<i class="ri-checkbox-circle-fill"></i> Location Verified: At Center';
+                    btn.disabled = false;
+                } else {
+                    statusBox.style.color = "#ef4444";
+                    statusBox.innerHTML = `<i class="ri-error-warning-fill"></i> Out of Range (${(dist*1000).toFixed(0)}m away)`;
+                }
+            }, err => {
+                statusBox.innerHTML = "⚠️ Please allow location access";
+            });
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; 
+            const dLat = (lat2-lat1) * Math.PI/180;
+            const dLon = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        window.markAttendance = async () => {
+            const phone = localStorage.getItem('userPhone');
+            const name = localStorage.getItem('userName') || "Student";
+            
+            if(!phone) {
+                alert("Please Login First!");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Processing...';
+
+            const today = new Date().toISOString().split('T')[0];
+            try {
+                // Unique ID: phone_date (taaki ek student ek din mein ek hi baar kare)
+                await setDoc(doc(db, "attendance", `${phone}_${today}`), {
+                    phone: phone,
+                    userName: name,
+                    date: today,
+                    timestamp: serverTimestamp()
+                });
+
+                statusBox.innerHTML = "✅ Attendance Marked Successfully!";
+                btn.innerHTML = 'CHECKED IN TODAY';
+                alert("Success! Your attendance has been recorded.");
+            } catch (e) {
+                alert("Error marking attendance. Try again.");
+                btn.disabled = false;
+                btn.innerHTML = 'MARK ATTENDANCE <i class="ri-fingerprint-line"></i>';
+            }
+        };
+
+        window.onload = initLocation;
+    </script>
+</body>
+</html>
 
