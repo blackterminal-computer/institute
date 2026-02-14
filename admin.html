@@ -13,6 +13,7 @@
             --bg: #020617;
             --card: #0f172a;
             --text: #f8fafc;
+            --purple: #8b5cf6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
@@ -41,7 +42,7 @@
         h2 i { color: var(--accent); margin-right: 8px; }
 
         .input-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; font-size: 12px; font-weight: 700; color: #64748b; margin-left: 12px; margin-bottom: 8px; text-transform: uppercase; }
+        label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-left: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
 
         input, textarea {
             width: 100%;
@@ -50,9 +51,10 @@
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px;
             color: white;
-            font-size: 16px;
+            font-size: 15px;
             outline: none;
             transition: 0.3s;
+            margin-bottom: 8px;
         }
 
         input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
@@ -61,10 +63,10 @@
 
         button {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             border: none;
             border-radius: 16px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             transition: 0.3s;
@@ -76,9 +78,10 @@
 
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
         .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .btn-purple { background: var(--purple); color: white; }
+        
         button:active { transform: scale(0.96); }
 
-        /* Toast Styling */
         .toast {
             position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px);
             background: #22c55e; color: white; padding: 14px 25px; border-radius: 50px;
@@ -87,8 +90,8 @@
         }
         .toast.show { transform: translateX(-50%) translateY(0); }
 
-        .section-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 30px 0; position: relative; }
-        .section-divider::after { content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card); padding: 0 10px; font-size: 10px; color: #475569; }
+        .section-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 25px 0; position: relative; }
+        .section-divider::after { content: "CONTROL"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card); padding: 0 10px; font-size: 10px; color: #475569; letter-spacing: 2px; }
     </style>
 </head>
 <body>
@@ -108,10 +111,10 @@
         <h2><i class="ri-dashboard-3-fill"></i> System Control</h2>
 
         <div class="input-group">
-            <label>Drop-down Notice (Apple Style)</label>
+            <label>Notice Banner</label>
             <textarea id="msg" rows="2" placeholder="Ex: Exam will start at 9 PM..."></textarea>
             <div class="btn-row">
-                <button class="btn-primary" onclick="sendOn()"><i class="ri-notification-badge-line"></i> NOTICE ON</button>
+                <button class="btn-primary" onclick="sendOn()"><i class="ri-notification-badge-line"></i> ON</button>
                 <button class="btn-danger" onclick="sendOff()"><i class="ri-notification-off-line"></i> OFF</button>
             </div>
         </div>
@@ -119,11 +122,23 @@
         <div class="section-divider"></div>
 
         <div class="input-group">
-            <label>Scrolling News (Marquee)</label>
-            <input type="text" id="marqueeVal" placeholder="Ex: Welcome to the new session 2026!">
-            <button class="btn-primary" style="margin-top:12px; background: #1e293b;" onclick="updateMarquee()">
-                <i class="ri-broadcast-line"></i> UPDATE MARQUEE
+            <label>Scrolling News</label>
+            <input type="text" id="marqueeVal" placeholder="Welcome text...">
+            <button class="btn-primary" style="margin-top:8px; background: #1e293b;" onclick="updateMarquee()">
+                <i class="ri-broadcast-line"></i> UPDATE NEWS
             </button>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="input-group">
+            <label>Student XP Management</label>
+            <input type="text" id="studentName" placeholder="Enter Student Name (Exactly)">
+            <input type="number" id="xpAmount" placeholder="New XP Value">
+            <div class="btn-row">
+                <button class="btn-purple" onclick="updateXP()"><i class="ri-medal-line"></i> SET XP</button>
+                <button class="btn-danger" onclick="resetXPByName()"><i class="ri-refresh-line"></i> RESET</button>
+            </div>
         </div>
     </div>
 
@@ -131,6 +146,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -143,6 +159,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Login Function
         window.login = function() {
             const p = document.getElementById("pass").value;
             if(p === "admin5") {
@@ -158,33 +175,58 @@
         window.sendOn = async function() {
             const t = document.getElementById("msg").value.trim();
             if(!t) return showToast("Message is empty", "#ef4444");
-
             try {
-                await updateDoc(doc(db, "notices", "main"), { text: t, status: "on" });
-                showToast("Notice sent live!");
-            } catch(e) { 
-                // Using setDoc if doc doesn't exist
                 await setDoc(doc(db, "notices", "main"), { text: t, status: "on" }, { merge: true });
-                showToast("Notice sent live!");
-            }
+                showToast("Notice Live!");
+            } catch(e) { showToast("Error", "#ef4444"); }
         }
 
         window.sendOff = async function() {
             try {
                 await updateDoc(doc(db, "notices", "main"), { status: "off" });
-                showToast("Notice hidden");
+                showToast("Notice Hidden");
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- Marquee Action ---
         window.updateMarquee = async function() {
             const m = document.getElementById("marqueeVal").value.trim();
-            if(!m) return showToast("Enter marquee text", "#ef4444");
-
+            if(!m) return showToast("Enter text", "#ef4444");
             try {
                 await updateDoc(doc(db, "notices", "main"), { marquee: m });
-                showToast("Marquee updated!");
-            } catch(e) { showToast("Error updating marquee", "#ef4444"); }
+                showToast("News Updated!");
+            } catch(e) { showToast("Error", "#ef4444"); }
+        }
+
+        // --- XP UPDATE LOGIC (Linked to 'students' collection) ---
+        window.updateXP = async function() {
+            const sName = document.getElementById("studentName").value.trim();
+            const xp = document.getElementById("xpAmount").value.trim();
+
+            if(!sName || !xp) return showToast("Enter Name & XP", "#ef4444");
+
+            try {
+                // Aapke leaderboard ke mutabik 'students' collection use ho rahi hai
+                // Aur Name hi Document ID hai
+                const studentRef = doc(db, "students", sName);
+                await updateDoc(studentRef, { 
+                    xp: parseInt(xp) 
+                });
+                showToast(`XP set to ${xp} for ${sName}`);
+            } catch(e) { 
+                showToast("Name Not Found!", "#ef4444"); 
+            }
+        }
+
+        window.resetXPByName = async function() {
+            const sName = document.getElementById("studentName").value.trim();
+            if(!sName) return showToast("Enter Name", "#ef4444");
+
+            if(confirm("Reset XP for " + sName + "?")) {
+                try {
+                    await updateDoc(doc(db, "students", sName), { xp: 0 });
+                    showToast("XP Reset to 0");
+                } catch(e) { showToast("Error resetting", "#ef4444"); }
+            }
         }
 
         function showToast(msg, color = "#22c55e") {
