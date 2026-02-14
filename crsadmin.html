@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BT | Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --bg: #020617; --glass: rgba(255, 255, 255, 0.05); --glass-border: rgba(255, 255, 255, 0.1); }
+        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-card { background: var(--glass); border: 1px solid var(--glass-border); padding: 20px; border-radius: 24px; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; border-radius: 12px; font-size: 14px; }
+        .row { display: flex; gap: 10px; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        button:active { transform: scale(0.98); }
+        .course-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--glass); border-radius: 18px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
+        .del-btn { background: #ef4444; width: auto; padding: 8px 15px; font-size: 12px; margin: 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <i class="ri-settings-5-fill" style="font-size: 24px; color: var(--primary);"></i>
+        <h2>Course Manager</h2>
+    </div>
+
+    <div class="form-card">
+        <input type="text" id="c-name" placeholder="Course Name (e.g. PGDCA)">
+        <input type="text" id="c-duration" placeholder="Duration (e.g. 6 Months)">
+        <div class="row">
+            <input type="number" id="c-old-price" placeholder="Original Price">
+            <input type="number" id="c-new-price" placeholder="Discount Price">
+        </div>
+        <div class="row">
+            <input type="number" id="c-online" placeholder="Online Joined">
+            <input type="number" id="c-offline" placeholder="Offline Joined">
+        </div>
+        <select id="c-icon">
+            <option value="ri-book-3-line">Book Icon (PGDCA)</option>
+            <option value="ri-calculator-line">Calc Icon (Tally)</option>
+            <option value="ri-code-s-slash-line">Code Icon (Web/Prog)</option>
+            <option value="ri-shield-flash-line">Shield Icon (Hacking)</option>
+            <option value="ri-mic-line">Mic Icon (English)</option>
+        </select>
+        <button onclick="addCourse()">ADD COURSE TO LIVE</button>
+    </div>
+
+    <h3 style="margin-bottom: 15px;">Live Courses</h3>
+    <div id="admin-course-list"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.appspot.com",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.addCourse = async () => {
+        const name = document.getElementById('c-name').value;
+        const duration = document.getElementById('c-duration').value;
+        const oldP = document.getElementById('c-old-price').value;
+        const newP = document.getElementById('c-new-price').value;
+        const on = document.getElementById('c-online').value || 0;
+        const off = document.getElementById('c-offline').value || 0;
+        const icon = document.getElementById('c-icon').value;
+
+        if(!name || !newP) return alert("Please fill Name and Discount Price");
+
+        await addDoc(collection(db, "courses"), {
+            name, duration, oldPrice: oldP, newPrice: newP,
+            onlineCount: on, offlineCount: off, icon,
+            offPercent: Math.round(((oldP - newP) / oldP) * 100)
+        });
+        alert("Course Published!");
+    };
+
+    onSnapshot(collection(db, "courses"), (snap) => {
+        const list = document.getElementById('admin-course-list');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const data = d.data();
+            list.innerHTML += `
+                <div class="course-item">
+                    <div>
+                        <div style="font-weight: 800;">${data.name}</div>
+                        <small style="opacity: 0.6;">₹${data.newPrice} | ${data.duration}</small>
+                    </div>
+                    <button class="del-btn" onclick="delCourse('${d.id}')">Delete</button>
+                </div>`;
+        });
+    });
+
+    window.delCourse = async (id) => { if(confirm("Delete this course?")) await deleteDoc(doc(db, "courses", id)); };
+</script>
+</body>
+</html>
