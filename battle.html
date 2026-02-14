@@ -14,6 +14,7 @@
             --danger: #ef4444;
             --success: #22c55e;
             --bg: #020617;
+            --gold: #fbbf24;
             --glass: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.08);
         }
@@ -27,7 +28,6 @@
             overflow: hidden;
         }
 
-        /* 1. MATCHMAKING UI */
         .searching-box { text-align: center; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
@@ -43,7 +43,6 @@
         }
         @keyframes ripple { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
 
-        /* 2. VERSUS HEADERS */
         .vs-container {
             display: flex; align-items: center; justify-content: space-around;
             width: 100%; max-width: 500px; margin-bottom: 30px;
@@ -61,7 +60,6 @@
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
         }
 
-        /* 3. BATTLE CARD */
         .battle-card {
             width: 92%; max-width: 450px; background: var(--glass);
             border: 1px solid var(--glass-border); border-radius: 32px;
@@ -82,7 +80,6 @@
         }
         .option:active { background: var(--primary); transform: scale(0.97); }
 
-        /* 4. RESULT SCREEN */
         .result-screen { text-align: center; }
         .win-text { font-size: 32px; font-weight: 800; color: var(--gold); text-shadow: 0 0 20px gold; }
         .lose-text { font-size: 32px; font-weight: 800; color: var(--danger); }
@@ -122,7 +119,7 @@
                 <div id="options-box"></div>
                 <div style="margin-top: 20px; display: flex; justify-content: space-between; font-weight: 800; font-size: 13px;">
                     <span style="color:var(--primary);">SCORE: <span id="my-score">0</span></span>
-                    <span id="q-count" style="opacity: 0.5;">Q 1/10</span>
+                    <span id="q-count" style="opacity: 0.5;">Q 1/20</span>
                 </div>
             </div>
         </div>
@@ -130,7 +127,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -148,7 +145,9 @@
         localStorage.setItem("studentName", student);
 
         let roomId = "", opponent = "", myRole = "";
-        let questions = [
+        
+        // 20 Questions List
+        const questions = [
             {q:"Shortcut for Refresh?", a:"F2", b:"F5", c:"F7", d:"F10", ans:"b"},
             {q:"First computer name?", a:"ENIAC", b:"DELL", c:"HP", d:"IBM", ans:"a"},
             {q:"Volatile memory is?", a:"ROM", b:"RAM", c:"SSD", d:"HDD", ans:"b"},
@@ -158,7 +157,17 @@
             {q:"1MB is?", a:"1024KB", b:"1000KB", c:"512KB", d:"100KB", ans:"a"},
             {q:"USB full form?", a:"Universal Serial Bus", b:"Unit Serial Bus", c:"Ultra Smart Bus", d:"None", ans:"a"},
             {q:"Input device?", a:"Printer", b:"Keyboard", c:"Monitor", d:"Speaker", ans:"b"},
-            {q:"PDF full form?", a:"Portable Doc Format", b:"Print Doc File", c:"Private Data File", d:"None", ans:"a"}
+            {q:"PDF full form?", a:"Portable Doc Format", b:"Print Doc File", c:"Private Data File", d:"None", ans:"a"},
+            {q:"WWW stands for?", a:"World Wide Web", b:"World Web Wide", c:"Web World Wide", d:"None", ans:"a"},
+            {q:"Shortcut to Copy?", a:"Ctrl+X", b:"Ctrl+V", c:"Ctrl+C", d:"Ctrl+Z", ans:"c"},
+            {q:"Father of Computer?", a:"Bill Gates", b:"Charles Babbage", c:"Newton", d:"Elon Musk", ans:"b"},
+            {q:"Which is an OS?", a:"MS Word", b:"Windows", c:"Chrome", d:"Tally", ans:"b"},
+            {q:"1 Byte = ?", a:"4 Bits", b:"8 Bits", c:"16 Bits", d:"1024 Bits", ans:"b"},
+            {q:"Permanent memory?", a:"RAM", b:"ROM", c:"Cache", d:"Virtual", ans:"b"},
+            {q:"Shortcut to Undo?", a:"Ctrl+U", b:"Ctrl+Y", c:"Ctrl+Z", d:"Ctrl+N", ans:"c"},
+            {q:"Main page of website?", a:"Back page", b:"Home page", c:"First page", d:"Main page", ans:"b"},
+            {q:"HTTP full form?", a:"Hypertext Protocol", b:"Hypertext Transfer Protocol", c:"Hard Transfer Protocol", d:"None", ans:"b"},
+            {q:"Extension of Notepad?", a:".docx", b:".jpg", c:".txt", d:".pdf", ans:"c"}
         ];
 
         let i = 0, score = 0, time = 10, timer;
@@ -198,7 +207,7 @@
         }
 
         function loadQuestion() {
-            if (i >= 10) { finishBattle(); return; }
+            if (i >= 20) { finishBattle(); return; }
             time = 10;
             document.getElementById("timer-fill").style.transition = "none";
             document.getElementById("timer-fill").style.width = "100%";
@@ -208,7 +217,7 @@
             }, 50);
 
             let q = questions[i];
-            document.getElementById("q-count").innerText = `Q ${i+1}/10`;
+            document.getElementById("q-count").innerText = `Q ${i+1}/20`;
             document.getElementById("question").innerText = q.q;
             document.getElementById("options-box").innerHTML = ['a','b','c','d'].map(opt => `
                 <div class="option" onclick="submitAns('${opt}')">${q[opt]}</div>
@@ -244,7 +253,9 @@
 
                 let win = (student == d.player1) ? s1 > s2 : s2 > s1;
                 let draw = s1 == s2;
-                let xpChange = draw ? 10 : (win ? 100 : -20);
+                
+                // --- XP LOGIC: Jeetne par 50, Draw par 10 ---
+                let xpChange = draw ? 10 : (win ? 50 : -10);
 
                 document.getElementById("game-ui").innerHTML = `
                     <div class="battle-card result-screen">
@@ -254,14 +265,18 @@
                         <button class="btn-home" onclick="location.href='index.html'">CONTINUE</button>
                     </div>`;
 
-                let sRef = doc(db, "students", student);
-                let userSnap = await getDoc(sRef);
+                // Update Leaderboard (Students Collection)
+                const sRef = doc(db, "students", student);
+                const userSnap = await getDoc(sRef);
+                
                 if (userSnap.exists()) {
-                    let newXp = (userSnap.data().xp || 0) + xpChange;
-                    await updateDoc(sRef, { xp: Math.max(0, newXp) });
+                    let currentXp = userSnap.data().xp || 0;
+                    await updateDoc(sRef, { xp: Math.max(0, currentXp + xpChange) });
+                } else {
+                    // Create user if doesn't exist
+                    await setDoc(sRef, { xp: Math.max(0, xpChange), name: student });
                 }
                 
-                // Self-destruct room
                 setTimeout(async () => { try { await deleteDoc(doc(db, "battle_rooms", roomId)); } catch(e) {} }, 5000);
             }, 3000);
         }
