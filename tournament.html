@@ -79,7 +79,7 @@
 <body>
 
     <div class="winner-ticker" id="lastWinner">
-        <i class="ri-trophy-fill"></i> <span>Leader: Checking...</span>
+        <i class="ri-trophy-fill"></i> <span>Leader: Fetching...</span>
     </div>
 
     <div class="pool-card">
@@ -132,7 +132,9 @@
         async function init() {
             try {
                 const snap = await getDoc(doc(db, "students", student));
-                if (snap.exists()) myxp = snap.data().xp || 0;
+                if (snap.exists()) {
+                    myxp = snap.data().xp || 0;
+                }
                 document.getElementById("myxp").innerText = "MY XP: " + myxp;
                 
                 await loadPool();
@@ -143,9 +145,9 @@
 
         async function loadLastWinner() {
             try {
-                const winnerDiv = document.getElementById("lastWinner");
                 const q = query(collection(db, "tournament_today"), orderBy("score", "desc"), limit(1));
                 const snap = await getDocs(q);
+                const winnerDiv = document.getElementById("lastWinner");
                 
                 if (!snap.empty) {
                     const top = snap.docs[0].data();
@@ -180,8 +182,12 @@
             } catch(e) { alert(e.message); }
         }
 
-        const questions = [{q:"Main memory?", a:"RAM", b:"HDD", c:"DVD", d:"UPS", ans:"A"}, {q:"Father of Computer?", a:"Gates", b:"Babbage", c:"Newton", d:"Einstein", ans:"B"}, {q:"1 KB?", a:"1000B", b:"1024B", c:"1024b", d:"100B", ans:"B"}, {q:"VDU?", a:"Video", b:"Visual", c:"Virtual", d:"View", ans:"B"}, {q:"Copy?", a:"Ctrl+C", b:"Ctrl+V", c:"Ctrl+X", d:"Ctrl+Z", ans:"A"}];
-        while(questions.length < 50) questions.push(...questions.slice(0,5));
+        const questions = [
+            {q:"Which is the main memory of a computer?", a:"RAM", b:"Hard Disk", c:"DVD", d:"UPS", ans:"A"},
+            {q:"Who is the father of Computer?", a:"Bill Gates", b:"Charles Babbage", c:"Newton", d:"Einstein", ans:"B"},
+            {q:"1 Kilobyte (KB) is equal to?", a:"1000 Bytes", b:"1024 Bytes", c:"1024 bits", d:"100 Bytes", ans:"B"}
+        ];
+        while(questions.length < 50) questions.push(...questions.slice(0,3));
 
         function startGame() {
             document.getElementById("gameBox").style.display = "block";
@@ -197,7 +203,12 @@
             if (qIndex >= 50) return finish();
             const q = questions[qIndex];
             document.getElementById("q").innerText = `Q${qIndex+1}. ${q.q}`;
-            document.getElementById("options").innerHTML = `<div class="opt" onclick="check('A')">A. ${q.a}</div><div class="opt" onclick="check('B')">B. ${q.b}</div><div class="opt" onclick="check('C')">C. ${q.c}</div><div class="opt" onclick="check('D')">D. ${q.d}</div>`;
+            document.getElementById("options").innerHTML = `
+                <div class="opt" onclick="check('A')">A. ${q.a}</div>
+                <div class="opt" onclick="check('B')">B. ${q.b}</div>
+                <div class="opt" onclick="check('C')">C. ${q.c}</div>
+                <div class="opt" onclick="check('D')">D. ${q.d}</div>
+            `;
         }
 
         window.check = function(v) {
@@ -206,15 +217,22 @@
         }
 
         async function finish() {
-            document.getElementById("gameBox").innerHTML = `<div style="text-align:center;"><h2>BATTLE ENDED</h2><h1>Score: ${score}</h1><p id="status">Updating XP...</p></div>`;
+            document.getElementById("gameBox").innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <h2 style="color:var(--gold)">BATTLE ENDED</h2>
+                    <h1 style="font-size:40px;">Score: ${score}</h1>
+                    <p id="rewardMsg">Updating Leaderboard & XP...</p>
+                    <button onclick="location.href='index.html'" style="margin-top:20px; padding:12px 24px; border-radius:12px; background:var(--primary); color:white; border:none; font-weight:800;">GO HOME</button>
+                </div>`;
+            
             try {
-                // 1. Update Score in Today's Tournament
+                // 1. Update score in daily tournament
                 const snap = await getDocs(collection(db, "tournament_today"));
                 let dId = null;
                 snap.forEach(d => { if(d.data().name === student) dId = d.id; });
                 if(dId) await updateDoc(doc(db, "tournament_today", dId), { score: score });
 
-                // 2. Fetch Leaderboard to check if you are #1
+                // 2. CHECK IF PLAYER IS #1 AND UPDATE MAIN ACCOUNT XP
                 const q = query(collection(db, "tournament_today"), orderBy("score", "desc"), limit(1));
                 const topSnap = await getDocs(q);
                 
@@ -222,13 +240,15 @@
                     const studentRef = doc(db, "students", student);
                     const currentSnap = await getDoc(studentRef);
                     if (currentSnap.exists()) {
-                        // Permanent XP Update
-                        await updateDoc(studentRef, { xp: (currentSnap.data().xp || 0) + totalPoolAmount });
-                        document.getElementById("status").innerText = "🏆 YOU WON THE JACKPOT!";
+                        // PERMANENT XP UPDATE for Home/Ranks page
+                        const newXP = (currentSnap.data().xp || 0) + totalPoolAmount;
+                        await updateDoc(studentRef, { xp: newXP });
+                        document.getElementById("rewardMsg").innerHTML = `<b style="color:var(--gold)">🏆 JACKPOT! ${totalPoolAmount} XP added to your account!</b>`;
                     }
                 }
-                loadRanking();
-                loadLastWinner();
+                
+                await loadRanking();
+                await loadLastWinner();
             } catch(e) { console.error(e); }
         }
 
@@ -237,7 +257,13 @@
             let users = [];
             snap.forEach(d => users.push(d.data()));
             users.sort((a, b) => b.score - a.score);
-            document.getElementById("ranking").innerHTML = users.map((u, i) => `<div class="rank-item"><span class="rank-num">#${i+1}</span><span class="rank-name">${u.name}</span><span class="rank-score">${u.score} pts</span></div>`).join('');
+            document.getElementById("ranking").innerHTML = users.map((u, i) => `
+                <div class="rank-item">
+                    <span class="rank-num">#${i+1}</span>
+                    <span class="rank-name">${u.name}</span>
+                    <span class="rank-score">${u.score} pts</span>
+                </div>
+            `).join('') || "<p style='text-align:center;padding:20px;opacity:0.5;'>No warriors joined yet.</p>";
         }
     </script>
 </body>
