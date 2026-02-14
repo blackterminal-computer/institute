@@ -25,14 +25,12 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
 
-        /* 🏆 HEADER & WINNER BOX */
         .winner-ticker {
             background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.2);
             padding: 12px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px;
             margin-bottom: 25px; font-size: 13px; font-weight: 700; color: var(--gold);
         }
 
-        /* 💰 JACKPOT POOL CARD */
         .pool-card {
             background: linear-gradient(135deg, #1e1b4b, #0f172a);
             border: 2px solid var(--glass-border); border-radius: 30px;
@@ -43,12 +41,12 @@
         .pool-amount { font-size: 42px; font-weight: 800; color: white; text-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
         .pool-label { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
 
-        /* 🎮 GAME BOX */
         .game-card {
             background: var(--glass); backdrop-filter: blur(20px); border-radius: 28px;
             padding: 25px; border: 1px solid var(--glass-border); margin-bottom: 25px;
             display: none; animation: slideUp 0.5s ease-out;
         }
+
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .timer-circle {
@@ -64,7 +62,6 @@
         }
         .opt:active { transform: scale(0.96); background: var(--primary); }
 
-        /* 🎖️ RANKING BOARD */
         .rank-card { background: var(--glass); border-radius: 28px; padding: 20px; border: 1px solid var(--glass-border); }
         .rank-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .rank-num { width: 30px; font-weight: 800; color: var(--accent); }
@@ -111,7 +108,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -130,6 +127,7 @@
         let score = 0;
         let qIndex = 0;
         let timeLeft = 60;
+        let totalPoolAmount = 0;
 
         async function init() {
             try {
@@ -137,24 +135,34 @@
                 if (snap.exists()) myxp = snap.data().xp || 0;
                 document.getElementById("myxp").innerText = "MY XP: " + myxp;
                 
-                loadPool();
-                loadLastWinner();
+                await loadPool();
+                await loadLastWinner();
             } catch(e) { console.error(e); }
         }
         init();
 
         async function loadLastWinner() {
             try {
-                const snap = await getDoc(doc(db, "tournament_history", "last"));
                 const winnerDiv = document.getElementById("lastWinner");
-                if (snap.exists()) {
-                    const d = snap.data();
-                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Last Winner: ${d.name} (+${d.xp} XP)</span>`;
+                
+                // Live Ranking se High Scorer fetch karna
+                const q = query(collection(db, "tournament_today"), orderBy("score", "desc"), limit(1));
+                const snap = await getDocs(q);
+                
+                if (!snap.empty) {
+                    const topPlayer = snap.docs[0].data();
+                    // Agar score 0 se zyada hai toh hi winner dikhaye
+                    if(topPlayer.score > 0) {
+                        winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Leader: ${topPlayer.name} (Winning ${totalPoolAmount} XP)</span>`;
+                    } else {
+                        winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Battle in Progress...</span>`;
+                    }
                 } else {
-                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>No Recent Winner</span>`;
+                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Waiting for First Entry</span>`;
                 }
             } catch(e) {
-                document.getElementById("lastWinner").innerHTML = "Ready for Battle!";
+                console.error(e);
+                winnerDiv.innerHTML = "Ready for Battle!";
             }
         }
 
@@ -162,6 +170,7 @@
             const snap = await getDocs(collection(db, "tournament_today"));
             let total = 0, count = 0;
             snap.forEach(d => { total += (d.data().entry || 50); count++; });
+            totalPoolAmount = total;
             document.getElementById("pool").innerText = total + " XP";
             document.getElementById("players").innerText = count;
             loadRanking();
@@ -169,7 +178,6 @@
 
         window.enter = async function() {
             if (myxp < 50) return alert("❌ Need 50 XP to enter!");
-            
             document.getElementById("enterBtn").disabled = true;
             document.getElementById("enterBtn").innerText = "JOINING...";
 
@@ -179,13 +187,13 @@
                 document.getElementById("myxp").innerText = "MY XP: " + myxp;
 
                 await addDoc(collection(db, "tournament_today"), {
-                    name: student, score: 0, entry: 50, timestamp: new Date()
+                    name: student, score: 0, entry: 50
                 });
 
                 document.getElementById("enterBtn").style.display = "none";
                 startGame();
-                loadPool();
-            } catch(e) { alert("Error joining: " + e.message); }
+                await loadPool();
+            } catch(e) { alert("Error: " + e.message); }
         }
 
         const questions = [
@@ -195,7 +203,6 @@
             {q:"VDU stands for?", a:"Video Display Unit", b:"Visual Display Unit", c:"Virtual Display Unit", d:"View Display Unit", ans:"B"},
             {q:"What is the shortcut to Copy?", a:"Ctrl+C", b:"Ctrl+V", c:"Ctrl+X", d:"Ctrl+Z", ans:"A"}
         ];
-        // Fill to 50 questions
         while(questions.length < 50) questions.push(...questions.slice(0,5));
 
         function startGame() {
@@ -231,38 +238,31 @@
         }
 
         async function finish() {
-            document.getElementById("gameBox").innerHTML = `
-                <div style="padding:20px; text-align:center;">
-                    <h2 style="color:var(--gold)">BATTLE ENDED</h2>
-                    <h1 style="font-size:40px;">Score: ${score}</h1>
-                    <p style="opacity:0.6">Updating leaderboard...</p>
-                </div>`;
-            
+            document.getElementById("gameBox").innerHTML = `<div style="padding:20px;text-align:center;"><h2 style="color:var(--gold)">BATTLE ENDED</h2><h1 style="font-size:40px;">Score: ${score}</h1><p>Updating Leaderboard...</p></div>`;
             try {
                 const snap = await getDocs(collection(db, "tournament_today"));
                 let docId = null;
                 snap.forEach(d => { if(d.data().name === student) docId = d.id; });
-                
                 if(docId) await updateDoc(doc(db, "tournament_today", docId), { score: score });
-                setTimeout(loadRanking, 1000);
+                
+                await loadRanking();
+                await loadLastWinner();
             } catch(e) { console.error(e); }
         }
 
         async function loadRanking() {
-            try {
-                const snap = await getDocs(collection(db, "tournament_today"));
-                let users = [];
-                snap.forEach(d => users.push(d.data()));
-                users.sort((a, b) => b.score - a.score);
+            const snap = await getDocs(collection(db, "tournament_today"));
+            let users = [];
+            snap.forEach(d => users.push(d.data()));
+            users.sort((a, b) => b.score - a.score);
 
-                document.getElementById("ranking").innerHTML = users.map((u, i) => `
-                    <div class="rank-item">
-                        <span class="rank-num">#${i+1}</span>
-                        <span class="rank-name">${u.name}</span>
-                        <span class="rank-score">${u.score} pts</span>
-                    </div>
-                `).join('') || "<p style='padding:20px; opacity:0.5; text-align:center;'>No warriors joined yet.</p>";
-            } catch(e) { console.error(e); }
+            document.getElementById("ranking").innerHTML = users.map((u, i) => `
+                <div class="rank-item">
+                    <span class="rank-num">#${i+1}</span>
+                    <span class="rank-name">${u.name}</span>
+                    <span class="rank-score">${u.score} pts</span>
+                </div>
+            `).join('') || "<p style='text-align:center;padding:20px;opacity:0.5;'>No warriors yet.</p>";
         }
     </script>
 </body>
