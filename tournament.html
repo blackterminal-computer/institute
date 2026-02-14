@@ -79,7 +79,7 @@
 <body>
 
     <div class="winner-ticker" id="lastWinner">
-        <i class="ri-trophy-fill"></i> <span>Last Winner: Loading...</span>
+        <i class="ri-trophy-fill"></i> <span>Leader: Checking...</span>
     </div>
 
     <div class="pool-card">
@@ -122,7 +122,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let student = localStorage.getItem("studentName") || "Guest_" + Math.floor(Math.random()*100);
+        let student = localStorage.getItem("studentName") || "Guest";
         let myxp = 0;
         let score = 0;
         let qIndex = 0;
@@ -144,26 +144,16 @@
         async function loadLastWinner() {
             try {
                 const winnerDiv = document.getElementById("lastWinner");
-                
-                // Live Ranking se High Scorer fetch karna
                 const q = query(collection(db, "tournament_today"), orderBy("score", "desc"), limit(1));
                 const snap = await getDocs(q);
                 
                 if (!snap.empty) {
-                    const topPlayer = snap.docs[0].data();
-                    // Agar score 0 se zyada hai toh hi winner dikhaye
-                    if(topPlayer.score > 0) {
-                        winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Leader: ${topPlayer.name} (Winning ${totalPoolAmount} XP)</span>`;
-                    } else {
-                        winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Battle in Progress...</span>`;
-                    }
+                    const top = snap.docs[0].data();
+                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Leader: ${top.name} (Winning ${totalPoolAmount} XP)</span>`;
                 } else {
-                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Waiting for First Entry</span>`;
+                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>No Recent Winner</span>`;
                 }
-            } catch(e) {
-                console.error(e);
-                winnerDiv.innerHTML = "Ready for Battle!";
-            }
+            } catch(e) { console.error(e); }
         }
 
         async function loadPool() {
@@ -177,32 +167,20 @@
         }
 
         window.enter = async function() {
-            if (myxp < 50) return alert("❌ Need 50 XP to enter!");
+            if (myxp < 50) return alert("❌ Need 50 XP!");
             document.getElementById("enterBtn").disabled = true;
-            document.getElementById("enterBtn").innerText = "JOINING...";
 
             try {
                 await updateDoc(doc(db, "students", student), { xp: myxp - 50 });
                 myxp -= 50;
                 document.getElementById("myxp").innerText = "MY XP: " + myxp;
-
-                await addDoc(collection(db, "tournament_today"), {
-                    name: student, score: 0, entry: 50
-                });
-
+                await addDoc(collection(db, "tournament_today"), { name: student, score: 0, entry: 50 });
                 document.getElementById("enterBtn").style.display = "none";
                 startGame();
-                await loadPool();
-            } catch(e) { alert("Error: " + e.message); }
+            } catch(e) { alert(e.message); }
         }
 
-        const questions = [
-            {q:"Which is the main memory of a computer?", a:"RAM", b:"Hard Disk", c:"DVD", d:"UPS", ans:"A"},
-            {q:"Who is the father of Computer?", a:"Bill Gates", b:"Charles Babbage", c:"Newton", d:"Einstein", ans:"B"},
-            {q:"1 Kilobyte (KB) is equal to?", a:"1000 Bytes", b:"1024 Bytes", c:"1024 bits", d:"100 Bytes", ans:"B"},
-            {q:"VDU stands for?", a:"Video Display Unit", b:"Visual Display Unit", c:"Virtual Display Unit", d:"View Display Unit", ans:"B"},
-            {q:"What is the shortcut to Copy?", a:"Ctrl+C", b:"Ctrl+V", c:"Ctrl+X", d:"Ctrl+Z", ans:"A"}
-        ];
+        const questions = [{q:"Main memory?", a:"RAM", b:"HDD", c:"DVD", d:"UPS", ans:"A"}, {q:"Father of Computer?", a:"Gates", b:"Babbage", c:"Newton", d:"Einstein", ans:"B"}, {q:"1 KB?", a:"1000B", b:"1024B", c:"1024b", d:"100B", ans:"B"}, {q:"VDU?", a:"Video", b:"Visual", c:"Virtual", d:"View", ans:"B"}, {q:"Copy?", a:"Ctrl+C", b:"Ctrl+V", c:"Ctrl+X", d:"Ctrl+Z", ans:"A"}];
         while(questions.length < 50) questions.push(...questions.slice(0,5));
 
         function startGame() {
@@ -211,7 +189,6 @@
             const timer = setInterval(() => {
                 timeLeft--;
                 document.getElementById("timer").innerText = timeLeft;
-                if (timeLeft <= 10) document.getElementById("timer").style.color = "#ef4444";
                 if (timeLeft <= 0) { clearInterval(timer); finish(); }
             }, 1000);
         }
@@ -220,33 +197,38 @@
             if (qIndex >= 50) return finish();
             const q = questions[qIndex];
             document.getElementById("q").innerText = `Q${qIndex+1}. ${q.q}`;
-            document.getElementById("options").innerHTML = `
-                <div class="opt" onclick="check('A')">A. ${q.a}</div>
-                <div class="opt" onclick="check('B')">B. ${q.b}</div>
-                <div class="opt" onclick="check('C')">C. ${q.c}</div>
-                <div class="opt" onclick="check('D')">D. ${q.d}</div>
-            `;
+            document.getElementById("options").innerHTML = `<div class="opt" onclick="check('A')">A. ${q.a}</div><div class="opt" onclick="check('B')">B. ${q.b}</div><div class="opt" onclick="check('C')">C. ${q.c}</div><div class="opt" onclick="check('D')">D. ${q.d}</div>`;
         }
 
         window.check = function(v) {
-            if (v == questions[qIndex].ans) {
-                score++;
-                document.getElementById("score").innerText = score;
-            }
-            qIndex++;
-            showQuestion();
+            if (v == questions[qIndex].ans) { score++; document.getElementById("score").innerText = score; }
+            qIndex++; showQuestion();
         }
 
         async function finish() {
-            document.getElementById("gameBox").innerHTML = `<div style="padding:20px;text-align:center;"><h2 style="color:var(--gold)">BATTLE ENDED</h2><h1 style="font-size:40px;">Score: ${score}</h1><p>Updating Leaderboard...</p></div>`;
+            document.getElementById("gameBox").innerHTML = `<div style="text-align:center;"><h2>BATTLE ENDED</h2><h1>Score: ${score}</h1><p id="status">Updating XP...</p></div>`;
             try {
+                // 1. Update Score in Today's Tournament
                 const snap = await getDocs(collection(db, "tournament_today"));
-                let docId = null;
-                snap.forEach(d => { if(d.data().name === student) docId = d.id; });
-                if(docId) await updateDoc(doc(db, "tournament_today", docId), { score: score });
+                let dId = null;
+                snap.forEach(d => { if(d.data().name === student) dId = d.id; });
+                if(dId) await updateDoc(doc(db, "tournament_today", dId), { score: score });
+
+                // 2. Fetch Leaderboard to check if you are #1
+                const q = query(collection(db, "tournament_today"), orderBy("score", "desc"), limit(1));
+                const topSnap = await getDocs(q);
                 
-                await loadRanking();
-                await loadLastWinner();
+                if (!topSnap.empty && topSnap.docs[0].data().name === student) {
+                    const studentRef = doc(db, "students", student);
+                    const currentSnap = await getDoc(studentRef);
+                    if (currentSnap.exists()) {
+                        // Permanent XP Update
+                        await updateDoc(studentRef, { xp: (currentSnap.data().xp || 0) + totalPoolAmount });
+                        document.getElementById("status").innerText = "🏆 YOU WON THE JACKPOT!";
+                    }
+                }
+                loadRanking();
+                loadLastWinner();
             } catch(e) { console.error(e); }
         }
 
@@ -255,14 +237,7 @@
             let users = [];
             snap.forEach(d => users.push(d.data()));
             users.sort((a, b) => b.score - a.score);
-
-            document.getElementById("ranking").innerHTML = users.map((u, i) => `
-                <div class="rank-item">
-                    <span class="rank-num">#${i+1}</span>
-                    <span class="rank-name">${u.name}</span>
-                    <span class="rank-score">${u.score} pts</span>
-                </div>
-            `).join('') || "<p style='text-align:center;padding:20px;opacity:0.5;'>No warriors yet.</p>";
+            document.getElementById("ranking").innerHTML = users.map((u, i) => `<div class="rank-item"><span class="rank-num">#${i+1}</span><span class="rank-name">${u.name}</span><span class="rank-score">${u.score} pts</span></div>`).join('');
         }
     </script>
 </body>
