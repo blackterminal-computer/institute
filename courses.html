@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        /* (Puraane styles barkaraar hain...) */
         :root {
             --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
             --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
@@ -18,8 +17,39 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body { background: var(--bg); color: #f8fafc; padding-bottom: 160px; background-image: radial-gradient(circle at top right, #1e1b4b, transparent); min-height: 100vh; }
+
+        /* --- TOP ADMIN BANNER --- */
+        #top-banner {
+            background: linear-gradient(90deg, #1e3a8a, #1e40af);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 800;
+            display: none; /* Initially Hidden */
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            letter-spacing: 0.5px;
+        }
+
         header { padding: 25px 20px 15px; display: flex; align-items: center; gap: 15px; }
         .back-btn { width: 42px; height: 42px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; }
+
+        /* --- CERTIFICATE SECTION --- */
+        .cert-section {
+            margin: 10px 20px 20px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.1));
+            border: 1px dashed var(--accent);
+            padding: 20px;
+            border-radius: 24px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            transition: 0.3s;
+        }
+        .cert-section:active { transform: scale(0.98); }
+        .cert-section i { font-size: 32px; color: var(--gold); margin-bottom: 8px; display: block; }
+        .cert-section h3 { font-size: 16px; color: white; margin-bottom: 4px; }
+        .cert-section p { font-size: 11px; color: #94a3b8; }
 
         .refer-float-bar { position: fixed; bottom: 100px; left: 20px; right: 20px; background: linear-gradient(90deg, #1e1b4b, #312e81); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 20px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 999; text-decoration: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .refer-text b { color: var(--gold); font-size: 15px; }
@@ -32,39 +62,10 @@
         .tag-hot { background: linear-gradient(90deg, #ff4d4d, #f97316); color: white; }
         .tag-new { background: linear-gradient(90deg, #06b6d4, #3b82f6); color: white; }
 
-        /* --- NEW REFERRAL INPUT STYLE --- */
-        .referral-container {
-            margin-top: 15px;
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 15px;
-            border: 1px solid var(--glass-border);
-        }
-        .referral-input-group {
-            display: flex;
-            gap: 8px;
-            margin-top: 5px;
-        }
-        .referral-input-group input {
-            flex: 1;
-            background: #020617;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 8px 12px;
-            color: white;
-            font-size: 12px;
-            outline: none;
-        }
-        .apply-btn {
-            background: var(--accent);
-            color: black;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 800;
-            cursor: pointer;
-        }
+        .referral-container { margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 15px; border: 1px solid var(--glass-border); }
+        .referral-input-group { display: flex; gap: 8px; margin-top: 5px; }
+        .referral-input-group input { flex: 1; background: #020617; border: 1px solid #334155; border-radius: 10px; padding: 8px 12px; color: white; font-size: 12px; outline: none; }
+        .apply-btn { background: var(--accent); color: black; border: none; padding: 8px 15px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; }
 
         .price-box { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 20px; margin-top: 15px; }
         .current-price { font-size: 22px; font-weight: 800; color: var(--success); }
@@ -78,6 +79,10 @@
     </style>
 </head>
 <body>
+
+    <div id="top-banner">
+        <i class="ri-verified-badge-fill"></i> <span id="banner-text">Loading...</span>
+    </div>
 
     <a href="refer.html" class="refer-float-bar">
         <div class="refer-text">
@@ -94,6 +99,12 @@
             <p>Upgrade your skills today</p>
         </div>
     </header>
+
+    <a href="http://www.nbcsmindia.in/certificateVerification" target="_blank" class="cert-section">
+        <i class="ri-medal-fill"></i>
+        <h3>Check Certificate Validation</h3>
+        <p>Verify your official ISO-certified diploma online</p>
+    </a>
 
     <div class="course-grid" id="course-grid"></div>
 
@@ -121,6 +132,17 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // --- FETCH ADMIN BANNER SETTINGS ---
+        // Firestore Path: settings/announcement
+        onSnapshot(doc(db, "settings", "announcement"), (d) => {
+            if(d.exists()) {
+                const data = d.data();
+                const banner = document.getElementById('top-banner');
+                document.getElementById('banner-text').innerText = data.text;
+                banner.style.display = data.show ? 'block' : 'none';
+            }
+        });
+
         // SYNC REFERRAL AMOUNT
         onSnapshot(doc(db, "settings", "referral"), (d) => {
             if(d.exists()) document.getElementById('nav-refer-amt').innerText = d.data().amount;
@@ -137,18 +159,20 @@
                 grid.innerHTML += `
                     <div class="course-card">
                         ${badgeHTML}
-                        <div class="course-top">
-                            <div class="icon-box"><i class="${c.icon || 'ri-mac-line'}"></i></div>
+                        <div class="course-top" style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
+                            <div style="width:45px; height:45px; background:rgba(255,255,255,0.05); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--accent);">
+                                <i class="${c.icon || 'ri-mac-line'}"></i>
+                            </div>
                             <div class="course-info">
-                                <h3 style="font-size:17px; font-weight:800;">${c.name}</h3>
-                                <span style="opacity:0.6; font-size:11px;"><i class="ri-time-line"></i> ${c.duration || 'Lifetime'}</span>
+                                <h3 style="font-size:16px; font-weight:800;">${c.name}</h3>
+                                <span style="opacity:0.6; font-size:11px;"><i class="ri-time-line"></i> ${c.duration || 'Lifetime Access'}</span>
                             </div>
                         </div>
 
                         <div class="referral-container">
                             <label style="font-size:10px; font-weight:800; color:var(--accent);">HAVE A REFERRAL CODE?</label>
                             <div class="referral-input-group">
-                                <input type="text" placeholder="Enter Code (e.g. BT-XXXX)" id="ref-${d.id}">
+                                <input type="text" placeholder="Enter Code" id="ref-${d.id}">
                                 <button class="apply-btn" onclick="applyRef('${d.id}')">APPLY</button>
                             </div>
                         </div>
@@ -167,11 +191,10 @@
         // APPLY REFERRAL LOGIC
         window.applyRef = (id) => {
             const code = document.getElementById(`ref-${id}`).value;
-            if(code.startsWith("BT-")) {
-                alert("Referral Applied! Referral bonus will be credited to the referrer after successful payment.");
-                // Aap yahan extra discount logic bhi add kar sakte hain if needed
+            if(code.trim().length > 3) {
+                alert("Referral Applied Successfully!");
             } else {
-                alert("Invalid Referral Code.");
+                alert("Please enter a valid code.");
             }
         };
     </script>
