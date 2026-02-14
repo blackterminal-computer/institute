@@ -87,10 +87,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- CENTER LOCATION (Example: Baripada Center) ---
-        const INST_LAT = 21.9312; 
-        const INST_LON = 86.7513; 
-        const ALLOWED_RANGE = 0.1; // Approx 100 Meters for safety
+        // --- UPDATED LOCATION ---
+        const INST_LAT = 21.940550; 
+        const INST_LON = 86.737409; 
+        const ALLOWED_RANGE = 0.05; // 50 Meters Strict Range
 
         const statusBox = document.getElementById('status');
         const btn = document.getElementById('checkin-btn');
@@ -98,7 +98,7 @@
 
         function initLocation() {
             if (!student || student === "Guest") {
-                statusBox.innerHTML = "⚠️ Please update your name in Profile first";
+                statusBox.innerHTML = "⚠️ Update Name in Profile First";
                 return;
             }
 
@@ -119,7 +119,7 @@
                     statusBox.innerHTML = `<i class="ri-error-warning-fill"></i> Out of Range (${(dist*1000).toFixed(0)}m away)`;
                 }
             }, err => {
-                statusBox.innerHTML = "⚠️ Please allow location access to mark attendance";
+                statusBox.innerHTML = "⚠️ Enable GPS Location to mark attendance";
             }, { enableHighAccuracy: true });
         }
 
@@ -132,16 +132,11 @@
         }
 
         window.markAttendance = async () => {
-            if(!student || student === "Guest") {
-                alert("Login/Set Name in Profile First!");
-                return;
-            }
-
             btn.disabled = true;
-            btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Verifying...';
+            btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Processing...';
 
             const today = new Date().toISOString().split('T')[0];
-            const attID = `${student}_${today}`; // Consistent with Dashboard Logic
+            const attID = `${student}_${today}`; 
 
             try {
                 await setDoc(doc(db, "attendance", attID), {
@@ -151,19 +146,16 @@
                     status: "present"
                 });
 
-                statusBox.innerHTML = "✅ Attendance Marked Successfully!";
-                btn.innerHTML = 'CHECKED IN TODAY';
+                statusBox.innerHTML = "✅ Success! Recording...";
+                btn.innerHTML = 'SUCCESSFUL';
                 btn.style.background = "#22c55e";
-                alert("Success! Your attendance is recorded.");
                 
-                // Redirect back after 2 seconds
-                setTimeout(() => { window.location.href = "index.html"; }, 2000);
+                setTimeout(() => { window.location.href = "index.html"; }, 1500);
 
             } catch (e) {
-                console.error(e);
-                alert("Error! Could not connect to database.");
+                alert("Database Error!");
                 btn.disabled = false;
-                btn.innerHTML = 'MARK ATTENDANCE <i class="ri-fingerprint-line"></i>';
+                btn.innerHTML = 'RETRY MARK ATTENDANCE';
             }
         };
 
