@@ -27,7 +27,6 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
 
-        /* 1. TOP STATS BAR */
         .stats-bar {
             width: 100%; max-width: 600px; display: flex; justify-content: space-between;
             align-items: center; padding: 15px; margin-bottom: 20px;
@@ -38,7 +37,6 @@
             font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 14px;
         }
 
-        /* 2. EXAM CARD */
         .card {
             width: 100%; max-width: 600px; background: var(--glass);
             border: 1px solid var(--glass-border); padding: 30px 20px;
@@ -51,7 +49,6 @@
         #q-num { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
         #q { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 25px; }
 
-        /* 3. OPTIONS */
         .options-grid { display: grid; gap: 12px; }
         .opt {
             background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
@@ -65,7 +62,6 @@
         .opt.wrong { background: rgba(239, 68, 68, 0.1) !important; border-color: var(--danger) !important; color: var(--danger); }
         .opt.lock { pointer-events: none; opacity: 0.7; }
 
-        /* 4. FOOTER ACTION */
         .footer {
             width: 100%; max-width: 600px; margin-top: 25px;
             display: flex; justify-content: flex-end;
@@ -78,20 +74,15 @@
         }
         button:disabled { opacity: 0.5; cursor: not-allowed; transform: scale(1) !important; }
 
-        /* 5. LOCK SCREEN (FINISHED) */
-        .lock-card {
-            text-align: center; padding: 50px 20px;
-        }
-        .lock-card i { font-size: 60px; color: var(--gold); display: block; margin-bottom: 20px; }
+        .lock-card { text-align: center; padding: 50px 20px; }
+        .lock-card i { font-size: 60px; color: #fbbf24; display: block; margin-bottom: 20px; }
         .countdown { font-size: 32px; font-weight: 800; color: var(--accent); margin-top: 15px; }
 
-        /* PROGRESS LINE */
         .progress-line {
             width: 100%; height: 6px; background: rgba(255,255,255,0.05);
             border-radius: 10px; margin-bottom: 30px; overflow: hidden;
         }
         #p-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.5s; }
-
     </style>
 </head>
 <body>
@@ -105,13 +96,9 @@
 
     <div class="card" id="examBox">
         <div class="progress-line"><div id="p-fill"></div></div>
-        
         <span id="q-num">Question 1 of 20</span>
-        <h3 id="q">Loading system questions...</h3>
-
-        <div class="options-grid" id="options">
-            </div>
-
+        <h3 id="q">Preparing questions...</h3>
+        <div class="options-grid" id="options"></div>
         <div class="footer">
             <button id="nextBtn" onclick="nextQ()" disabled>Next Question <i class="ri-arrow-right-line"></i></button>
         </div>
@@ -121,36 +108,28 @@
         <i class="ri-shield-check-fill"></i>
         <h2 style="font-size: 24px;">Test Completed!</h2>
         <p style="opacity: 0.6; margin-top: 10px;">Great job! Your XP has been updated. Come back tomorrow for the next challenge.</p>
-        
         <div style="margin-top: 30px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
             <p style="font-size: 12px; font-weight: 800; color: #64748b;">NEXT UNLOCK IN</p>
             <div class="countdown" id="count">00h 00m 00s</div>
         </div>
-        
-        <button onclick="window.location='index.html'" style="margin-top: 30px; background: rgba(255,255,255,0.05); box-shadow: none;">Back to Dashboard</button>
+        <button onclick="window.location.reload()" style="margin-top: 30px; background: rgba(255,255,255,0.05); box-shadow: none;">Back to Dashboard</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <script>
+        // --- MANUAL QUESTIONS DATA ---
+        const manualQuestions = [
+            { question: "What does CPU stand for?", a: "Central Process Unit", b: "Central Processing Unit", c: "Computer Personal Unit", d: "Central Processor Unreal", correct: "B" },
+            { question: "Which language is used for Web Styling?", a: "HTML", b: "Python", c: "CSS", d: "Java", correct: "C" },
+            { question: "What is the brain of the computer?", a: "RAM", b: "CPU", c: "Hard Drive", d: "Monitor", correct: "B" },
+            { question: "Which of these is a JavaScript Framework?", a: "React", b: "Django", c: "Laravel", d: "Flask", correct: "A" },
+            { question: "What does 'HTTP' stand for?", a: "HyperText Transfer Protocol", b: "HyperText Type Process", c: "High Transfer Text Protocol", d: "None of these", correct: "A" }
+            // Add more questions here following the same format
+        ];
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-            authDomain: "black-terminal-f2c91.firebaseapp.com",
-            projectId: "black-terminal-f2c91",
-            storageBucket: "black-terminal-f2c91.appspot.com",
-            messagingSenderId: "552489994197",
-            appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
         let student = localStorage.getItem("studentName") || "Student";
-
         let questions = [];
         let index = 0;
         let score = 0;
-        let selected = "";
         let locked = false;
         let time = 20;
         let timerInterval;
@@ -159,17 +138,15 @@
         let last = localStorage.getItem("daily_done_" + student);
         let today = new Date().toDateString();
 
-        if (last == today) {
+        if (last === today) {
             lockScreen();
         } else {
-            loadQ();
+            initExam();
         }
 
-        async function loadQ() {
-            const snap = await getDocs(collection(db, "daily_mcq"));
-            snap.forEach(d => questions.push(d.data()));
-            questions.sort(() => Math.random() - 0.5);
-            questions = questions.slice(0, 20);
+        function initExam() {
+            // Shuffle and pick top 20 (or all if less than 20)
+            questions = [...manualQuestions].sort(() => Math.random() - 0.5).slice(0, 20);
             showQ();
             startTimer();
         }
@@ -201,21 +178,19 @@
         window.handleSelect = (v, el) => {
             if (locked) return;
             locked = true;
-            selected = v;
             document.getElementById("nextBtn").disabled = false;
 
             const correct = questions[index].correct;
             const allOpts = document.querySelectorAll(".opt");
-
             allOpts.forEach(o => o.classList.add("lock"));
 
-            if (v == correct) {
+            if (v === correct) {
                 el.classList.add("correct");
                 score++;
             } else {
                 el.classList.add("wrong");
                 allOpts.forEach(o => {
-                    if (o.innerText.includes(correct + ".")) o.classList.add("correct");
+                    if (o.innerText.trim().startsWith(correct + ".")) o.classList.add("correct");
                 });
             }
         };
@@ -226,32 +201,31 @@
         };
 
         function startTimer() {
+            if(timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 time--;
                 document.getElementById("timer").innerText = time + "s";
-                if (time <= 5) document.getElementById("timer-box").style.color = "var(--danger)";
-                else document.getElementById("timer-box").style.color = "var(--success)";
+                const timerBox = document.getElementById("timer-box");
+                
+                if (time <= 5) timerBox.style.color = "var(--danger)";
+                else timerBox.style.color = "var(--success)";
 
                 if (time <= 0) {
-                    locked = true; // prevent late selection
-                    setTimeout(() => nextQ(), 500);
+                    locked = true;
+                    setTimeout(() => nextQ(), 800);
                 }
             }, 1000);
         }
 
-        async function finish() {
+        function finish() {
             clearInterval(timerInterval);
             localStorage.setItem("daily_done_" + student, new Date().toDateString());
-
-            // XP Update Logic
-            const xpRef = doc(db, "students", student);
-            const snap = await getDoc(xpRef);
-            let curXP = snap.exists() ? snap.data().xp || 0 : 0;
-            let streak = snap.exists() ? snap.data().streak || 1 : 1;
-
-            await setDoc(xpRef, { xp: curXP + 100, streak: streak }, { merge: true });
             
-            alert(`Test Finished! Score: ${score}/20 \n+100 XP Earned!`);
+            // Save XP to LocalStorage
+            let currentXP = parseInt(localStorage.getItem(student + "_xp") || "0");
+            localStorage.setItem(student + "_xp", currentXP + 100);
+            
+            alert(`Exam Finished!\nScore: ${score}/${questions.length}\n+100 XP Earned!`);
             lockScreen();
         }
 
