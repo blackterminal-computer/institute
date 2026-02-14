@@ -108,7 +108,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -129,8 +129,26 @@
         let timeLeft = 60;
         let totalPoolAmount = 0;
 
+        async function checkDailyReset() {
+            const todayDate = new Date().toDateString();
+            const resetRef = doc(db, "system", "last_reset");
+            const resetSnap = await getDoc(resetRef);
+
+            if (!resetSnap.exists() || resetSnap.data().date !== todayDate) {
+                // Raat 12 baje ke baad pehla login: Sab delete karo
+                const q = await getDocs(collection(db, "tournament_today"));
+                const deletePromises = q.docs.map(d => deleteDoc(doc(db, "tournament_today", d.id)));
+                await Promise.all(deletePromises);
+                
+                // Update reset date
+                await setDoc(resetRef, { date: todayDate });
+                console.log("Daily Reset Done!");
+            }
+        }
+
         async function init() {
             try {
+                await checkDailyReset();
                 const snap = await getDoc(doc(db, "students", student));
                 if (snap.exists()) {
                     myxp = snap.data().xp || 0;
@@ -151,9 +169,13 @@
                 
                 if (!snap.empty) {
                     const top = snap.docs[0].data();
-                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Leader: ${top.name} (Winning ${totalPoolAmount} XP)</span>`;
+                    if(top.score > 0) {
+                        winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Leader: ${top.name} (${top.score} pts)</span>`;
+                    } else {
+                        winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>Battle Started!</span>`;
+                    }
                 } else {
-                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>No Recent Winner</span>`;
+                    winnerDiv.innerHTML = `<i class="ri-trophy-fill"></i> <span>No Leader Yet</span>`;
                 }
             } catch(e) { console.error(e); }
         }
@@ -183,59 +205,57 @@
         }
 
         const questions = [
-    {q:"What is the brain of a computer?", a:"Monitor", b:"Keyboard", c:"CPU", d:"Mouse", ans:"C"},
-    {q:"Which device is used for typing?", a:"Keyboard", b:"Mouse", c:"Printer", d:"Speaker", ans:"A"},
-    {q:"What does ROM stand for?", a:"Read Only Memory", b:"Random Only Memory", c:"Read Open Memory", d:"Read One Memory", ans:"A"},
-    {q:"Which is an input device?", a:"Monitor", b:"Printer", c:"Scanner", d:"Speaker", ans:"C"},
-    {q:"Who developed World Wide Web (WWW)?", a:"Bill Gates", b:"Tim Berners-Lee", c:"Steve Jobs", d:"Mark Zuckerberg", ans:"B"},
-    {q:"What is the shortcut for Paste?", a:"Ctrl+P", b:"Ctrl+C", d:"Ctrl+V", d:"Ctrl+X", ans:"C"},
-    {q:"Which of these is an Operating System?", a:"Google", b:"Windows", c:"Facebook", d:"MS Word", ans:"B"},
-    {q:"What is the full form of PDF?", a:"Print Document File", b:"Portable Data File", c:"Portable Document Format", d:"Personal Data File", ans:"C"},
-    {q:"Which part of computer displays the work?", a:"CPU", b:"Monitor", c:"UPS", d:"RAM", ans:"B"},
-    {q:"What is the shortcut to Undo?", a:"Ctrl+Z", b:"Ctrl+U", c:"Ctrl+Y", d:"Ctrl+S", ans:"A"},
-    {q:"1 Megabyte (MB) is equal to?", a:"1024 KB", b:"1000 KB", c:"1024 GB", d:"100 KB", ans:"A"},
-    {q:"What is the full form of HTTP?", a:"High Text Transfer Protocol", b:"Hyper Text Transfer Protocol", c:"Hyper Tool Transfer Process", d:"Hidden Text Transfer Plot", ans:"B"},
-    {q:"Which is the smallest unit of data?", a:"Bit", b:"Byte", c:"Nibble", d:"KB", ans:"A"},
-    {q:"Which device is used for gaming?", a:"Joystick", b:"Printer", c:"UPS", d:"CPU", ans:"A"},
-    {q:"Who is the founder of Microsoft?", a:"Jeff Bezos", b:"Elon Musk", c:"Bill Gates", d:"Mark Zuckerberg", ans:"C"},
-    {q:"What is the shortcut to Save?", a:"Ctrl+S", b:"Ctrl+A", c:"Ctrl+V", d:"Ctrl+P", ans:"A"},
-    {q:"Which of these is a web browser?", a:"Google Chrome", b:"MS Paint", c:"Excel", d:"PowerPoint", ans:"A"},
-    {q:"What is the full form of LAN?", a:"Long Area Network", b:"Local Area Network", c:"Light Area Network", d:"Low Area Network", ans:"B"},
-    {q:"Which is a permanent storage device?", a:"RAM", b:"Cache", c:"Hard Disk", d:"Register", ans:"C"},
-    {q:"What does GUI stand for?", a:"Global User Index", b:"Graphical User Interface", c:"General User Icon", d:"Google User Info", ans:"B"},
-    {q:"Which key is used to delete a file?", a:"Delete", b:"Shift", c:"Esc", d:"Alt", ans:"A"},
-    {q:"What is the extension of MS Word file?", a:".xlsx", b:".pptx", c:".docx", d:".txt", ans:"C"},
-    {q:"Which is the physical part of computer?", a:"Software", b:"Hardware", c:"Malware", d:"Firmware", ans:"B"},
-    {q:"What is the full form of URL?", a:"Unique Resource Link", b:"Uniform Resource Locator", c:"United Resource Line", d:"User Resource Link", ans:"B"},
-    {q:"Which shortcut is used to select all?", a:"Ctrl+S", b:"Ctrl+C", c:"Ctrl+A", d:"Ctrl+Z", ans:"C"},
-    {q:"What is the full form of Wi-Fi?", a:"Wireless Fidelity", b:"Wire First", c:"Wireless Focus", d:"Wire Fiber", ans:"A"},
-    {q:"Which is the main page of a website?", a:"Link page", b:"First page", c:"Home page", d:"Main page", ans:"C"},
-    {q:"What is the full form of USB?", a:"Universal Serial Bus", b:"User Serial Bus", c:"Unique Serial Bus", d:"Unit Serial Bus", ans:"A"},
-    {q:"Which is an output device?", a:"Keyboard", b:"Mouse", c:"Printer", d:"Scanner", ans:"C"},
-    {q:"What is the full form of BIOS?", a:"Basic Input Output System", b:"Beginner Input Output Set", c:"Basic Interface Output System", d:"Big Input Output System", ans:"A"},
-    {q:"Who is the founder of Facebook?", a:"Bill Gates", b:"Mark Zuckerberg", c:"Elon Musk", d:"Larry Page", ans:"B"},
-    {q:"What is the shortcut to Print?", a:"Ctrl+X", b:"Ctrl+P", c:"Ctrl+S", d:"Ctrl+A", ans:"B"},
-    {q:"Which is the largest network?", a:"LAN", b:"MAN", c:"Internet", d:"WAN", ans:"C"},
-    {q:"What is the full form of CPU?", a:"Central Processing Unit", b:"Control Processing Unit", c:"Core Processing Unit", d:"Computer Processing Unit", ans:"A"},
-    {q:"Which key is used for help?", a:"F1", b:"F2", c:"F5", d:"F12", ans:"A"},
-    {q:"What is the brain of the robot?", a:"Controller", b:"Sensor", c:"Battery", d:"Motor", ans:"A"},
-    {q:"What is a computer virus?", a:"Insects", b:"Bacteria", c:"Software Program", d:"Hardware Part", ans:"C"},
-    {q:"Which is the most popular search engine?", a:"Bing", b:"Yahoo", c:"Google", d:"DuckDuckGo", ans:"C"},
-    {q:"What is the shortcut for Bold?", a:"Ctrl+V", b:"Ctrl+I", c:"Ctrl+B", d:"Ctrl+U", ans:"C"},
-    {q:"1 Gigabyte (GB) is equal to?", a:"1024 MB", b:"1000 MB", c:"1024 KB", d:"512 MB", ans:"A"},
-    {q:"What is the full form of ALU?", a:"Arithmetic Logic Unit", b:"All Logic Unit", c:"Area Logic Unit", d:"Auto Logic Unit", ans:"A"},
-    {q:"Which device is used for voice input?", a:"Microphone", b:"Speaker", c:"Monitor", d:"Mouse", ans:"A"},
-    {q:"What is the shortcut for New File?", a:"Ctrl+N", b:"Ctrl+O", c:"Ctrl+M", d:"Ctrl+F", ans:"A"},
-    {q:"Which company made Android?", a:"Apple", b:"Microsoft", c:"Google", d:"Samsung", ans:"C"},
-    {q:"What is the full form of IP?", a:"Internet Protocol", b:"Internal Process", c:"Index Point", d:"Internet Process", ans:"A"},
-    {q:"Which is used to refresh a page?", a:"F1", b:"F5", c:"F10", d:"Esc", ans:"B"},
-    {q:"What is the full form of HDD?", a:"Hard Disk Drive", b:"High Data Drive", c:"Hidden Data Disk", d:"Hard Data Drive", ans:"A"},
-    {q:"Which is a social media app?", a:"MS Excel", b:"Instagram", c:"Photoshop", d:"NotePad", ans:"B"},
-    {q:"What is the shortcut to Cut?", a:"Ctrl+C", b:"Ctrl+X", c:"Ctrl+V", d:"Ctrl+Z", ans:"B"},
-    {q:"What is the full form of OS?", a:"Open System", b:"Operating System", c:"Output System", d:"Order System", ans:"B"}
-];
-
-        while(questions.length < 50) questions.push(...questions.slice(0,3));
+            {q:"What is the brain of a computer?", a:"Monitor", b:"Keyboard", c:"CPU", d:"Mouse", ans:"C"},
+            {q:"Which device is used for typing?", a:"Keyboard", b:"Mouse", c:"Printer", d:"Speaker", ans:"A"},
+            {q:"What does ROM stand for?", a:"Read Only Memory", b:"Random Only Memory", c:"Read Open Memory", d:"Read One Memory", ans:"A"},
+            {q:"Which is an input device?", a:"Monitor", b:"Printer", c:"Scanner", d:"Speaker", ans:"C"},
+            {q:"Who developed World Wide Web (WWW)?", a:"Bill Gates", b:"Tim Berners-Lee", c:"Steve Jobs", d:"Mark Zuckerberg", ans:"B"},
+            {q:"What is the shortcut for Paste?", a:"Ctrl+P", b:"Ctrl+C", c:"Ctrl+V", d:"Ctrl+X", ans:"C"},
+            {q:"Which of these is an Operating System?", a:"Google", b:"Windows", c:"Facebook", d:"MS Word", ans:"B"},
+            {q:"What is the full form of PDF?", a:"Print Document File", b:"Portable Data File", c:"Portable Document Format", d:"Personal Data File", ans:"C"},
+            {q:"Which part of computer displays the work?", a:"CPU", b:"Monitor", c:"UPS", d:"RAM", ans:"B"},
+            {q:"What is the shortcut to Undo?", a:"Ctrl+Z", b:"Ctrl+U", c:"Ctrl+Y", d:"Ctrl+S", ans:"A"},
+            {q:"1 Megabyte (MB) is equal to?", a:"1024 KB", b:"1000 KB", c:"1024 GB", d:"100 KB", ans:"A"},
+            {q:"What is the full form of HTTP?", a:"High Text Transfer Protocol", b:"Hyper Text Transfer Protocol", c:"Hyper Tool Transfer Process", d:"Hidden Text Transfer Plot", ans:"B"},
+            {q:"Which is the smallest unit of data?", a:"Bit", b:"Byte", c:"Nibble", d:"KB", ans:"A"},
+            {q:"Which device is used for gaming?", a:"Joystick", b:"Printer", c:"UPS", d:"CPU", ans:"A"},
+            {q:"Who is the founder of Microsoft?", a:"Jeff Bezos", b:"Elon Musk", c:"Bill Gates", d:"Mark Zuckerberg", ans:"C"},
+            {q:"What is the shortcut to Save?", a:"Ctrl+S", b:"Ctrl+A", c:"Ctrl+V", d:"Ctrl+P", ans:"A"},
+            {q:"Which of these is a web browser?", a:"Google Chrome", b:"MS Paint", c:"Excel", d:"PowerPoint", ans:"A"},
+            {q:"What is the full form of LAN?", a:"Long Area Network", b:"Local Area Network", c:"Light Area Network", d:"Low Area Network", ans:"B"},
+            {q:"Which is a permanent storage device?", a:"RAM", b:"Cache", c:"Hard Disk", d:"Register", ans:"C"},
+            {q:"What does GUI stand for?", a:"Global User Index", b:"Graphical User Interface", c:"General User Icon", d:"Google User Info", ans:"B"},
+            {q:"Which key is used to delete a file?", a:"Delete", b:"Shift", c:"Esc", d:"Alt", ans:"A"},
+            {q:"What is the extension of MS Word file?", a:".xlsx", b:".pptx", c:".docx", d:".txt", ans:"C"},
+            {q:"Which is the physical part of computer?", a:"Software", b:"Hardware", c:"Malware", d:"Firmware", ans:"B"},
+            {q:"What is the full form of URL?", a:"Unique Resource Link", b:"Uniform Resource Locator", c:"United Resource Line", d:"User Resource Link", ans:"B"},
+            {q:"Which shortcut is used to select all?", a:"Ctrl+S", b:"Ctrl+C", c:"Ctrl+A", d:"Ctrl+Z", ans:"C"},
+            {q:"What is the full form of Wi-Fi?", a:"Wireless Fidelity", b:"Wire First", c:"Wireless Focus", d:"Wire Fiber", ans:"A"},
+            {q:"Which is the main page of a website?", a:"Link page", b:"First page", c:"Home page", d:"Main page", ans:"C"},
+            {q:"What is the full form of USB?", a:"Universal Serial Bus", b:"User Serial Bus", c:"Unique Serial Bus", d:"Unit Serial Bus", ans:"A"},
+            {q:"Which is an output device?", a:"Keyboard", b:"Mouse", c:"Printer", d:"Scanner", ans:"C"},
+            {q:"What is the full form of BIOS?", a:"Basic Input Output System", b:"Beginner Input Output Set", c:"Basic Interface Output System", d:"Big Input Output System", ans:"A"},
+            {q:"Who is the founder of Facebook?", a:"Bill Gates", b:"Mark Zuckerberg", c:"Elon Musk", d:"Larry Page", ans:"B"},
+            {q:"What is the shortcut to Print?", a:"Ctrl+X", b:"Ctrl+P", c:"Ctrl+S", d:"Ctrl+A", ans:"B"},
+            {q:"Which is the largest network?", a:"LAN", b:"MAN", c:"Internet", d:"WAN", ans:"C"},
+            {q:"What is the full form of CPU?", a:"Central Processing Unit", b:"Control Processing Unit", c:"Core Processing Unit", d:"Computer Processing Unit", ans:"A"},
+            {q:"Which key is used for help?", a:"F1", b:"F2", c:"F5", d:"F12", ans:"A"},
+            {q:"What is the brain of the robot?", a:"Controller", b:"Sensor", c:"Battery", d:"Motor", ans:"A"},
+            {q:"What is a computer virus?", a:"Insects", b:"Bacteria", c:"Software Program", d:"Hardware Part", ans:"C"},
+            {q:"Which is the most popular search engine?", a:"Bing", b:"Yahoo", c:"Google", d:"DuckDuckGo", ans:"C"},
+            {q:"What is the shortcut for Bold?", a:"Ctrl+V", b:"Ctrl+I", c:"Ctrl+B", d:"Ctrl+U", ans:"C"},
+            {q:"1 Gigabyte (GB) is equal to?", a:"1024 MB", b:"1000 MB", c:"1024 KB", d:"512 MB", ans:"A"},
+            {q:"What is the ALU full form?", a:"Arithmetic Logic Unit", b:"All Logic Unit", c:"Area Logic Unit", d:"Auto Logic Unit", ans:"A"},
+            {q:"Which device is used for voice input?", a:"Microphone", b:"Speaker", c:"Monitor", d:"Mouse", ans:"A"},
+            {q:"What is the shortcut for New File?", a:"Ctrl+N", b:"Ctrl+O", c:"Ctrl+M", d:"Ctrl+F", ans:"A"},
+            {q:"Which company made Android?", a:"Apple", b:"Microsoft", c:"Google", d:"Samsung", ans:"C"},
+            {q:"What is the IP full form?", a:"Internet Protocol", b:"Internal Process", c:"Index Point", d:"Internet Process", ans:"A"},
+            {q:"Which is used to refresh a page?", a:"F1", b:"F5", c:"F10", d:"Esc", ans:"B"},
+            {q:"What is the HDD full form?", a:"Hard Disk Drive", b:"High Data Drive", c:"Hidden Data Disk", d:"Hard Data Drive", ans:"A"},
+            {q:"Which is a social media app?", a:"MS Excel", b:"Instagram", c:"Photoshop", d:"NotePad", ans:"B"},
+            {q:"What is the shortcut to Cut?", a:"Ctrl+C", b:"Ctrl+X", c:"Ctrl+V", d:"Ctrl+Z", ans:"B"},
+            {q:"What is the OS full form?", a:"Open System", b:"Operating System", c:"Output System", d:"Order System", ans:"B"}
+        ];
 
         function startGame() {
             document.getElementById("gameBox").style.display = "block";
@@ -288,7 +308,6 @@
                     const studentRef = doc(db, "students", student);
                     const currentSnap = await getDoc(studentRef);
                     if (currentSnap.exists()) {
-                        // PERMANENT XP UPDATE for Home/Ranks page
                         const newXP = (currentSnap.data().xp || 0) + totalPoolAmount;
                         await updateDoc(studentRef, { xp: newXP });
                         document.getElementById("rewardMsg").innerHTML = `<b style="color:var(--gold)">🏆 JACKPOT! ${totalPoolAmount} XP added to your account!</b>`;
