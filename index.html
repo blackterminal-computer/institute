@@ -28,7 +28,7 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
 
-        /* 1. TOP NOTIFICATION (APPLE STYLE) */
+        /* 1. TOP NOTIFICATION */
         #notif {
             position: fixed; top: -100px; left: 15px; right: 15px;
             background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(25px);
@@ -47,7 +47,7 @@
         .logo span { color: var(--accent); }
         .streak-badge { background: rgba(255, 100, 0, 0.1); color: #ff6400; padding: 8px 16px; border-radius: 50px; font-weight: 800; font-size: 12px; border: 1px solid rgba(255, 100, 0, 0.2); }
 
-        /* 3. REAL-TIME MARQUEE */
+        /* 3. MARQUEE */
         .marquee-container {
             background: rgba(99, 102, 241, 0.1); border-bottom: 1px solid var(--glass-border);
             padding: 10px 0; overflow: hidden; white-space: nowrap; margin-bottom: 10px;
@@ -59,11 +59,23 @@
         }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
-        /* 4. XP PROGRESS CARD */
-        .xp-card { margin: 10px 20px 25px; background: var(--glass); border: 1px solid var(--glass-border); padding: 20px; border-radius: 28px; backdrop-filter: blur(10px); }
+        /* 4. XP & RANK CARDS */
+        .xp-card { margin: 10px 20px 15px; background: var(--glass); border: 1px solid var(--glass-border); padding: 20px; border-radius: 28px; backdrop-filter: blur(10px); }
         .xp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .progress-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; transition: 1.5s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 0 10px var(--primary); }
+
+        /* INSTITUTE RANK DESIGN */
+        .rank-section {
+            margin: 0 20px 25px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.1));
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 28px; padding: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .rank-data h4 { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+        .rank-data h2 { font-size: 26px; font-weight: 800; color: var(--gold); }
+        .rank-icon-box { font-size: 32px; color: var(--gold); filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.4)); }
 
         /* 5. GRID & TOURNAMENT */
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
@@ -135,6 +147,16 @@
         </div>
     </div>
 
+    <div class="rank-section">
+        <div class="rank-data">
+            <h4>Institute Rank</h4>
+            <h2 id="instRank">#--</h2>
+        </div>
+        <div class="rank-icon-box">
+            <i class="ri-medal-fill"></i>
+        </div>
+    </div>
+
     <div class="grid">
         <div class="tournament-wrapper">
             <a href="tournament.html" class="tournament-card">
@@ -194,7 +216,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -213,43 +235,60 @@
         onSnapshot(doc(db, "notices", "main"), (snap) => {
             if (!snap.exists()) return;
             const data = snap.data();
-            
-            // Update Marquee
             if(data.marquee) document.getElementById("marqueeMsg").innerText = data.marquee;
-            
-            // Show/Hide Top Notification
-            const notif = document.getElementById("notif");
             if (data.status === "on") {
                 document.getElementById("notifText").innerText = data.text;
-                notif.classList.add("show");
+                document.getElementById("notif").classList.add("show");
             } else {
-                notif.classList.remove("show");
+                document.getElementById("notif").classList.remove("show");
             }
         });
 
-        // 2. Load User Stats
+        // 2. Load User Stats & Rank Calculation
         async function loadData() {
             if(student === "Guest") return;
             document.getElementById("uName").innerText = student;
-            const snap = await getDoc(doc(db, "students", student));
-            if(snap.exists()){
-                const d = snap.data();
-                const xp = d.xp || 0;
-                document.getElementById("xpVal").innerText = xp + " XP";
-                document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
-                
-                // Animate Progress Bar
-                setTimeout(() => {
-                    const percent = Math.min((xp / 5000) * 100, 100);
-                    document.getElementById("xpBar").style.width = percent + "%";
-                }, 600);
 
-                // Check Unit Unlock
-                if(xp >= 5000) {
-                    document.getElementById("unitIco").className = "ri-checkbox-circle-fill";
-                    document.getElementById("unitIco").style.color = "#22c55e";
-                    document.getElementById("unitDesc").innerText = "Unlocked!";
+            try {
+                // Calculation for Institute Rank
+                const querySnapshot = await getDocs(collection(db, "students"));
+                let allStudents = [];
+                querySnapshot.forEach((d) => {
+                    allStudents.push({ id: d.id, xp: d.data().xp || 0 });
+                });
+
+                // Sort by XP descending
+                allStudents.sort((a, b) => b.xp - a.xp);
+
+                // Find rank of current student
+                const rankIndex = allStudents.findIndex(s => s.id === student);
+                if(rankIndex !== -1) {
+                    document.getElementById("instRank").innerText = "#" + (rankIndex + 1);
                 }
+
+                // Load individual student data (XP, Streak)
+                const snap = await getDoc(doc(db, "students", student));
+                if(snap.exists()){
+                    const d = snap.data();
+                    const xp = d.xp || 0;
+                    document.getElementById("xpVal").innerText = xp + " XP";
+                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
+                    
+                    // Animate Progress Bar
+                    setTimeout(() => {
+                        const percent = Math.min((xp / 5000) * 100, 100);
+                        document.getElementById("xpBar").style.width = percent + "%";
+                    }, 600);
+
+                    // Check Unit Unlock
+                    if(xp >= 5000) {
+                        document.getElementById("unitIco").className = "ri-checkbox-circle-fill";
+                        document.getElementById("unitIco").style.color = "#22c55e";
+                        document.getElementById("unitDesc").innerText = "Unlocked!";
+                    }
+                }
+            } catch(e) {
+                console.log("Error loading data:", e);
             }
         }
 
