@@ -40,6 +40,15 @@
         input, select, textarea { width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid #334155; color: white; border-radius: 16px; outline: none; font-size: 14px; transition: 0.3s; }
         input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
 
+        /* SWITCH TOGGLE */
+        .switch-container { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 16px; margin-bottom: 15px; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
         .price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
         .btn-action { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary), #4f46e5); color: white; border: none; border-radius: 18px; font-weight: 800; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
@@ -66,9 +75,31 @@
     <nav class="tabs">
         <button class="tab-btn active" onclick="switchTab('add-tab', this)"><i class="ri-add-box-line"></i>Course</button>
         <button class="tab-btn" onclick="switchTab('refer-tab', this)"><i class="ri-gift-line"></i>Refer</button>
+        <button class="tab-btn" onclick="switchTab('ann-tab', this)"><i class="ri-notification-3-line"></i>Alert</button>
         <button class="tab-btn" onclick="switchTab('logs-tab', this)"><i class="ri-history-line"></i>Logs</button>
         <button class="tab-btn" onclick="switchTab('list-tab', this)"><i class="ri-broadcast-line"></i>Live</button>
     </nav>
+
+    <div id="ann-tab" class="admin-section">
+        <h3><i class="ri-megaphone-fill"></i> Global Announcement</h3>
+        <div class="switch-container">
+            <div>
+                <b style="font-size: 14px;">Banner Status</b><br>
+                <small style="font-size: 10px; color: #94a3b8;">Show/Hide banner on User App</small>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="ann-show">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="input-group">
+            <label>Banner Text</label>
+            <input type="text" id="ann-text" placeholder="e.g. University Verified Computer Institute">
+        </div>
+        <button class="btn-action" style="background: var(--primary);" onclick="updateAnnouncement()">
+            <i class="ri-save-line"></i> SAVE ANNOUNCEMENT
+        </button>
+    </div>
 
     <div id="add-tab" class="admin-section active">
         <h3><i class="ri-rocket-2-fill"></i> Deploy Course</h3>
@@ -142,6 +173,25 @@
         btn.classList.add('active');
     };
 
+    // --- ANNOUNCEMENT LOGIC ---
+    window.updateAnnouncement = async () => {
+        const text = document.getElementById('ann-text').value;
+        const show = document.getElementById('ann-show').checked;
+        await setDoc(doc(db, "settings", "announcement"), {
+            text: text,
+            show: show
+        });
+        alert("Banner Updated! 📢");
+    };
+
+    // Load Initial Announcement Data
+    getDoc(doc(db, "settings", "announcement")).then(s => {
+        if(s.exists()){
+            document.getElementById('ann-text').value = s.data().text;
+            document.getElementById('ann-show').checked = s.data().show;
+        }
+    });
+
     // ADD COURSE
     window.addCourse = async () => {
         const name = document.getElementById('c-name').value;
@@ -164,7 +214,7 @@
         alert("Settings Synced! 🎁");
     };
 
-    // SYNC DATA
+    // SYNC DATA (Original logic continues...)
     onSnapshot(collection(db, "courses"), (snap) => {
         const list = document.getElementById('live-list');
         document.getElementById('count').innerText = snap.size;
