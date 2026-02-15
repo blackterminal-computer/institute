@@ -32,96 +32,45 @@
         header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
         header p { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
 
-        /* 🥇 RESPONSIVE PODIUM STYLING */
+        /* PODIUM STYLING */
         .top-three {
-            display: flex; 
-            justify-content: center; 
-            align-items: flex-end;
-            gap: 8px; 
-            margin: 20px auto 40px auto; 
-            padding: 0;
-            width: 100%;
-            max-width: 450px;
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 8px; margin: 20px auto 40px auto; width: 100%; max-width: 450px;
         }
 
         .podium {
-            background: var(--glass); 
-            border: 1px solid var(--glass-border);
-            border-radius: 20px; 
-            padding: 15px 5px; 
-            text-align: center;
-            flex: 1; 
-            position: relative; 
-            transition: 0.3s;
-            min-width: 0; /* Important for text truncation */
+            background: var(--glass); border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 15px 5px; text-align: center;
+            flex: 1; position: relative; transition: 0.3s; min-width: 0;
         }
 
-        .podium.rank-1 { 
-            height: 155px; 
-            border-color: var(--gold); 
-            background: rgba(250, 204, 21, 0.05); 
-            z-index: 2;
-        }
-        .podium.rank-2 { height: 135px; border-color: var(--silver); }
-        .podium.rank-3 { height: 125px; border-color: var(--bronze); }
+        .podium.rank-1 { height: 160px; border-color: var(--gold); background: rgba(250, 204, 21, 0.05); z-index: 2; }
+        .podium.rank-2 { height: 140px; border-color: var(--silver); }
+        .podium.rank-3 { height: 130px; border-color: var(--bronze); }
         
-        .crown { 
-            position: absolute; 
-            top: -18px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            font-size: 22px; 
-            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
-        }
+        .crown { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 22px; }
+        .podium-name { font-size: 11px; font-weight: 800; margin-top: 12px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .podium-xp { font-size: 10px; color: var(--accent); font-weight: 700; display: block; }
 
-        .podium-name { 
-            font-size: 11px; 
-            font-weight: 800; 
-            margin-top: 12px; 
-            display: block; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-            white-space: nowrap; 
-            padding: 0 4px;
-        }
-
-        .podium-xp { 
-            font-size: 10px; 
-            color: var(--accent); 
-            font-weight: 700; 
-            display: block;
-        }
-
-        /* 📜 LIST STYLING */
-        .board-container {
-            max-width: 500px; margin: 0 auto 100px auto;
-        }
+        /* LIST STYLING */
+        .board-container { max-width: 500px; margin: 0 auto 100px auto; }
         .player-row {
             background: var(--glass); border: 1px solid var(--glass-border);
             margin-bottom: 10px; padding: 14px 18px; border-radius: 18px;
             display: flex; align-items: center; justify-content: space-between;
         }
+        .my-rank { border-color: var(--accent); background: rgba(6, 182, 212, 0.1); }
 
         .player-info { display: flex; align-items: center; gap: 12px; }
         .rank-tag { font-weight: 800; color: #64748b; width: 25px; font-size: 13px; }
         .player-name { font-weight: 600; font-size: 14px; }
-        .xp-tag { font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 5px; font-size: 13px; }
+        .xp-tag { font-weight: 800; color: var(--gold); font-size: 13px; }
 
-        /* 🏠 HOME BUTTON */
         .home-btn {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-            background: var(--primary); color: white; border: none;
-            padding: 12px 25px; border-radius: 50px; font-weight: 800; font-size: 14px;
-            display: flex; align-items: center; gap: 8px;
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-            text-decoration: none; z-index: 100;
-        }
-
-        /* 📱 ULTRA SMALL DEVICES */
-        @media (max-width: 360px) {
-            .podium-name { font-size: 10px; }
-            .podium-xp { font-size: 9px; }
-            .top-three { gap: 5px; }
+            background: var(--primary); color: white; padding: 12px 25px; 
+            border-radius: 50px; font-weight: 800; text-decoration: none;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4); z-index: 100;
         }
     </style>
 </head>
@@ -132,9 +81,12 @@
         <p>Terminal Warriors</p>
     </header>
 
-    <div id="podium-area" class="top-three"></div>
+    <div id="podium-area" class="top-three">
+        </div>
 
-    <div class="board-container" id="board"></div>
+    <div class="board-container" id="board">
+        <p style="text-align:center; opacity:0.5;">Syncing terminal data...</p>
+    </div>
 
     <a href="index.html" class="home-btn"><i class="ri-home-5-line"></i> Home</a>
 
@@ -153,9 +105,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        let local = localStorage.getItem("leaderboard_cache");
-        if(local) showBoard(JSON.parse(local));
+        const currentUser = localStorage.getItem("studentName") || "";
 
         async function loadBoard() {
             try {
@@ -164,50 +114,63 @@
                 snap.forEach(d => {
                     arr.push({ name: d.id, xp: d.data().xp || 0 });
                 });
+                
+                // Sort by XP
                 arr.sort((a, b) => b.xp - a.xp);
+                
+                // Cache it
                 localStorage.setItem("leaderboard_cache", JSON.stringify(arr));
                 showBoard(arr);
-            } catch(e) { console.log(e); }
+            } catch(e) { 
+                console.error(e); 
+                // If offline, use cache
+                let cached = localStorage.getItem("leaderboard_cache");
+                if(cached) showBoard(JSON.parse(cached));
+            }
         }
-        loadBoard();
 
         function showBoard(arr) {
-            if(arr.length === 0) return;
+            if(!arr || arr.length === 0) return;
 
+            // 1. Render Top 3 Podium
             const top = arr.slice(0, 3);
-            const podiumHtml = `
+            document.getElementById("podium-area").innerHTML = `
                 <div class="podium rank-2">
                     <span class="crown">🥈</span>
-                    <span class="podium-name">${top[1]?.name || '---'}</span>
-                    <span class="podium-xp">${top[1]?.xp || 0} XP</span>
+                    <span class="podium-name">${top[1] ? top[1].name : '---'}</span>
+                    <span class="podium-xp">${top[1] ? top[1].xp : 0} XP</span>
                 </div>
                 <div class="podium rank-1">
                     <span class="crown">👑</span>
-                    <span class="podium-name">${top[0]?.name || '---'}</span>
-                    <span class="podium-xp">${top[0]?.xp || 0} XP</span>
+                    <span class="podium-name">${top[0] ? top[0].name : '---'}</span>
+                    <span class="podium-xp">${top[0] ? top[0].xp : 0} XP</span>
                 </div>
                 <div class="podium rank-3">
                     <span class="crown">🥉</span>
-                    <span class="podium-name">${top[2]?.name || '---'}</span>
-                    <span class="podium-xp">${top[2]?.xp || 0} XP</span>
+                    <span class="podium-name">${top[2] ? top[2].name : '---'}</span>
+                    <span class="podium-xp">${top[2] ? top[2].xp : 0} XP</span>
                 </div>
             `;
-            document.getElementById("podium-area").innerHTML = podiumHtml;
 
+            // 2. Render List (4th place onwards)
             let listHtml = "";
             arr.slice(3).forEach((s, i) => {
+                const isMe = s.name === currentUser;
                 listHtml += `
-                    <div class="player-row">
+                    <div class="player-row ${isMe ? 'my-rank' : ''}">
                         <div class="player-info">
                             <span class="rank-tag">#${i + 4}</span>
-                            <span class="player-name">${s.name}</span>
+                            <span class="player-name">${s.name} ${isMe ? '<small>(You)</small>' : ''}</span>
                         </div>
                         <div class="xp-tag">⭐ ${s.xp}</div>
                     </div>
                 `;
             });
-            document.getElementById("board").innerHTML = listHtml || "<p style='text-align:center; opacity:0.5'>No more players</p>";
+            document.getElementById("board").innerHTML = listHtml || "<p style='text-align:center; opacity:0.5'>Recruiting more warriors...</p>";
         }
+
+        // Start loading
+        loadBoard();
     </script>
 </body>
 </html>
