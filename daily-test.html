@@ -86,8 +86,8 @@
         <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 30px; overflow: hidden;">
             <div id="p-fill" style="height: 100%; background: var(--primary); width: 0%; transition: 0.5s;"></div>
         </div>
-        <span id="q-num">Connecting to Terminal...</span>
-        <h3 id="q">Fetching Daily Questions...</h3>
+        <span id="q-num">Connecting...</span>
+        <h3 id="q">Wait...</h3>
         <div class="options-grid" id="options"></div>
         <div class="footer">
             <button id="nextBtn" disabled>Next Question <i class="ri-arrow-right-line"></i></button>
@@ -135,135 +135,9 @@
             { question: "Which language is used for Web Styling?", a: "HTML", b: "Python", c: "CSS", d: "Java", correct: "C" },
             { question: "Which of these is a JavaScript Framework?", a: "React", b: "Django", c: "Laravel", d: "Flask", correct: "A" },
             { question: "What is the primary function of RAM?", a: "Long-term storage", b: "Temporary data processing", c: "Video Rendering", d: "Internet connection", correct: "B" },
-            { question: "What does 'HTTP' stand for?", a: "HyperText Transfer Protocol", b: "HyperText Type Process", c: "High Transfer Text Protocol", d: "None of these", correct: "A" }
-        ];
-
-        let student = localStorage.getItem("studentName") || "Guest";
-        let questions = [], index = 0, score = 0, locked = false, time = 20, timerInterval;
-
-        // 1. Check if user already completed the test today
-        if (localStorage.getItem("daily_done_" + student) === new Date().toDateString()) {
-            lockScreen();
-        } else {
-            initExam();
-        }
-
-        function initExam() {
-            questions = [...manualQuestions].sort(() => Math.random() - 0.5);
-            showQ();
-            startTimer();
-        }
-
-        function showQ() {
-            if (index >= questions.length) { finish(); return; }
-            locked = false; time = 20;
-            document.getElementById("nextBtn").disabled = true;
-            const q = questions[index];
-            document.getElementById("q-num").innerText = `Question ${index + 1} of ${questions.length}`;
-            document.getElementById("p-fill").style.width = ((index + 1) / questions.length * 100) + "%";
-            document.getElementById("q").innerText = q.question;
-
-            const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
-            document.getElementById("options").innerHTML = opts.map(o => `
-                <div class="opt" onclick="window.selectOpt('${o.id}', this)">
-                    <span style="color:var(--accent); margin-right:12px;">${o.id}.</span> ${o.v}
-                </div>
-            `).join('');
-        }
-
-        window.selectOpt = (v, el) => {
-            if (locked) return;
-            locked = true;
-            document.getElementById("nextBtn").disabled = false;
-            const correct = questions[index].correct;
-            if (v === correct) { el.classList.add("correct"); score++; }
-            else { 
-                el.classList.add("wrong");
-                document.querySelectorAll(".opt").forEach(o => {
-                    if(o.innerText.includes(correct + ".")) o.classList.add("correct");
-                });
-            }
-            document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
-        };
-
-        document.getElementById("nextBtn").onclick = () => { index++; showQ(); };
-
-        function startTimer() {
-            timerInterval = setInterval(() => {
-                time--;
-                document.getElementById("timer").innerText = time + "s";
-                if (time <= 0 && !locked) { 
-                    locked = true; 
-                    document.getElementById("nextBtn").disabled = false;
-                    const correct = questions[index].correct;
-                    document.querySelectorAll(".opt").forEach(o => {
-                        if(o.innerText.includes(correct + ".")) o.classList.add("correct");
-                        o.classList.add("lock");
-                    });
-                }
-            }, 1000);
-        }
-
-        // 2. The critical "ADD 100 XP" Logic
-        async function finish() {
-            clearInterval(timerInterval);
-            if(student !== "Guest") {
-                try {
-                    // Update Firebase Global Leaderboard
-                    const studentRef = doc(db, "students", student);
-                    await updateDoc(studentRef, {
-                        xp: increment(100)
-                    });
-
-                    // Set daily lock
-                    localStorage.setItem("daily_done_" + student, new Date().toDateString());
-                } catch (e) { 
-                    console.error("Firebase Sync Error:", e);
-                    alert("Network Error: XP might not be synced!");
-                }
-            }
-            lockScreen();
-        }
-
-        async function lockScreen() {
-            document.getElementById("examBox").style.display = "none";
-            document.getElementById("lockBox").style.display = "block";
-            
-            // 3. MIDNIGHT UNLOCK TIMER
-            const countdown = () => {
-                const now = new Date();
-                const midnight = new Date();
-                midnight.setHours(24, 0, 0, 0); // Exact 12:00 AM
-                const diff = midnight - now;
-
-                if (diff <= 0) {
-                    localStorage.removeItem("daily_done_" + student);
-                    location.reload(); // Refresh to start new exam
-                }
-
-                let h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-                let m = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
-                let s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
-                document.getElementById("count").innerText = `${h}h ${m}m ${s}s`;
-            };
-            setInterval(countdown, 1000); countdown();
-
-            // 4. SHOW LATEST LEADERBOARD AFTER UPDATING XP
-            const snap = await getDocs(collection(db, "students"));
-            let players = [];
-            snap.forEach(d => players.push({ name: d.id, xp: d.data().xp || 0 }));
-            players.sort((a, b) => b.xp - a.xp);
-
-            document.getElementById("leaderboard-body").innerHTML = players.slice(0, 6).map((u, i) => `
-                <tr>
-                    <td style="width:40px"><span class="rank-badge ${i<3?'top-rank':''}">${i+1}</span></td>
-                    <td style="color:${u.name === student ? 'var(--accent)' : '#fff'}">
-                        ${u.name} ${u.name === student ? '<b>(YOU)</b>' : ''}
-                    </td>
-                    <td style="text-align:right; font-weight:800; color:var(--success)">${u.xp} XP</td>
-                </tr>
-            `).join('');
-        }
-    </script>
-</body>
-</html>
+            { question: "What does 'HTTP' stand for?", a: "HyperText Transfer Protocol", b: "HyperText Type Process", c: "High Transfer Text Protocol", d: "None of these", correct: "A" },
+            { question: "Which HTML tag is used for the largest heading?", a: "<h6>", b: "<head>", c: "<h1>", d: "<header>", correct: "C" },
+            { question: "What does SQL stand for?", a: "Simple Query Language", b: "Structured Query Language", c: "System Question Log", d: "Stylish Queue Line", correct: "B" },
+            { question: "Who is the father of Computers?", a: "Charles Babbage", b: "Alan Turing", c: "Bill Gates", d: "Steve Jobs", correct: "A" },
+            { question: "Which is a valid CSS unit?", a: "kg", b: "rem", c: "mb", d: "pxs", correct: "B" },
+            { question: "Which symbol is used for comments in JS?", a: "
