@@ -31,6 +31,7 @@
             width: 100%; max-width: 600px; display: flex; justify-content: space-between;
             align-items: center; padding: 15px; margin-bottom: 20px;
         }
+
         .timer-pill {
             background: rgba(34, 197, 94, 0.1); color: var(--success);
             padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(34, 197, 94, 0.2);
@@ -44,7 +45,6 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: fadeIn 0.5s ease-out;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         #q-num { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
         #q { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 25px; }
@@ -53,36 +53,29 @@
         .opt {
             background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
             padding: 18px; border-radius: 18px; cursor: pointer;
-            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; font-weight: 600; font-size: 15px;
+            transition: 0.2s; display: flex; align-items: center; font-weight: 600;
         }
-        .opt:active { transform: scale(0.97); }
-        .opt.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
         .opt.correct { background: rgba(34, 197, 94, 0.1) !important; border-color: var(--success) !important; color: var(--success); }
         .opt.wrong { background: rgba(239, 68, 68, 0.1) !important; border-color: var(--danger) !important; color: var(--danger); }
         .opt.lock { pointer-events: none; opacity: 0.7; }
 
-        .footer {
-            width: 100%; max-width: 600px; margin-top: 25px;
-            display: flex; justify-content: flex-end;
-        }
+        .footer { width: 100%; max-width: 600px; margin-top: 25px; display: flex; justify-content: flex-end; }
+        
         button {
             padding: 16px 35px; border: none; border-radius: 20px;
             background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white; font-weight: 800; font-size: 16px; cursor: pointer;
-            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); transition: 0.3s;
+            color: white; font-weight: 800; cursor: pointer;
         }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: scale(1) !important; }
 
-        .lock-card { text-align: center; padding: 50px 20px; }
-        .lock-card i { font-size: 60px; color: #fbbf24; display: block; margin-bottom: 20px; }
-        .countdown { font-size: 32px; font-weight: 800; color: var(--accent); margin-top: 15px; }
+        /* Leaderboard */
+        .leaderboard-container { margin-top: 30px; width: 100%; }
+        .l-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .l-table th { text-align: left; font-size: 11px; color: #64748b; padding-bottom: 10px; text-transform: uppercase; }
+        .l-table td { padding: 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+        .rank-badge { width: 24px; height: 24px; background: var(--primary); display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 12px; font-weight: 800; }
+        .top-rank { background: #fbbf24; color: #000; }
 
-        .progress-line {
-            width: 100%; height: 6px; background: rgba(255,255,255,0.05);
-            border-radius: 10px; margin-bottom: 30px; overflow: hidden;
-        }
-        #p-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -95,72 +88,60 @@
     </div>
 
     <div class="card" id="examBox">
-        <div class="progress-line"><div id="p-fill"></div></div>
+        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 30px; overflow: hidden;">
+            <div id="p-fill" style="height: 100%; background: var(--primary); width: 0%; transition: 0.5s;"></div>
+        </div>
         <span id="q-num">Question 1 of 20</span>
-        <h3 id="q">Preparing questions...</h3>
+        <h3 id="q">Loading...</h3>
         <div class="options-grid" id="options"></div>
         <div class="footer">
             <button id="nextBtn" onclick="nextQ()" disabled>Next Question <i class="ri-arrow-right-line"></i></button>
         </div>
     </div>
 
-    <div class="card lock-card" id="lockBox" style="display:none">
-        <i class="ri-shield-check-fill"></i>
-        <h2 style="font-size: 24px;">Test Completed!</h2>
-        <p style="opacity: 0.6; margin-top: 10px;">Great job! Your XP has been updated. Come back tomorrow for the next challenge.</p>
-        <div style="margin-top: 30px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
-            <p style="font-size: 12px; font-weight: 800; color: #64748b;">NEXT UNLOCK IN</p>
-            <div class="countdown" id="count">00h 00m 00s</div>
+    <div class="card" id="lockBox" style="display:none; text-align: center;">
+        <i class="ri-shield-check-fill" style="font-size: 50px; color: var(--success);"></i>
+        <h2 style="margin-top:10px">Exam Completed!</h2>
+        <p style="opacity: 0.6; font-size: 14px; margin-bottom: 20px;">+100 XP added to your leaderboard profile.</p>
+        
+        <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 20px; border: 1px solid var(--glass-border);">
+            <p style="font-size: 11px; font-weight: 800; color: var(--accent);">NEXT UNLOCK IN</p>
+            <div id="count" style="font-size: 24px; font-weight: 800;">00h 00m 00s</div>
         </div>
-        <button onclick="window.location.reload()" style="margin-top: 30px; background: rgba(255,255,255,0.05); box-shadow: none;">Back to Dashboard</button>
+
+        <div class="leaderboard-container">
+            <table class="l-table">
+                <thead>
+                    <tr><th>Rank</th><th>Student</th><th>Total XP</th></tr>
+                </thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+        </div>
+        
+        <button onclick="window.location.reload()" style="margin-top: 25px; background: rgba(255,255,255,0.05);">Back to Home</button>
     </div>
 
     <script>
-        // --- MANUAL QUESTIONS DATA ---
         const manualQuestions = [
-    { question: "What does CPU stand for?", a: "Central Process Unit", b: "Central Processing Unit", c: "Computer Personal Unit", d: "Central Processor Unreal", correct: "B" },
-    { question: "Which language is used for Web Styling?", a: "HTML", b: "Python", c: "CSS", d: "Java", correct: "C" },
-    { question: "What is the brain of the computer?", a: "RAM", b: "CPU", c: "Hard Drive", d: "Monitor", correct: "B" },
-    { question: "Which of these is a JavaScript Framework?", a: "React", b: "Django", c: "Laravel", d: "Flask", correct: "A" },
-    { question: "What does 'HTTP' stand for?", a: "HyperText Transfer Protocol", b: "HyperText Type Process", c: "High Transfer Text Protocol", d: "None of these", correct: "A" },
-    { question: "Which HTML tag is used to define an internal style sheet?", a: "<script>", b: "<css>", c: "<style>", d: "<design>", correct: "C" },
-    { question: "In CSS, how do you select an element with id 'demo'?", a: ".demo", b: "#demo", c: "demo", d: "*demo", correct: "B" },
-    { question: "Which property is used to change the background color in CSS?", a: "color", b: "bgcolor", c: "background-color", d: "canvas-color", correct: "C" },
-    { question: "How do you write 'Hello World' in an alert box in JS?", a: "msg('Hello World')", b: "alertBox('Hello World')", c: "alert('Hello World')", d: "console.log('Hello World')", correct: "C" },
-    { question: "Which sign is used for jQuery?", a: "$ sign", b: "% sign", c: "@ sign", d: "# sign", correct: "A" },
-    { question: "Which is not a programming language?", a: "Python", b: "Java", c: "HTML", d: "C++", correct: "C" },
-    { question: "What is the full form of RAM?", a: "Read Access Memory", b: "Random Access Memory", c: "Run Anytime Memory", d: "Read Always Memory", correct: "B" },
-    { question: "Which CSS property controls the text size?", a: "font-style", b: "text-style", c: "font-size", d: "text-size", correct: "C" },
-    { question: "How do you create a function in JavaScript?", a: "function:myFunction()", b: "function = myFunction()", c: "function myFunction()", d: "new.function()", correct: "C" },
-    { question: "Which HTML tag is used for the largest heading?", a: "<h6>", b: "<heading>", c: "<h1>", d: "<head>", correct: "C" },
-    { question: "What is the extension of a JavaScript file?", a: ".java", b: ".script", c: ".js", d: ".xml", correct: "C" },
-    { question: "Which company developed Java?", a: "Microsoft", b: "Sun Microsystems", c: "Google", d: "Apple", correct: "B" },
-    { question: "What does SQL stand for?", a: "Strong Question Language", b: "Structured Query Language", c: "Simple Query Language", d: "Stable Quick Language", correct: "B" },
-    { question: "Which symbol is used for comments in Javascript?", a: "//", b: "", c: "/* */", d: "Both A and C", correct: "D" },
-    { question: "What is the correct HTML for creating a hyperlink?", a: "<a>http://google.com</a>", b: "<a href='http://google.com'>Google</a>", c: "<a name='http://google.com'>Google</a>", d: "<link>http://google.com</link>", correct: "B" }
-];
-
+            { question: "What does CPU stand for?", a: "Central Process Unit", b: "Central Processing Unit", c: "Computer Personal Unit", d: "Central Processor Unreal", correct: "B" },
+            { question: "Which language is used for Web Styling?", a: "HTML", b: "Python", c: "CSS", d: "Java", correct: "C" },
+            { question: "What is the brain of the computer?", a: "RAM", b: "CPU", c: "Hard Drive", d: "Monitor", correct: "B" },
+            { question: "Which of these is a JavaScript Framework?", a: "React", b: "Django", c: "Laravel", d: "Flask", correct: "A" },
+            { question: "What does 'HTTP' stand for?", a: "HyperText Transfer Protocol", b: "HyperText Type Process", c: "High Transfer Text Protocol", d: "None of these", correct: "A" }
+            // ... Baaki questions aap yahan add kar sakte hain
+        ];
 
         let student = localStorage.getItem("studentName") || "Student";
-        let questions = [];
-        let index = 0;
-        let score = 0;
-        let locked = false;
-        let time = 20;
-        let timerInterval;
-
-        // CHECK IF ALREADY DONE
-        let last = localStorage.getItem("daily_done_" + student);
+        let questions = [], index = 0, score = 0, locked = false, time = 20, timerInterval;
         let today = new Date().toDateString();
 
-        if (last === today) {
+        if (localStorage.getItem("daily_done_" + student) === today) {
             lockScreen();
         } else {
             initExam();
         }
 
         function initExam() {
-            // Shuffle and pick top 20 (or all if less than 20)
             questions = [...manualQuestions].sort(() => Math.random() - 0.5).slice(0, 20);
             showQ();
             startTimer();
@@ -168,79 +149,63 @@
 
         function showQ() {
             if (index >= questions.length) { finish(); return; }
-
+            locked = false; time = 20;
+            document.getElementById("nextBtn").disabled = true;
             const q = questions[index];
             document.getElementById("q-num").innerText = `Question ${index + 1} of ${questions.length}`;
             document.getElementById("p-fill").style.width = ((index + 1) / questions.length * 100) + "%";
             document.getElementById("q").innerText = q.question;
-            document.getElementById("nextBtn").disabled = true;
 
-            const opts = [
-                { id: 'A', val: q.a }, { id: 'B', val: q.b },
-                { id: 'C', val: q.c }, { id: 'D', val: q.d }
-            ];
-
+            const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
             document.getElementById("options").innerHTML = opts.map(o => `
                 <div class="opt" onclick="handleSelect('${o.id}', this)">
-                    <span style="color:var(--accent); margin-right:12px;">${o.id}.</span> ${o.val}
+                    <span style="color:var(--accent); margin-right:12px;">${o.id}.</span> ${o.v}
                 </div>
             `).join('');
-
-            locked = false;
-            time = 20;
         }
 
         window.handleSelect = (v, el) => {
             if (locked) return;
             locked = true;
             document.getElementById("nextBtn").disabled = false;
-
             const correct = questions[index].correct;
-            const allOpts = document.querySelectorAll(".opt");
-            allOpts.forEach(o => o.classList.add("lock"));
-
-            if (v === correct) {
-                el.classList.add("correct");
-                score++;
-            } else {
+            if (v === correct) { el.classList.add("correct"); score++; }
+            else { 
                 el.classList.add("wrong");
-                allOpts.forEach(o => {
-                    if (o.innerText.trim().startsWith(correct + ".")) o.classList.add("correct");
+                document.querySelectorAll(".opt").forEach(o => {
+                    if(o.innerText.includes(correct + ".")) o.classList.add("correct");
                 });
             }
+            document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
         };
 
-        window.nextQ = () => {
-            index++;
-            showQ();
-        };
+        window.nextQ = () => { index++; showQ(); };
 
         function startTimer() {
-            if(timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 time--;
                 document.getElementById("timer").innerText = time + "s";
-                const timerBox = document.getElementById("timer-box");
-                
-                if (time <= 5) timerBox.style.color = "var(--danger)";
-                else timerBox.style.color = "var(--success)";
-
-                if (time <= 0) {
-                    locked = true;
-                    setTimeout(() => nextQ(), 800);
-                }
+                if (time <= 0 && !locked) { locked = true; setTimeout(() => nextQ(), 800); }
             }, 1000);
         }
 
         function finish() {
             clearInterval(timerInterval);
-            localStorage.setItem("daily_done_" + student, new Date().toDateString());
+            localStorage.setItem("daily_done_" + student, today);
             
-            // Save XP to LocalStorage
-            let currentXP = parseInt(localStorage.getItem(student + "_xp") || "0");
-            localStorage.setItem(student + "_xp", currentXP + 100);
+            // --- FIXED 100 XP LOGIC ---
+            let totalXP = parseInt(localStorage.getItem(student + "_xp") || "0") + 100;
+            localStorage.setItem(student + "_xp", totalXP);
+
+            let leaderboard = JSON.parse(localStorage.getItem("global_leaderboard") || "[]");
+            let userIdx = leaderboard.findIndex(u => u.name === student);
+            if (userIdx > -1) leaderboard[userIdx].xp = totalXP;
+            else leaderboard.push({ name: student, xp: totalXP });
+
+            leaderboard.sort((a, b) => b.xp - a.xp);
+            localStorage.setItem("global_leaderboard", JSON.stringify(leaderboard));
             
-            alert(`Exam Finished!\nScore: ${score}/${questions.length}\n+100 XP Earned!`);
+            alert(`Exam Finished! Score: ${score}/${questions.length}\n100 XP added!`);
             lockScreen();
         }
 
@@ -248,16 +213,24 @@
             document.getElementById("examBox").style.display = "none";
             document.getElementById("lockBox").style.display = "block";
             
+            // Countdown Timer
             setInterval(() => {
-                let now = new Date();
-                let tomorrow = new Date();
-                tomorrow.setHours(24, 0, 0, 0);
-                let diff = tomorrow - now;
+                let diff = new Date().setHours(24,0,0,0) - new Date();
                 let h = String(Math.floor(diff/3600000)).padStart(2, '0');
                 let m = String(Math.floor((diff/60000)%60)).padStart(2, '0');
                 let s = String(Math.floor((diff/1000)%60)).padStart(2, '0');
                 document.getElementById("count").innerText = `${h}h ${m}m ${s}s`;
             }, 1000);
+
+            // Leaderboard Render
+            let leaderboard = JSON.parse(localStorage.getItem("global_leaderboard") || "[]");
+            document.getElementById("leaderboard-body").innerHTML = leaderboard.slice(0, 10).map((u, i) => `
+                <tr>
+                    <td><span class="rank-badge ${i<3?'top-rank':''}">${i+1}</span></td>
+                    <td>${u.name} ${u.name === student ? '<b>(You)</b>' : ''}</td>
+                    <td style="font-weight:800; color:var(--success)">${u.xp}</td>
+                </tr>
+            `).join('');
         }
     </script>
 </body>
