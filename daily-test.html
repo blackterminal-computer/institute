@@ -43,7 +43,6 @@
             border: 1px solid var(--glass-border); padding: 30px 20px;
             border-radius: 30px; backdrop-filter: blur(20px);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.5s ease-out;
         }
 
         #q-num { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
@@ -66,16 +65,12 @@
             background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white; font-weight: 800; cursor: pointer;
         }
+        button:disabled { opacity: 0.5; }
 
-        /* Leaderboard */
-        .leaderboard-container { margin-top: 30px; width: 100%; }
         .l-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .l-table th { text-align: left; font-size: 11px; color: #64748b; padding-bottom: 10px; text-transform: uppercase; }
         .l-table td { padding: 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
-        .rank-badge { width: 24px; height: 24px; background: var(--primary); display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 12px; font-weight: 800; }
+        .rank-badge { width: 24px; height: 24px; background: var(--primary); display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11px; font-weight: 800; }
         .top-rank { background: #fbbf24; color: #000; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -91,58 +86,70 @@
         <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 30px; overflow: hidden;">
             <div id="p-fill" style="height: 100%; background: var(--primary); width: 0%; transition: 0.5s;"></div>
         </div>
-        <span id="q-num">Question 1 of 20</span>
-        <h3 id="q">Loading...</h3>
+        <span id="q-num">Connecting to Terminal...</span>
+        <h3 id="q">Fetching Daily Questions...</h3>
         <div class="options-grid" id="options"></div>
         <div class="footer">
-            <button id="nextBtn" onclick="nextQ()" disabled>Next Question <i class="ri-arrow-right-line"></i></button>
+            <button id="nextBtn" disabled>Next Question <i class="ri-arrow-right-line"></i></button>
         </div>
     </div>
 
     <div class="card" id="lockBox" style="display:none; text-align: center;">
         <i class="ri-shield-check-fill" style="font-size: 50px; color: var(--success);"></i>
-        <h2 style="margin-top:10px">Exam Completed!</h2>
-        <p style="opacity: 0.6; font-size: 14px; margin-bottom: 20px;">+100 XP added to your leaderboard profile.</p>
+        <h2 style="margin-top:10px">Exam Finished!</h2>
+        <p style="opacity: 0.7; font-size: 14px; margin-bottom: 20px;">+100 XP added to your Global Profile.</p>
         
-        <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 20px; border: 1px solid var(--glass-border);">
-            <p style="font-size: 11px; font-weight: 800; color: var(--accent);">NEXT UNLOCK IN</p>
-            <div id="count" style="font-size: 24px; font-weight: 800;">00h 00m 00s</div>
+        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 20px; border: 1px solid var(--glass-border);">
+            <p style="font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: 1px;">NEXT ATTEMPT IN</p>
+            <div id="count" style="font-size: 32px; font-weight: 800; color: #fff;">00h 00m 00s</div>
         </div>
 
-        <div class="leaderboard-container">
+        <div style="margin-top: 25px; text-align: left;">
+            <p style="font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 10px;">GLOBAL STANDINGS</p>
             <table class="l-table">
-                <thead>
-                    <tr><th>Rank</th><th>Student</th><th>Total XP</th></tr>
-                </thead>
                 <tbody id="leaderboard-body"></tbody>
             </table>
         </div>
         
-        <button onclick="window.location.reload()" style="margin-top: 25px; background: rgba(255,255,255,0.05);">Back to Home</button>
+        <button onclick="window.location.href='index.html'" style="margin-top: 25px; width: 100%; background: var(--glass); border: 1px solid var(--glass-border);">Back to Home</button>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, updateDoc, increment, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         const manualQuestions = [
             { question: "What does CPU stand for?", a: "Central Process Unit", b: "Central Processing Unit", c: "Computer Personal Unit", d: "Central Processor Unreal", correct: "B" },
             { question: "Which language is used for Web Styling?", a: "HTML", b: "Python", c: "CSS", d: "Java", correct: "C" },
-            { question: "What is the brain of the computer?", a: "RAM", b: "CPU", c: "Hard Drive", d: "Monitor", correct: "B" },
             { question: "Which of these is a JavaScript Framework?", a: "React", b: "Django", c: "Laravel", d: "Flask", correct: "A" },
+            { question: "What is the primary function of RAM?", a: "Long-term storage", b: "Temporary data processing", c: "Video Rendering", d: "Internet connection", correct: "B" },
             { question: "What does 'HTTP' stand for?", a: "HyperText Transfer Protocol", b: "HyperText Type Process", c: "High Transfer Text Protocol", d: "None of these", correct: "A" }
-            // ... Baaki questions aap yahan add kar sakte hain
         ];
 
-        let student = localStorage.getItem("studentName") || "Student";
+        let student = localStorage.getItem("studentName") || "Guest";
         let questions = [], index = 0, score = 0, locked = false, time = 20, timerInterval;
-        let today = new Date().toDateString();
 
-        if (localStorage.getItem("daily_done_" + student) === today) {
+        // 1. Check if user already completed the test today
+        if (localStorage.getItem("daily_done_" + student) === new Date().toDateString()) {
             lockScreen();
         } else {
             initExam();
         }
 
         function initExam() {
-            questions = [...manualQuestions].sort(() => Math.random() - 0.5).slice(0, 20);
+            questions = [...manualQuestions].sort(() => Math.random() - 0.5);
             showQ();
             startTimer();
         }
@@ -158,13 +165,13 @@
 
             const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
             document.getElementById("options").innerHTML = opts.map(o => `
-                <div class="opt" onclick="handleSelect('${o.id}', this)">
+                <div class="opt" onclick="window.selectOpt('${o.id}', this)">
                     <span style="color:var(--accent); margin-right:12px;">${o.id}.</span> ${o.v}
                 </div>
             `).join('');
         }
 
-        window.handleSelect = (v, el) => {
+        window.selectOpt = (v, el) => {
             if (locked) return;
             locked = true;
             document.getElementById("nextBtn").disabled = false;
@@ -179,56 +186,81 @@
             document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
         };
 
-        window.nextQ = () => { index++; showQ(); };
+        document.getElementById("nextBtn").onclick = () => { index++; showQ(); };
 
         function startTimer() {
             timerInterval = setInterval(() => {
                 time--;
                 document.getElementById("timer").innerText = time + "s";
-                if (time <= 0 && !locked) { locked = true; setTimeout(() => nextQ(), 800); }
+                if (time <= 0 && !locked) { 
+                    locked = true; 
+                    document.getElementById("nextBtn").disabled = false;
+                    const correct = questions[index].correct;
+                    document.querySelectorAll(".opt").forEach(o => {
+                        if(o.innerText.includes(correct + ".")) o.classList.add("correct");
+                        o.classList.add("lock");
+                    });
+                }
             }, 1000);
         }
 
-        function finish() {
+        // 2. The critical "ADD 100 XP" Logic
+        async function finish() {
             clearInterval(timerInterval);
-            localStorage.setItem("daily_done_" + student, today);
-            
-            // --- FIXED 100 XP LOGIC ---
-            let totalXP = parseInt(localStorage.getItem(student + "_xp") || "0") + 100;
-            localStorage.setItem(student + "_xp", totalXP);
+            if(student !== "Guest") {
+                try {
+                    // Update Firebase Global Leaderboard
+                    const studentRef = doc(db, "students", student);
+                    await updateDoc(studentRef, {
+                        xp: increment(100)
+                    });
 
-            let leaderboard = JSON.parse(localStorage.getItem("global_leaderboard") || "[]");
-            let userIdx = leaderboard.findIndex(u => u.name === student);
-            if (userIdx > -1) leaderboard[userIdx].xp = totalXP;
-            else leaderboard.push({ name: student, xp: totalXP });
-
-            leaderboard.sort((a, b) => b.xp - a.xp);
-            localStorage.setItem("global_leaderboard", JSON.stringify(leaderboard));
-            
-            alert(`Exam Finished! Score: ${score}/${questions.length}\n100 XP added!`);
+                    // Set daily lock
+                    localStorage.setItem("daily_done_" + student, new Date().toDateString());
+                } catch (e) { 
+                    console.error("Firebase Sync Error:", e);
+                    alert("Network Error: XP might not be synced!");
+                }
+            }
             lockScreen();
         }
 
-        function lockScreen() {
+        async function lockScreen() {
             document.getElementById("examBox").style.display = "none";
             document.getElementById("lockBox").style.display = "block";
             
-            // Countdown Timer
-            setInterval(() => {
-                let diff = new Date().setHours(24,0,0,0) - new Date();
-                let h = String(Math.floor(diff/3600000)).padStart(2, '0');
-                let m = String(Math.floor((diff/60000)%60)).padStart(2, '0');
-                let s = String(Math.floor((diff/1000)%60)).padStart(2, '0');
-                document.getElementById("count").innerText = `${h}h ${m}m ${s}s`;
-            }, 1000);
+            // 3. MIDNIGHT UNLOCK TIMER
+            const countdown = () => {
+                const now = new Date();
+                const midnight = new Date();
+                midnight.setHours(24, 0, 0, 0); // Exact 12:00 AM
+                const diff = midnight - now;
 
-            // Leaderboard Render
-            let leaderboard = JSON.parse(localStorage.getItem("global_leaderboard") || "[]");
-            document.getElementById("leaderboard-body").innerHTML = leaderboard.slice(0, 10).map((u, i) => `
+                if (diff <= 0) {
+                    localStorage.removeItem("daily_done_" + student);
+                    location.reload(); // Refresh to start new exam
+                }
+
+                let h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                let m = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
+                let s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+                document.getElementById("count").innerText = `${h}h ${m}m ${s}s`;
+            };
+            setInterval(countdown, 1000); countdown();
+
+            // 4. SHOW LATEST LEADERBOARD AFTER UPDATING XP
+            const snap = await getDocs(collection(db, "students"));
+            let players = [];
+            snap.forEach(d => players.push({ name: d.id, xp: d.data().xp || 0 }));
+            players.sort((a, b) => b.xp - a.xp);
+
+            document.getElementById("leaderboard-body").innerHTML = players.slice(0, 6).map((u, i) => `
                 <tr>
-                    <td><span class="rank-badge ${i<3?'top-rank':''}">${i+1}</span></td>
-                    <td>${u.name} ${u.name === student ? '<b>(You)</b>' : ''}</td>
-                    <td style="font-weight:800; color:var(--success)">${u.xp}</td>
+                    <td style="width:40px"><span class="rank-badge ${i<3?'top-rank':''}">${i+1}</span></td>
+                    <td style="color:${u.name === student ? 'var(--accent)' : '#fff'}">
+                        ${u.name} ${u.name === student ? '<b>(YOU)</b>' : ''}
+                    </td>
+                    <td style="text-align:right; font-weight:800; color:var(--success)">${u.xp} XP</td>
                 </tr>
             `).join('');
         }
