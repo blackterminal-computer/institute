@@ -61,7 +61,7 @@
         <h2><i class="ri-dashboard-3-fill"></i> System Control</h2>
 
         <div class="input-group">
-            <label>Notice Banner (Top Panel)</label>
+            <label>Notice Banner (Top Panel Alert)</label>
             <textarea id="msg" rows="2" placeholder="Ex: Exam will start at 9 PM..."></textarea>
             <div class="btn-row">
                 <button class="btn-primary" onclick="sendOn()"><i class="ri-notification-badge-line"></i> ON</button>
@@ -126,20 +126,20 @@
             } else { showToast("Access Denied", "#ef4444"); }
         }
 
-        // --- Marquee Logic (FIXED FOR HOMEPAGE) ---
+        // --- Marquee Logic (Saves to settings/marquee/msg) ---
         window.updateMarquee = async function() {
             const m = document.getElementById("marqueeVal").value.trim();
             if(!m) return showToast("Enter text", "#ef4444");
             try {
-                // 'settings/marquee' document ko update kar raha hai jo homepage listen karta hai
                 await setDoc(doc(db, "settings", "marquee"), { msg: m }, { merge: true });
                 showToast("Marquee Updated!");
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- Notice Logic ---
+        // --- Notice Alert Logic (Saves to notices/main) ---
         window.sendOn = async function() {
             const t = document.getElementById("msg").value.trim();
+            if(!t) return showToast("Enter message", "#ef4444");
             try {
                 await setDoc(doc(db, "notices", "main"), { text: t, status: "on" }, { merge: true });
                 showToast("Notice Live!");
@@ -153,7 +153,7 @@
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- XP Logic ---
+        // --- Student Management ---
         window.updateXP = async function() {
             const sName = document.getElementById("studentName").value.trim();
             const xp = document.getElementById("xpAmount").value.trim();
@@ -173,7 +173,7 @@
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- Attendance Logic ---
+        // --- Real-time Attendance Monitor ---
         function listenAttendance() {
             const today = new Date().toISOString().split('T')[0];
             onSnapshot(collection(db, "attendance"), (snap) => {
@@ -184,18 +184,22 @@
                     const a = d.data();
                     if(a.date === today) {
                         count++;
-                        list.innerHTML += `<div class="att-item"><b>${a.userName}</b><span><i class="ri-time-line"></i> Today</span></div>`;
+                        list.innerHTML += `<div class="att-item"><b>${a.userName}</b><span><i class="ri-checkbox-circle-fill"></i> Today</span></div>`;
                     }
                 });
                 document.getElementById("present-count").innerText = count;
+                if(count === 0) list.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.5; padding:10px;">No one present today</p>';
             });
         }
 
         window.clearAttendance = async function() {
-            if(!confirm("Clear everything?")) return;
-            const snap = await getDocs(collection(db, "attendance"));
-            snap.forEach(async (d) => await deleteDoc(doc(db, "attendance", d.id)));
-            showToast("Records Cleared");
+            if(!confirm("Are you sure? This will delete ALL attendance logs forever.")) return;
+            try {
+                const snap = await getDocs(collection(db, "attendance"));
+                const batch = snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
+                await Promise.all(batch);
+                showToast("Records Purged", "#ef4444");
+            } catch(e) { showToast("Error", "#ef4444"); }
         }
 
         function showToast(msg, color = "#22c55e") {
