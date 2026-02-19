@@ -253,7 +253,25 @@
                 document.getElementById("att-pill-text").innerText = "Present";
                 pill.href = "javascript:void(0)";
             }
+            
+            // index.html ki syncData function ke andar add karein
+const today = new Date().toISOString().split('T')[0];
+const tournamentEntryRef = doc(db, "tournament_entries", `${student}_${today}`);
+const tourneySnap = await getDoc(tournamentEntryRef);
+
+if (tourneySnap.exists()) {
+    const tourneyCard = document.querySelector('.tournament-card');
+    const badge = tourneyCard.querySelector('span');
+    badge.innerText = "JOINED";
+    badge.style.background = "#22c55e"; // Green color
+    tourneyCard.href = "javascript:void(0)"; // Link disable kar diya
+    tourneyCard.onclick = () => alert("Aapne aaj ki entry pehle hi le li hai!");
+}
         }
+        
+        
+        
+
 
         window.handleUnitTest = () => {
             if(userXP >= 5000) window.location.href = "unit-test.html";
@@ -262,6 +280,59 @@
 
         loadCache();
         syncData();
+        
+        // tournament.html ki script mein ye logic add karein
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+async function enterTournament() {
+    const student = localStorage.getItem("studentName");
+    if(!student) return alert("Please login first!");
+
+    // 1. Aaj ki date nikalna
+    const today = new Date().toISOString().split('T')[0];
+    const entryId = `${student}_${today}`;
+    const entryRef = doc(db, "tournament_entries", entryId);
+
+    try {
+        // 2. Check karna ki kya aaj entry ho chuki hai
+        const entrySnap = await getDoc(entryRef);
+        
+        if (entrySnap.exists()) {
+            alert("🚫 Access Denied! Aap aaj ki entry le chuke hain. Kal dubara koshish karein.");
+            return; // Function yahi ruk jayega
+        }
+
+        // 3. XP Check karna (Maan lo userXP variable aapke paas hai)
+        if (userXP < 50) {
+            alert("❌ Insufficient XP! Tournament entry ke liye 50 XP chahiye.");
+            return;
+        }
+
+        // 4. Payment aur Entry process
+        if (confirm("Confirm Entry? 50 XP deduct honge.")) {
+            // XP deduct karo
+            await updateDoc(doc(db, "students", student), {
+                xp: increment(-50)
+            });
+
+            // Entry record create karo taaki dubara na kar sake
+            await setDoc(entryRef, {
+                student: student,
+                date: today,
+                timestamp: serverTimestamp(),
+                feePaid: 50
+            });
+
+            alert("✅ Entry Successful! Welcome to the Tournament.");
+            window.location.reload(); // UI update karne ke liye
+        }
+
+    } catch (error) {
+        console.error("Entry error:", error);
+        alert("System Error! Please try again.");
+    }
+}
+
     </script>
 </body>
 </html>
