@@ -156,79 +156,112 @@
         <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.appspot.com",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const student = localStorage.getItem("studentName");
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const student = localStorage.getItem("studentName") || "Guest";
+        let userXP = 0;
 
-    window.enterArena = async () => {
-        if (!student || student === "Guest") return alert("Pehle login karein!");
+        function loadCache() {
+            if(student === "Guest") return;
+            document.getElementById("uName").innerText = student;
+            const cXP = localStorage.getItem("user_xp_cache");
+            const cRank = localStorage.getItem("user_rank_cache");
+            const cStreak = localStorage.getItem("user_streak_cache");
+            const cMsg = localStorage.getItem("marquee_cache");
 
-        const today = new Date().toISOString().split('T')[0];
-        // FIX: Ye ID hi sabse important hai. Isse duplicate nahi hoga.
-        const entryId = `${student}_${today}`; 
-        const entryRef = doc(db, "tournament_entries", entryId);
-
-        try {
-            const entrySnap = await getDoc(entryRef);
-            
-            // CHECK 1: Agar student aaj pehle hi join kar chuka hai
-            if (entrySnap.exists()) {
-                alert("🚫 Entry Closed: Abinash, aap aaj pehle hi join kar chuke ho. Ek din mein ek hi entry allowed hai!");
-                return;
-            }
-
-            // CHECK 2: XP Check (50 XP deduction)
-            const studentRef = doc(db, "students", student);
-            const studentSnap = await getDoc(studentRef);
-            
-            if (!studentSnap.exists()) return alert("Student record not found!");
-            
-            const currentXP = studentSnap.data().xp || 0;
-            if (currentXP < 50) {
-                alert("❌ Tournament join karne ke liye 50 XP chahiye!");
-                return;
-            }
-
-            // PROCESS: Payment + Unique Entry
-            if (confirm("Tournament entry ke liye 50 XP deduct honge?")) {
-                // XP kato
-                await updateDoc(studentRef, { xp: increment(-50) });
-                
-                // Fixed ID ke saath entry save karo (setDoc duplicate nahi hone dega)
-                await setDoc(entryRef, {
-                    student: student,
-                    date: today,
-                    points: 0,
-                    timestamp: serverTimestamp()
-                });
-
-                alert("✅ Entry Successful! All the best.");
-                location.reload(); // Refresh to lock the button
-            }
-        } catch (error) {
-            console.error("Error joining tournament:", error);
-            alert("Kuch gadbad hui. Net check karein.");
+            if(cXP) { userXP = parseInt(cXP); updateXPUI(userXP); }
+            if(cRank) document.getElementById("instRank").innerText = "#" + cRank;
+            if(cStreak) document.getElementById("sCount").innerText = "🔥 " + cStreak + " Days";
+            if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
         }
-    };
-</script>
 
+        function updateXPUI(xp) {
+            document.getElementById("xpVal").innerText = xp + " XP";
+            document.getElementById("xpBar").style.width = Math.min((xp/5000)*100, 100) + "%";
+            if(xp >= 5000) {
+                document.getElementById("unitCard").classList.remove("locked");
+                document.getElementById("unitIcon").className = "ri-shield-flash-line";
+                document.getElementById("lockStatus").style.display = "none";
+                document.getElementById("unitMsg").innerText = "Access Granted";
+                document.getElementById("unitMsg").style.color = "#22c55e";
+            }
+        }
 
+        async function syncData() {
+            onSnapshot(doc(db, "settings", "marquee"), (snap) => {
+                if(snap.exists()){
+                    const newMsg = snap.data().msg;
+                    document.getElementById("marqueeMsg").innerText = newMsg;
+                    localStorage.setItem("marquee_cache", newMsg);
+                }
+            });
 
+            onSnapshot(doc(db, "notices", "main"), (snap) => {
+                if(snap.exists()){
+                    const data = snap.data();
+                    const alertBox = document.getElementById("adminAlert");
+                    if(data.status === "on") {
+                        document.getElementById("alertText").innerText = data.text;
+                        alertBox.style.display = "block";
+                    } else {
+                        alertBox.style.display = "none";
+                    }
+                }
+            });
 
+            if(student === "Guest") return;
 
+            onSnapshot(doc(db, "students", student), (snap) => {
+                if(snap.exists()){
+                    const d = snap.data();
+                    userXP = d.xp || 0;
+                    updateXPUI(userXP);
+                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
+                    localStorage.setItem("user_xp_cache", userXP);
+                    localStorage.setItem("user_streak_cache", d.streak || 0);
+                }
+            });
 
+            const qSnap = await getDocs(collection(db, "students"));
+            let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
+            all.sort((a,b)=>b.xp-a.xp);
+            const r = all.findIndex(s=>s.id === student) + 1;
+            if(r > 0) {
+                document.getElementById("instRank").innerText = "#" + r;
+                localStorage.setItem("user_rank_cache", r);
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            const attSnap = await getDoc(doc(db, "attendance", `${student}_${today}`));
+            if (attSnap.exists()) {
+                const pill = document.getElementById("att-pill");
+                pill.classList.remove("pulse"); pill.classList.add("done");
+                document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
+                document.getElementById("att-pill-text").innerText = "Present";
+                pill.href = "javascript:void(0)";
+            }
+        }
+
+        window.handleUnitTest = () => {
+            if(userXP >= 5000) window.location.href = "unit-test.html";
+            else alert("🔒 Terminal Locked. Earn 5000 XP to access Unit Tests.");
+        };
+
+        loadCache();
+        syncData();
+    </script>
 </body>
 </html>
