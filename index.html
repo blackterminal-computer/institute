@@ -139,13 +139,20 @@
         <div class="marquee-content" id="marqueeMsg">Syncing with terminal...</div>
     </div>
 
-   <div class="xp-card">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span id="uNameXP" style="font-weight:800; font-size: 15px;">Loading...</span>
+ <div class="xp-card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 8px;">
+        <div>
+            <span id="uLevelBadge" style="background:var(--primary); color:white; font-size:9px; padding:2px 8px; border-radius:4px; font-weight:900; text-transform:uppercase; display:block; width:fit-content; margin-bottom:4px;">Level 1</span>
+            <span id="uNameXP" style="font-weight:800; font-size: 15px;">Loading...</span>
+        </div>
         <span id="xpVal" style="color:var(--accent); font-weight:800;">0 XP</span>
     </div>
     <div class="progress-track"><div class="progress-fill" id="xpBar"></div></div>
+    <p id="xpTip" style="font-size: 10px; margin-top: 10px; color: var(--accent); display: flex; align-items: center; gap: 5px;">
+        <i class="ri-flashlight-fill" style="color:var(--gold)"></i> <span>Loading milestone...</span>
+    </p>
 </div>
+
 
 
     <div class="rank-section">
@@ -233,16 +240,37 @@ if(nameXP) nameXP.innerText = student;
         }
 
         function updateXPUI(xp) {
-            document.getElementById("xpVal").innerText = xp + " XP";
-            document.getElementById("xpBar").style.width = Math.min((xp/5000)*100, 100) + "%";
-            if(xp >= 5000) {
-                document.getElementById("unitCard").classList.remove("locked");
-                document.getElementById("unitIcon").className = "ri-shield-flash-line";
-                document.getElementById("lockStatus").style.display = "none";
-                document.getElementById("unitMsg").innerText = "Access Granted";
-                document.getElementById("unitMsg").style.color = "#22c55e";
-            }
+    const currentXP = parseInt(xp) || 0;
+    document.getElementById("xpVal").innerText = currentXP + " XP";
+    
+    // Progress bar logic (har 1000 XP par bar reset hoga)
+    document.getElementById("xpBar").style.width = ((currentXP % 1000) / 1000 * 100) + "%";
+    
+    // Level Calculation: 0-999 = Lvl 1, 1000-1999 = Lvl 2...
+    const currentLevel = Math.floor(currentXP / 1000) + 1;
+    const nextMilestone = currentLevel * 1000;
+    const xpNeeded = nextMilestone - currentXP;
+
+    // UI Update
+    document.getElementById("uLevelBadge").innerText = "Level " + currentLevel;
+    document.getElementById("xpTip").innerHTML = `<i class="ri-flashlight-fill" style="color:#facc15"></i> Only <b>${xpNeeded} XP</b> for <b>Level ${currentLevel + 1}</b>`;
+
+    // Celebration Logic (Wahi purana wala)
+    const lastLvl = localStorage.getItem("last_lvl");
+    if(lastLvl && currentLevel > parseInt(lastLvl)) celebrateLevelUp(currentLevel);
+    localStorage.setItem("last_lvl", currentLevel);
+
+    // Unit Test Unlock logic
+    if(currentXP >= 5000) {
+        const uc = document.getElementById("unitCard");
+        if(uc) {
+            uc.classList.remove("locked");
+            document.getElementById("unitIcon").className = "ri-shield-flash-line";
+            document.getElementById("unitMsg").innerText = "Unlocked";
         }
+    }
+}
+
 
         async function syncData() {
             onSnapshot(doc(db, "settings", "marquee"), (snap) => {
