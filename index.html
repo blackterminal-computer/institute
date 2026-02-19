@@ -156,9 +156,10 @@
         <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
-    <script type="module">
+       <script type="module">
+        // 1. SARE IMPORTS TOP PAR (FIXED)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -244,7 +245,10 @@
                 localStorage.setItem("user_rank_cache", r);
             }
 
+            // --- ATTENDANCE & TOURNAMENT CHECK (FIXED DUPLICATION) ---
             const today = new Date().toISOString().split('T')[0];
+            
+            // Attendance Check
             const attSnap = await getDoc(doc(db, "attendance", `${student}_${today}`));
             if (attSnap.exists()) {
                 const pill = document.getElementById("att-pill");
@@ -254,85 +258,65 @@
                 pill.href = "javascript:void(0)";
             }
             
-            // index.html ki syncData function ke andar add karein
-const today = new Date().toISOString().split('T')[0];
-const tournamentEntryRef = doc(db, "tournament_entries", `${student}_${today}`);
-const tourneySnap = await getDoc(tournamentEntryRef);
+            // Tournament Join Check (FIXED)
+            const tournamentEntryRef = doc(db, "tournament_entries", `${student}_${today}`);
+            const tourneySnap = await getDoc(tournamentEntryRef);
 
-if (tourneySnap.exists()) {
-    const tourneyCard = document.querySelector('.tournament-card');
-    const badge = tourneyCard.querySelector('span');
-    badge.innerText = "JOINED";
-    badge.style.background = "#22c55e"; // Green color
-    tourneyCard.href = "javascript:void(0)"; // Link disable kar diya
-    tourneyCard.onclick = () => alert("Aapne aaj ki entry pehle hi le li hai!");
-}
+            if (tourneySnap.exists()) {
+                const tourneyCard = document.querySelector('.tournament-card');
+                const badge = tourneyCard.querySelector('span');
+                badge.innerText = "JOINED";
+                badge.style.background = "#22c55e"; 
+                tourneyCard.href = "javascript:void(0)"; 
+                tourneyCard.onclick = () => alert("Aapne aaj ki entry pehle hi le li hai!");
+            }
         }
-        
-        
-        
-
 
         window.handleUnitTest = () => {
             if(userXP >= 5000) window.location.href = "unit-test.html";
             else alert("🔒 Terminal Locked. Earn 5000 XP to access Unit Tests.");
         };
 
+        // --- GLOBAL TOURNAMENT FUNCTION (FIXED) ---
+        window.enterTournament = async () => {
+            if(student === "Guest") return alert("Please login first!");
+
+            const todayDate = new Date().toISOString().split('T')[0];
+            const entryId = `${student}_${todayDate}`;
+            const entryRef = doc(db, "tournament_entries", entryId);
+
+            try {
+                const entrySnap = await getDoc(entryRef);
+                if (entrySnap.exists()) {
+                    alert("🚫 Access Denied! Aap aaj ki entry le chuke hain.");
+                    return;
+                }
+
+                if (userXP < 50) {
+                    alert("❌ Insufficient XP! 50 XP required.");
+                    return;
+                }
+
+                if (confirm("Confirm Entry? 50 XP deduct honge.")) {
+                    await updateDoc(doc(db, "students", student), { xp: increment(-50) });
+                    await setDoc(entryRef, {
+                        student: student,
+                        date: todayDate,
+                        timestamp: serverTimestamp(),
+                        feePaid: 50
+                    });
+                    alert("✅ Entry Successful!");
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error(error);
+                alert("System Error!");
+            }
+        };
+
         loadCache();
         syncData();
-        
-        // tournament.html ki script mein ye logic add karein
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-async function enterTournament() {
-    const student = localStorage.getItem("studentName");
-    if(!student) return alert("Please login first!");
-
-    // 1. Aaj ki date nikalna
-    const today = new Date().toISOString().split('T')[0];
-    const entryId = `${student}_${today}`;
-    const entryRef = doc(db, "tournament_entries", entryId);
-
-    try {
-        // 2. Check karna ki kya aaj entry ho chuki hai
-        const entrySnap = await getDoc(entryRef);
-        
-        if (entrySnap.exists()) {
-            alert("🚫 Access Denied! Aap aaj ki entry le chuke hain. Kal dubara koshish karein.");
-            return; // Function yahi ruk jayega
-        }
-
-        // 3. XP Check karna (Maan lo userXP variable aapke paas hai)
-        if (userXP < 50) {
-            alert("❌ Insufficient XP! Tournament entry ke liye 50 XP chahiye.");
-            return;
-        }
-
-        // 4. Payment aur Entry process
-        if (confirm("Confirm Entry? 50 XP deduct honge.")) {
-            // XP deduct karo
-            await updateDoc(doc(db, "students", student), {
-                xp: increment(-50)
-            });
-
-            // Entry record create karo taaki dubara na kar sake
-            await setDoc(entryRef, {
-                student: student,
-                date: today,
-                timestamp: serverTimestamp(),
-                feePaid: 50
-            });
-
-            alert("✅ Entry Successful! Welcome to the Tournament.");
-            window.location.reload(); // UI update karne ke liye
-        }
-
-    } catch (error) {
-        console.error("Entry error:", error);
-        alert("System Error! Please try again.");
-    }
-}
-
     </script>
+
 </body>
 </html>
