@@ -156,9 +156,9 @@
         <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
-      <script type="module">
+     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // 1. Firebase Configuration
     const firebaseConfig = {
@@ -173,96 +173,126 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const student = localStorage.getItem("studentName") || "Guest";
+    let userXP = 0;
 
-    // --- FUNCTION: ENTER ARENA (WITH LOCK) ---
-    window.enterArena = async () => {
-        if(student === "Guest") return alert("Pehle login karein!");
+    // 2. Cache Loader (Fast UI)
+    function loadCache() {
+        if(student === "Guest") return;
+        document.getElementById("uName").innerText = student;
+        const cXP = localStorage.getItem("user_xp_cache");
+        const cRank = localStorage.getItem("user_rank_cache");
+        const cStreak = localStorage.getItem("user_streak_cache");
+        const cMsg = localStorage.getItem("marquee_cache");
 
-        const today = new Date().toISOString().split('T')[0];
-        // UNIQUE ID: Student Name + Date (Isse duplicate entry impossible hai)
-        const entryId = `${student}_${today}`;
-        const entryRef = doc(db, "tournament_entries", entryId);
-
-        try {
-            const entrySnap = await getDoc(entryRef);
-            
-            // CHECK 1: Agar record pehle se hai
-            if (entrySnap.exists()) {
-                alert("🚫 Entry Denied: Aap aaj pehle hi join kar chuke hain. Kal dubara aaiye!");
-                return;
-            }
-
-            // CHECK 2: XP Check
-            const studentRef = doc(db, "students", student);
-            const studentSnap = await getDoc(studentRef);
-            const currentXP = studentSnap.data().xp || 0;
-
-            if (currentXP < 50) {
-                alert("❌ Kam se kam 50 XP chahiye enter karne ke liye!");
-                return;
-            }
-
-            // PROCESS: Paisa kato aur entry fix karo
-            if (confirm("Tournament join karne ke liye 50 XP deduct honge. Confirm?")) {
-                await updateDoc(studentRef, { xp: increment(-50) });
-                
-                await setDoc(entryRef, {
-                    student: student,
-                    date: today,
-                    points: 0, // Shuruat 0 se
-                    timestamp: serverTimestamp()
-                });
-
-                alert("✅ Welcome to the Arena! All the best.");
-                location.reload();
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Technical error! Try again.");
-        }
-    };
-
-    // --- FUNCTION: LIVE RANKING (UNIQUE LIST) ---
-    function loadLiveRanking() {
-        const today = new Date().toISOString().split('T')[0];
-        const q = query(collection(db, "tournament_entries"), orderBy("points", "desc"));
-
-        onSnapshot(q, (snapshot) => {
-            const rankingList = document.getElementById("ranking-list"); // Make sure your HTML has this ID
-            if(!rankingList) return;
-
-            rankingList.innerHTML = "";
-            let rank = 1;
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                // Sirf aaj ke players dikhane ke liye (Optional)
-                if(data.date === today) {
-                    rankingList.innerHTML += `
-                        <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl mb-2 border border-white/5">
-                            <div class="flex items-center gap-3">
-                                <span class="text-accent font-800 text-xs">#${rank}</span>
-                                <span class="font-600 text-sm">${data.student}</span>
-                            </div>
-                            <span class="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-[10px] font-800">
-                                ${data.points} pts
-                            </span>
-                        </div>
-                    `;
-                    rank++;
-                }
-            });
-            
-            // Update Player Count
-            const playerCount = document.getElementById("player-count");
-            if(playerCount) playerCount.innerText = `🔥 ${snapshot.size} Players Joined`;
-        });
+        if(cXP) { userXP = parseInt(cXP); updateXPUI(userXP); }
+        if(cRank) document.getElementById("instRank").innerText = "#" + cRank;
+        if(cStreak) document.getElementById("sCount").innerText = "🔥 " + cStreak + " Days";
+        if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
     }
 
-    // Initialize
-    loadLiveRanking();
+    // 3. XP UI Progress Bar
+    function updateXPUI(xp) {
+        document.getElementById("xpVal").innerText = xp + " XP";
+        document.getElementById("xpBar").style.width = Math.min((xp/5000)*100, 100) + "%";
+        if(xp >= 5000) {
+            const unitCard = document.getElementById("unitCard");
+            unitCard.classList.remove("locked");
+            document.getElementById("unitIcon").className = "ri-shield-flash-line";
+            document.getElementById("lockStatus").style.display = "none";
+            document.getElementById("unitMsg").innerText = "Access Granted";
+            document.getElementById("unitMsg").style.color = "#22c55e";
+        }
+    }
 
+    // 4. Real-time Data Sync
+    async function syncData() {
+        // Marquee Sync
+        onSnapshot(doc(db, "settings", "marquee"), (snap) => {
+            if(snap.exists()){
+                const newMsg = snap.data().msg;
+                document.getElementById("marqueeMsg").innerText = newMsg;
+                localStorage.setItem("marquee_cache", newMsg);
+            }
+        });
+
+        // Notice Alert Sync
+        onSnapshot(doc(db, "notices", "main"), (snap) => {
+            if(snap.exists()){
+                const data = snap.data();
+                const alertBox = document.getElementById("adminAlert");
+                if(data.status === "on") {
+                    document.getElementById("alertText").innerText = data.text;
+                    alertBox.style.display = "block";
+                } else {
+                    alertBox.style.display = "none";
+                }
+            }
+        });
+
+        if(student === "Guest") return;
+
+        // Student Profile Sync
+        onSnapshot(doc(db, "students", student), (snap) => {
+            if(snap.exists()){
+                const d = snap.data();
+                userXP = d.xp || 0;
+                updateXPUI(userXP);
+                document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
+                localStorage.setItem("user_xp_cache", userXP);
+                localStorage.setItem("user_streak_cache", d.streak || 0);
+            }
+        });
+
+        // Rank Calculator
+        const qSnap = await getDocs(collection(db, "students"));
+        let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
+        all.sort((a,b)=>b.xp-a.xp);
+        const r = all.findIndex(s=>s.id === student) + 1;
+        if(r > 0) {
+            document.getElementById("instRank").innerText = "#" + r;
+            localStorage.setItem("user_rank_cache", r);
+        }
+
+        // --- ATTENDANCE & TOURNAMENT LOCK ---
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Attendance Check
+        const attSnap = await getDoc(doc(db, "attendance", `${student}_${today}`));
+        if (attSnap.exists()) {
+            const pill = document.getElementById("att-pill");
+            pill.classList.remove("pulse"); pill.classList.add("done");
+            document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
+            document.getElementById("att-pill-text").innerText = "Present";
+            pill.href = "javascript:void(0)";
+        }
+
+        // Tournament Entry Double-Check (Block Duplicates)
+        const tourneyRef = doc(db, "tournament_entries", `${student}_${today}`);
+        const tourneySnap = await getDoc(tourneyRef);
+        if (tourneySnap.exists()) {
+            const tourneyCard = document.querySelector('.tournament-card');
+            const badge = tourneyCard.querySelector('span'); // LIVE badge
+            badge.innerText = "JOINED";
+            badge.style.background = "#22c55e"; // Success Green
+            tourneyCard.href = "javascript:void(0)";
+            tourneyCard.onclick = (e) => {
+                e.preventDefault();
+                alert("🚫 Limit Reached: Aapne aaj ki entry pehle hi le li hai!");
+            };
+        }
+    }
+
+    // Unit Test Lock Logic
+    window.handleUnitTest = () => {
+        if(userXP >= 5000) window.location.href = "unit-test.html";
+        else alert("🔒 Terminal Locked. Earn 5000 XP to access Unit Tests.");
+    };
+
+    // Start everything
+    loadCache();
+    syncData();
 </script>
+
 
 
 </body>
