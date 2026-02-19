@@ -87,6 +87,18 @@
         .nav-link { color: #64748b; text-decoration: none; text-align: center; font-size: 10px; font-weight: 700; transition: 0.2s; }
         .nav-link.active { color: var(--accent); }
         .nav-link i { font-size: 22px; display: block; margin-bottom: 2px; }
+        
+        
+        
+        .premium-header { padding: 25px 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+.user-meta { display: flex; align-items: center; gap: 12px; }
+.avatar-box { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); overflow: hidden; background: var(--glass); }
+.avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+.rank-badge { font-size: 8px; font-weight: 900; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; margin-bottom: 2px; display: inline-block; }
+.badge-gold { background: rgba(250, 204, 21, 0.2); color: #facc15; border: 0.5px solid #facc15; }
+.badge-silver { background: rgba(203, 213, 225, 0.2); color: #cbd5e1; border: 0.5px solid #cbd5e1; }
+.badge-bronze { background: rgba(205, 127, 50, 0.2); color: #cd7f32; border: 0.5px solid #cd7f32; }
+
     </style>
 </head>
 <body>
@@ -106,10 +118,22 @@
         <span id="att-pill-text">Attendance</span>
     </a>
 
-    <header>
-        <div class="logo">Black<span>Terminal</span></div>
-        <div class="streak-badge" id="sCount">🔥 0 Days</div>
-    </header>
+  <header class="premium-header">
+    <div class="user-meta">
+        <div class="avatar-box">
+            <img id="uAvatar" src="" alt="Avatar">
+        </div>
+        <div>
+            <div id="rankBadge" class="rank-badge">Elite Rank</div>
+            <p id="greetText" style="font-size: 10px; opacity: 0.5; font-weight: 800; text-transform: uppercase;">Syncing...</p>
+            <h2 id="uName" style="font-size: 18px; font-weight: 800;">Student</h2>
+        </div>
+    </div>
+    <div id="sCount" style="background:rgba(255,100,0,0.1); color:#ff6400; padding:8px 15px; border-radius:15px; font-weight:800; font-size:12px;">🔥 0 Days</div>
+</header>
+
+
+
 
     <div class="marquee-container">
         <div class="marquee-content" id="marqueeMsg">Syncing with terminal...</div>
@@ -242,6 +266,27 @@
             onSnapshot(doc(db, "students", student), (snap) => {
                 if(snap.exists()){
                     const d = snap.data();
+                    // --- 1. NAME & BASIC DATA ---
+document.getElementById("uName").innerText = student;
+document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
+
+// --- 2. DYNAMIC GREETING ---
+const hour = new Date().getHours();
+let greeting = hour < 12 ? "Good Morning, Elite" : (hour < 17 ? "Keep Grinding, Agent" : "Burning the midnight oil?");
+document.getElementById("greetText").innerText = greeting;
+
+// --- 3. UNIQUE AVATAR ---
+document.getElementById("uAvatar").src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+
+// --- 4. RANK BADGE LOGIC ---
+const currentXP = d.xp || 0;
+const badge = document.getElementById("rankBadge");
+if(badge) {
+    if (currentXP >= 5000) { badge.innerText = "Gold Elite"; badge.className = "rank-badge badge-gold"; }
+    else if (currentXP >= 2000) { badge.innerText = "Silver Elite"; badge.className = "rank-badge badge-silver"; }
+    else { badge.innerText = "Bronze Trainee"; badge.className = "rank-badge badge-bronze"; }
+}
+
                     userXP = d.xp || 0;
                     updateXPUI(userXP);
                     document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
