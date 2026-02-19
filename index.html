@@ -156,9 +156,9 @@
         <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
-  <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -171,94 +171,60 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    // Global variable to use everywhere
     const student = localStorage.getItem("studentName");
-    let userXP = 0;
 
-    function updateXPUI(xp) {
-        const xpVal = document.getElementById("xpVal");
-        const xpBar = document.getElementById("xpBar");
-        if(xpVal) xpVal.innerText = xp + " XP";
-        if(xpBar) xpBar.style.width = Math.min((xp/5000)*100, 100) + "%";
-        
-        if(xp >= 5000) {
-            const unitCard = document.getElementById("unitCard");
-            if(unitCard) {
-                unitCard.classList.remove("locked");
-                document.getElementById("unitIcon").className = "ri-shield-flash-line";
-                document.getElementById("lockStatus").style.display = "none";
-                document.getElementById("unitMsg").innerText = "Access Granted";
-                document.getElementById("unitMsg").style.color = "#22c55e";
-            }
-        }
-    }
+    window.enterArena = async () => {
+        if (!student || student === "Guest") return alert("Pehle login karein!");
 
-    async function syncEverything() {
-        // 1. Public Marquee Sync
-        onSnapshot(doc(db, "settings", "marquee"), (snap) => {
-            if(snap.exists()) document.getElementById("marqueeMsg").innerText = snap.data().msg;
-        });
-
-        if(!student || student === "Guest") {
-            console.log("No student logged in.");
-            return;
-        }
-
-        document.getElementById("uName").innerText = student;
-
-        // 2. Student Data Sync (XP & Streak)
-        onSnapshot(doc(db, "students", student), (snap) => {
-            if(snap.exists()){
-                const d = snap.data();
-                userXP = d.xp || 0;
-                updateXPUI(userXP);
-                document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
-            }
-        });
-
-        // 3. Tournament Entry Real-time Lock
         const today = new Date().toISOString().split('T')[0];
-        const tourneyId = `${student}_${today}`;
-        
-        onSnapshot(doc(db, "tournament_entries", tourneyId), (snap) => {
-            if (snap.exists()) {
-                const tourneyCard = document.querySelector('.tournament-card');
-                const badge = tourneyCard.querySelector('span');
-                
-                if(badge) {
-                    badge.innerText = "JOINED";
-                    badge.style.background = "var(--success)"; 
-                }
-                
-                // Disable clicking
-                tourneyCard.onclick = (e) => {
-                    e.preventDefault();
-                    alert("Aap aaj pehle hi join kar chuke hain! Kal aana.");
-                };
-                tourneyCard.setAttribute('href', 'javascript:void(0)');
+        // FIX: Ye ID hi sabse important hai. Isse duplicate nahi hoga.
+        const entryId = `${student}_${today}`; 
+        const entryRef = doc(db, "tournament_entries", entryId);
+
+        try {
+            const entrySnap = await getDoc(entryRef);
+            
+            // CHECK 1: Agar student aaj pehle hi join kar chuka hai
+            if (entrySnap.exists()) {
+                alert("🚫 Entry Closed: Abinash, aap aaj pehle hi join kar chuke ho. Ek din mein ek hi entry allowed hai!");
+                return;
             }
-        });
-        
-        // 4. Rank Calculation (Static check)
-        const qSnap = await getDocs(collection(db, "students"));
-        let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
-        all.sort((a,b)=>b.xp-a.xp);
-        const r = all.findIndex(s=>s.id === student) + 1;
-        if(r > 0) document.getElementById("instRank").innerText = "#" + r;
-    }
 
-    // Handle Unit Test Click
-    window.handleUnitTest = () => {
-        if(userXP >= 5000) window.location.href = "unit-test.html";
-        else alert("🔒 Terminal Locked. Earn 5000 XP.");
+            // CHECK 2: XP Check (50 XP deduction)
+            const studentRef = doc(db, "students", student);
+            const studentSnap = await getDoc(studentRef);
+            
+            if (!studentSnap.exists()) return alert("Student record not found!");
+            
+            const currentXP = studentSnap.data().xp || 0;
+            if (currentXP < 50) {
+                alert("❌ Tournament join karne ke liye 50 XP chahiye!");
+                return;
+            }
+
+            // PROCESS: Payment + Unique Entry
+            if (confirm("Tournament entry ke liye 50 XP deduct honge?")) {
+                // XP kato
+                await updateDoc(studentRef, { xp: increment(-50) });
+                
+                // Fixed ID ke saath entry save karo (setDoc duplicate nahi hone dega)
+                await setDoc(entryRef, {
+                    student: student,
+                    date: today,
+                    points: 0,
+                    timestamp: serverTimestamp()
+                });
+
+                alert("✅ Entry Successful! All the best.");
+                location.reload(); // Refresh to lock the button
+            }
+        } catch (error) {
+            console.error("Error joining tournament:", error);
+            alert("Kuch gadbad hui. Net check karein.");
+        }
     };
-
-    // Run when page is ready
-    document.addEventListener("DOMContentLoaded", () => {
-        syncEverything();
-    });
 </script>
+
 
 
 
