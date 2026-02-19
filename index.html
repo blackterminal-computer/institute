@@ -156,11 +156,10 @@
         <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
-     <script type="module">
+   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // 1. Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -175,7 +174,6 @@
     const student = localStorage.getItem("studentName") || "Guest";
     let userXP = 0;
 
-    // 2. Cache Loader (Fast UI)
     function loadCache() {
         if(student === "Guest") return;
         document.getElementById("uName").innerText = student;
@@ -190,7 +188,6 @@
         if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
     }
 
-    // 3. XP UI Progress Bar
     function updateXPUI(xp) {
         document.getElementById("xpVal").innerText = xp + " XP";
         document.getElementById("xpBar").style.width = Math.min((xp/5000)*100, 100) + "%";
@@ -200,98 +197,52 @@
             document.getElementById("unitIcon").className = "ri-shield-flash-line";
             document.getElementById("lockStatus").style.display = "none";
             document.getElementById("unitMsg").innerText = "Access Granted";
-            document.getElementById("unitMsg").style.color = "#22c55e";
         }
     }
 
-    // 4. Real-time Data Sync
     async function syncData() {
-        // Marquee Sync
         onSnapshot(doc(db, "settings", "marquee"), (snap) => {
-            if(snap.exists()){
-                const newMsg = snap.data().msg;
-                document.getElementById("marqueeMsg").innerText = newMsg;
-                localStorage.setItem("marquee_cache", newMsg);
-            }
-        });
-
-        // Notice Alert Sync
-        onSnapshot(doc(db, "notices", "main"), (snap) => {
-            if(snap.exists()){
-                const data = snap.data();
-                const alertBox = document.getElementById("adminAlert");
-                if(data.status === "on") {
-                    document.getElementById("alertText").innerText = data.text;
-                    alertBox.style.display = "block";
-                } else {
-                    alertBox.style.display = "none";
-                }
-            }
+            if(snap.exists()) document.getElementById("marqueeMsg").innerText = snap.data().msg;
         });
 
         if(student === "Guest") return;
 
-        // Student Profile Sync
         onSnapshot(doc(db, "students", student), (snap) => {
             if(snap.exists()){
                 const d = snap.data();
                 userXP = d.xp || 0;
                 updateXPUI(userXP);
                 document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
-                localStorage.setItem("user_xp_cache", userXP);
-                localStorage.setItem("user_streak_cache", d.streak || 0);
             }
         });
 
-        // Rank Calculator
-        const qSnap = await getDocs(collection(db, "students"));
-        let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
-        all.sort((a,b)=>b.xp-a.xp);
-        const r = all.findIndex(s=>s.id === student) + 1;
-        if(r > 0) {
-            document.getElementById("instRank").innerText = "#" + r;
-            localStorage.setItem("user_rank_cache", r);
-        }
-
-        // --- ATTENDANCE & TOURNAMENT LOCK ---
+        // Tournament Lock Logic
         const today = new Date().toISOString().split('T')[0];
-        
-        // Attendance Check
-        const attSnap = await getDoc(doc(db, "attendance", `${student}_${today}`));
-        if (attSnap.exists()) {
-            const pill = document.getElementById("att-pill");
-            pill.classList.remove("pulse"); pill.classList.add("done");
-            document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
-            document.getElementById("att-pill-text").innerText = "Present";
-            pill.href = "javascript:void(0)";
-        }
-
-        // Tournament Entry Double-Check (Block Duplicates)
         const tourneyRef = doc(db, "tournament_entries", `${student}_${today}`);
         const tourneySnap = await getDoc(tourneyRef);
+        
         if (tourneySnap.exists()) {
             const tourneyCard = document.querySelector('.tournament-card');
-            const badge = tourneyCard.querySelector('span'); // LIVE badge
+            const badge = tourneyCard.querySelector('span');
             badge.innerText = "JOINED";
-            badge.style.background = "#22c55e"; // Success Green
-            tourneyCard.href = "javascript:void(0)";
+            badge.style.background = "#22c55e"; 
+            tourneyCard.href = "javascript:void(0)"; 
             tourneyCard.onclick = (e) => {
                 e.preventDefault();
-                alert("🚫 Limit Reached: Aapne aaj ki entry pehle hi le li hai!");
+                alert("Aapne aaj ki entry le li hai!");
             };
         }
     }
 
-    // Unit Test Lock Logic
     window.handleUnitTest = () => {
         if(userXP >= 5000) window.location.href = "unit-test.html";
-        else alert("🔒 Terminal Locked. Earn 5000 XP to access Unit Tests.");
+        else alert("🔒 Earn 5000 XP to access.");
     };
 
-    // Start everything
     loadCache();
     syncData();
 </script>
+
 
 
 
