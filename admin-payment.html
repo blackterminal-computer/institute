@@ -1,189 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Admin | Payment Control</title>
+    <meta charset="UTF-8">
+    <title>BT | Smart Fee Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root {
-            --bg: #020617;
-            --card: #0f172a;
-            --primary: #6366f1;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-        }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; }
-        
-        .header { position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 10; border-bottom: 1px solid #1e293b; margin-bottom: 20px; }
-        .header h2 { margin: 0; font-size: 20px; }
-        
-        /* Summary Box */
-        .summary { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .sum-card { background: var(--card); padding: 10px 20px; border-radius: 12px; min-width: 100px; border: 1px solid #1e293b; }
-        .sum-card small { opacity: 0.6; font-size: 11px; text-transform: uppercase; }
-        .sum-card div { font-size: 18px; font-weight: bold; color: var(--primary); }
-
-        /* Search Bar */
-        #search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #1e293b; background: var(--card); color: white; box-sizing: border-box; margin-bottom: 15px; }
-
-        /* Student Card */
-        .student-list { display: flex; flex-direction: column; gap: 12px; }
-        .student-card { background: var(--card); border-radius: 16px; padding: 16px; border: 1px solid #1e293b; position: relative; }
-        
-        .s-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .s-name { font-size: 18px; font-weight: bold; margin: 0; }
-        .s-xp { font-size: 12px; background: rgba(250, 204, 21, 0.1); color: #facc15; padding: 2px 8px; border-radius: 6px; }
-
-        /* Status Tags */
-        .badge { font-size: 10px; padding: 4px 8px; border-radius: 5px; font-weight: bold; text-transform: uppercase; }
-        .badge-overdue { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-        .badge-paid { background: rgba(34, 197, 94, 0.1); color: var(--success); }
-        .badge-complete { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
-
-        .date-text { font-size: 11px; opacity: 0.5; margin-top: 5px; }
-
-        /* Action Buttons Grid */
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
-        .btn { border: none; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
-        .btn-paid { background: var(--success); }
-        .btn-comp { background: var(--primary); }
-        .btn-reset { background: #334155; }
-        .btn-del { background: var(--danger); grid-column: span 2; opacity: 0.8; }
-        .btn:active { transform: scale(0.95); }
-
+        body { background: #020617; color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        .admin-box { background: rgba(255,255,255,0.03); padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); max-width: 450px; margin: 40px auto; backdrop-filter: blur(10px); }
+        h2 { text-align: center; color: #6366f1; margin-bottom: 25px; font-size: 24px; }
+        label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        select, input { width: 100%; padding: 14px; margin-bottom: 20px; border-radius: 12px; border: 1px solid #1e293b; background: #0f172a; color: white; font-size: 15px; outline: none; }
+        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-paid { background: linear-gradient(90deg, #22c55e, #16a34a); color: white; }
+        .btn-unpaid { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .info-note { font-size: 11px; color: #64748b; margin-top: 15px; text-align: center; line-height: 1.5; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2>💳 Payment Control</h2>
-</div>
+    <div class="admin-box">
+        <h2><i class="ri-shield-user-line"></i> Fee Manager</h2>
+        
+        <label>Select Student ID</label>
+        <select id="studentList">
+            <option value="">Loading students...</option>
+        </select>
+        
+        <label>Month</label>
+        <input type="text" id="targetMonth" value="February 2026">
 
-<div class="summary">
-    <div class="sum-card"><small>Total</small><div id="totalCount">0</div></div>
-    <div class="sum-card"><small>Paid</small><div id="paidCount" style="color: var(--success)">0</div></div>
-    <div class="sum-card"><small>Overdue</small><div id="overdueCount" style="color: var(--danger)">0</div></div>
-</div>
+        <button class="btn btn-paid" onclick="processFee('Paid')">MARK AS PAID & PROCESS XP</button>
+        <button class="btn btn-unpaid" onclick="processFee('Pending')">MARK AS PENDING (-200 XP)</button>
 
-<input type="text" id="search" placeholder="🔍 Search student name..." oninput="filterStudents()">
+        <div class="info-note">
+            <b>XP Logic:</b><br>
+            1-10 Tarik: +100 XP Bonus <br>
+            After 10th: -200 XP Penalty
+        </div>
+    </div>
 
-<div id="list" class="student-list">Loading Database...</div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, updateDoc, increment, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDocs, collection, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.appspot.com",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
-    };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+        // --- Dropdown mein Students Load karna ---
+        async function loadStudents() {
+            const dropdown = document.getElementById('studentList');
+            const querySnapshot = await getDocs(collection(db, "students"));
+            dropdown.innerHTML = '<option value="">-- Choose Student --</option>';
+            
+            querySnapshot.forEach((doc) => {
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = doc.id; // Student Name/ID
+                dropdown.appendChild(option);
+            });
+        }
 
-    let allData = [];
+        // --- Fee & XP Processing ---
+        window.processFee = async (status) => {
+            const studentId = document.getElementById('studentList').value;
+            const month = document.getElementById('targetMonth').value;
+            const today = new Date().getDate(); // Aaj ki tarik (1-31)
 
-    async function autoFetchStudents() {
-        let studentsSnap = await getDocs(collection(db, "students"));
-        let paySnap = await getDocs(collection(db, "payments"));
-        let existing = paySnap.docs.map(d => d.id);
+            if(!studentId) return alert("Bhai, pehle student toh select karo!");
 
-        for (let d of studentsSnap.docs) {
-            if (!existing.includes(d.id)) {
-                await setDoc(doc(db, "payments", d.id), { name: d.id, status: "OVERDUE", lastPaid: "" });
+            try {
+                const sRef = doc(db, "students", studentId);
+                let xpChange = 0;
+
+                if(status === 'Paid') {
+                    // Logic: 1-10 tarik tak +100, uske baad -200
+                    if(today <= 10) {
+                        xpChange = 100;
+                        alert("Time par payment! +100 XP Reward diya gaya.");
+                    } else {
+                        xpChange = -200;
+                        alert("Late payment! -200 XP Penalty lag gayi.");
+                    }
+                } else {
+                    // Pending status par seedha penalty
+                    xpChange = -200;
+                    alert("Status Pending: -200 XP Penalty apply ho gayi.");
+                }
+
+                await updateDoc(sRef, {
+                    paymentStatus: status,
+                    lastPaymentMonth: month,
+                    xp: increment(xpChange)
+                });
+
+                alert("Database Updated Successfully!");
+            } catch (e) {
+                console.error(e);
+                alert("Kucch gadbad hui! Database check karein.");
             }
-        }
-    }
+        };
 
-    window.markPaid = async function(name) {
-        let today = new Date().toLocaleDateString('en-GB');
-        await updateDoc(doc(db, "payments", name), { status: "PAID", lastPaid: today });
-        load();
-    }
-
-    window.complete = async function(name) {
-        await updateDoc(doc(db, "payments", name), { status: "COMPLETED" });
-        load();
-    }
-
-    window.resetXP = async function(name) {
-        if (confirm(`Reset XP for ${name}?`)) {
-            await updateDoc(doc(db, "students", name), { xp: 0 });
-            load();
-        }
-    }
-
-    window.del = async function(name) {
-        if (confirm(`Permanent Delete ${name}?`)) {
-            await deleteDoc(doc(db, "payments", name));
-            await deleteDoc(doc(db, "students", name));
-            load();
-        }
-    }
-
-    async function load() {
-        await autoFetchStudents();
-        const paySnap = await getDocs(collection(db, "payments"));
-        const studentSnap = await getDocs(collection(db, "students"));
-
-        let xpMap = {};
-        studentSnap.forEach(d => xpMap[d.id] = d.data().xp || 0);
-
-        allData = [];
-        paySnap.forEach(d => {
-            allData.push({ ...d.data(), xp: xpMap[d.id] || 0 });
-        });
-
-        render(allData);
-    }
-
-    function render(data) {
-        let html = "";
-        let paid = 0, overdue = 0;
-
-        data.forEach((s, index) => {
-            let badge = `<span class="badge badge-overdue">Overdue</span>`;
-            if (s.status == "PAID") { badge = `<span class="badge badge-paid">Paid</span>`; paid++; }
-            else if (s.status == "COMPLETED") { badge = `<span class="badge badge-complete">Completed</span>`; }
-            else { overdue++; }
-
-            html += `
-            <div class="student-card">
-                <div class="s-header">
-                    <div>
-                        <p class="s-name">${index + 1}. ${s.name}</p>
-                        <span class="s-xp">⭐ ${s.xp} XP</span>
-                    </div>
-                    ${badge}
-                </div>
-                <div class="date-text">${s.lastPaid ? "Last payment: " + s.lastPaid : "No payment record"}</div>
-                
-                <div class="actions">
-                    <button class="btn btn-paid" onclick="markPaid('${s.name}')">Mark Paid</button>
-                    <button class="btn btn-comp" onclick="complete('${s.name}')">Finish</button>
-                    <button class="btn btn-reset" onclick="resetXP('${s.name}')">Reset XP</button>
-                    <button class="btn btn-del" onclick="del('${s.name}')">Remove Student</button>
-                </div>
-            </div>`;
-        });
-
-        document.getElementById("list").innerHTML = html || "<p style='text-align:center'>No students found.</p>";
-        document.getElementById("totalCount").innerText = data.length;
-        document.getElementById("paidCount").innerText = paid;
-        document.getElementById("overdueCount").innerText = overdue;
-    }
-
-    window.filterStudents = function() {
-        let val = document.getElementById("search").value.toLowerCase();
-        let filtered = allData.filter(s => s.name.toLowerCase().includes(val));
-        render(filtered);
-    }
-
-    load();
-</script>
+        loadStudents();
+    </script>
 </body>
 </html>
