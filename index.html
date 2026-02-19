@@ -156,7 +156,7 @@
         <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
-   <script type="module">
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -171,42 +171,43 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const student = localStorage.getItem("studentName") || "Guest";
+
+    // Global variable to use everywhere
+    const student = localStorage.getItem("studentName");
     let userXP = 0;
 
-    function loadCache() {
-        if(student === "Guest") return;
-        document.getElementById("uName").innerText = student;
-        const cXP = localStorage.getItem("user_xp_cache");
-        const cRank = localStorage.getItem("user_rank_cache");
-        const cStreak = localStorage.getItem("user_streak_cache");
-        const cMsg = localStorage.getItem("marquee_cache");
-
-        if(cXP) { userXP = parseInt(cXP); updateXPUI(userXP); }
-        if(cRank) document.getElementById("instRank").innerText = "#" + cRank;
-        if(cStreak) document.getElementById("sCount").innerText = "🔥 " + cStreak + " Days";
-        if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
-    }
-
     function updateXPUI(xp) {
-        document.getElementById("xpVal").innerText = xp + " XP";
-        document.getElementById("xpBar").style.width = Math.min((xp/5000)*100, 100) + "%";
+        const xpVal = document.getElementById("xpVal");
+        const xpBar = document.getElementById("xpBar");
+        if(xpVal) xpVal.innerText = xp + " XP";
+        if(xpBar) xpBar.style.width = Math.min((xp/5000)*100, 100) + "%";
+        
         if(xp >= 5000) {
             const unitCard = document.getElementById("unitCard");
-            unitCard.classList.remove("locked");
-            document.getElementById("unitIcon").className = "ri-shield-flash-line";
-            document.getElementById("lockStatus").style.display = "none";
-            document.getElementById("unitMsg").innerText = "Access Granted";
+            if(unitCard) {
+                unitCard.classList.remove("locked");
+                document.getElementById("unitIcon").className = "ri-shield-flash-line";
+                document.getElementById("lockStatus").style.display = "none";
+                document.getElementById("unitMsg").innerText = "Access Granted";
+                document.getElementById("unitMsg").style.color = "#22c55e";
+            }
         }
     }
 
-    async function syncData() {
+    async function syncEverything() {
+        // 1. Public Marquee Sync
         onSnapshot(doc(db, "settings", "marquee"), (snap) => {
             if(snap.exists()) document.getElementById("marqueeMsg").innerText = snap.data().msg;
         });
 
-        if(student === "Guest") return;
+        if(!student || student === "Guest") {
+            console.log("No student logged in.");
+            return;
+        }
 
+        document.getElementById("uName").innerText = student;
+
+        // 2. Student Data Sync (XP & Streak)
         onSnapshot(doc(db, "students", student), (snap) => {
             if(snap.exists()){
                 const d = snap.data();
@@ -216,32 +217,49 @@
             }
         });
 
-        // Tournament Lock Logic
+        // 3. Tournament Entry Real-time Lock
         const today = new Date().toISOString().split('T')[0];
-        const tourneyRef = doc(db, "tournament_entries", `${student}_${today}`);
-        const tourneySnap = await getDoc(tourneyRef);
+        const tourneyId = `${student}_${today}`;
         
-        if (tourneySnap.exists()) {
-            const tourneyCard = document.querySelector('.tournament-card');
-            const badge = tourneyCard.querySelector('span');
-            badge.innerText = "JOINED";
-            badge.style.background = "#22c55e"; 
-            tourneyCard.href = "javascript:void(0)"; 
-            tourneyCard.onclick = (e) => {
-                e.preventDefault();
-                alert("Aapne aaj ki entry le li hai!");
-            };
-        }
+        onSnapshot(doc(db, "tournament_entries", tourneyId), (snap) => {
+            if (snap.exists()) {
+                const tourneyCard = document.querySelector('.tournament-card');
+                const badge = tourneyCard.querySelector('span');
+                
+                if(badge) {
+                    badge.innerText = "JOINED";
+                    badge.style.background = "var(--success)"; 
+                }
+                
+                // Disable clicking
+                tourneyCard.onclick = (e) => {
+                    e.preventDefault();
+                    alert("Aap aaj pehle hi join kar chuke hain! Kal aana.");
+                };
+                tourneyCard.setAttribute('href', 'javascript:void(0)');
+            }
+        });
+        
+        // 4. Rank Calculation (Static check)
+        const qSnap = await getDocs(collection(db, "students"));
+        let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
+        all.sort((a,b)=>b.xp-a.xp);
+        const r = all.findIndex(s=>s.id === student) + 1;
+        if(r > 0) document.getElementById("instRank").innerText = "#" + r;
     }
 
+    // Handle Unit Test Click
     window.handleUnitTest = () => {
         if(userXP >= 5000) window.location.href = "unit-test.html";
-        else alert("🔒 Earn 5000 XP to access.");
+        else alert("🔒 Terminal Locked. Earn 5000 XP.");
     };
 
-    loadCache();
-    syncData();
+    // Run when page is ready
+    document.addEventListener("DOMContentLoaded", () => {
+        syncEverything();
+    });
 </script>
+
 
 
 
