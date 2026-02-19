@@ -269,62 +269,49 @@ if(nameXP) nameXP.innerText = student;
             if(student === "Guest") return;
 
             onSnapshot(doc(db, "students", student), (snap) => {
-                if(snap.exists()){
-                    const d = snap.data();
-                    // --- 1. NAME & BASIC DATA ---
-document.getElementById("uName").innerText = student;
-document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
+    if(snap.exists()){
+        const d = snap.data();
+        
+        // 1. Basic Info & Streak (Instant Update)
+        const streak = d.streak || 0;
+        document.getElementById("uName").innerText = student;
+        document.getElementById("uNameXP").innerText = student;
+        document.getElementById("sCount").innerText = "🔥 " + streak + " Days";
+        localStorage.setItem("user_streak_cache", streak);
 
-// --- 2. DYNAMIC GREETING ---
-const hour = new Date().getHours();
-let greeting = hour < 12 ? "Good Morning, Elite" : (hour < 17 ? "Keep Grinding, Agent" : "Burning the midnight oil?");
-document.getElementById("greetText").innerText = greeting;
+        // 2. Greeting & Avatar
+        const hour = new Date().getHours();
+        let greeting = hour < 12 ? "Good Morning, Elite" : (hour < 17 ? "Keep Grinding, Agent" : "Burning the midnight oil?");
+        document.getElementById("greetText").innerText = greeting;
+        document.getElementById("uAvatar").src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
 
-// --- 3. UNIQUE AVATAR ---
-document.getElementById("uAvatar").src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+        // 3. XP & Milestone
+        userXP = d.xp || 0;
+        updateXPUI(userXP);
+        localStorage.setItem("user_xp_cache", userXP);
 
-// --- 4. RANK BADGE LOGIC ---
-const currentXP = d.xp || 0;
-const badge = document.getElementById("rankBadge");
-if(badge) {
-    if (currentXP >= 5000) { badge.innerText = "Gold Elite"; badge.className = "rank-badge badge-gold"; }
-    else if (currentXP >= 2000) { badge.innerText = "Silver Elite"; badge.className = "rank-badge badge-silver"; }
-    else { badge.innerText = "Bronze Trainee"; badge.className = "rank-badge badge-bronze"; }
-}
+        // 4. Fee Status
+        const fBadge = document.getElementById("fee-badge");
+        if(d.paymentStatus === "Paid") {
+            fBadge.innerText = "Completed";
+            fBadge.style.color = "#22c55e"; 
+            fBadge.style.background = "rgba(34,197,94,0.1)";
+        } else {
+            fBadge.innerText = "Pending";
+            fBadge.style.color = "#ef4444"; 
+            fBadge.style.background = "rgba(239,68,68,0.1)";
+        }
 
-                    userXP = d.xp || 0;
-                    updateXPUI(userXP);
-                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
-                    localStorage.setItem("user_xp_cache", userXP);
-                    localStorage.setItem("user_streak_cache", d.streak || 0);
-                }
-                
-                // Paste this inside your student onSnapshot listener:
-const d = snap.data();
-const fBadge = document.getElementById("fee-badge");
-const fMonth = document.getElementById("fee-month-text");
-const fIconBg = document.getElementById("fee-icon-bg");
-const fIcon = document.getElementById("fee-icon");
+        // 5. Rank Badge
+        const badge = document.getElementById("rankBadge");
+        if(badge) {
+            if (userXP >= 5000) { badge.innerText = "Gold Elite"; badge.className = "rank-badge badge-gold"; }
+            else if (userXP >= 2000) { badge.innerText = "Silver Elite"; badge.className = "rank-badge badge-silver"; }
+            else { badge.innerText = "Bronze Trainee"; badge.className = "rank-badge badge-bronze"; }
+        }
+    }
+});
 
-if(d.paymentStatus === "Paid") {
-    fBadge.innerText = "Completed"; // Paid hone par 'Completed' dikhayega
-    fBadge.style.color = "#22c55e"; 
-    fBadge.style.background = "rgba(34,197,94,0.1)";
-    fMonth.innerText = d.lastPaymentMonth || "Current Month Done";
-    fIconBg.style.background = "rgba(34,197,94,0.1)"; 
-    fIcon.style.color = "#22c55e";
-    fIcon.className = "ri-checkbox-circle-fill";
-} else {
-    fBadge.innerText = "Pending";
-    fBadge.style.color = "#ef4444"; 
-    fBadge.style.background = "rgba(239,68,68,0.1)";
-    fMonth.innerText = "Fees due for " + (d.lastPaymentMonth || "this month");
-    fIconBg.style.background = "rgba(239,68,68,0.1)"; 
-    fIcon.style.color = "#ef4444";
-    fIcon.className = "ri-error-warning-fill";
-}
-
-            });
 
             const qSnap = await getDocs(collection(db, "students"));
             let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
