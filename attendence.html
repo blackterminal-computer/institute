@@ -71,95 +71,104 @@
         <a href="index.html" class="back-home"><i class="ri-arrow-left-line"></i> Back to Dashboard</a>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, updateDoc, increment, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-            authDomain: "black-terminal-f2c91.firebaseapp.com",
-            projectId: "black-terminal-f2c91",
-            storageBucket: "black-terminal-f2c91.appspot.com",
-            messagingSenderId: "552489994197",
-            appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.appspot.com",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        // --- UPDATED LOCATION ---
-        const INST_LAT = 21.940550; 
-        const INST_LON = 86.737409; 
-        const ALLOWED_RANGE = 0.05; // 50 Meters Strict Range
+    // --- CONFIG ---
+    const INST_LAT = 21.940550; 
+    const INST_LON = 86.737409; 
+    const ALLOWED_RANGE = 0.05; 
 
-        const statusBox = document.getElementById('status');
-        const btn = document.getElementById('checkin-btn');
-        const student = localStorage.getItem('studentName');
+    const statusBox = document.getElementById('status');
+    const btn = document.getElementById('checkin-btn');
+    const student = localStorage.getItem('studentName');
 
-        function initLocation() {
-            if (!student || student === "Guest") {
-                statusBox.innerHTML = "⚠️ Update Name in Profile First";
-                return;
-            }
-
-            if (!navigator.geolocation) {
-                statusBox.innerHTML = "Geolocation not supported";
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(pos => {
-                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, INST_LAT, INST_LON);
-                
-                if(dist <= ALLOWED_RANGE) {
-                    statusBox.style.color = "#22c55e";
-                    statusBox.innerHTML = '<i class="ri-checkbox-circle-fill"></i> Location Verified: At Center';
-                    btn.disabled = false;
-                } else {
-                    statusBox.style.color = "#ef4444";
-                    statusBox.innerHTML = `<i class="ri-error-warning-fill"></i> Out of Range (${(dist*1000).toFixed(0)}m away)`;
-                }
-            }, err => {
-                statusBox.innerHTML = "⚠️ Enable GPS Location to mark attendance";
-            }, { enableHighAccuracy: true });
+    function initLocation() {
+        if (!student || student === "Guest") {
+            statusBox.innerHTML = "⚠️ Update Name in Profile First";
+            return;
         }
 
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; 
-            const dLat = (lat2-lat1) * Math.PI/180;
-            const dLon = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        if (!navigator.geolocation) {
+            statusBox.innerHTML = "Geolocation not supported";
+            return;
         }
 
-        window.markAttendance = async () => {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Processing...';
-
-            const today = new Date().toISOString().split('T')[0];
-            const attID = `${student}_${today}`; 
-
-            try {
-                await setDoc(doc(db, "attendance", attID), {
-                    studentName: student,
-                    date: today,
-                    timestamp: serverTimestamp(),
-                    status: "present"
-                });
-
-                statusBox.innerHTML = "✅ Success! Recording...";
-                btn.innerHTML = 'SUCCESSFUL';
-                btn.style.background = "#22c55e";
-                
-                setTimeout(() => { window.location.href = "index.html"; }, 1500);
-
-            } catch (e) {
-                alert("Database Error!");
+        navigator.geolocation.getCurrentPosition(pos => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, INST_LAT, INST_LON);
+            
+            if(dist <= ALLOWED_RANGE) {
+                statusBox.style.color = "#22c55e";
+                statusBox.innerHTML = '<i class="ri-checkbox-circle-fill"></i> Location Verified: At Center';
                 btn.disabled = false;
-                btn.innerHTML = 'RETRY MARK ATTENDANCE';
+            } else {
+                statusBox.style.color = "#ef4444";
+                statusBox.innerHTML = `<i class="ri-error-warning-fill"></i> Out of Range (${(dist*1000).toFixed(0)}m away)`;
             }
-        };
+        }, err => {
+            statusBox.innerHTML = "⚠️ Enable GPS Location to mark attendance";
+        }, { enableHighAccuracy: true });
+    }
 
-        window.onload = initLocation;
-    </script>
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; 
+        const dLat = (lat2-lat1) * Math.PI/180;
+        const dLon = (lon2-lon1) * Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    window.markAttendance = async () => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Processing...';
+
+        const today = new Date().toISOString().split('T')[0];
+        const attID = `${student}_${today}`; 
+
+        try {
+            // 1. Attendance Record Save Karein
+            await setDoc(doc(db, "attendance", attID), {
+                studentName: student,
+                date: today,
+                timestamp: serverTimestamp(),
+                status: "present"
+            });
+
+            // 2. Student XP update karein (+20 XP Reward)
+            const studentRef = doc(db, "students", student);
+            await updateDoc(studentRef, {
+                xp: increment(20) // 20 XP automatically add ho jayenge
+            });
+
+            statusBox.innerHTML = "✅ Present! +20 XP Bonus Gained";
+            btn.innerHTML = 'SUCCESSFUL +20 XP';
+            btn.style.background = "#22c55e";
+            
+            setTimeout(() => { window.location.href = "index.html"; }, 1500);
+
+        } catch (e) {
+            console.error(e);
+            alert("Database Error!");
+            btn.disabled = false;
+            btn.innerHTML = 'RETRY MARK ATTENDANCE';
+        }
+    };
+
+    window.onload = initLocation;
+</script>
+
 </body>
 </html>
