@@ -72,11 +72,15 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const student = localStorage.getItem("studentName") || "Guest";
-    const today = new Date().toISOString().split('T')[0];
+    
+    // YEH HAI RESET LOGIC: Har din ke liye alag ID aur Collection
+    const today = new Date().toISOString().split('T')[0]; 
     const entryId = `${student}_${today}`;
+    const dailyCollection = collection(db, "tournament_" + today); // Dynamic Reset Collection
 
     let myxp = 0, score = 0, qIndex = 0, timeLeft = 60, hasJoined = false;
 
+    // ... (Questions array same hai, use skip kar raha hoon display ke liye)
     const questions = [
         {q:"What is the brain of a computer?", a:"Monitor", b:"Keyboard", c:"CPU", d:"Mouse", ans:"C"},
         {q:"Which device is used for typing?", a:"Keyboard", b:"Mouse", c:"Printer", d:"Speaker", ans:"A"},
@@ -133,13 +137,12 @@
     async function init() {
         if(student === "Guest") return alert("Login First");
 
-        // Real-time XP sync
         onSnapshot(doc(db, "students", student), (s) => {
             if(s.exists()){ myxp = s.data().xp; document.getElementById("myxp").innerText = "MY XP: " + myxp; }
         });
 
-        // Real-time Tournament Data sync
-        onSnapshot(query(collection(db, "tournament_today"), orderBy("score", "desc")), (snap) => {
+        // Dynamic Collection use ho rahi hai yahan
+        onSnapshot(query(dailyCollection, orderBy("score", "desc")), (snap) => {
             let count = 0; let ranks = [];
             snap.forEach(d => {
                 count++; ranks.push(d.data());
@@ -170,7 +173,8 @@
 
         try {
             await updateDoc(doc(db, "students", student), { xp: increment(-50) });
-            await setDoc(doc(db, "tournament_today", entryId), { name: student, score: 0, date: today });
+            // Entry bhi dynamic collection mein jayegi
+            await setDoc(doc(db, "tournament_" + today, entryId), { name: student, score: 0, date: today });
             document.getElementById("enterBtn").style.display = "none";
             startGame();
         } catch(e) { alert("Error joining!"); }
@@ -201,7 +205,8 @@
 
     async function finish() {
         document.getElementById("gameBox").innerHTML = `<h2>GAME OVER</h2><h1>Score: ${score}</h1><button onclick="location.href='index.html'" style="padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:10px; margin-top:10px;">HOME</button>`;
-        await updateDoc(doc(db, "tournament_today", entryId), { score: score });
+        // Score update bhi dynamic collection mein
+        await updateDoc(doc(db, "tournament_" + today, entryId), { score: score });
     }
 
     init();
