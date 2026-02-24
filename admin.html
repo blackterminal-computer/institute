@@ -22,7 +22,7 @@
         .input-group { margin-bottom: 20px; text-align: left; }
         label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-left: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
 
-        input, textarea { width: 100%; padding: 16px; background: rgba(2, 6, 23, 0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; font-size: 15px; outline: none; transition: 0.3s; margin-bottom: 8px; }
+        input, textarea, select { width: 100%; padding: 16px; background: rgba(2, 6, 23, 0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; font-size: 15px; outline: none; transition: 0.3s; margin-bottom: 8px; }
         input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
 
         .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
@@ -83,7 +83,9 @@
 
         <div class="input-group">
             <label>Student XP Management</label>
-            <input type="text" id="studentName" placeholder="Student Name">
+            <input type="text" id="studentName" list="studentList" placeholder="Click or Type Student Name">
+            <datalist id="studentList"></datalist>
+            
             <input type="number" id="xpAmount" placeholder="New XP Value">
             <div class="btn-row">
                 <button class="btn-purple" onclick="updateXP()"><i class="ri-medal-line"></i> SET XP</button>
@@ -123,10 +125,23 @@
                 document.getElementById("loginBox").style.display = "none";
                 document.getElementById("panel").style.display = "block";
                 listenAttendance();
+                fetchStudentList(); // New: Loads students for dropdown
             } else { showToast("Access Denied", "#ef4444"); }
         }
 
-        // --- Marquee Logic (Saves to settings/marquee/msg) ---
+        // --- New: Fetch All Students for Dropdown ---
+        async function fetchStudentList() {
+            try {
+                const qSnap = await getDocs(collection(db, "students"));
+                const dList = document.getElementById("studentList");
+                dList.innerHTML = "";
+                qSnap.forEach(doc => {
+                    dList.innerHTML += `<option value="${doc.id}">`;
+                });
+            } catch(e) { console.error("Error loading student list", e); }
+        }
+
+        // --- Marquee Logic ---
         window.updateMarquee = async function() {
             const m = document.getElementById("marqueeVal").value.trim();
             if(!m) return showToast("Enter text", "#ef4444");
@@ -136,7 +151,7 @@
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- Notice Alert Logic (Saves to notices/main) ---
+        // --- Notice Alert Logic ---
         window.sendOn = async function() {
             const t = document.getElementById("msg").value.trim();
             if(!t) return showToast("Enter message", "#ef4444");
