@@ -5,36 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SaveSmart | Debt & Bill Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        .bill-row { border-left: 4px solid #ef4444; }
+        .bill-row { border-left: 4px solid #ef4444; transition: all 0.3s; }
+        .paid-row { border-left-color: #22c55e !important; opacity: 0.6; background-color: #f0fdf4 !important; }
+        .paid-text { text-decoration: line-through; }
     </style>
 </head>
 <body class="p-4 md:p-6">
 
     <div class="max-w-4xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl font-extrabold text-slate-900">Finance <span class="text-blue-600">Command Center</span></h1>
-            <p class="text-slate-500">Business Admissions vs. Monthly Bills</p>
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900">Finance <span class="text-blue-600">Command Center</span></h1>
+                <p class="text-slate-500">Business Admissions vs. Monthly Bills</p>
+            </div>
+            <button onclick="saveMonthlyData()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold">💾 Save Month</button>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div class="bg-white p-6 rounded-3xl card-shadow">
                 <h3 class="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2">💳 Credit Card Bill (12th)</h3>
-                <div class="space-y-3">
-                    <label class="text-xs font-bold text-slate-400 uppercase">Enter Total Amount Due</label>
-                    <input type="number" id="ccBill" placeholder="₹ Amount" oninput="calculate()" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-blue-500 outline-none text-xl font-bold">
-                    <p class="text-xs text-red-500 font-medium">* Sabhi cards ka total yahan likhein (Due: 12th)</p>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Total Bill</label>
+                        <input type="number" id="ccBill" placeholder="₹ Total" oninput="calculate()" class="w-full p-3 rounded-xl bg-slate-50 border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-lg">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Already Paid</label>
+                        <input type="number" id="ccPaid" placeholder="₹ Paid" oninput="calculate()" class="w-full p-3 rounded-xl bg-green-50 border-2 border-green-100 focus:border-green-500 outline-none font-bold text-lg text-green-700">
+                    </div>
                 </div>
+                <p class="text-xs text-slate-500 font-medium">* Balance Due: <span id="ccBalanceDisplay" class="font-bold text-red-500">₹0</span></p>
             </div>
 
             <div class="bg-slate-900 text-white p-6 rounded-3xl card-shadow flex flex-col justify-center">
-                <p class="text-slate-400 text-sm font-bold uppercase">Total Monthly Liability</p>
-                <h2 id="totalLiability" class="text-5xl font-black text-red-400 mt-2">₹28,500</h2>
-                <p class="text-xs mt-2 opacity-70">Fixed Expenses + Credit Card</p>
+                <p class="text-slate-400 text-sm font-bold uppercase">Net Pending Amount</p>
+                <h2 id="totalLiability" class="text-5xl font-black text-red-400 mt-2">₹0</h2>
+                <div class="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-xs opacity-60">Last Month: <b id="lastMonthVal">₹0</b></span>
+                    <span class="text-xs opacity-60">This Month Target: <b id="thisMonthVal">₹0</b></span>
+                </div>
             </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl card-shadow mb-8">
+            <h3 class="text-sm font-bold mb-4 text-slate-400 uppercase tracking-widest text-center">Liability Fluctuation</h3>
+            <canvas id="debtChart" height="80"></canvas>
         </div>
 
         <div class="bg-white p-6 rounded-3xl card-shadow mb-8">
@@ -74,30 +94,23 @@
         </div>
 
         <div class="bg-white p-6 rounded-3xl card-shadow">
-            <h3 class="text-lg font-bold mb-4">📅 Recurring Payments Schedule</h3>
-            <div class="space-y-3">
-                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-blue-500">
-                    <span><b>iPhone EMI</b> (1st)</span><span class="font-bold text-slate-700">₹8,000</span>
+            <h3 class="text-lg font-bold mb-4">📅 Recurring Payments (Tick if Paid)</h3>
+            <div id="billContainer" class="space-y-3">
                 </div>
-                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-blue-400">
-                    <span><b>Android EMI</b> (1st)</span><span class="font-bold text-slate-700">₹5,000</span>
-                </div>
-                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-orange-500">
-                    <span><b>Car EMI</b> (5th)</span><span class="font-bold text-slate-700">₹8,500</span>
-                </div>
-                <div id="ccRow" class="flex justify-between p-3 bg-red-50 rounded-xl bill-row border-red-500">
-                    <span><b>Credit Card Bill</b> (12th)</span><span id="ccDisp" class="font-bold text-red-600">₹0</span>
-                </div>
-                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-green-500">
-                    <span><b>Room Rent</b> (20th)</span><span class="font-bold text-slate-700">₹7,000</span>
-                </div>
-            </div>
         </div>
     </div>
 
     <script>
         let counts = { driving: 0, computer: 0 };
-        const fixedExpenses = 7000 + 8500 + 8000 + 5000; // 28500
+        let bills = [
+            { id: 'iphone', name: 'iPhone EMI', amount: 8000, date: '1st', color: 'blue-500', paid: false },
+            { id: 'android', name: 'Android EMI', amount: 5000, date: '1st', color: 'blue-400', paid: false },
+            { id: 'car', name: 'Car EMI', amount: 8500, date: '5th', color: 'orange-500', paid: false },
+            { id: 'rent', name: 'Room Rent', amount: 7000, date: '20th', color: 'green-500', paid: false }
+        ];
+
+        let historyData = JSON.parse(localStorage.getItem('ss_history')) || [0, 0, 0, 0, 0];
+        let myChart;
 
         function updateCount(type, val) {
             counts[type] = Math.max(0, counts[type] + val);
@@ -105,26 +118,87 @@
             calculate();
         }
 
-        function calculate() {
-            const cc = parseFloat(document.getElementById('ccBill').value) || 0;
-            const totalLiability = fixedExpenses + cc;
-            
-            document.getElementById('totalLiability').innerText = `₹${totalLiability.toLocaleString()}`;
-            document.getElementById('ccDisp').innerText = `₹${cc.toLocaleString()}`;
+        function togglePaid(index) {
+            bills[index].paid = !bills[index].paid;
+            calculate();
+        }
 
+        function calculate() {
+            const ccTotal = parseFloat(document.getElementById('ccBill').value) || 0;
+            const ccPaid = parseFloat(document.getElementById('ccPaid').value) || 0;
+            const ccBalance = Math.max(0, ccTotal - ccPaid);
+            
+            document.getElementById('ccBalanceDisplay').innerText = `₹${ccBalance.toLocaleString()}`;
+
+            let fixedUnpaid = 0;
+            let totalLiabilityThisMonth = ccTotal;
+            const billContainer = document.getElementById('billContainer');
+            billContainer.innerHTML = '';
+
+            bills.forEach((bill, index) => {
+                totalLiabilityThisMonth += bill.amount;
+                if (!bill.paid) fixedUnpaid += bill.amount;
+
+                billContainer.innerHTML += `
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl bill-row border-${bill.color} ${bill.paid ? 'paid-row' : ''}">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" ${bill.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-5 h-5 accent-green-600">
+                            <span class="${bill.paid ? 'paid-text' : ''}"><b>${bill.name}</b> (${bill.date})</span>
+                        </div>
+                        <span class="font-bold text-slate-700">₹${bill.amount.toLocaleString()}</span>
+                    </div>
+                `;
+            });
+
+            const netLiability = fixedUnpaid + ccBalance;
             const currentEarned = (counts.driving * 4500) + (counts.computer * 500);
-            const remaining = totalLiability - currentEarned;
+            const remaining = netLiability - currentEarned;
+
+            document.getElementById('totalLiability').innerText = `₹${Math.max(0, remaining).toLocaleString()}`;
+            document.getElementById('thisMonthVal').innerText = `₹${totalLiabilityThisMonth.toLocaleString()}`;
+            document.getElementById('lastMonthVal').innerText = `₹${historyData[historyData.length-1].toLocaleString()}`;
 
             let solutionText = "";
             if (remaining <= 0) {
-                solutionText = "🎉 <b>Target Poora!</b> Aapne saare bills cover kar liye hain. Ab jo bhi kamai hogi woh aapka net profit hai.";
+                solutionText = "🎉 <b>Target Poora!</b> Saare bills cover ho chuke hain.";
             } else {
                 const reqDriving = Math.ceil(remaining / 4500);
                 const reqComp = Math.ceil(remaining / 500);
-                solutionText = `Aapko abhi <b>₹${remaining.toLocaleString()}</b> aur chahiye. <br> Target: Sirf <b>${reqDriving} Driving</b> admissions YA <b>${reqComp} Computer</b> students.`;
+                solutionText = `Bache <b>₹${remaining.toLocaleString()}</b> ke liye <b>${reqDriving} Driving</b> ya <b>${reqComp} Computer</b> admissions chahiye.`;
             }
-            
             document.getElementById('aiSolution').innerHTML = solutionText;
+            updateGraph(remaining);
+        }
+
+        function updateGraph(current) {
+            const ctx = document.getElementById('debtChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            
+            let dataToShow = [...historyData.slice(-5), current];
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Hist 1', 'Hist 2', 'Hist 3', 'Hist 4', 'Hist 5', 'Now'],
+                    datasets: [{
+                        data: dataToShow,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2
+                    }]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } }
+            });
+        }
+
+        function saveMonthlyData() {
+            const total = parseFloat(document.getElementById('thisMonthVal').innerText.replace('₹','').replace(',',''));
+            historyData.push(total);
+            if(historyData.length > 10) historyData.shift();
+            localStorage.setItem('ss_history', JSON.stringify(historyData));
+            alert("Data saved!");
+            calculate();
         }
 
         calculate();
