@@ -14,11 +14,7 @@
         .paid-row { border-left-color: #22c55e !important; opacity: 0.6; background-color: #f0fdf4 !important; }
         .paid-text { text-decoration: line-through; }
         .timer-badge { font-size: 0.65rem; padding: 2px 8px; border-radius: 99px; font-weight: bold; }
-        
-        /* New Highlights */
         .target-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-left: 5px solid #3b82f6; }
-        .blink-urgent { animation: blinker 1.5s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0.7; } }
         .progress-container { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; overflow: hidden; }
         .progress-bar { height: 100%; background: #22c55e; transition: width 0.5s ease; }
     </style>
@@ -69,29 +65,22 @@
                     <h3 class="font-extrabold text-blue-400 uppercase tracking-tighter text-sm">Target Admissions Required</h3>
                     <span id="progressText" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">0% Covered</span>
                 </div>
-                
                 <div class="grid grid-cols-2 gap-6 mb-6">
                     <div class="text-center p-4 bg-white/5 rounded-3xl border border-white/10">
                         <p class="text-slate-400 text-[10px] uppercase font-bold mb-1">Driving School</p>
                         <div class="text-4xl font-black text-orange-400" id="reqDriving">0</div>
-                        <p class="text-[10px] text-slate-500 mt-1">Students (₹4.5k)</p>
                     </div>
                     <div class="text-center p-4 bg-white/5 rounded-3xl border border-white/10">
                         <p class="text-slate-400 text-[10px] uppercase font-bold mb-1">Computer Inst.</p>
                         <div class="text-4xl font-black text-purple-400" id="reqComp">0</div>
-                        <p class="text-[10px] text-slate-500 mt-1">Students (₹500)</p>
                     </div>
                 </div>
-
-                <div class="progress-container mb-2">
-                    <div id="progressBar" class="progress-bar" style="width: 0%"></div>
-                </div>
+                <div class="progress-container mb-2"><div id="progressBar" class="progress-bar" style="width: 0%"></div></div>
                 <p id="aiSolution" class="text-sm font-medium italic text-slate-300 text-center">Calculations loading...</p>
             </div>
         </div>
 
         <div class="bg-white p-6 rounded-3xl card-shadow mb-8">
-            <h3 class="text-sm font-bold mb-4 text-slate-400 uppercase text-center tracking-widest text-slate-400">Monthly Fluctuation Graph</h3>
             <canvas id="debtChart" height="80"></canvas>
         </div>
 
@@ -99,18 +88,18 @@
             <h3 class="text-lg font-bold mb-6 flex items-center gap-2">✅ Add Current Admissions</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex justify-between items-center">
-                    <span><b>Driving School</b></span>
+                    <span><b>Driving</b></span>
                     <div class="flex items-center gap-3">
-                        <button onclick="updateCount('driving', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl text-orange-600">-</button>
-                        <span id="drivingCount" class="text-2xl font-black w-8 text-center text-orange-700">0</span>
+                        <button onclick="updateCount('driving', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl">-</button>
+                        <span id="drivingCount" class="text-2xl font-black">0</span>
                         <button onclick="updateCount('driving', 1)" class="w-8 h-8 bg-orange-500 text-white rounded-full shadow font-bold text-xl">+</button>
                     </div>
                 </div>
                 <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex justify-between items-center">
-                    <span><b>Computer Inst.</b></span>
+                    <span><b>Computer</b></span>
                     <div class="flex items-center gap-3">
-                        <button onclick="updateCount('computer', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl text-purple-600">-</button>
-                        <span id="computerCount" class="text-2xl font-black w-8 text-center text-purple-700">0</span>
+                        <button onclick="updateCount('computer', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl">-</button>
+                        <span id="computerCount" class="text-2xl font-black">0</span>
                         <button onclick="updateCount('computer', 1)" class="w-8 h-8 bg-purple-500 text-white rounded-full shadow font-bold text-xl">+</button>
                     </div>
                 </div>
@@ -118,22 +107,82 @@
         </div>
 
         <div class="bg-white p-6 rounded-3xl card-shadow">
-            <h3 class="text-lg font-bold mb-4 text-slate-800">📅 Fixed Bills (Checklist)</h3>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-800">📅 Fixed Bills</h3>
+                <button onclick="toggleAddBill()" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold">+ Add New Bill</button>
+            </div>
+
+            <div id="addBillForm" class="hidden mb-6 p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="text" id="newName" placeholder="Bill Name (e.g. WiFi)" class="p-2 rounded-lg border outline-none text-sm">
+                    <input type="number" id="newAmount" placeholder="Amount (₹)" class="p-2 rounded-lg border outline-none text-sm">
+                    <input type="number" id="newDate" placeholder="Date (1-31)" class="p-2 rounded-lg border outline-none text-sm">
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="addNewBill()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Add Bill</button>
+                    <button onclick="toggleAddBill()" class="bg-slate-400 text-white px-4 py-2 rounded-lg text-xs font-bold">Cancel</button>
+                </div>
+            </div>
+
             <div id="billContainer" class="space-y-3"></div>
         </div>
     </div>
 
     <script>
         let counts = { driving: 0, computer: 0 };
-        let bills = [
-            { id: 'iphone', name: 'iPhone EMI', amount: 8000, date: 1, color: 'blue-500', paid: false },
-            { id: 'android', name: 'Android EMI', amount: 5000, date: 1, color: 'blue-400', paid: false },
-            { id: 'car', name: 'Car EMI', amount: 8500, date: 5, color: 'orange-500', paid: false },
-            { id: 'rent', name: 'Room Rent', amount: 7000, date: 20, color: 'green-500', paid: false }
+        // Initial bills list (Will load from localStorage if exists)
+        let bills = JSON.parse(localStorage.getItem('ss_bills')) || [
+            { id: Date.now()+1, name: 'iPhone EMI', amount: 8000, date: 1, color: 'blue-500', paid: false },
+            { id: Date.now()+2, name: 'Android EMI', amount: 5000, date: 1, color: 'blue-400', paid: false },
+            { id: Date.now()+3, name: 'Car EMI', amount: 8500, date: 5, color: 'orange-500', paid: false },
+            { id: Date.now()+4, name: 'Room Rent', amount: 7000, date: 20, color: 'green-500', paid: false }
         ];
 
         let historyData = JSON.parse(localStorage.getItem('ss_history')) || [0, 0, 0, 0, 0];
         let myChart;
+
+        function toggleAddBill() {
+            const form = document.getElementById('addBillForm');
+            form.classList.toggle('hidden');
+        }
+
+        function addNewBill() {
+            const name = document.getElementById('newName').value;
+            const amount = parseFloat(document.getElementById('newAmount').value);
+            const date = parseInt(document.getElementById('newDate').value);
+
+            if (name && amount && date) {
+                bills.push({
+                    id: Date.now(),
+                    name: name,
+                    amount: amount,
+                    date: date,
+                    color: 'slate-500',
+                    paid: false
+                });
+                saveBillsToLocal();
+                toggleAddBill();
+                // Clear inputs
+                document.getElementById('newName').value = '';
+                document.getElementById('newAmount').value = '';
+                document.getElementById('newDate').value = '';
+                calculate();
+            } else {
+                alert("Please fill all fields");
+            }
+        }
+
+        function removeBill(id) {
+            if(confirm("Hata dein?")) {
+                bills = bills.filter(b => b.id !== id);
+                saveBillsToLocal();
+                calculate();
+            }
+        }
+
+        function saveBillsToLocal() {
+            localStorage.setItem('ss_bills', JSON.stringify(bills));
+        }
 
         function getDaysLeft(targetDay) {
             const today = new Date();
@@ -154,13 +203,12 @@
 
         function togglePaid(index) {
             bills[index].paid = !bills[index].paid;
+            saveBillsToLocal();
             calculate();
         }
 
         function calculate() {
-            const now = new Date();
-            document.getElementById('todayDate').innerText = now.toDateString();
-
+            document.getElementById('todayDate').innerText = new Date().toDateString();
             const ccTotal = parseFloat(document.getElementById('ccBill').value) || 0;
             const ccPaid = parseFloat(document.getElementById('ccPaid').value) || 0;
             const ccBalance = Math.max(0, ccTotal - ccPaid);
@@ -180,11 +228,14 @@
                         <div class="flex items-center gap-3">
                             <input type="checkbox" ${bill.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-5 h-5 accent-green-600">
                             <div>
-                                <p class="${bill.paid ? 'paid-text' : ''} font-bold text-sm">${bill.name}</p>
+                                <p class="${bill.paid ? 'paid-text' : ''} font-bold text-sm">${bill.name} (₹${bill.amount.toLocaleString()})</p>
                                 <p class="text-[10px] text-slate-400 font-bold uppercase">${getDaysLeft(bill.date)}</p>
                             </div>
                         </div>
-                        <span class="font-black text-slate-700">₹${bill.amount.toLocaleString()}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="font-black text-slate-700">₹${bill.amount.toLocaleString()}</span>
+                            <button onclick="removeBill(${bill.id})" class="text-red-400 hover:text-red-600 text-lg">×</button>
+                        </div>
                     </div>
                 `;
             });
@@ -193,24 +244,21 @@
             const currentEarned = (counts.driving * 4500) + (counts.computer * 500);
             const remaining = Math.max(0, netLiability - currentEarned);
 
-            // Progress Logic
             const progress = totalLiabilityAll > 0 ? Math.min(100, (currentEarned / totalLiabilityAll) * 100) : 0;
             document.getElementById('progressBar').style.width = progress + '%';
             document.getElementById('progressText').innerText = Math.round(progress) + '% Covered';
-
             document.getElementById('totalLiability').innerText = `₹${remaining.toLocaleString()}`;
             document.getElementById('lastMonthVal').innerText = `₹${historyData[historyData.length-1].toLocaleString()}`;
 
-            // Required Highlight
             const rD = Math.ceil(remaining / 4500);
             const rC = Math.ceil(remaining / 500);
             document.getElementById('reqDriving').innerText = remaining > 0 ? rD : 0;
             document.getElementById('reqComp').innerText = remaining > 0 ? rC : 0;
 
             if (remaining <= 0) {
-                document.getElementById('aiSolution').innerHTML = "🎉 <b class='text-green-400'>Mission Accomplished!</b> All bills are covered.";
+                document.getElementById('aiSolution').innerHTML = "🎉 <b class='text-green-400'>Mission AccomplISHED!</b> All bills are covered.";
             } else {
-                document.getElementById('aiSolution').innerHTML = `Focus on getting <b>${rD} Driving</b> or <b>${rC} Computer</b> admissions to clear ₹${remaining.toLocaleString()}.`;
+                document.getElementById('aiSolution').innerHTML = `Clear ₹${remaining.toLocaleString()} with <b>${rD} Driving</b> or <b>${rC} Computer</b> students.`;
             }
             updateGraph(remaining);
         }
@@ -241,7 +289,7 @@
             historyData.push(total);
             if(historyData.length > 10) historyData.shift();
             localStorage.setItem('ss_history', JSON.stringify(historyData));
-            alert("This month's liability saved!");
+            alert("History Saved!");
             calculate();
         }
 
