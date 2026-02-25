@@ -3,200 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaveSmart | Business Command Center</title>
+    <title>SaveSmart | Debt & Bill Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; }
-        .glass-card { transition: all 0.3s ease; }
-        .stat-card { transition: all 0.3s ease; border: 1px solid #e2e8f0; }
-        .streak-glow { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); border: 2px solid #f97316; }
-        .pulse-fire { animation: pulse-fire 1.5s infinite; }
-        @keyframes pulse-fire { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .ai-border { border: 2px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(to right, #3b82f6, #8b5cf6) border-box; }
-        .dark body { background-color: #0f172a; color: #f8fafc; }
-        .dark .glass-card { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .dark .stat-card { background: #1e293b; border-color: #334155; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        .bill-row { border-left: 4px solid #ef4444; }
     </style>
 </head>
-<body class="p-4 md:p-8 bg-[#f0f4f8]">
+<body class="p-4 md:p-6">
 
-    <div class="max-w-6xl mx-auto">
-        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-4xl font-bold text-slate-800 dark:text-white">Save<span class="text-blue-600">Smart</span> <span class="text-xs bg-green-500 text-white px-2 py-1 rounded-full align-middle ml-2">TRACKER</span></h1>
-                <p class="text-slate-500 font-medium">Business admissions & savings goal tracker.</p>
-            </div>
-            <button onclick="toggleDarkMode()" class="bg-slate-800 dark:bg-yellow-400 text-white dark:text-slate-900 px-6 py-3 rounded-full font-bold shadow-lg">
-                <span id="themeIcon">🌙 Dark Mode</span>
-            </button>
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8">
+            <h1 class="text-3xl font-extrabold text-slate-900">Finance <span class="text-blue-600">Command Center</span></h1>
+            <p class="text-slate-500">Business Admissions vs. Monthly Bills</p>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-            <div class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border-2 border-blue-500">
-                <h3 class="text-xl font-bold mb-6 flex items-center gap-2">📝 Today's Admissions</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl border border-orange-100">
-                        <div>
-                            <p class="font-bold text-orange-700 dark:text-orange-400">Driving School</p>
-                            <p class="text-xs text-slate-500">Earned: ₹<span id="drivingEarned">0</span></p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <button onclick="updateAdmission('driving', -1)" class="w-10 h-10 rounded-full bg-white dark:bg-slate-700 shadow flex items-center justify-center font-bold">-</button>
-                            <span id="drivingCount" class="text-2xl font-black min-w-[30px] text-center">0</span>
-                            <button onclick="updateAdmission('driving', 1)" class="w-10 h-10 rounded-full bg-orange-500 text-white shadow flex items-center justify-center font-bold">+</button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100">
-                        <div>
-                            <p class="font-bold text-purple-700 dark:text-purple-400">Computer Inst.</p>
-                            <p class="text-xs text-slate-500">Earned: ₹<span id="computerEarned">0</span></p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <button onclick="updateAdmission('computer', -1)" class="w-10 h-10 rounded-full bg-white dark:bg-slate-700 shadow flex items-center justify-center font-bold">-</button>
-                            <span id="computerCount" class="text-2xl font-black min-w-[30px] text-center">0</span>
-                            <button onclick="updateAdmission('computer', 1)" class="w-10 h-10 rounded-full bg-purple-500 text-white shadow flex items-center justify-center font-bold">+</button>
-                        </div>
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-3xl card-shadow">
+                <h3 class="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2">💳 Credit Card Bill (12th)</h3>
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Enter Total Amount Due</label>
+                    <input type="number" id="ccBill" placeholder="₹ Amount" oninput="calculate()" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-blue-500 outline-none text-xl font-bold">
+                    <p class="text-xs text-red-500 font-medium">* Sabhi cards ka total yahan likhein (Due: 12th)</p>
                 </div>
             </div>
 
-            <div class="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                <div class="relative z-10">
-                    <h3 class="text-xl font-bold mb-2">📊 Goal Status</h3>
-                    <div class="mt-4">
-                        <p class="text-sm opacity-60">Total Amount Short:</p>
-                        <p class="text-4xl font-black text-red-400" id="shortAmount">₹8,333</p>
+            <div class="bg-slate-900 text-white p-6 rounded-3xl card-shadow flex flex-col justify-center">
+                <p class="text-slate-400 text-sm font-bold uppercase">Total Monthly Liability</p>
+                <h2 id="totalLiability" class="text-5xl font-black text-red-400 mt-2">₹28,500</h2>
+                <p class="text-xs mt-2 opacity-70">Fixed Expenses + Credit Card</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl card-shadow mb-8">
+            <h3 class="text-lg font-bold mb-6 text-slate-800">🚀 Earnings to Cover Bills</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-orange-700">Driving School</p>
+                        <p class="text-xs text-orange-600">₹4,500 / person</p>
                     </div>
-                    <div class="mt-6 p-4 bg-white/10 rounded-2xl border border-white/10">
-                        <p class="text-xs font-bold text-green-400 uppercase tracking-widest">AI Next Step:</p>
-                        <p id="nextAction" class="text-sm mt-1">Admission count karein tracker update karne ke liye.</p>
+                    <div class="flex items-center gap-3">
+                        <button onclick="updateCount('driving', -1)" class="w-8 h-8 bg-white rounded-full shadow text-xl font-bold">-</button>
+                        <span id="drivingCount" class="text-2xl font-black w-8 text-center">0</span>
+                        <button onclick="updateCount('driving', 1)" class="w-8 h-8 bg-orange-500 text-white rounded-full shadow text-xl font-bold">+</button>
                     </div>
                 </div>
-                <div class="absolute right-[-20px] bottom-[-20px] opacity-10">
-                    <svg width="200" height="200" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2v-4H8v-2h4V7h2v4h4v2h-4v4z"/></svg>
+
+                <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-purple-700">Computer Institute</p>
+                        <p class="text-xs text-purple-600">₹500 / student</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="updateCount('computer', -1)" class="w-8 h-8 bg-white rounded-full shadow text-xl font-bold">-</button>
+                        <span id="computerCount" class="text-2xl font-black w-8 text-center">0</span>
+                        <button onclick="updateCount('computer', 1)" class="w-8 h-8 bg-purple-500 text-white rounded-full shadow text-xl font-bold">+</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="space-y-6">
-                <div class="glass-card p-6 rounded-3xl shadow-xl text-center streak-glow bg-gradient-to-br from-orange-50 to-white dark:from-slate-800 dark:to-slate-900">
-                    <div class="text-5xl mb-2 pulse-fire">🔥</div>
-                    <h3 class="text-2xl font-black" id="streakCount">0 Day Streak</h3>
-                    <button onclick="increaseStreak()" id="saveBtn" class="w-full bg-orange-500 text-white font-bold py-3 rounded-2xl mt-4">I Saved Today ✅</button>
-                </div>
-
-                <div class="glass-card p-6 rounded-3xl shadow-xl border-t-4 border-blue-500">
-                    <h2 class="text-xl font-semibold mb-6">🎯 Set Monthly Savings</h2>
-                    <input type="number" id="target" value="8333" oninput="calculate()" class="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 dark:bg-slate-700 focus:border-blue-500 focus:outline-none text-lg font-bold">
-                </div>
+        <div class="bg-blue-600 text-white p-6 rounded-3xl shadow-lg mb-8">
+            <h3 class="font-bold mb-2 flex items-center gap-2">💡 How to clear this?</h3>
+            <div id="aiSolution" class="text-lg leading-relaxed">
+                Loading strategy...
             </div>
+        </div>
 
-            <div class="lg:col-span-2 space-y-6">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="stat-card bg-white p-4 rounded-2xl text-center dark:bg-slate-800"><p class="text-[10px] font-bold text-slate-400">WEEKLY</p><h4 class="text-lg font-bold" id="weeklyVal">₹0</h4></div>
-                    <div class="stat-card bg-white p-4 rounded-2xl border-l-4 border-green-500 text-center dark:bg-slate-800"><p class="text-[10px] font-bold text-slate-400">DAILY</p><h4 class="text-lg font-bold" id="dailyVal">₹0</h4></div>
-                    <div class="stat-card bg-white p-4 rounded-2xl text-center dark:bg-slate-800"><p class="text-[10px] font-bold text-slate-400">HOURLY</p><h4 class="text-lg font-bold" id="hourlyVal">₹0</h4></div>
-                    <div class="stat-card bg-white p-4 rounded-2xl text-center dark:bg-slate-800"><p class="text-[10px] font-bold text-slate-400">MINUTE</p><h4 class="text-lg font-bold" id="minuteVal">₹0</h4></div>
+        <div class="bg-white p-6 rounded-3xl card-shadow">
+            <h3 class="text-lg font-bold mb-4">📅 Recurring Payments Schedule</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-blue-500">
+                    <span><b>iPhone EMI</b> (1st)</span><span class="font-bold text-slate-700">₹8,000</span>
                 </div>
-
-                <div class="glass-card p-6 rounded-3xl shadow-xl">
-                    <canvas id="growthChart" height="120"></canvas>
+                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-blue-400">
+                    <span><b>Android EMI</b> (1st)</span><span class="font-bold text-slate-700">₹5,000</span>
+                </div>
+                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-orange-500">
+                    <span><b>Car EMI</b> (5th)</span><span class="font-bold text-slate-700">₹8,500</span>
+                </div>
+                <div id="ccRow" class="flex justify-between p-3 bg-red-50 rounded-xl bill-row border-red-500">
+                    <span><b>Credit Card Bill</b> (12th)</span><span id="ccDisp" class="font-bold text-red-600">₹0</span>
+                </div>
+                <div class="flex justify-between p-3 bg-slate-50 rounded-xl bill-row border-green-500">
+                    <span><b>Room Rent</b> (20th)</span><span class="font-bold text-slate-700">₹7,000</span>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let chart;
-        let streak = 0;
-        let dCount = 0;
-        let cCount = 0;
+        let counts = { driving: 0, computer: 0 };
+        const fixedExpenses = 7000 + 8500 + 8000 + 5000; // 28500
 
-        function updateAdmission(type, val) {
-            if(type === 'driving') dCount = Math.max(0, dCount + val);
-            if(type === 'computer') cCount = Math.max(0, cCount + val);
-            
-            document.getElementById('drivingCount').innerText = dCount;
-            document.getElementById('computerCount').innerText = cCount;
-            
-            calculate();
-        }
-
-        function toggleDarkMode() {
-            document.getElementById('mainHtml').classList.toggle('dark');
-            document.getElementById('themeIcon').innerText = document.getElementById('mainHtml').classList.contains('dark') ? "☀️ Light Mode" : "🌙 Dark Mode";
+        function updateCount(type, val) {
+            counts[type] = Math.max(0, counts[type] + val);
+            document.getElementById(type + 'Count').innerText = counts[type];
             calculate();
         }
 
         function calculate() {
-            const target = parseFloat(document.getElementById('target').value) || 0;
-            const drivingFee = 4500;
-            const computerFee = 500;
+            const cc = parseFloat(document.getElementById('ccBill').value) || 0;
+            const totalLiability = fixedExpenses + cc;
+            
+            document.getElementById('totalLiability').innerText = `₹${totalLiability.toLocaleString()}`;
+            document.getElementById('ccDisp').innerText = `₹${cc.toLocaleString()}`;
 
-            // Update Earnings
-            const dEarned = dCount * drivingFee;
-            const cEarned = cCount * computerFee;
-            const totalEarned = dEarned + cEarned;
-            const short = target - totalEarned;
+            const currentEarned = (counts.driving * 4500) + (counts.computer * 500);
+            const remaining = totalLiability - currentEarned;
 
-            document.getElementById('drivingEarned').innerText = dEarned.toLocaleString();
-            document.getElementById('computerEarned').innerText = cEarned.toLocaleString();
-            document.getElementById('shortAmount').innerText = short > 0 ? `₹${short.toLocaleString()}` : "Goal Reached! 🎉";
-            document.getElementById('shortAmount').className = short > 0 ? "text-4xl font-black text-red-400" : "text-4xl font-black text-green-400";
-
-            // AI Advice for "Kyun short hai & kya karein"
-            let nextAction = "";
-            if(short <= 0) {
-                nextAction = "Zabardast! Aapne aaj ka target poora kar liya. Ab extra profit save karein!";
-            } else if (short > 0) {
-                const addD = Math.ceil(short / drivingFee);
-                const addC = Math.ceil(short / computerFee);
-                nextAction = `Abhi ₹${short} bache hain. Pura karne ke liye <b>${addD} Driving</b> ya <b>${addC} Computer</b> admissions aur chahiye.`;
+            let solutionText = "";
+            if (remaining <= 0) {
+                solutionText = "🎉 <b>Target Poora!</b> Aapne saare bills cover kar liye hain. Ab jo bhi kamai hogi woh aapka net profit hai.";
+            } else {
+                const reqDriving = Math.ceil(remaining / 4500);
+                const reqComp = Math.ceil(remaining / 500);
+                solutionText = `Aapko abhi <b>₹${remaining.toLocaleString()}</b> aur chahiye. <br> Target: Sirf <b>${reqDriving} Driving</b> admissions YA <b>${reqComp} Computer</b> students.`;
             }
-            document.getElementById('nextAction').innerHTML = nextAction;
-
-            // Stats update
-            document.getElementById('weeklyVal').innerText = `₹${Math.round(target / 4.33).toLocaleString()}`;
-            document.getElementById('dailyVal').innerText = `₹${Math.round(target / 30).toLocaleString()}`;
-            document.getElementById('hourlyVal').innerText = `₹${(target / 720).toFixed(2)}`;
-            document.getElementById('minuteVal').innerText = `₹${(target / 43200).toFixed(2)}`;
-
-            updateChart(target);
-        }
-
-        function updateChart(monthly) {
-            const isDark = document.getElementById('mainHtml').classList.contains('dark');
-            const labels = ['1Y', '2Y', '3Y', '4Y', '5Y'];
-            let data = [];
-            let balance = 0;
-            for (let i = 1; i <= 5; i++) {
-                balance = (balance + (monthly * 12)) * 1.12;
-                data.push(Math.round(balance));
-            }
-            if (chart) chart.destroy();
-            const ctx = document.getElementById('growthChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        borderColor: isDark ? '#60a5fa' : '#2563eb',
-                        fill: true,
-                        backgroundColor: isDark ? 'rgba(96, 165, 250, 0.1)' : 'rgba(37, 99, 235, 0.1)',
-                        tension: 0.4
-                    }]
-                }
-            });
-        }
-
-        function increaseStreak() {
-            streak++;
-            document.getElementById('streakCount').innerText = `${streak} Day Streak`;
+            
+            document.getElementById('aiSolution').innerHTML = solutionText;
         }
 
         calculate();
