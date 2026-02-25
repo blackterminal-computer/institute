@@ -24,22 +24,45 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
 
-        /* --- New Banner Styling --- */
+        /* --- Updated Premium Banner Styling (No Overlap) --- */
         .slider-section { width: 100%; margin: 10px 0 15px 0; }
         .label-tag { padding-left: 20px; font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1.2px; margin-bottom: 10px; text-transform: uppercase; }
+        
         .banner-card { 
-            margin: 0 20px; height: 180px; border-radius: 24px; 
+            margin: 0 20px; border-radius: 24px; 
             position: relative; overflow: hidden; border: 1px solid var(--glass-border);
-            background: var(--glass);
+            background: #0f172a; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .banner-card img { width: 100%; height: 100%; object-fit: cover; }
-        .banner-overlay { 
-            position: absolute; inset: 0; 
-            background: linear-gradient(to top, rgba(2, 6, 23, 0.9), transparent); 
-            display: flex; flex-direction: column; justify-content: flex-end; padding: 18px; 
+        
+        #offerImg { 
+            width: 100%; height: 160px; object-fit: cover; display: block;
         }
 
-        /* --- Rest of your original CSS --- */
+        /* Text area moved below the image to prevent overlap */
+        .banner-text-bar {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #offerTitle { font-size: 14px; font-weight: 800; color: #fff; margin: 0; }
+        #offerTag {
+            background: var(--accent); color: #000; padding: 3px 8px;
+            border-radius: 6px; font-size: 9px; font-weight: 900; text-transform: uppercase;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, #0f172a 25%, #1e293b 50%, #0f172a 75%);
+            background-size: 200% 100%; animation: loading 1.5s infinite;
+        }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* --- Your Original CSS Unchanged --- */
         #adminAlert {
             position: fixed; top: 20px; left: 20px; right: 20px; 
             background: rgba(99, 102, 241, 0.2); border: 1px solid var(--primary);
@@ -140,15 +163,17 @@
         <div class="marquee-content" id="marqueeMsg">Syncing with terminal...</div>
     </div>
 
-    <div class="slider-section">
-        <p class="label-tag">System Spotlight</p>
-        <div class="banner-card">
-            <img id="dailyImg" src="" alt="Daily Tech Image">
-            <div class="banner-overlay">
-                <span style="font-size: 9px; color: var(--accent); font-weight: 900; letter-spacing: 1px;">ELITE REFRESH</span>
-                <h3 style="font-size: 16px; font-weight: 800; margin-top: 4px;">Personalized Feed</h3>
+    <div class="slider-section" id="bannerContainer" style="display: none;">
+        <p class="label-tag" id="offerTagLabel">Elite Spotlight</p>
+        <a id="bannerLink" style="text-decoration: none;">
+            <div class="banner-card shimmer" id="bannerCardBox">
+                <img id="offerImg" src="" alt="Banner" onload="document.getElementById('bannerCardBox').classList.remove('shimmer')">
+                <div class="banner-text-bar">
+                    <h3 id="offerTitle">---</h3>
+                    <span id="offerTag">OFFER</span>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 
  <div class="xp-card">
@@ -229,11 +254,6 @@
         const student = localStorage.getItem("studentName") || "Guest";
         let userXP = 0;
 
-        // --- NEW DAILY USER IMAGE LOGIC ---
-        const today = new Date().toISOString().slice(0, 10);
-        const uniqueSeed = `${student}-${today}-tech-pc`;
-        document.getElementById('dailyImg').src = `https://picsum.photos/seed/${uniqueSeed}/800/600`;
-
         // --- STREAK LOGIC STARTS ---
         async function updateStreakLogic(data) {
             const today = new Date();
@@ -241,15 +261,15 @@
             const lastVisit = localStorage.getItem(student + "_last_visit");
             let streak = data.streak || 0;
 
-            if (lastVisit === todayStr) return; // Aaj visit ho chuka hai
+            if (lastVisit === todayStr) return; 
 
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
 
             if (lastVisit === yesterday.toDateString()) {
-                streak += 1; // Kal visit kiya tha
+                streak += 1; 
             } else {
-                streak = 1; // Gap hua toh 1
+                streak = 1; 
             }
 
             localStorage.setItem(student + "_last_visit", todayStr);
@@ -272,7 +292,7 @@
             const cMsg = localStorage.getItem("marquee_cache");
 
             if(cXP) { userXP = parseInt(cXP); updateXPUI(userXP); }
-            if(cRank) document.getElementById("instRank").innerText = "#" + cRank;
+            if(cRank) document.getElementById("instRank").innerText = "#" + r;
             if(cStreak) document.getElementById("sCount").innerText = "🔥 " + cStreak + " Days";
             if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
         }
@@ -299,6 +319,31 @@
         }
 
         async function syncData() {
+            // --- OFFER BANNER SYNC LOGIC ---
+            onSnapshot(doc(db, "settings", "offer"), (snap) => {
+                if(snap.exists()){
+                    const data = snap.data();
+                    const bannerBox = document.getElementById("bannerContainer");
+                    if(data.status === "on") {
+                        bannerBox.style.display = "block";
+                        
+                        let imgUrl = data.image;
+                        // Auto-fix for ImgBB direct link
+                        if(imgUrl.includes("ibb.co/") && !imgUrl.includes("i.ibb.co")) {
+                            imgUrl = imgUrl.replace("ibb.co/", "i.ibb.co/") + ".png";
+                        }
+
+                        document.getElementById("offerImg").src = imgUrl;
+                        document.getElementById("offerTitle").innerText = data.title;
+                        document.getElementById("offerTag").innerText = data.tag || "OFFER";
+                        document.getElementById("offerTagLabel").innerText = data.label || "Elite Spotlight";
+                        if(data.link) document.getElementById("bannerLink").href = data.link;
+                    } else {
+                        bannerBox.style.display = "none";
+                    }
+                }
+            });
+
             onSnapshot(doc(db, "settings", "marquee"), (snap) => {
                 if(snap.exists()){
                     const newMsg = snap.data().msg;
