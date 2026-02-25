@@ -14,6 +14,13 @@
         .paid-row { border-left-color: #22c55e !important; opacity: 0.6; background-color: #f0fdf4 !important; }
         .paid-text { text-decoration: line-through; }
         .timer-badge { font-size: 0.65rem; padding: 2px 8px; border-radius: 99px; font-weight: bold; }
+        
+        /* New Highlights */
+        .target-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-left: 5px solid #3b82f6; }
+        .blink-urgent { animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0.7; } }
+        .progress-container { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; overflow: hidden; }
+        .progress-bar { height: 100%; background: #22c55e; transition: width 0.5s ease; }
     </style>
 </head>
 <body class="p-4 md:p-6">
@@ -24,7 +31,7 @@
                 <h1 class="text-3xl font-extrabold text-slate-900">Finance <span class="text-blue-600">Command Center</span></h1>
                 <p class="text-slate-500 font-medium">Monthly Admissions & Bill Tracker</p>
             </div>
-            <button onclick="saveMonthlyData()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold">💾 Save Month</button>
+            <button onclick="saveMonthlyData()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-700">💾 Save Month</button>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -46,50 +53,72 @@
                 <p class="text-xs text-slate-500">Balance: <span id="ccBalanceDisplay" class="font-bold text-red-500">₹0</span></p>
             </div>
 
-            <div class="bg-slate-900 text-white p-6 rounded-3xl card-shadow flex flex-col justify-center">
-                <p class="text-slate-400 text-sm font-bold uppercase">Net Pending Amount</p>
+            <div class="bg-slate-900 text-white p-6 rounded-3xl card-shadow flex flex-col justify-center border-b-4 border-red-500">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Net Amount To Earn</p>
                 <h2 id="totalLiability" class="text-5xl font-black text-red-400 mt-2">₹0</h2>
                 <div class="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                    <span class="text-xs opacity-60">Last Month: <b id="lastMonthVal">₹0</b></span>
-                    <span class="text-xs opacity-60">Today: <b id="todayDate">Date</b></span>
+                    <span class="text-[10px] opacity-60">Last Month: <b id="lastMonthVal">₹0</b></span>
+                    <span class="text-[10px] opacity-60"><b id="todayDate">Date</b></span>
                 </div>
             </div>
         </div>
 
+        <div class="target-card text-white p-8 rounded-[2.5rem] shadow-2xl mb-8 relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="font-extrabold text-blue-400 uppercase tracking-tighter text-sm">Target Admissions Required</h3>
+                    <span id="progressText" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">0% Covered</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="text-center p-4 bg-white/5 rounded-3xl border border-white/10">
+                        <p class="text-slate-400 text-[10px] uppercase font-bold mb-1">Driving School</p>
+                        <div class="text-4xl font-black text-orange-400" id="reqDriving">0</div>
+                        <p class="text-[10px] text-slate-500 mt-1">Students (₹4.5k)</p>
+                    </div>
+                    <div class="text-center p-4 bg-white/5 rounded-3xl border border-white/10">
+                        <p class="text-slate-400 text-[10px] uppercase font-bold mb-1">Computer Inst.</p>
+                        <div class="text-4xl font-black text-purple-400" id="reqComp">0</div>
+                        <p class="text-[10px] text-slate-500 mt-1">Students (₹500)</p>
+                    </div>
+                </div>
+
+                <div class="progress-container mb-2">
+                    <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+                </div>
+                <p id="aiSolution" class="text-sm font-medium italic text-slate-300 text-center">Calculations loading...</p>
+            </div>
+        </div>
+
         <div class="bg-white p-6 rounded-3xl card-shadow mb-8">
-            <h3 class="text-sm font-bold mb-4 text-slate-400 uppercase text-center tracking-widest">Liability Fluctuation</h3>
+            <h3 class="text-sm font-bold mb-4 text-slate-400 uppercase text-center tracking-widest text-slate-400">Monthly Fluctuation Graph</h3>
             <canvas id="debtChart" height="80"></canvas>
         </div>
 
-        <div class="bg-white p-6 rounded-3xl card-shadow mb-8 border-2 border-blue-500">
-            <h3 class="text-lg font-bold mb-6">🚀 Admissions Tracker (₹4.5k / ₹500)</h3>
+        <div class="bg-white p-6 rounded-3xl card-shadow mb-8 border-2 border-slate-100">
+            <h3 class="text-lg font-bold mb-6 flex items-center gap-2">✅ Add Current Admissions</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex justify-between items-center">
                     <span><b>Driving School</b></span>
                     <div class="flex items-center gap-3">
-                        <button onclick="updateCount('driving', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl">-</button>
-                        <span id="drivingCount" class="text-2xl font-black w-8 text-center">0</span>
+                        <button onclick="updateCount('driving', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl text-orange-600">-</button>
+                        <span id="drivingCount" class="text-2xl font-black w-8 text-center text-orange-700">0</span>
                         <button onclick="updateCount('driving', 1)" class="w-8 h-8 bg-orange-500 text-white rounded-full shadow font-bold text-xl">+</button>
                     </div>
                 </div>
                 <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex justify-between items-center">
                     <span><b>Computer Inst.</b></span>
                     <div class="flex items-center gap-3">
-                        <button onclick="updateCount('computer', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl">-</button>
-                        <span id="computerCount" class="text-2xl font-black w-8 text-center">0</span>
+                        <button onclick="updateCount('computer', -1)" class="w-8 h-8 bg-white rounded-full shadow font-bold text-xl text-purple-600">-</button>
+                        <span id="computerCount" class="text-2xl font-black w-8 text-center text-purple-700">0</span>
                         <button onclick="updateCount('computer', 1)" class="w-8 h-8 bg-purple-500 text-white rounded-full shadow font-bold text-xl">+</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="bg-blue-600 text-white p-6 rounded-3xl shadow-lg mb-8">
-            <h3 class="font-bold mb-1 flex items-center gap-2">💡 AI Next Step:</h3>
-            <div id="aiSolution" class="text-lg leading-relaxed font-medium">Calculations loading...</div>
-        </div>
-
         <div class="bg-white p-6 rounded-3xl card-shadow">
-            <h3 class="text-lg font-bold mb-4">📅 Fixed Bills (Tick if Paid)</h3>
+            <h3 class="text-lg font-bold mb-4 text-slate-800">📅 Fixed Bills (Checklist)</h3>
             <div id="billContainer" class="space-y-3"></div>
         </div>
     </div>
@@ -111,17 +140,10 @@
             const currentDay = today.getDate();
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
-            
             let targetDate = new Date(currentYear, currentMonth, targetDay);
-            if (currentDay > targetDay) {
-                targetDate = new Date(currentYear, currentMonth + 1, targetDay);
-            }
-            
-            const diffTime = targetDate - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 0) return "Due Today!";
-            return `${diffDays} days left`;
+            if (currentDay > targetDay) targetDate = new Date(currentYear, currentMonth + 1, targetDay);
+            const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+            return diffDays === 0 ? "Due Today!" : `${diffDays} days left`;
         }
 
         function updateCount(type, val) {
@@ -136,11 +158,9 @@
         }
 
         function calculate() {
-            // Update Date
             const now = new Date();
             document.getElementById('todayDate').innerText = now.toDateString();
 
-            // CC Calculation
             const ccTotal = parseFloat(document.getElementById('ccBill').value) || 0;
             const ccPaid = parseFloat(document.getElementById('ccPaid').value) || 0;
             const ccBalance = Math.max(0, ccTotal - ccPaid);
@@ -148,20 +168,20 @@
             document.getElementById('ccTimer').innerText = getDaysLeft(12);
 
             let fixedUnpaid = 0;
+            let totalLiabilityAll = ccTotal;
             const billContainer = document.getElementById('billContainer');
             billContainer.innerHTML = '';
 
             bills.forEach((bill, index) => {
+                totalLiabilityAll += bill.amount;
                 if (!bill.paid) fixedUnpaid += bill.amount;
-                const daysStr = getDaysLeft(bill.date);
-
                 billContainer.innerHTML += `
                     <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl bill-row border-${bill.color} ${bill.paid ? 'paid-row' : ''}">
                         <div class="flex items-center gap-3">
                             <input type="checkbox" ${bill.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-5 h-5 accent-green-600">
                             <div>
-                                <p class="${bill.paid ? 'paid-text' : ''} font-bold text-sm">${bill.name} (₹${bill.amount.toLocaleString()})</p>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase">${daysStr}</p>
+                                <p class="${bill.paid ? 'paid-text' : ''} font-bold text-sm">${bill.name}</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase">${getDaysLeft(bill.date)}</p>
                             </div>
                         </div>
                         <span class="font-black text-slate-700">₹${bill.amount.toLocaleString()}</span>
@@ -171,38 +191,44 @@
 
             const netLiability = fixedUnpaid + ccBalance;
             const currentEarned = (counts.driving * 4500) + (counts.computer * 500);
-            const remaining = netLiability - currentEarned;
+            const remaining = Math.max(0, netLiability - currentEarned);
 
-            document.getElementById('totalLiability').innerText = `₹${Math.max(0, remaining).toLocaleString()}`;
+            // Progress Logic
+            const progress = totalLiabilityAll > 0 ? Math.min(100, (currentEarned / totalLiabilityAll) * 100) : 0;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').innerText = Math.round(progress) + '% Covered';
+
+            document.getElementById('totalLiability').innerText = `₹${remaining.toLocaleString()}`;
             document.getElementById('lastMonthVal').innerText = `₹${historyData[historyData.length-1].toLocaleString()}`;
 
-            let solutionText = "";
+            // Required Highlight
+            const rD = Math.ceil(remaining / 4500);
+            const rC = Math.ceil(remaining / 500);
+            document.getElementById('reqDriving').innerText = remaining > 0 ? rD : 0;
+            document.getElementById('reqComp').innerText = remaining > 0 ? rC : 0;
+
             if (remaining <= 0) {
-                solutionText = "🎉 <b>Kamal ho gaya!</b> Saare pending bills cover hain.";
+                document.getElementById('aiSolution').innerHTML = "🎉 <b class='text-green-400'>Mission Accomplished!</b> All bills are covered.";
             } else {
-                const reqD = Math.ceil(remaining / 4500);
-                const reqC = Math.ceil(remaining / 500);
-                solutionText = `₹${remaining.toLocaleString()} cover karne ke liye <b>${reqD} Driving</b> ya <b>${reqC} Computer</b> admissions bache hain.`;
+                document.getElementById('aiSolution').innerHTML = `Focus on getting <b>${rD} Driving</b> or <b>${rC} Computer</b> admissions to clear ₹${remaining.toLocaleString()}.`;
             }
-            document.getElementById('aiSolution').innerHTML = solutionText;
             updateGraph(remaining);
         }
 
         function updateGraph(current) {
             const ctx = document.getElementById('debtChart').getContext('2d');
             if(myChart) myChart.destroy();
-            let dataToShow = [...historyData.slice(-5), current];
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['H1', 'H2', 'H3', 'H4', 'H5', 'NOW'],
                     datasets: [{
-                        data: dataToShow,
+                        data: [...historyData.slice(-5), current],
                         borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.05)',
                         fill: true,
                         tension: 0.4,
-                        pointRadius: 3
+                        pointRadius: 2
                     }]
                 },
                 options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: true } } }
@@ -211,11 +237,11 @@
 
         function saveMonthlyData() {
             const ccTotal = parseFloat(document.getElementById('ccBill').value) || 0;
-            const totalThisMonth = ccTotal + bills.reduce((a, b) => a + b.amount, 0);
-            historyData.push(totalThisMonth);
+            const total = ccTotal + bills.reduce((a, b) => a + b.amount, 0);
+            historyData.push(total);
             if(historyData.length > 10) historyData.shift();
             localStorage.setItem('ss_history', JSON.stringify(historyData));
-            alert("Data saved!");
+            alert("This month's liability saved!");
             calculate();
         }
 
