@@ -1,84 +1,138 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Black Terminal | Profile</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Elite Profile</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root {
-            --neon-green: #22c55e;
-            --neon-blue: #06b6d4;
-            --dark-bg: #020617;
-            --card-bg: #0f172a;
+            --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
+            --success: #22c55e; --danger: #ef4444;
         }
-        body { background: var(--dark-bg); color: white; font-family: 'Segoe UI', Arial; margin: 0; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 420px; padding: 15px; padding-bottom: 100px; }
-        
-        /* Profile Card */
-        .card { background: var(--card-bg); padding: 25px; border-radius: 28px; border: 1px solid #1e293b; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        /* Avatar & Level Ring */
-        .avatar-container { position: relative; width: 150px; height: 150px; margin: 0 auto 15px; }
+
+        body { 
+            background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; 
+            margin: 0; padding-bottom: 120px; overflow-x: hidden;
+            background-image: radial-gradient(circle at 0% 0%, #1e1b4b 0%, transparent 50%);
+        }
+
+        .container { width: 100%; max-width: 450px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+
+        /* --- Profile Header --- */
+        .profile-header { text-align: center; margin-bottom: 30px; position: relative; }
+        .avatar-wrapper { position: relative; width: 125px; height: 125px; margin: 0 auto 15px; }
         .avatar { 
-            width: 100%; height: 100%; border-radius: 50%; 
-            border: 4px solid var(--neon-green); object-fit: cover;
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); cursor: pointer;
+            width: 100%; height: 100%; border-radius: 40px; object-fit: cover;
+            border: 2px solid var(--accent); padding: 4px; background: var(--glass);
+            transition: 0.3s ease;
         }
-        .level-badge {
-            position: absolute; bottom: 0; right: 0;
-            background: var(--neon-green); color: black; font-weight: bold;
-            padding: 5px 12px; border-radius: 20px; font-size: 14px;
+        .level-tag {
+            position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+            background: var(--primary); color: white; padding: 5px 15px;
+            border-radius: 12px; font-weight: 800; font-size: 11px; white-space: nowrap;
+            box-shadow: 0 5px 15px rgba(99,102,241,0.4);
         }
 
-        /* Stats Grid */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .stat-item { background: var(--dark-bg); padding: 12px; border-radius: 15px; border: 1px solid #1e293b; text-align: center; }
-        .stat-val { display: block; font-size: 18px; font-weight: bold; color: var(--neon-blue); }
-        .stat-label { font-size: 12px; opacity: 0.6; }
+        /* --- Stats Row --- */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px; }
+        .stat-card { 
+            background: var(--glass); border: 1px solid var(--glass-border); 
+            padding: 15px 5px; border-radius: 20px; text-align: center; backdrop-filter: blur(10px);
+        }
+        .stat-num { font-size: 18px; font-weight: 800; color: var(--accent); display: block; }
+        .stat-lbl { font-size: 9px; opacity: 0.5; text-transform: uppercase; margin-top: 4px; }
 
-        input, textarea { width: 90%; padding: 12px; margin-top: 10px; border-radius: 10px; border: 1px solid #1e293b; background: #020617; color: white; outline: none; }
+        /* --- Academic Card (Admin Sync) --- */
+        .academic-card {
+            background: linear-gradient(145deg, rgba(99,102,241,0.15) 0%, rgba(15,23,42,1) 100%);
+            border-radius: 28px; padding: 22px; border: 1px solid var(--glass-border); margin-bottom: 25px;
+            position: relative; overflow: hidden;
+        }
+        .card-label { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .course-title { font-size: 20px; font-weight: 800; margin: 0; color: #fff; }
+        .duration-text { font-size: 13px; color: #94a3b8; margin: 6px 0 18px 0; display: block; }
         
-        button { width: 100%; padding: 12px; border: none; border-radius: 12px; margin-top: 10px; font-weight: bold; background: linear-gradient(90deg, #6366f1, #06b6d4); color: white; cursor: pointer; }
-        .save-btn { background: #1e293b; border: 1px solid #334155; font-size: 12px; width: auto; padding: 5px 15px; }
+        .status-flex { display: flex; gap: 10px; flex-wrap: wrap; }
+        .status-badge { 
+            background: rgba(255,255,255,0.03); padding: 7px 14px; border-radius: 12px; 
+            font-size: 12px; font-weight: 700; border: 1px solid var(--glass-border); 
+            transition: 0.3s;
+        }
 
-        .homeBtn { position: fixed; bottom: 20px; width: 90%; max-width: 380px; z-index: 100; }
+        /* --- Edit Section --- */
+        .edit-box { background: var(--glass); border-radius: 28px; padding: 22px; border: 1px solid var(--glass-border); }
+        input, textarea { 
+            width: 100%; background: #0f172a; border: 1px solid var(--glass-border); 
+            padding: 14px; border-radius: 15px; color: white; font-size: 14px; margin-bottom: 12px; outline: none; box-sizing: border-box;
+        }
+        .update-btn { 
+            width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); 
+            color: white; border: none; padding: 15px; border-radius: 15px; font-weight: 800; cursor: pointer;
+        }
+
+        /* --- Floating Home --- */
+        .home-nav {
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 380px; background: #fff; color: #000;
+            padding: 16px; border-radius: 22px; text-align: center; font-weight: 800;
+            text-decoration: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5); z-index: 1000;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card">
-        <div class="avatar-container">
+    <div class="profile-header">
+        <div class="avatar-wrapper">
             <img id="photo" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" onclick="document.getElementById('file').click()">
-            <div class="level-badge" id="lvl-txt">Lvl 1</div>
+            <div class="level-tag" id="lvl-txt">LVL 1 STUDENT</div>
             <input type="file" id="file" accept="image/*" hidden>
         </div>
+        <h2 id="showName" style="margin: 0; font-size: 26px;">---</h2>
+        <p id="showBio" style="font-size: 14px; opacity: 0.6; margin-top: 8px;">Syncing with database...</p>
+    </div>
 
-        <h2 id="showName" style="margin: 10px 0 5px 0;">Student</h2>
-        <p id="showBio" style="font-size: 14px; opacity: 0.7; margin-bottom: 20px;">No bio yet</p>
-
-        <div class="stats-grid">
-            <div class="stat-item"><span class="stat-val" id="xp">0</span><span class="stat-label">Total XP</span></div>
-            <div class="stat-item"><span class="stat-val" id="streak">0</span><span class="stat-label">🔥 Streak</span></div>
-            <div class="stat-item"><span class="stat-val" id="rank">#--</span><span class="stat-label">Global Rank</span></div>
-            <div class="stat-item"><span class="stat-val" id="lvl-num">1</span><span class="stat-label">Level</span></div>
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-num" id="xp">0</span>
+            <span class="stat-lbl">XP Points</span>
         </div>
+        <div class="stat-card">
+            <span class="stat-num" id="rank">#--</span>
+            <span class="stat-lbl">Global Rank</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-num" id="streak">0</span>
+            <span class="stat-lbl">🔥 Streak</span>
+        </div>
+    </div>
 
-        <hr style="border: 0.5px solid #1e293b; margin: 25px 0;">
-
-        <h4 style="text-align: left; margin-bottom: 5px;">Edit Profile</h4>
-        <input id="nameInput" placeholder="Update Name">
-        <button class="save-btn" onclick="saveName()">Update Name</button>
+    <div class="academic-card">
+        <div class="card-label"><i class="ri-shield-check-fill"></i> Enrollment Details</div>
+        <h3 class="course-title" id="showCourse">Loading Course...</h3>
+        <span class="duration-text" id="showDuration">Duration: --</span>
         
-        <textarea id="bioInput" placeholder="Write something cool..."></textarea>
-        <button class="save-btn" onclick="saveBio()">Update Bio</button>
+        <div class="status-flex">
+            <div class="status-badge" id="feeStatus">Fees: --</div>
+            <div class="status-badge" id="lastMonth">Month: --</div>
+        </div>
+    </div>
+
+    <div class="edit-box">
+        <div class="card-label"><i class="ri-user-settings-line"></i> Customize Profile</div>
+        <textarea id="bioInput" rows="2" placeholder="Tell the world about yourself..."></textarea>
+        <button class="update-btn" onclick="updateProfile()">Update Profile</button>
     </div>
 </div>
 
-<button class="homeBtn" onclick="location.href='index.html'">🏠 Home</button>
+<a href="index.html" class="home-nav"><i class="ri-home-4-fill"></i> Return to Terminal</a>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -91,85 +145,89 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    let studentID = localStorage.getItem("studentName") || "Guest";
 
-    // Ye zaroori hai: current user check karne ke liye
-    let student = localStorage.getItem("studentName");
-
-    async function loadProfile() {
-        if(!student) return;
-
-        const ref = doc(db, "students", student);
-        const snap = await getDoc(ref);
-
-        if (snap.exists()) {
-            const d = snap.data();
-            
-            // Photo Fix: Direct UI Update
-            if (d.photo) {
-                document.getElementById("photo").src = d.photo;
-            }
-
-            document.getElementById("showName").innerText = student;
-            document.getElementById("showBio").innerText = d.bio || "No bio yet";
-            document.getElementById("xp").innerText = d.xp || 0;
-            document.getElementById("streak").innerText = d.streak || 0;
-
-            // Level Logic (e.g., Every 500 XP = 1 Level)
-            let level = Math.floor((d.xp || 0) / 500) + 1;
-            document.getElementById("lvl-txt").innerText = "Lvl " + level;
-            document.getElementById("lvl-num").innerText = level;
+    // --- REAL-TIME ENGINE ---
+    function startRealTimeSync() {
+        if(studentID === "Guest") {
+            document.getElementById("showName").innerText = "Guest User";
+            return;
         }
 
-        // Global Rank calculation
-        const snap2 = await getDocs(collection(db, "students"));
-        let arr = [];
-        snap2.forEach(s => arr.push({ name: s.id, xp: s.data().xp || 0 }));
-        arr.sort((a, b) => b.xp - a.xp);
-        let r = arr.findIndex(x => x.name == student) + 1;
-        if (r > 0) document.getElementById("rank").innerText = "#" + r;
+        // Yeh function bina refresh kiye data update karega
+        onSnapshot(doc(db, "students", studentID), (snap) => {
+            if (snap.exists()) {
+                const d = snap.data();
+                
+                // Text Updates
+                document.getElementById("showName").innerText = studentID;
+                document.getElementById("showBio").innerText = d.bio || "Student at Black Terminal";
+                document.getElementById("xp").innerText = d.xp || 0;
+                document.getElementById("streak").innerText = d.streak || 0;
+                if(d.photo) document.getElementById("photo").src = d.photo;
+
+                // Admin Updates
+                document.getElementById("showCourse").innerText = d.currentCourse || "Not Assigned Yet";
+                document.getElementById("showDuration").innerText = "Course Duration: " + (d.courseDuration || "TBD");
+                
+                const feeBox = document.getElementById("feeStatus");
+                const status = d.paymentStatus || "Pending";
+                feeBox.innerText = "Payment: " + status;
+                
+                // Color Switching Logic
+                if(status === "Paid") {
+                    feeBox.style.color = "#22c55e";
+                    feeBox.style.borderColor = "rgba(34,197,94,0.4)";
+                    feeBox.style.background = "rgba(34,197,94,0.05)";
+                } else {
+                    feeBox.style.color = "#ef4444";
+                    feeBox.style.borderColor = "rgba(239,68,68,0.4)";
+                    feeBox.style.background = "rgba(239,68,68,0.05)";
+                }
+
+                document.getElementById("lastMonth").innerText = "Billing: " + (d.lastPaymentMonth || "None");
+
+                // Dynamic Leveling
+                let level = Math.floor((d.xp || 0) / 500) + 1;
+                document.getElementById("lvl-txt").innerText = "LVL " + level + " STUDENT";
+            }
+        });
+
+        updateRank();
     }
 
-    window.onload = loadProfile;
+    async function updateRank() {
+        const snap = await getDocs(collection(db, "students"));
+        let arr = [];
+        snap.forEach(s => arr.push({id: s.id, xp: s.data().xp || 0}));
+        arr.sort((a,b) => b.xp - a.xp);
+        let rank = arr.findIndex(x => x.id === studentID) + 1;
+        document.getElementById("rank").innerText = "#" + rank;
+    }
 
-    window.saveName = async function() {
-        let newName = document.getElementById("nameInput").value.trim();
-        if (!newName) return;
-        localStorage.setItem("studentName", newName);
-        student = newName; // update variable
-        await setDoc(doc(db, "students", newName), { xp: 0 }, { merge: true });
-        location.reload();
+    window.updateProfile = async () => {
+        let nBio = document.getElementById("bioInput").value.trim();
+        if(!nBio) return alert("Write something first!");
+        
+        await updateDoc(doc(db, "students", studentID), {
+            bio: nBio
+        });
+        alert("Profile Bio Updated! ✨");
     };
 
-    window.saveBio = async function() {
-        let bio = document.getElementById("bioInput").value;
-        await setDoc(doc(db, "students", student), { bio: bio }, { merge: true });
-        document.getElementById("showBio").innerText = bio;
-        alert("Bio Updated!");
-    };
-
-    // Photo Upload Fix
-    document.getElementById("file").addEventListener("change", function(e) {
+    // Photo Upload (Base64)
+    document.getElementById("file").onchange = e => {
         let file = e.target.files[0];
-        if (!file) return;
-
         let reader = new FileReader();
-        reader.onload = async function(event) {
-            let base64 = event.target.result;
-            
-            // 1. Pehle UI update karo (instant feel)
-            document.getElementById("photo").src = base64;
-
-            // 2. Firebase mein save karo
-            try {
-                await setDoc(doc(db, "students", student), { photo: base64 }, { merge: true });
-                alert("Profile Photo Updated! 🔥");
-            } catch (err) {
-                console.error(err);
-                alert("Photo too large! Try a smaller image.");
-            }
+        reader.onload = async () => {
+            const b64 = reader.result;
+            document.getElementById("photo").src = b64;
+            await updateDoc(doc(db, "students", studentID), { photo: b64 });
         };
         reader.readAsDataURL(file);
-    });
+    };
+
+    window.onload = startRealTimeSync;
 </script>
 </body>
 </html>
