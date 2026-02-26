@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Elite Admin Console v9</title>
+    <title>BT | Elite Admin Console v6</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root {
@@ -50,19 +50,9 @@
     <div class="admin-grid">
         <div class="admin-box" style="grid-column: 1 / -1;">
             <h2><i class="ri-user-add-line"></i> Step 1: Select or Create Student</h2>
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
-                <div>
-                    <label>Existing Students</label>
-                    <select id="studentList" style="margin-bottom:0;"><option>Loading students...</option></select>
-                </div>
-                <div>
-                    <label>New ID</label>
-                    <input type="text" id="newRegName" placeholder="Student ID" style="margin-bottom: 0;">
-                </div>
-                <div>
-                    <label>Adm. Date</label>
-                    <input type="date" id="admDate" style="margin-bottom: 0;">
-                </div>
+            <div style="display: flex; gap: 10px;">
+                <select id="studentList" style="flex: 2;"><option>Loading students...</option></select>
+                <input type="text" id="newRegName" placeholder="New Student ID" style="flex: 1; margin-bottom: 0;">
                 <button class="btn btn-create" style="width: auto; margin-bottom: 0;" onclick="createNewStudent()">Register</button>
             </div>
         </div>
@@ -96,9 +86,6 @@
             <label>Month Name</label>
             <input type="text" id="targetMonth" value="February 2026">
 
-            <label>Fee Amount</label>
-            <input type="number" id="feeAmt" placeholder="Amount (e.g. 500)" value="500">
-
             <div style="display: flex; gap: 10px;">
                 <button class="btn btn-paid" onclick="processFee('Paid')">Mark Paid</button>
                 <button class="btn btn-unpaid" onclick="processFee('Pending')">Pending</button>
@@ -114,35 +101,20 @@
         <div class="admin-box">
             <h2><i class="ri-notification-3-line"></i> Personal Alert</h2>
             <textarea id="popupMsg" rows="3" placeholder="Message for student dashboard..."></textarea>
-            
-            <div style="display: flex; gap: 10px;">
-                <div style="flex:1">
-                    <label>Alert Style</label>
-                    <select id="popupType">
-                        <option value="info">Info (Blue)</option>
-                        <option value="success">Success (Green)</option>
-                        <option value="warning">Warning (Gold)</option>
-                        <option value="danger">Danger (Red)</option>
-                    </select>
-                </div>
-                <div style="flex:1">
-                    <label>Duration</label>
-                    <select id="popupDuration">
-                        <option value="5000">5 Sec</option>
-                        <option value="10000" selected>10 Sec</option>
-                        <option value="30000">30 Sec</option>
-                        <option value="999999">Until Closed</option>
-                    </select>
-                </div>
-            </div>
-            
+            <label>Alert Style</label>
+            <select id="popupType">
+                <option value="info">Info (Blue)</option>
+                <option value="success">Success (Green)</option>
+                <option value="warning">Warning (Gold)</option>
+                <option value="danger">Danger (Red)</option>
+            </select>
             <button class="btn btn-course" style="background: var(--accent); color: #083344;" onclick="sendPopup()">Send Now</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, updateDoc, setDoc, increment, collection, getDocs, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, updateDoc, setDoc, increment, collection, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -169,16 +141,13 @@
         // --- Register New Student ---
         window.createNewStudent = async () => {
             const name = document.getElementById('newRegName').value.trim();
-            const date = document.getElementById('admDate').value;
             if(!name) return alert("Naam likho!");
             
             await setDoc(doc(db, "students", name), {
                 xp: 0,
                 streak: 0,
                 paymentStatus: "Pending",
-                bio: "New Student at Black Terminal",
-                admissionDate: date || "Not Set",
-                history: []
+                bio: "New Student at Black Terminal"
             }, { merge: true });
             
             alert("Student Created!");
@@ -204,31 +173,16 @@
         window.processFee = async (status) => {
             const id = document.getElementById('studentList').value;
             const month = document.getElementById('targetMonth').value;
-            const amt = document.getElementById('feeAmt').value;
-            const dateObj = new Date();
-            const date = dateObj.getDate();
-            const fullDate = dateObj.toLocaleDateString();
-
+            const date = new Date().getDate();
             if(!id) return alert("Student select karein!");
 
             let xp = (status === 'Paid') ? (date <= 10 ? 100 : -200) : -200;
 
-            const updatePayload = {
+            await updateDoc(doc(db, "students", id), {
                 paymentStatus: status,
                 lastPaymentMonth: month,
                 xp: increment(xp)
-            };
-
-            // Paid hone par history mein add karein
-            if(status === 'Paid') {
-                updatePayload.history = arrayUnion({
-                    month: month,
-                    amount: amt,
-                    date: fullDate
-                });
-            }
-
-            await updateDoc(doc(db, "students", id), updatePayload);
+            });
             alert(`Updated! XP Change: ${xp}`);
         };
 
@@ -246,18 +200,10 @@
             const id = document.getElementById('studentList').value;
             const msg = document.getElementById('popupMsg').value;
             const type = document.getElementById('popupType').value;
-            const duration = document.getElementById('popupDuration').value;
-            
             if(!id || !msg) return alert("Details missing!");
 
             await updateDoc(doc(db, "students", id), {
-                popup: { 
-                    msg, 
-                    type, 
-                    show: true, 
-                    time: Date.now(),
-                    duration: parseInt(duration) 
-                }
+                popup: { msg, type, show: true, time: Date.now() }
             });
             alert("Popup sent to student!");
         };
