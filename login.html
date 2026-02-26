@@ -1,74 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Student Login</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body{
-background:#0e0f13;
-font-family:Arial;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-color:white;
-}
-.box{
-background:#171821;
-padding:30px;
-border-radius:12px;
-width:320px;
-}
-input,button{
-width:100%;
-padding:12px;
-margin-top:12px;
-border:none;
-border-radius:6px;
-}
-input{background:#232432;color:white}
-button{
-background:#4f8cff;
-color:white;
-font-weight:bold;
-cursor:pointer;
-}
-button:hover{opacity:.9}
-#msg{color:red;margin-top:10px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Black Terminal | Elite Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; }
+        body { 
+            background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; 
+            display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
+        }
+        .login-card { 
+            background: rgba(255,255,255,0.03); padding: 40px 30px; border-radius: 30px; 
+            border: 1px solid rgba(255,255,255,0.08); width: 90%; max-width: 380px; 
+            text-align: center; backdrop-filter: blur(20px);
+        }
+        h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; color: #fff; }
+        p { font-size: 12px; opacity: 0.5; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+        input { 
+            width: 100%; padding: 15px; margin: 12px 0; border-radius: 15px; 
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); 
+            color: white; outline: none; font-size: 14px; transition: 0.3s;
+        }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+        button { 
+            width: 100%; padding: 16px; margin-top: 20px; border-radius: 15px; border: none; 
+            background: linear-gradient(90deg, var(--primary), var(--accent)); 
+            color: white; font-weight: 800; cursor: pointer; transition: 0.3s;
+        }
+        button:active { transform: scale(0.98); }
+        #errorMsg { color: #ef4444; font-size: 12px; margin-top: 15px; display: none; font-weight: 600; }
+    </style>
 </head>
-
 <body>
 
-<div class="box">
-<h2>Student Login</h2>
+    <div class="login-card">
+        <h1>Student Login</h1>
+        <p>Enter Elite Credentials</p>
+        <input type="text" id="userName" placeholder="Full Name (e.g. Abhinnnn)" required>
+        <input type="tel" id="userMobile" placeholder="Mobile Number" maxlength="10" required>
+        <button onclick="handleLogin()">ACCESS TERMINAL</button>
+        <div id="errorMsg"></div>
+    </div>
 
-<input id="id" placeholder="Student ID">
-<input id="pass" type="password" placeholder="Password">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<button onclick="login()">Login</button>
-<p id="msg"></p>
-</div>
+        // Same config as your index.html
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-<script>
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-function login(){
-let id=document.getElementById("id").value.trim();
-let pass=document.getElementById("pass").value.trim();
+        window.handleLogin = async () => {
+            const name = document.getElementById('userName').value.trim();
+            const mobile = document.getElementById('userMobile').value.trim();
+            const error = document.getElementById('errorMsg');
 
-let students = JSON.parse(localStorage.getItem("students")) || [];
+            if(!name || mobile.length < 10) {
+                error.innerText = "⚠️ Enter valid Name and 10-digit Mobile Number.";
+                error.style.display = "block";
+                return;
+            }
 
-let found = students.find(s=>s.id===id && s.pass===pass);
+            try {
+                const docRef = doc(db, "students", name);
+                const docSnap = await getDoc(docRef);
 
-if(found){
-localStorage.setItem("studentName", found.name);
-window.location="dashboard.html";
-}else{
-document.getElementById("msg").innerHTML="Wrong ID or Password";
-}
-}
-</script>
+                if(docSnap.exists()) {
+                    // Existing User check
+                    if(docSnap.data().mobile === mobile) {
+                        saveAndRedirect(name);
+                    } else {
+                        error.innerText = "❌ Name exists with a different number.";
+                        error.style.display = "block";
+                    }
+                } else {
+                    // New Registration
+                    await setDoc(doc(db, "students", name), {
+                        mobile: mobile,
+                        xp: 0,
+                        streak: 1,
+                        paymentStatus: "Pending",
+                        joinedAt: new Date().toISOString()
+                    });
+                    saveAndRedirect(name);
+                }
+            } catch (e) {
+                error.innerText = "❌ Connection Error. Try again.";
+                error.style.display = "block";
+            }
+        };
 
+        function saveAndRedirect(name) {
+            localStorage.setItem("studentName", name);
+            window.location.href = "index.html"; 
+        }
+    </script>
 </body>
 </html>
