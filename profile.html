@@ -44,11 +44,10 @@
         .stat-num { font-size: 18px; font-weight: 800; color: var(--accent); display: block; }
         .stat-lbl { font-size: 9px; opacity: 0.5; text-transform: uppercase; margin-top: 4px; }
 
-        /* --- Academic Card (Admin Sync) --- */
+        /* --- Academic Card --- */
         .academic-card {
             background: linear-gradient(145deg, rgba(99,102,241,0.15) 0%, rgba(15,23,42,1) 100%);
             border-radius: 28px; padding: 22px; border: 1px solid var(--glass-border); margin-bottom: 25px;
-            position: relative; overflow: hidden;
         }
         .card-label { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         .course-title { font-size: 20px; font-weight: 800; margin: 0; color: #fff; }
@@ -58,21 +57,19 @@
         .status-badge { 
             background: rgba(255,255,255,0.03); padding: 7px 14px; border-radius: 12px; 
             font-size: 12px; font-weight: 700; border: 1px solid var(--glass-border); 
-            transition: 0.3s;
         }
 
         /* --- Edit Section --- */
         .edit-box { background: var(--glass); border-radius: 28px; padding: 22px; border: 1px solid var(--glass-border); }
-        input, textarea { 
+        textarea { 
             width: 100%; background: #0f172a; border: 1px solid var(--glass-border); 
-            padding: 14px; border-radius: 15px; color: white; font-size: 14px; margin-bottom: 12px; outline: none; box-sizing: border-box;
+            padding: 14px; border-radius: 15px; color: white; font-size: 14px; margin-bottom: 12px; outline: none; box-sizing: border-box; resize: none;
         }
         .update-btn { 
             width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); 
             color: white; border: none; padding: 15px; border-radius: 15px; font-weight: 800; cursor: pointer;
         }
 
-        /* --- Floating Home --- */
         .home-nav {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
             width: 85%; max-width: 380px; background: #fff; color: #000;
@@ -80,6 +77,8 @@
             text-decoration: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5); z-index: 1000;
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
+
+        @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 20px; opacity: 1; } }
     </style>
 </head>
 <body>
@@ -92,7 +91,7 @@
             <input type="file" id="file" accept="image/*" hidden>
         </div>
         <h2 id="showName" style="margin: 0; font-size: 26px;">---</h2>
-        <p id="showBio" style="font-size: 14px; opacity: 0.6; margin-top: 8px;">Syncing with database...</p>
+        <p id="showBio" style="font-size: 14px; opacity: 0.6; margin-top: 8px;">Syncing profile...</p>
     </div>
 
     <div class="stats-row">
@@ -112,8 +111,9 @@
 
     <div class="academic-card">
         <div class="card-label"><i class="ri-shield-check-fill"></i> Enrollment Details</div>
-        <h3 class="course-title" id="showCourse">Loading Course...</h3>
+        <h3 class="course-title" id="showCourse">Loading...</h3>
         <span class="duration-text" id="showDuration">Duration: --</span>
+        <span class="duration-text" id="showAdmDate" style="margin-top:-10px; font-size:11px;">Admission: --</span>
         
         <div class="status-flex">
             <div class="status-badge" id="feeStatus">Fees: --</div>
@@ -123,7 +123,7 @@
 
     <div class="edit-box">
         <div class="card-label"><i class="ri-user-settings-line"></i> Customize Profile</div>
-        <textarea id="bioInput" rows="2" placeholder="Tell the world about yourself..."></textarea>
+        <textarea id="bioInput" rows="2" placeholder="Update your status..."></textarea>
         <button class="update-btn" onclick="updateProfile()">Update Profile</button>
     </div>
 </div>
@@ -147,70 +147,54 @@
     const db = getFirestore(app);
     let studentID = localStorage.getItem("studentName");
 
-    // --- LOGIN PROTECTION ---
-    if(!studentID) {
-        window.location.href = "login.html"; // Redirect if not logged in
-    }
+    if(!studentID) window.location.href = "login.html";
 
-    // --- REAL-TIME ENGINE ---
     function startRealTimeSync() {
-        if(!studentID || studentID === "Guest") {
-            document.getElementById("showName").innerText = "Guest User";
-            return;
-        }
-
         onSnapshot(doc(db, "students", studentID), (snap) => {
             if (snap.exists()) {
                 const d = snap.data();
                 
-                // Text Updates
+                // Profile Data
                 document.getElementById("showName").innerText = studentID;
-                document.getElementById("showBio").innerText = d.bio || "Student at Black Terminal";
+                document.getElementById("showBio").innerText = d.bio || "Member of Black Terminal";
                 document.getElementById("xp").innerText = d.xp || 0;
                 document.getElementById("streak").innerText = d.streak || 0;
                 if(d.photo) document.getElementById("photo").src = d.photo;
 
-                // Admin Updates
-                document.getElementById("showCourse").innerText = d.currentCourse || "Not Assigned Yet";
-                document.getElementById("showDuration").innerText = "Course Duration: " + (d.courseDuration || "TBD");
+                // Academic Data (Admin Synced)
+                document.getElementById("showCourse").innerText = d.currentCourse || "Not Enrolled";
+                document.getElementById("showDuration").innerText = "Duration: " + (d.courseDuration || "--");
+                document.getElementById("showAdmDate").innerText = "Admission: " + (d.admissionDate || "N/A");
                 
-                const feeBox = document.getElementById("feeStatus");
-                const status = d.paymentStatus || "Pending";
-                feeBox.innerText = "Payment: " + status;
-                
-                if(status === "Paid") {
-                    feeBox.style.color = "#22c55e";
-                    feeBox.style.borderColor = "rgba(34,197,94,0.4)";
-                    feeBox.style.background = "rgba(34,197,94,0.05)";
-                } else {
-                    feeBox.style.color = "#ef4444";
-                    feeBox.style.borderColor = "rgba(239,68,68,0.4)";
-                    feeBox.style.background = "rgba(239,68,68,0.05)";
-                }
-
-                document.getElementById("lastMonth").innerText = "Billing: " + (d.lastPaymentMonth || "None");
+                const fBox = document.getElementById("feeStatus");
+                fBox.innerText = "Status: " + (d.paymentStatus || "Pending");
+                fBox.style.color = (d.paymentStatus === "Paid") ? "#22c55e" : "#ef4444";
+                document.getElementById("lastMonth").innerText = "Month: " + (d.lastPaymentMonth || "N/A");
 
                 let level = Math.floor((d.xp || 0) / 500) + 1;
                 document.getElementById("lvl-txt").innerText = "LVL " + level + " STUDENT";
 
-                // --- LIVE ALERT LOGIC ---
+                // --- POPUP LOGIC (REFRESH FIXED) ---
                 if (d.popup && d.popup.show === true) {
-                    renderLivePopup(d.popup.msg, d.popup.type);
-                    // Reset alert in database so it doesn't loop
-                    updateDoc(doc(db, "students", studentID), { "popup.show": false });
+                    const seenID = sessionStorage.getItem("last_alert_id");
+                    if (seenID !== String(d.popup.time)) {
+                        renderLivePopup(d.popup.msg, d.popup.type, d.popup.duration);
+                        sessionStorage.setItem("last_alert_id", d.popup.time);
+                        // Reset show to false so other devices/refreshes don't trigger it
+                        updateDoc(doc(db, "students", studentID), { "popup.show": false });
+                    }
                 }
             }
         });
-
         updateRank();
     }
 
-    // --- PREMIUM POPUP UI ---
-    function renderLivePopup(msg, type) {
+    function renderLivePopup(msg, type, duration = 10000) {
         const theme = {
             info: { color: '#6366f1', icon: 'ri-information-fill' },
             success: { color: '#22c55e', icon: 'ri-checkbox-circle-fill' },
-            danger: { color: '#ef4444', icon: 'ri-error-warning-fill' }
+            danger: { color: '#ef4444', icon: 'ri-error-warning-fill' },
+            warning: { color: '#facc15', icon: 'ri-alert-fill' }
         }[type] || { color: '#6366f1', icon: 'ri-notification-3-fill' };
 
         const alertBox = document.createElement('div');
@@ -226,10 +210,12 @@
             <i class="${theme.icon}" style="font-size: 24px; color: ${theme.color}"></i>
             <div style="flex: 1; font-size: 13px; font-weight: 600; line-height: 1.4;">${msg}</div>
             <i class="ri-close-line" onclick="this.parentElement.remove()" style="cursor:pointer; opacity:0.5;"></i>
-            <style> @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 20px; opacity: 1; } } </style>
         `;
         document.body.appendChild(alertBox);
-        setTimeout(() => { if(alertBox) alertBox.remove(); }, 10000);
+
+        if(duration < 900000) {
+            setTimeout(() => { if(alertBox) alertBox.remove(); }, duration);
+        }
     }
 
     async function updateRank() {
@@ -243,12 +229,9 @@
 
     window.updateProfile = async () => {
         let nBio = document.getElementById("bioInput").value.trim();
-        if(!nBio) return alert("Write something first!");
-        
-        await updateDoc(doc(db, "students", studentID), {
-            bio: nBio
-        });
-        alert("Profile Bio Updated! ✨");
+        if(!nBio) return alert("Write something!");
+        await updateDoc(doc(db, "students", studentID), { bio: nBio });
+        alert("Bio Updated!");
     };
 
     document.getElementById("file").onchange = e => {
