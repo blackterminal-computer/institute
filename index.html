@@ -24,7 +24,6 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
 
-        /* --- Updated Premium Banner Styling (No Overlap) --- */
         .slider-section { width: 100%; margin: 10px 0 15px 0; }
         .label-tag { padding-left: 20px; font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1.2px; margin-bottom: 10px; text-transform: uppercase; }
         
@@ -38,7 +37,6 @@
             width: 100%; height: 160px; object-fit: cover; display: block;
         }
 
-        /* Text area moved below the image to prevent overlap */
         .banner-text-bar {
             background: rgba(255, 255, 255, 0.04);
             backdrop-filter: blur(10px);
@@ -62,7 +60,6 @@
         }
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* --- Your Original CSS Unchanged --- */
         #adminAlert {
             position: fixed; top: 20px; left: 20px; right: 20px; 
             background: rgba(99, 102, 241, 0.2); border: 1px solid var(--primary);
@@ -251,10 +248,16 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const student = localStorage.getItem("studentName") || "Guest";
+        
+        // --- LOGIN PROTECTION ADDED ---
+        const student = localStorage.getItem("studentName");
+        if (!student) {
+            window.location.href = "login.html"; // Redirect if not logged in
+        }
+
         let userXP = 0;
 
-        // --- STREAK LOGIC STARTS ---
+        // --- STREAK LOGIC ---
         async function updateStreakLogic(data) {
             const today = new Date();
             const todayStr = today.toDateString();
@@ -292,7 +295,6 @@
             const cMsg = localStorage.getItem("marquee_cache");
 
             if(cXP) { userXP = parseInt(cXP); updateXPUI(userXP); }
-            if(cRank) document.getElementById("instRank").innerText = "#" + r;
             if(cStreak) document.getElementById("sCount").innerText = "🔥 " + cStreak + " Days";
             if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
         }
@@ -319,20 +321,17 @@
         }
 
         async function syncData() {
-            // --- OFFER BANNER SYNC LOGIC ---
+            // Offer Banner
             onSnapshot(doc(db, "settings", "offer"), (snap) => {
                 if(snap.exists()){
                     const data = snap.data();
                     const bannerBox = document.getElementById("bannerContainer");
                     if(data.status === "on") {
                         bannerBox.style.display = "block";
-                        
                         let imgUrl = data.image;
-                        // Auto-fix for ImgBB direct link
                         if(imgUrl.includes("ibb.co/") && !imgUrl.includes("i.ibb.co")) {
                             imgUrl = imgUrl.replace("ibb.co/", "i.ibb.co/") + ".png";
                         }
-
                         document.getElementById("offerImg").src = imgUrl;
                         document.getElementById("offerTitle").innerText = data.title;
                         document.getElementById("offerTag").innerText = data.tag || "OFFER";
@@ -344,6 +343,7 @@
                 }
             });
 
+            // Marquee
             onSnapshot(doc(db, "settings", "marquee"), (snap) => {
                 if(snap.exists()){
                     const newMsg = snap.data().msg;
@@ -352,6 +352,7 @@
                 }
             });
 
+            // Notice System (Admin Notice)
             onSnapshot(doc(db, "notices", "main"), (snap) => {
                 if(snap.exists()){
                     const data = snap.data();
@@ -367,6 +368,7 @@
 
             if(student === "Guest") return;
 
+            // --- STUDENT REAL-TIME SYNC & PERSONAL ALERTS ---
             onSnapshot(doc(db, "students", student), (snap) => {
                 if(snap.exists()){
                     const d = snap.data();
@@ -378,7 +380,7 @@
                     const hour = new Date().getHours();
                     let greeting = hour < 12 ? "Good Morning, Elite" : (hour < 17 ? "Keep Grinding, Agent" : "Burning the midnight oil?");
                     document.getElementById("greetText").innerText = greeting;
-                    document.getElementById("uAvatar").src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+                    document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
 
                     userXP = d.xp || 0;
                     updateXPUI(userXP);
@@ -401,9 +403,17 @@
                         else if (userXP >= 2000) { badge.innerText = "Silver Elite"; badge.className = "rank-badge badge-silver"; }
                         else { badge.innerText = "Bronze Trainee"; badge.className = "rank-badge badge-bronze"; }
                     }
+
+                    // --- PERSONAL ALERT POPUP LOGIC ---
+                    if (d.popup && d.popup.show === true) {
+                        showPersonalPopup(d.popup.msg, d.popup.type);
+                        // Reset popup in DB
+                        updateDoc(doc(db, "students", student), { "popup.show": false });
+                    }
                 }
             });
 
+            // Rank Sync
             const qSnap = await getDocs(collection(db, "students"));
             let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
             all.sort((a,b)=>b.xp-a.xp);
@@ -413,6 +423,7 @@
                 localStorage.setItem("user_rank_cache", r);
             }
 
+            // Attendance Check
             const todayISO = new Date().toISOString().split('T')[0];
             const attSnap = await getDoc(doc(db, "attendance", `${student}_${todayISO}`));
             if (attSnap.exists()) {
@@ -422,6 +433,27 @@
                 document.getElementById("att-pill-text").innerText = "Present";
                 pill.href = "javascript:void(0)";
             }
+        }
+
+        // --- NEW POPUP FUNCTION ---
+        function showPersonalPopup(msg, type) {
+            const colors = { info: '#6366f1', success: '#22c55e', danger: '#ef4444' };
+            const popup = document.createElement('div');
+            popup.style = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                width: 85%; max-width: 400px; background: #0f172a; color: white;
+                padding: 16px; border-radius: 18px; border-left: 5px solid ${colors[type] || colors.info};
+                box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 10005;
+                display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 13px;
+                animation: slideDown 0.5s ease-out;
+            `;
+            popup.innerHTML = `
+                <i class="ri-notification-3-fill" style="color:${colors[type] || colors.info}; font-size:20px;"></i>
+                <div style="flex:1">${msg}</div>
+                <i class="ri-close-line" onclick="this.parentElement.remove()" style="opacity:0.5; cursor:pointer;"></i>
+            `;
+            document.body.appendChild(popup);
+            setTimeout(() => { if(popup) popup.remove(); }, 8000);
         }
 
         window.handleUnitTest = () => {
