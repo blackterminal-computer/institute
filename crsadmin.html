@@ -149,16 +149,24 @@
                 <label>OFFER ENDS AT (TIMER)</label>
                 <input type="datetime-local" id="c-timer">
             </div>
+            
             <div class="input-box">
                 <label>CHOOSE ULTRA MODERN BADGE</label>
-                <select id="c-tag">
+                <select id="c-tag" onchange="toggleCustomBadge(this.value)">
                     <option value="">No Badge</option>
                     <option value="HOT">🔥 HOT SELLING</option>
                     <option value="NEW">✨ NEWLY ADDED</option>
                     <option value="TRENDING">📈 TRENDING</option>
                     <option value="FREE">🎁 FREE COURSE</option>
+                    <option value="CUSTOM">➕ CUSTOM BADGE (Write Below)</option>
                 </select>
             </div>
+
+            <div class="input-box" id="custom-badge-box" style="display:none;">
+                <label>ENTER CUSTOM BADGE TEXT</label>
+                <input type="text" id="c-custom-tag" placeholder="e.g. LIMITED OFFER">
+            </div>
+
             <button class="btn-glow" id="submit-btn" onclick="addOrUpdateCourse()">DEPLOY TO TERMINAL</button>
             <button id="cancel-edit" onclick="resetForm()" style="display:none; width: 100%; background: none; border: none; color: #94a3b8; margin-top: 15px; font-weight: 700; cursor:pointer;">Cancel Edit</button>
         </div>
@@ -215,6 +223,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Custom Badge Toggle Logic
+    window.toggleCustomBadge = (val) => {
+        document.getElementById('custom-badge-box').style.display = (val === 'CUSTOM') ? 'block' : 'none';
+    };
+
     window.showTab = (id, btn) => {
         document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
@@ -224,6 +237,12 @@
 
     window.addOrUpdateCourse = async () => {
         const id = document.getElementById('edit-id').value;
+        const tagSelect = document.getElementById('c-tag').value;
+        const customTag = document.getElementById('c-custom-tag').value;
+        
+        // Use custom tag if selected
+        const finalTag = (tagSelect === 'CUSTOM') ? customTag : tagSelect;
+
         const data = {
             name: document.getElementById('c-name').value,
             order: parseInt(document.getElementById('c-order').value) || 1,
@@ -231,8 +250,8 @@
             ytLink: document.getElementById('c-yt').value,
             oldPrice: document.getElementById('c-old').value,
             newPrice: document.getElementById('c-new').value,
-            duration: document.getElementById('c-duration').value, // Duration Data
-            tag: document.getElementById('c-tag').value,
+            duration: document.getElementById('c-duration').value,
+            tag: finalTag,
             expiryDate: document.getElementById('c-timer').value,
             timestamp: serverTimestamp()
         };
@@ -256,14 +275,17 @@
         document.getElementById('form-title').innerHTML = `<i class="ri-rocket-fill" style="color:var(--primary)"></i> Deploy Program`;
         document.getElementById('submit-btn').innerText = "DEPLOY TO TERMINAL";
         document.getElementById('cancel-edit').style.display = "none";
-        ['c-name', 'c-img', 'c-yt', 'c-old', 'c-new', 'c-timer', 'c-duration'].forEach(i => document.getElementById(i).value = "");
+        ['c-name', 'c-img', 'c-yt', 'c-old', 'c-new', 'c-timer', 'c-duration', 'c-custom-tag'].forEach(i => document.getElementById(i).value = "");
         document.getElementById('c-order').value = "1";
         document.getElementById('c-tag').value = "";
+        document.getElementById('custom-badge-box').style.display = 'none';
         showTab('add', document.querySelector('.tab-link'));
     };
 
     window.editCourse = (id, dataStr) => {
         const data = JSON.parse(decodeURIComponent(dataStr));
+        const standardTags = ['HOT', 'NEW', 'TRENDING', 'FREE', ''];
+        
         document.getElementById('edit-id').value = id;
         document.getElementById('c-name').value = data.name;
         document.getElementById('c-order').value = data.order || 1;
@@ -271,9 +293,18 @@
         document.getElementById('c-yt').value = data.ytLink || "";
         document.getElementById('c-old').value = data.oldPrice || "";
         document.getElementById('c-new').value = data.newPrice || "";
-        document.getElementById('c-duration').value = data.duration || ""; // Load Duration
+        document.getElementById('c-duration').value = data.duration || "";
         document.getElementById('c-timer').value = data.expiryDate || "";
-        document.getElementById('c-tag').value = data.tag || "";
+        
+        // Handle Badge Logic for Edit
+        if (standardTags.includes(data.tag)) {
+            document.getElementById('c-tag').value = data.tag;
+            document.getElementById('custom-badge-box').style.display = 'none';
+        } else {
+            document.getElementById('c-tag').value = 'CUSTOM';
+            document.getElementById('c-custom-tag').value = data.tag || "";
+            document.getElementById('custom-badge-box').style.display = 'block';
+        }
         
         document.getElementById('form-title').innerText = "📝 Edit Program";
         document.getElementById('submit-btn').innerText = "UPDATE COURSE";
@@ -300,7 +331,7 @@
                 <div class="live-info">
                     <h4>${data.name}</h4>
                     <p style="font-size:10px; color:#94a3b8;">${data.duration || 'No duration set'}</p>
-                    <p style="font-size:11px; color:var(--accent); font-weight:800;">₹${data.newPrice}</p>
+                    <p style="font-size:11px; color:var(--accent); font-weight:800;">₹${data.newPrice} ${data.tag ? `[${data.tag}]` : ''}</p>
                 </div>
                 <div class="action-btns">
                     <button class="action-btn wa-btn" onclick="shareWA('${data.name}', '${data.newPrice}')"><i class="ri-whatsapp-line"></i></button>
