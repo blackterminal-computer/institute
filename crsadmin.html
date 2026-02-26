@@ -61,14 +61,13 @@
         .live-img { width: 50px; height: 50px; background: #1e293b; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .live-img img { width: 100%; height: 100%; object-fit: cover; }
         .live-info { flex: 1; }
-        .live-info h4 { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+        .live-info h4 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
         .action-btns { display: flex; gap: 8px; }
         .action-btn { width: 35px; height: 35px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
         .edit-btn { background: rgba(6, 182, 212, 0.1); color: var(--accent); }
         .del-btn { background: rgba(244, 63, 94, 0.1); color: var(--danger); }
         .wa-btn { background: rgba(37, 211, 102, 0.1); color: #25d366; }
 
-        /* Order Badge */
         .order-badge { position: absolute; top: -5px; left: -5px; background: var(--primary); color: white; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 800; }
     </style>
 </head>
@@ -123,8 +122,8 @@
             </div>
 
             <div class="input-box">
-                <label>COURSE IMAGE URL</label>
-                <input type="text" id="c-img" placeholder="https://example.com/thumb.jpg">
+                <label>COURSE IMAGE URL (Comma for Multi-Image)</label>
+                <input type="text" id="c-img" placeholder="link1.jpg, link2.jpg">
             </div>
             <div class="input-box">
                 <label>YOUTUBE PREVIEW LINK</label>
@@ -140,6 +139,12 @@
                     <input type="number" id="c-new" placeholder="499">
                 </div>
             </div>
+
+            <div class="input-box">
+                <label>COURSE DURATION</label>
+                <input type="text" id="c-duration" placeholder="e.g. 6 Months / Lifetime">
+            </div>
+
             <div class="input-box">
                 <label>OFFER ENDS AT (TIMER)</label>
                 <input type="datetime-local" id="c-timer">
@@ -226,6 +231,7 @@
             ytLink: document.getElementById('c-yt').value,
             oldPrice: document.getElementById('c-old').value,
             newPrice: document.getElementById('c-new').value,
+            duration: document.getElementById('c-duration').value, // Duration Data
             tag: document.getElementById('c-tag').value,
             expiryDate: document.getElementById('c-timer').value,
             timestamp: serverTimestamp()
@@ -250,7 +256,7 @@
         document.getElementById('form-title').innerHTML = `<i class="ri-rocket-fill" style="color:var(--primary)"></i> Deploy Program`;
         document.getElementById('submit-btn').innerText = "DEPLOY TO TERMINAL";
         document.getElementById('cancel-edit').style.display = "none";
-        ['c-name', 'c-img', 'c-yt', 'c-old', 'c-new', 'c-timer'].forEach(i => document.getElementById(i).value = "");
+        ['c-name', 'c-img', 'c-yt', 'c-old', 'c-new', 'c-timer', 'c-duration'].forEach(i => document.getElementById(i).value = "");
         document.getElementById('c-order').value = "1";
         document.getElementById('c-tag').value = "";
         showTab('add', document.querySelector('.tab-link'));
@@ -265,6 +271,7 @@
         document.getElementById('c-yt').value = data.ytLink || "";
         document.getElementById('c-old').value = data.oldPrice || "";
         document.getElementById('c-new').value = data.newPrice || "";
+        document.getElementById('c-duration').value = data.duration || ""; // Load Duration
         document.getElementById('c-timer').value = data.expiryDate || "";
         document.getElementById('c-tag').value = data.tag || "";
         
@@ -289,10 +296,11 @@
             return `
             <div class="live-item">
                 <div class="order-badge">#${data.order || 0}</div>
-                <div class="live-img">${data.image ? `<img src="${data.image}">` : `<i class="ri-book-fill"></i>`}</div>
+                <div class="live-img">${data.image ? `<img src="${data.image.split(',')[0]}">` : `<i class="ri-book-fill"></i>`}</div>
                 <div class="live-info">
                     <h4>${data.name}</h4>
-                    <p style="font-size:11px; color:var(--accent)">₹${data.newPrice}</p>
+                    <p style="font-size:10px; color:#94a3b8;">${data.duration || 'No duration set'}</p>
+                    <p style="font-size:11px; color:var(--accent); font-weight:800;">₹${data.newPrice}</p>
                 </div>
                 <div class="action-btns">
                     <button class="action-btn wa-btn" onclick="shareWA('${data.name}', '${data.newPrice}')"><i class="ri-whatsapp-line"></i></button>
