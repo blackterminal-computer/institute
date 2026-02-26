@@ -145,16 +145,20 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    let studentID = localStorage.getItem("studentName") || "Guest";
+    let studentID = localStorage.getItem("studentName");
+
+    // --- LOGIN PROTECTION ---
+    if(!studentID) {
+        window.location.href = "login.html"; // Redirect if not logged in
+    }
 
     // --- REAL-TIME ENGINE ---
     function startRealTimeSync() {
-        if(studentID === "Guest") {
+        if(!studentID || studentID === "Guest") {
             document.getElementById("showName").innerText = "Guest User";
             return;
         }
 
-        // Yeh function bina refresh kiye data update karega
         onSnapshot(doc(db, "students", studentID), (snap) => {
             if (snap.exists()) {
                 const d = snap.data();
@@ -174,7 +178,6 @@
                 const status = d.paymentStatus || "Pending";
                 feeBox.innerText = "Payment: " + status;
                 
-                // Color Switching Logic
                 if(status === "Paid") {
                     feeBox.style.color = "#22c55e";
                     feeBox.style.borderColor = "rgba(34,197,94,0.4)";
@@ -187,13 +190,46 @@
 
                 document.getElementById("lastMonth").innerText = "Billing: " + (d.lastPaymentMonth || "None");
 
-                // Dynamic Leveling
                 let level = Math.floor((d.xp || 0) / 500) + 1;
                 document.getElementById("lvl-txt").innerText = "LVL " + level + " STUDENT";
+
+                // --- LIVE ALERT LOGIC ---
+                if (d.popup && d.popup.show === true) {
+                    renderLivePopup(d.popup.msg, d.popup.type);
+                    // Reset alert in database so it doesn't loop
+                    updateDoc(doc(db, "students", studentID), { "popup.show": false });
+                }
             }
         });
 
         updateRank();
+    }
+
+    // --- PREMIUM POPUP UI ---
+    function renderLivePopup(msg, type) {
+        const theme = {
+            info: { color: '#6366f1', icon: 'ri-information-fill' },
+            success: { color: '#22c55e', icon: 'ri-checkbox-circle-fill' },
+            danger: { color: '#ef4444', icon: 'ri-error-warning-fill' }
+        }[type] || { color: '#6366f1', icon: 'ri-notification-3-fill' };
+
+        const alertBox = document.createElement('div');
+        alertBox.style = `
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; background: #0f172a; color: white;
+            padding: 16px; border-radius: 20px; border-left: 6px solid ${theme.color};
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5); z-index: 10001;
+            display: flex; align-items: center; gap: 12px; font-family: sans-serif;
+            animation: slideDown 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        `;
+        alertBox.innerHTML = `
+            <i class="${theme.icon}" style="font-size: 24px; color: ${theme.color}"></i>
+            <div style="flex: 1; font-size: 13px; font-weight: 600; line-height: 1.4;">${msg}</div>
+            <i class="ri-close-line" onclick="this.parentElement.remove()" style="cursor:pointer; opacity:0.5;"></i>
+            <style> @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 20px; opacity: 1; } } </style>
+        `;
+        document.body.appendChild(alertBox);
+        setTimeout(() => { if(alertBox) alertBox.remove(); }, 10000);
     }
 
     async function updateRank() {
@@ -202,7 +238,7 @@
         snap.forEach(s => arr.push({id: s.id, xp: s.data().xp || 0}));
         arr.sort((a,b) => b.xp - a.xp);
         let rank = arr.findIndex(x => x.id === studentID) + 1;
-        document.getElementById("rank").innerText = "#" + rank;
+        document.getElementById("rank").innerText = "#" + (rank || "--");
     }
 
     window.updateProfile = async () => {
@@ -215,7 +251,6 @@
         alert("Profile Bio Updated! ✨");
     };
 
-    // Photo Upload (Base64)
     document.getElementById("file").onchange = e => {
         let file = e.target.files[0];
         let reader = new FileReader();
