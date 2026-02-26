@@ -36,7 +36,7 @@
         <div class="admin-box" style="grid-column: 1 / -1;">
             <h2><i class="ri-user-follow-line"></i> Step 1: Select Student & Admission</h2>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <select id="studentList" style="flex: 2; min-width: 200px;"><option>Loading students...</option></select>
+                <select id="studentList" style="flex: 2; min-width: 200px;" onchange="fetchCurrentData()"><option>Loading students...</option></select>
                 <input type="date" id="admissionDate" style="flex: 1; min-width: 150px; margin-bottom: 0;">
                 <button class="btn btn-date" style="width: auto; margin-bottom: 0;" onclick="updateAdmissionDate()">Set Admission Date</button>
             </div>
@@ -73,10 +73,10 @@
                 <button class="btn btn-paid" onclick="processFee('Paid')">Mark Paid</button>
                 <button class="btn btn-unpaid" onclick="processFee('Pending')">Pending</button>
             </div>
-            <label style="margin-top: 15px;">Manual XP Adjust</label>
+            <label style="margin-top: 15px;">Override XP (Direct Value)</label>
             <div style="display: flex; gap: 10px;">
-                <input type="number" id="manualXP" placeholder="Amount" style="margin-bottom:0;">
-                <button class="btn btn-course" style="width:80px;" onclick="adjustXP()">Add</button>
+                <input type="number" id="manualXP" placeholder="Current XP" style="margin-bottom:0;">
+                <button class="btn btn-course" style="width:80px;" onclick="adjustXP()">Update</button>
             </div>
         </div>
 
@@ -97,7 +97,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, updateDoc, collection, getDocs, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -119,6 +119,16 @@
                 snap.forEach(d => { list.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
             } catch (e) { console.error(e); }
         }
+
+        // Student select hote hi uska current XP fetch karne ke liye
+        window.fetchCurrentData = async () => {
+            const id = document.getElementById('studentList').value;
+            if(!id) return;
+            const snap = await getDoc(doc(db, "students", id));
+            if(snap.exists()) {
+                document.getElementById('manualXP').value = snap.data().xp || 0;
+            }
+        };
 
         window.updateAdmissionDate = async () => {
             const id = document.getElementById('studentList').value;
@@ -149,14 +159,18 @@
             } else { updateData.xp = increment(-200); }
             await updateDoc(doc(db, "students", id), updateData);
             alert("Payment Status Updated!");
+            fetchCurrentData(); // Update XP box after fee payment
         };
 
+        // FIXED: Ye function ab value ko update karega
         window.adjustXP = async () => {
             const id = document.getElementById('studentList').value;
             const val = parseInt(document.getElementById('manualXP').value);
             if(!id || isNaN(val)) return alert("Missing data!");
-            await updateDoc(doc(db, "students", id), { xp: increment(val) });
-            alert("XP Updated!");
+            
+            // Direct value set karne ke liye increment nahi, plain update use karte hain
+            await updateDoc(doc(db, "students", id), { xp: val });
+            alert("XP Value Set to " + val);
         };
 
         window.sendPopup = async () => {
@@ -171,7 +185,7 @@
             await updateDoc(doc(db, "students", id), {
                 popup: { msg, type, show: true, time: Date.now(), expiresAt: expiry.getTime() }
             });
-            alert("Alert Sent! Raat 12 baje ye automatic gayab ho jayega.");
+            alert("Alert Sent!");
         };
 
         loadStudents();
