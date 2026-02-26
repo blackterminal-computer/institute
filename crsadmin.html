@@ -57,16 +57,19 @@
             box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3);
         }
 
-        .live-item { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 15px; border-radius: 24px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; }
+        .live-item { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 15px; border-radius: 24px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; position: relative; }
         .live-img { width: 50px; height: 50px; background: #1e293b; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .live-img img { width: 100%; height: 100%; object-fit: cover; }
         .live-info { flex: 1; }
-        .live-info h4 { font-size: 15px; font-weight: 800; }
-        .live-info p { font-size: 12px; color: #94a3b8; }
+        .live-info h4 { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
         .action-btns { display: flex; gap: 8px; }
-        .edit-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(6, 182, 212, 0.1); color: var(--accent); border: none; }
-        .del-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(244, 63, 94, 0.1); color: var(--danger); border: none; }
-        .share-btn { width: 40px; height: 40px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: var(--success); border: none; }
+        .action-btn { width: 35px; height: 35px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+        .edit-btn { background: rgba(6, 182, 212, 0.1); color: var(--accent); }
+        .del-btn { background: rgba(244, 63, 94, 0.1); color: var(--danger); }
+        .wa-btn { background: rgba(37, 211, 102, 0.1); color: #25d366; }
+
+        /* Order Badge */
+        .order-badge { position: absolute; top: -5px; left: -5px; background: var(--primary); color: white; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 800; }
     </style>
 </head>
 <body>
@@ -107,10 +110,18 @@
         <div class="card-form">
             <h3 id="form-title" style="margin-bottom: 20px;"><i class="ri-rocket-fill" style="color:var(--primary)"></i> Deploy Program</h3>
             <input type="hidden" id="edit-id">
-            <div class="input-box">
-                <label>COURSE NAME</label>
-                <input type="text" id="c-name" placeholder="e.g. Master in Cyber Security">
+            
+            <div class="grid-stats" style="margin-bottom:20px">
+                <div class="input-box" style="margin-bottom:0">
+                    <label>COURSE NAME</label>
+                    <input type="text" id="c-name" placeholder="e.g. Cyber Security">
+                </div>
+                <div class="input-box" style="margin-bottom:0">
+                    <label>ORDER (INDEX)</label>
+                    <input type="number" id="c-order" placeholder="1" value="1">
+                </div>
             </div>
+
             <div class="input-box">
                 <label>COURSE IMAGE URL</label>
                 <input type="text" id="c-img" placeholder="https://example.com/thumb.jpg">
@@ -130,10 +141,6 @@
                 </div>
             </div>
             <div class="input-box">
-                <label>COURSE ORDER (Position)</label>
-                <input type="number" id="c-order" placeholder="1" value="1">
-            </div>
-            <div class="input-box">
                 <label>OFFER ENDS AT (TIMER)</label>
                 <input type="datetime-local" id="c-timer">
             </div>
@@ -147,8 +154,8 @@
                     <option value="FREE">🎁 FREE COURSE</option>
                 </select>
             </div>
-            <button id="submit-btn" class="btn-glow" onclick="addCourse()">DEPLOY TO TERMINAL</button>
-            <button id="cancel-btn" style="display:none; width:100%; background:none; border:none; color:#94a3b8; margin-top:15px; font-weight:700;" onclick="resetForm()">Cancel Editing</button>
+            <button class="btn-glow" id="submit-btn" onclick="addOrUpdateCourse()">DEPLOY TO TERMINAL</button>
+            <button id="cancel-edit" onclick="resetForm()" style="display:none; width: 100%; background: none; border: none; color: #94a3b8; margin-top: 15px; font-weight: 700; cursor:pointer;">Cancel Edit</button>
         </div>
     </div>
 
@@ -210,100 +217,93 @@
         btn.classList.add('active');
     };
 
-    // Save or Update Course
-    window.addCourse = async () => {
+    window.addOrUpdateCourse = async () => {
         const id = document.getElementById('edit-id').value;
-        const name = document.getElementById('c-name').value;
-        const img = document.getElementById('c-img').value;
-        const yt = document.getElementById('c-yt').value;
-        const oldP = document.getElementById('c-old').value;
-        const newP = document.getElementById('c-new').value;
-        const order = parseInt(document.getElementById('c-order').value) || 1;
-        const timer = document.getElementById('c-timer').value;
-        const tag = document.getElementById('c-tag').value;
-
-        if(!name || !newP) return alert("Fill data!");
-
-        const courseData = { 
-            name, image: img, ytLink: yt, 
-            oldPrice: oldP || newP, newPrice: newP, 
-            tag, expiryDate: timer, order: order,
-            updatedAt: serverTimestamp() 
+        const data = {
+            name: document.getElementById('c-name').value,
+            order: parseInt(document.getElementById('c-order').value) || 1,
+            image: document.getElementById('c-img').value,
+            ytLink: document.getElementById('c-yt').value,
+            oldPrice: document.getElementById('c-old').value,
+            newPrice: document.getElementById('c-new').value,
+            tag: document.getElementById('c-tag').value,
+            expiryDate: document.getElementById('c-timer').value,
+            timestamp: serverTimestamp()
         };
 
-        if(id) {
-            await setDoc(doc(db, "courses", id), courseData, { merge: true });
-            alert("Updated!");
-        } else {
-            courseData.timestamp = serverTimestamp();
-            await addDoc(collection(db, "courses"), courseData);
-            alert("Success!");
-        }
-        resetForm();
+        if(!data.name || !data.newPrice) return alert("Fill Name and Price!");
+
+        try {
+            if(id) {
+                await setDoc(doc(db, "courses", id), data, { merge: true });
+                alert("Course Updated!");
+            } else {
+                await addDoc(collection(db, "courses"), data);
+                alert("Course Added!");
+            }
+            resetForm();
+        } catch(e) { alert("Error: " + e.message); }
     };
 
-    // Load Courses for Live Tab
+    window.resetForm = () => {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('form-title').innerHTML = `<i class="ri-rocket-fill" style="color:var(--primary)"></i> Deploy Program`;
+        document.getElementById('submit-btn').innerText = "DEPLOY TO TERMINAL";
+        document.getElementById('cancel-edit').style.display = "none";
+        ['c-name', 'c-img', 'c-yt', 'c-old', 'c-new', 'c-timer'].forEach(i => document.getElementById(i).value = "");
+        document.getElementById('c-order').value = "1";
+        document.getElementById('c-tag').value = "";
+        showTab('add', document.querySelector('.tab-link'));
+    };
+
+    window.editCourse = (id, dataStr) => {
+        const data = JSON.parse(decodeURIComponent(dataStr));
+        document.getElementById('edit-id').value = id;
+        document.getElementById('c-name').value = data.name;
+        document.getElementById('c-order').value = data.order || 1;
+        document.getElementById('c-img').value = data.image || "";
+        document.getElementById('c-yt').value = data.ytLink || "";
+        document.getElementById('c-old').value = data.oldPrice || "";
+        document.getElementById('c-new').value = data.newPrice || "";
+        document.getElementById('c-timer').value = data.expiryDate || "";
+        document.getElementById('c-tag').value = data.tag || "";
+        
+        document.getElementById('form-title').innerText = "📝 Edit Program";
+        document.getElementById('submit-btn').innerText = "UPDATE COURSE";
+        document.getElementById('cancel-edit').style.display = "block";
+        showTab('add', document.querySelectorAll('.tab-link')[0]);
+    };
+
+    window.shareWA = (name, price) => {
+        const msg = `🔥 *New Course Alert!*%0A🚀 *Course:* ${name}%0A💰 *Price:* ₹${price}%0A%0AJoin Now: ${window.location.origin}`;
+        window.open(`https://wa.me/?text=${msg}`);
+    };
+
     const q = query(collection(db, "courses"), orderBy("order", "asc"));
     onSnapshot(q, (snap) => {
         document.getElementById('total-courses').innerText = snap.size;
         const list = document.getElementById('live-list');
         list.innerHTML = snap.docs.map(d => {
             const data = d.data();
+            const dataStr = encodeURIComponent(JSON.stringify(data));
             return `
             <div class="live-item">
+                <div class="order-badge">#${data.order || 0}</div>
                 <div class="live-img">${data.image ? `<img src="${data.image}">` : `<i class="ri-book-fill"></i>`}</div>
                 <div class="live-info">
-                    <h4>#${data.order || 0} ${data.name}</h4>
-                    <p>₹${data.newPrice}</p>
+                    <h4>${data.name}</h4>
+                    <p style="font-size:11px; color:var(--accent)">₹${data.newPrice}</p>
                 </div>
                 <div class="action-btns">
-                    <button class="share-btn" onclick="shareCourse('${data.name}', '${data.newPrice}')"><i class="ri-whatsapp-line"></i></button>
-                    <button class="edit-btn" onclick="editCourse('${d.id}')"><i class="ri-edit-line"></i></button>
-                    <button class="del-btn" onclick="deleteCourse('${d.id}')"><i class="ri-delete-bin-line"></i></button>
+                    <button class="action-btn wa-btn" onclick="shareWA('${data.name}', '${data.newPrice}')"><i class="ri-whatsapp-line"></i></button>
+                    <button class="action-btn edit-btn" onclick="editCourse('${d.id}', '${dataStr}')"><i class="ri-edit-box-line"></i></button>
+                    <button class="action-btn del-btn" onclick="deleteCourse('${d.id}')"><i class="ri-delete-bin-line"></i></button>
                 </div>
             </div>`;
         }).join('');
     });
 
-    // Edit Function
-    window.editCourse = async (id) => {
-        const s = await getDoc(doc(db, "courses", id));
-        if(s.exists()) {
-            const data = s.data();
-            document.getElementById('edit-id').value = id;
-            document.getElementById('c-name').value = data.name;
-            document.getElementById('c-img').value = data.image || '';
-            document.getElementById('c-yt').value = data.ytLink || '';
-            document.getElementById('c-old').value = data.oldPrice;
-            document.getElementById('c-new').value = data.newPrice;
-            document.getElementById('c-order').value = data.order || 1;
-            document.getElementById('c-timer').value = data.expiryDate || '';
-            document.getElementById('c-tag').value = data.tag || '';
-            
-            document.getElementById('form-title').innerHTML = '<i class="ri-edit-circle-fill" style="color:var(--gold)"></i> Update Program';
-            document.getElementById('submit-btn').innerText = "UPDATE CHANGES";
-            document.getElementById('cancel-btn').style.display = "block";
-            showTab('add', document.querySelector('.tab-link'));
-        }
-    };
-
-    // Share on WhatsApp
-    window.shareCourse = (name, price) => {
-        const text = `🔥 *New Course Alert!*%0A%0A*Course:* ${name}%0A*Price:* ₹${price}%0A%0AJoin Now: ${window.location.origin}`;
-        window.open(`https://wa.me/?text=${text}`, '_blank');
-    };
-
-    window.resetForm = () => {
-        document.getElementById('edit-id').value = "";
-        ['c-name', 'c-img', 'c-yt', 'c-old', 'c-new', 'c-timer'].forEach(id => document.getElementById(id).value = "");
-        document.getElementById('c-order').value = "1";
-        document.getElementById('c-tag').value = "";
-        document.getElementById('form-title').innerHTML = '<i class="ri-rocket-fill" style="color:var(--primary)"></i> Deploy Program';
-        document.getElementById('submit-btn').innerText = "DEPLOY TO TERMINAL";
-        document.getElementById('cancel-btn').style.display = "none";
-    };
-
-    window.deleteCourse = async (id) => confirm("Delete?") && await deleteDoc(doc(db, "courses", id));
+    window.deleteCourse = async (id) => confirm("Delete this course?") && await deleteDoc(doc(db, "courses", id));
     window.updateRefer = async () => await setDoc(doc(db, "settings", "referral"), { amount: document.getElementById('ref-amt').value });
     window.updateAnn = async () => await setDoc(doc(db, "settings", "announcement"), { text: document.getElementById('ann-text').value, show: document.getElementById('ann-show').value === "true" });
     getDoc(doc(db, "settings", "referral")).then(s => { if(s.exists()) document.getElementById('ref-amt').value = s.data().amount; });
