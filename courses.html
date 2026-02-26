@@ -96,8 +96,11 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .course-img-container { width: 100%; height: 190px; position: relative; background: #0f172a; overflow: hidden; }
-        .course-img-container img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
-        .course-card:hover .course-img-container img { transform: scale(1.08); }
+        
+        /* MULTI-IMAGE CSS */
+        .slide-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; transition: 0.5s ease-in-out; }
+        .slide-img.active { display: block; }
+        
         .img-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(1, 4, 9, 0.8)); }
 
         /* --- NEON BADGES --- */
@@ -205,7 +208,7 @@
         
         function moveCarousel() {
             currentSlide = (currentSlide + 1) % 3;
-            track.style.transform = `translateX(-${currentSlide * 100}%)`;
+            if(track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
             dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
         }
         setInterval(moveCarousel, 4000);
@@ -241,12 +244,18 @@
                 const hasTimer = c.expiryDate ? `<div class="timer-strip" id="timer-${c.id}"><i class="ri-time-line"></i> Loading...</div>` : '';
                 if(c.expiryDate) startTimer(c.expiryDate, `timer-${c.id}`);
 
+                // MULTI-IMAGE LOGIC
+                const images = c.image ? c.image.split(',') : [];
+
                 return `
                     <div class="course-card" style="animation-delay: ${index * 0.1}s">
                         ${c.tag ? `<div class="m-badge ${bClass}">${c.tag}</div>` : ''}
                         <div class="share-btn" onclick="shareOnWhatsapp('${c.name}', '${c.newPrice}')"><i class="ri-whatsapp-line"></i></div>
-                        <div class="course-img-container">
-                            ${c.image ? `<img src="${c.image}">` : `<div style="height:100%; display:flex; align-items:center; justify-content:center; font-size:50px; color:var(--accent); opacity:0.2;"><i class="ri-terminal-box-line"></i></div>`}
+                        <div class="course-img-container" id="slider-${c.id}">
+                            ${images.length > 0 ? 
+                                images.map((img, i) => `<img src="${img.trim()}" class="slide-img ${i === 0 ? 'active' : ''}">`).join('') :
+                                `<div style="height:100%; display:flex; align-items:center; justify-content:center; font-size:50px; color:var(--accent); opacity:0.2;"><i class="ri-terminal-box-line"></i></div>`
+                            }
                             <div class="img-overlay"></div>
                         </div>
                         <div class="card-body">
@@ -259,6 +268,28 @@
                         </div>
                     </div>`;
             }).join('');
+
+            // Start Mini Sliders
+            data.forEach(c => {
+                const images = c.image ? c.image.split(',') : [];
+                if(images.length > 1) {
+                    startMiniSlider(`slider-${c.id}`);
+                }
+            });
+        }
+
+        function startMiniSlider(containerId) {
+            let current = 0;
+            setInterval(() => {
+                const container = document.getElementById(containerId);
+                if(!container) return;
+                const imgs = container.querySelectorAll('.slide-img');
+                if(imgs.length === 0) return;
+                
+                imgs[current].classList.remove('active');
+                current = (current + 1) % imgs.length;
+                imgs[current].classList.add('active');
+            }, 3000);
         }
 
         function startTimer(expiry, elementId) {
