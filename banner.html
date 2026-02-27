@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Admin Terminal</title>
+    <title>Elite Admin Terminal | v4</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --card: rgba(255,255,255,0.03); }
@@ -12,43 +12,53 @@
         .admin-card { width: 100%; max-width: 500px; background: var(--card); padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         
         /* Tab Styling */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 500px; }
-        .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: var(--card); color: white; cursor: pointer; font-weight: 700; font-size: 11px; text-transform: uppercase; transition: 0.3s; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; width: 100%; max-width: 500px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex: 1; min-width: 80px; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: var(--card); color: white; cursor: pointer; font-weight: 700; font-size: 10px; text-transform: uppercase; transition: 0.3s; white-space: nowrap; }
         .tab-btn.active { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
 
         .input-group { margin-bottom: 18px; }
         label { display: block; font-size: 10px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
-        input, select { width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; font-size: 14px; box-sizing: border-box; outline: none; }
+        input, select, textarea { width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; font-size: 14px; box-sizing: border-box; outline: none; font-family: inherit; }
+        textarea { height: 80px; resize: none; }
         
         button { width: 100%; padding: 16px; border: none; border-radius: 12px; color: white; font-weight: 800; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 14px; }
         .save-btn { background: var(--primary); }
         .xp-btn { background: #22c55e; }
+        .slider-btn { background: #f59e0b; }
         button:active { transform: scale(0.96); }
         
-        /* Confirmation Text Style */
-        #statusMsg { 
-            margin-top: 20px; 
-            font-size: 13px; 
-            text-align: center; 
-            font-weight: 800; 
-            min-height: 20px; 
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
+        #statusMsg { margin-top: 20px; font-size: 13px; text-align: center; font-weight: 800; min-height: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
         .hidden { display: none; }
+
+        .hint { font-size: 9px; color: #64748b; margin-top: 5px; display: block; }
     </style>
 </head>
 <body>
 
-<h2 style="margin-bottom: 25px; font-weight: 800; letter-spacing: -1px;"><i class="ri-shield-user-line"></i> SYSTEM ADMIN</h2>
+<h2 style="margin-bottom: 25px; font-weight: 800; letter-spacing: -1px;"><i class="ri-shield-keyhole-line"></i> MASTER CONTROL</h2>
 
 <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('banner')">Banner</button>
+    <button class="tab-btn active" onclick="showTab('slider')">Slider</button>
+    <button class="tab-btn" onclick="showTab('banner')">Banner</button>
     <button class="tab-btn" onclick="showTab('system')">News</button>
     <button class="tab-btn" onclick="showTab('students')">XP Boost</button>
 </div>
 
-<div id="bannerTab" class="admin-card">
+<div id="sliderTab" class="admin-card">
+    <div class="input-group">
+        <label>Slider Images (Carousel)</label>
+        <textarea id="sliderUrls" placeholder="URL1, URL2, URL3"></textarea>
+        <span class="hint">Separate image links with a comma ( , )</span>
+    </div>
+    <div class="input-group">
+        <label>Slider Titles</label>
+        <textarea id="sliderTitles" placeholder="Title 1, Title 2, Title 3"></textarea>
+    </div>
+    <button class="slider-btn" id="saveSlider">UPDATE HOMEPAGE SLIDER</button>
+</div>
+
+<div id="bannerTab" class="admin-card hidden">
     <div class="input-group">
         <label>Banner Status</label>
         <select id="status"><option value="on">Active (Show)</option><option value="off">Inactive (Hide)</option></select>
@@ -103,8 +113,8 @@
         document.querySelectorAll('.admin-card').forEach(c => c.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tab + 'Tab').classList.remove('hidden');
-        event.currentTarget.classList.add('active');
-        msg.innerText = ""; // Clear msg when switching tabs
+        if(event) event.currentTarget.classList.add('active');
+        msg.innerText = "";
     };
 
     async function loadData() {
@@ -132,6 +142,13 @@
         // Marquee Load
         const mSnap = await getDoc(doc(db, "settings", "marquee"));
         if(mSnap.exists()) document.getElementById('marqueeText').value = mSnap.data().msg;
+
+        // Slider Load
+        const sSnap = await getDoc(doc(db, "settings", "slider"));
+        if(sSnap.exists()) {
+            document.getElementById('sliderUrls').value = sSnap.data().images || '';
+            document.getElementById('sliderTitles').value = sSnap.data().titles || '';
+        }
     }
 
     function showConfirm(text, isError = false) {
@@ -139,6 +156,18 @@
         msg.style.color = isError ? "#ef4444" : "#22c55e";
         setTimeout(() => { msg.innerText = ""; }, 3000);
     }
+
+    // SAVE SLIDER
+    document.getElementById('saveSlider').onclick = async () => {
+        msg.innerText = "Uploading Slider Data...";
+        try {
+            await setDoc(doc(db, "settings", "slider"), {
+                images: document.getElementById('sliderUrls').value,
+                titles: document.getElementById('sliderTitles').value
+            });
+            showConfirm("✅ SLIDER UPDATED");
+        } catch(e) { showConfirm("❌ ERROR: " + e.message, true); }
+    };
 
     document.getElementById('saveBanner').onclick = async () => {
         msg.innerText = "Syncing...";
