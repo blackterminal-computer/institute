@@ -38,7 +38,7 @@
         .banner-inner {
             position: relative; border-radius: 24px; overflow: hidden; border: 1px solid var(--glass-border);
             background: #0f172a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            aspect-ratio: 16 / 8; /* Fixed aspect ratio for perfect fitting */
+            aspect-ratio: 16 / 8; 
             width: 100%;
         }
 
@@ -57,6 +57,29 @@
 
         .shimmer { background: linear-gradient(90deg, #0f172a 25%, #1e293b 50%, #0f172a 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* --- NEW: Premium Course Styling --- */
+        .featured-course-section { padding: 0 20px; margin-bottom: 25px; }
+        .course-premium-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.1));
+            border: 1px solid var(--glass-border); border-radius: 28px; padding: 20px;
+            display: flex; gap: 15px; align-items: center; position: relative;
+            overflow: hidden; text-decoration: none; backdrop-filter: blur(10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        .course-img-box {
+            width: 65px; height: 65px; border-radius: 18px; background: rgba(0,0,0,0.3);
+            border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center;
+            font-size: 28px; z-index: 1;
+        }
+        .course-info { flex: 1; z-index: 1; }
+        .course-tag {
+            background: var(--gold); color: #000; font-size: 8px; font-weight: 900;
+            padding: 2px 8px; border-radius: 50px; text-transform: uppercase;
+            display: inline-block; margin-bottom: 5px;
+        }
+        .course-title { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+        .course-stats { display: flex; gap: 10px; font-size: 9px; opacity: 0.6; font-weight: 600; }
 
         /* Rest of your CSS remains 100% same */
         #adminAlert { position: fixed; top: 20px; left: 20px; right: 20px; background: rgba(99, 102, 241, 0.2); border: 1px solid var(--primary); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 15px; border-radius: 18px; z-index: 10001; display: none; animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -170,6 +193,24 @@
         <span id="fee-badge" style="font-size: 9px; font-weight: 900; padding: 5px 10px; border-radius: 8px; text-transform: uppercase;">---</span>
     </div>
 
+    <div class="featured-course-section">
+        <p class="label-tag">Next Level Mastery</p>
+        <a href="courses.html" class="course-premium-card">
+            <div class="course-img-box">
+                <i class="ri-code-s-slash-fill" style="color: var(--accent);"></i>
+            </div>
+            <div class="course-info">
+                <span class="course-tag">New Course</span>
+                <h3 class="course-title">Full Stack Web Mastery</h3>
+                <div class="course-stats">
+                    <span><i class="ri-vidicon-line"></i> 24 Lessons</span>
+                    <span><i class="ri-medal-line"></i> +500 XP</span>
+                </div>
+            </div>
+            <i class="ri-arrow-right-s-line" style="font-size: 24px; opacity: 0.3;"></i>
+        </a>
+    </div>
+
     <div class="grid">
         <div class="tournament-wrapper">
             <a href="tournament.html" class="tournament-card">
@@ -221,14 +262,13 @@
         let currentSlide = 0;
         let totalSlides = 0;
 
-        // --- NEW SLIDER LOGIC WITH REDIRECT ---
         async function syncSlider() {
             onSnapshot(doc(db, "settings", "slider"), (snap) => {
                 if(snap.exists()) {
                     const data = snap.data();
                     const urls = data.images ? data.images.split(',') : [];
                     const titles = data.titles ? data.titles.split(',') : [];
-                    const links = data.links ? data.links.split(',') : []; // Fetch links from DB
+                    const links = data.links ? data.links.split(',') : []; 
                     
                     const track = document.getElementById('sliderTrack');
                     const dots = document.getElementById('sliderDots');
@@ -240,10 +280,7 @@
                         totalSlides = urls.length;
 
                         urls.forEach((url, i) => {
-                            // Fetch redirect link for each slide, default to javascript:void(0)
                             const redirectLink = (links[i] && links[i].trim() !== "") ? links[i].trim() : "javascript:void(0)";
-                            
-                            // Slide Injection as anchor tag
                             const slide = document.createElement('a');
                             slide.href = redirectLink;
                             slide.className = 'banner-card';
@@ -258,7 +295,6 @@
                             `;
                             track.appendChild(slide);
 
-                            // Dot Injection
                             const dot = document.createElement('div');
                             dot.className = `dot ${i === 0 ? 'active' : ''}`;
                             dots.appendChild(dot);
@@ -268,7 +304,6 @@
             });
         }
 
-        // Auto Slider Timer
         setInterval(() => {
             if(totalSlides > 1) {
                 currentSlide = (currentSlide + 1) % totalSlides;
@@ -280,7 +315,6 @@
             }
         }, 4000);
 
-        // --- STREAK & CACHE LOGIC (SAME AS OLD) ---
         async function updateStreakLogic(data) {
             const today = new Date();
             const todayStr = today.toDateString();
@@ -326,7 +360,7 @@
         }
 
         async function syncData() {
-            syncSlider(); // Initialize Slider Sync
+            syncSlider(); 
 
             onSnapshot(doc(db, "settings", "marquee"), (snap) => {
                 if(snap.exists()){
