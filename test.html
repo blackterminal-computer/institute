@@ -81,7 +81,18 @@
         .course-title { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 4px; }
         .course-stats { display: flex; gap: 10px; font-size: 9px; opacity: 0.6; font-weight: 600; }
 
-        /* Rest of your CSS remains 100% same */
+        /* --- XP Card Styling --- */
+        .xp-card { margin: 15px 20px; background: var(--glass); border: 1px solid var(--glass-border); padding: 18px; border-radius: 24px; backdrop-filter: blur(10px); }
+        .xp-header-flex { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .xp-avatar-box { width: 48px; height: 48px; border-radius: 14px; border: 2px solid var(--primary); overflow: hidden; background: rgba(0,0,0,0.2); }
+        .xp-avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+        .xp-info-box { flex: 1; }
+        .xp-user-name { font-size: 15px; font-weight: 800; color: #fff; display: block; line-height: 1.2; }
+        .xp-score-text { font-size: 10px; font-weight: 600; opacity: 0.6; color: var(--accent); text-transform: uppercase; }
+
+        .progress-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; transition: 1s ease-in-out; }
+        
         #adminAlert { position: fixed; top: 20px; left: 20px; right: 20px; background: rgba(99, 102, 241, 0.2); border: 1px solid var(--primary); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 15px; border-radius: 18px; z-index: 10001; display: none; animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideDown { from { transform: translateY(-120%); } to { transform: translateY(0); } }
         .float-att { position: fixed !important; top: 100px; right: 15px; z-index: 9999; background: rgba(255, 255, 255, 0.05) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 14px; border-radius: 50px; display: flex; align-items: center; gap: 6px; text-decoration: none; color: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.3s; }
@@ -94,9 +105,7 @@
         .marquee-container { background: rgba(99, 102, 241, 0.05); padding: 8px 0; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--glass-border); margin-bottom: 10px; }
         .marquee-content { display: inline-block; padding-left: 100%; font-size: 10px; font-weight: 700; color: var(--accent); animation: scroll 15s linear infinite; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        .xp-card { margin: 10px 20px; background: var(--glass); border: 1px solid var(--glass-border); padding: 18px; border-radius: 24px; backdrop-filter: blur(10px); }
-        .progress-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; transition: 1s ease-in-out; }
+        
         .rank-section { margin: 0 20px 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.1)); border-radius: 24px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(6, 182, 212, 0.2); }
         .rank-data p { font-size: 10px; opacity: 0.5; font-weight: 800; letter-spacing: 1px; }
         .rank-data h2 { font-size: 28px; color: var(--gold); font-weight: 800; }
@@ -167,14 +176,19 @@
     </div>
 
     <div class="xp-card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 8px;">
-            <div>
-                <span id="uLevelBadge" style="background:var(--primary); color:white; font-size:9px; padding:2px 8px; border-radius:4px; font-weight:900; text-transform:uppercase; display:block; width:fit-content; margin-bottom:4px;">Level 1</span>
-                <span id="uNameXP" style="font-weight:800; font-size: 15px;">Loading...</span>
+        <div class="xp-header-flex">
+            <div class="xp-avatar-box">
+                <img id="uAvatarXP" src="" alt="User">
             </div>
-            <span id="xpVal" style="color:var(--accent); font-weight:800;">0 XP</span>
+            <div class="xp-info-box">
+                <span class="xp-user-name" id="uNameXP">Loading...</span>
+                <span class="xp-score-text">You scored <b id="xpVal">0</b> XP</span>
+            </div>
+            <div id="uLevelBadge" style="background:var(--primary); color:white; font-size:9px; padding:3px 8px; border-radius:6px; font-weight:900; text-transform:uppercase;">Level 1</div>
         </div>
+        
         <div class="progress-track"><div class="progress-fill" id="xpBar"></div></div>
+        
         <p id="xpTip" style="font-size: 10px; margin-top: 10px; color: var(--accent); display: flex; align-items: center; gap: 5px;">
             <i class="ri-flashlight-fill" style="color:var(--gold)"></i> <span>Loading milestone...</span>
         </p>
@@ -344,7 +358,7 @@
 
         function updateXPUI(xp) {
             const currentXP = parseInt(xp) || 0;
-            document.getElementById("xpVal").innerText = currentXP + " XP";
+            document.getElementById("xpVal").innerText = currentXP;
             document.getElementById("xpBar").style.width = ((currentXP % 1000) / 1000 * 100) + "%";
             const currentLevel = Math.floor(currentXP / 1000) + 1;
             document.getElementById("uLevelBadge").innerText = "Level " + currentLevel;
@@ -388,7 +402,13 @@
                     const d = snap.data();
                     updateStreakLogic(d);
                     document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
-                    document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+                    
+                    // Update both Avatar boxes
+                    const realPhoto = d.photo || d.pic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+                    document.getElementById("uAvatar").src = realPhoto;
+                    document.getElementById("uAvatarXP").src = realPhoto;
+                    
+                    document.getElementById("uNameXP").innerText = student;
                     userXP = d.xp || 0;
                     updateXPUI(userXP);
                     
