@@ -49,7 +49,6 @@
         }
         .player-card { text-align: center; width: 40%; }
         
-        /* Updated Avatar for Images */
         .avatar {
             width: 70px; height: 70px; background: var(--glass); 
             border: 2px solid var(--primary); border-radius: 50%;
@@ -83,9 +82,6 @@
         .match-players { display: flex; align-items: center; gap: 10px; flex: 1; }
         .mini-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--primary); object-fit: cover; }
         .match-vs { font-size: 10px; font-weight: 900; color: var(--danger); }
-        .xp-gain { font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 10px; }
-        .xp-plus { background: rgba(34, 197, 94, 0.1); color: var(--success); }
-        .xp-minus { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
 
         .timer-bar {
             width: 100%; height: 6px; background: rgba(255,255,255,0.05);
@@ -123,12 +119,12 @@
         <div id="battle-area" style="display: none; width: 100%;">
             <div class="vs-container">
                 <div class="player-card">
-                    <div class="avatar" id="p1-img-box"><img id="p1-img" src="https://api.dicebear.com/7.x/avataaars/svg?seed=P1"></div>
+                    <div class="avatar"><img id="p1-img" src=""></div>
                     <p id="p1-name" style="font-size: 12px; font-weight: 800; text-transform: uppercase;"></p>
                 </div>
                 <div class="vs-badge">VS</div>
                 <div class="player-card">
-                    <div class="avatar" style="border-color: var(--danger);" id="p2-img-box"><img id="p2-img" src="https://api.dicebear.com/7.x/avataaars/svg?seed=P2"></div>
+                    <div class="avatar" style="border-color: var(--danger);"><img id="p2-img" src=""></div>
                     <p id="p2-name" style="font-size: 12px; font-weight: 800; text-transform: uppercase;"></p>
                 </div>
             </div>
@@ -149,14 +145,13 @@
                 <span>RECENT MATCHES</span>
                 <span style="color: var(--primary); opacity: 0.6;">HISTORY</span>
             </div>
-            <div id="match-history-list">
-                </div>
+            <div id="match-history-list"></div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -176,7 +171,6 @@
         let roomId = "", opponent = "", myRole = "";
         const defaultAvatar = (n) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${n}`;
 
-        // Fetch Questions (keeping your 20 questions)
         const questions = [
             {q:"Shortcut for Refresh?", a:"F2", b:"F5", c:"F7", d:"F10", ans:"b"},
             {q:"First computer name?", a:"ENIAC", b:"DELL", c:"HP", d:"IBM", ans:"a"},
@@ -202,14 +196,12 @@
 
         let i = 0, score = 0, time = 10, timer;
 
-        // FETCH RECENT MATCHES LOGIC
         async function fetchHistory() {
-            const q = query(collection(db, "recent_battles"), orderBy("time", "desc"), limit(5));
-            const snap = await getDocs(q);
+            const qry = query(collection(db, "recent_battles"), orderBy("time", "desc"), limit(5));
+            const snap = await getDocs(qry);
             let html = "";
             snap.forEach(doc => {
                 const m = doc.data();
-                const isWinner = m.winner === student;
                 html += `
                     <div class="match-row">
                         <div class="match-players">
@@ -221,9 +213,6 @@
                                 <p style="font-size:9px; opacity:0.5;">Battle Arena</p>
                             </div>
                         </div>
-                        <div class="xp-gain ${m.winner === student ? 'xp-plus' : 'xp-minus'}">
-                            ${m.winner === student ? '+50' : (m.winner === 'draw' ? '+10' : '-10')} QP
-                        </div>
                     </div>
                 `;
             });
@@ -231,7 +220,6 @@
         }
         fetchHistory();
 
-        // MATCHMAKING
         async function matchmake() {
             let rooms = await getDocs(collection(db, "battle_rooms"));
             for (let r of rooms.docs) {
@@ -253,14 +241,10 @@
                 if (d && d.status == "start") {
                     opponent = (d.player1 == student) ? d.player2 : d.player1;
                     unsub();
-                    
-                    // Fetch real profile pics from students collection
                     const p1Data = (await getDoc(doc(db, "students", d.player1))).data();
                     const p2Data = (await getDoc(doc(db, "students", d.player2))).data();
-                    
                     const p1Img = p1Data?.photo || p1Data?.pic || defaultAvatar(d.player1);
                     const p2Img = p2Data?.photo || p2Data?.pic || defaultAvatar(d.player2);
-
                     startUI(d.player1, d.player2, p1Img, p2Img);
                 }
             });
@@ -313,7 +297,6 @@
         async function finishBattle() {
             clearInterval(timer);
             document.getElementById("battle-area").innerHTML = `<div class="searching-box"><h2>Finishing Match...</h2></div>`;
-            
             await updateDoc(doc(db, "battle_rooms", roomId), { [student]: score });
 
             setTimeout(async () => {
@@ -321,25 +304,21 @@
                 let d = snap.data();
                 let s1 = d[d.player1] || 0;
                 let s2 = d[d.player2] || 0;
-
                 let win = (student == d.player1) ? s1 > s2 : s2 > s1;
                 let draw = s1 == s2;
                 let xpChange = draw ? 10 : (win ? 50 : -10);
 
-                // --- SAVE TO HISTORY ---
                 try {
-                    const p1Data = (await getDoc(doc(db, "students", d.player1))).data();
-                    const p2Data = (await getDoc(doc(db, "students", d.player2))).data();
-                    
+                    const p1D = (await getDoc(doc(db, "students", d.player1))).data();
+                    const p2D = (await getDoc(doc(db, "students", d.player2))).data();
                     await addDoc(collection(db, "recent_battles"), {
-                        p1Name: d.player1,
-                        p2Name: d.player2,
-                        p1Photo: p1Data?.photo || p1Data?.pic || defaultAvatar(d.player1),
-                        p2Photo: p2Data?.photo || p2Data?.pic || defaultAvatar(d.player2),
+                        p1Name: d.player1, p2Name: d.player2,
+                        p1Photo: p1D?.photo || p1D?.pic || defaultAvatar(d.player1),
+                        p2Photo: p2D?.photo || p2D?.pic || defaultAvatar(d.player2),
                         winner: draw ? 'draw' : (s1 > s2 ? d.player1 : d.player2),
                         time: Date.now()
                     });
-                } catch(e) { console.log("History error", e); }
+                } catch(e) {}
 
                 document.getElementById("game-ui").innerHTML = `
                     <div class="battle-card result-screen" style="margin-top:100px">
@@ -349,14 +328,12 @@
                         <button class="btn-home" onclick="location.href='index.html'">CONTINUE</button>
                     </div>`;
 
-                // Update XP in students collection
                 const sRef = doc(db, "students", student);
                 const userSnap = await getDoc(sRef);
                 if (userSnap.exists()) {
                     let currentXp = userSnap.data().xp || 0;
                     await updateDoc(sRef, { xp: Math.max(0, currentXp + xpChange) });
                 }
-                
                 setTimeout(async () => { try { await deleteDoc(doc(db, "battle_rooms", roomId)); } catch(e) {} }, 5000);
             }, 3000);
         }
