@@ -32,7 +32,6 @@
         header h1 { font-size: 24px; font-weight: 800; }
         header p { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* PODIUM AREA */
         .top-three {
             display: flex; justify-content: center; align-items: flex-end;
             gap: 8px; margin: 20px auto 35px auto; width: 100%; max-width: 450px;
@@ -41,33 +40,38 @@
         .podium {
             background: var(--glass); border: 1px solid var(--glass-border);
             border-radius: 20px; padding: 15px 5px; text-align: center;
-            flex: 1; position: relative; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            flex: 1; position: relative; transition: 0.4s;
         }
 
-        .podium.rank-1 { height: 165px; border-color: var(--gold); background: rgba(250, 204, 21, 0.05); z-index: 2; }
-        .podium.rank-2 { height: 140px; border-color: var(--silver); }
-        .podium.rank-3 { height: 125px; border-color: var(--bronze); }
+        .podium.rank-1 { height: 180px; border-color: var(--gold); background: rgba(250, 204, 21, 0.05); z-index: 2; }
+        .podium.rank-2 { height: 155px; border-color: var(--silver); }
+        .podium.rank-3 { height: 140px; border-color: var(--bronze); }
         
+        /* Fixed Image Display */
+        .p-img {
+            width: 50px; height: 50px; border-radius: 50%; border: 2px solid white;
+            margin: 0 auto 10px auto; object-fit: cover; display: block;
+            background: #1e1b4b; /* Taaki load hone tak dark dikhe */
+        }
+        .rank-1 .p-img { width: 65px; height: 65px; border-color: var(--gold); }
+
         .crown { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 24px; }
-        .podium-name { font-size: 11px; font-weight: 800; margin-top: 15px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .podium-name { font-size: 11px; font-weight: 800; margin-top: 5px; display: block; }
         .podium-xp { font-size: 10px; color: var(--accent); font-weight: 700; display: block; }
 
-        /* RANK LIST */
         .board-container { max-width: 500px; margin: 0 auto 100px auto; }
         .player-row {
             background: var(--glass); border: 1px solid var(--glass-border);
-            margin-bottom: 8px; padding: 14px 18px; border-radius: 18px;
+            margin-bottom: 8px; padding: 12px 18px; border-radius: 18px;
             display: flex; align-items: center; justify-content: space-between;
         }
         
-        .my-rank { 
-            border-color: var(--accent); 
-            background: rgba(6, 182, 212, 0.1); 
-            transform: scale(1.02);
-        }
+        .my-rank { border-color: var(--accent); background: rgba(6, 182, 212, 0.1); }
 
         .player-info { display: flex; align-items: center; gap: 12px; }
         .rank-tag { font-weight: 800; color: #64748b; width: 25px; font-size: 13px; }
+        
+        .list-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); }
         .player-name { font-weight: 600; font-size: 14px; }
         .xp-tag { font-weight: 800; color: var(--gold); font-size: 13px; display: flex; align-items: center; gap: 4px; }
 
@@ -75,7 +79,6 @@
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
             background: var(--primary); color: white; padding: 12px 25px; 
             border-radius: 50px; font-weight: 800; text-decoration: none;
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4); z-index: 100;
             display: flex; align-items: center; gap: 8px;
         }
     </style>
@@ -87,11 +90,8 @@
         <p>Terminal Rank System</p>
     </header>
 
-    <div id="podium-area" class="top-three">
-        </div>
-
-    <div class="board-container" id="board">
-        </div>
+    <div id="podium-area" class="top-three"></div>
+    <div class="board-container" id="board"></div>
 
     <a href="index.html" class="home-btn"><i class="ri-home-4-line"></i> Back to Terminal</a>
 
@@ -112,55 +112,58 @@
         const db = getFirestore(app);
         const currentUser = localStorage.getItem("studentName") || "";
 
-        // 1. INSTANT LOAD FROM CACHE
-        const cached = localStorage.getItem("bt_ranks_cache");
-        if(cached) {
-            renderLeaderboard(JSON.parse(cached));
-        }
+        // Yeh default image tab aayegi jab database khali ho
+        const defaultPic = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
-        // 2. BACKGROUND FETCH (AUTO UPDATE)
         async function fetchFreshData() {
             try {
                 const snap = await getDocs(collection(db, "students"));
                 let players = [];
                 snap.forEach(doc => {
-                    players.push({ name: doc.id, xp: doc.data().xp || 0 });
+                    const data = doc.data();
+                    
+                    // Logic: Hum database mein 'photo', 'pic', aur 'profilePic' teeno dhoondh rahe hain
+                    // Kyunki ho sakta hai homepage par aapne alag naam rakha ho
+                    const userPhoto = data.photo || data.pic || data.profilePic || data.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.id}`;
+
+                    players.push({ 
+                        name: doc.id, 
+                        xp: data.xp || 0,
+                        photo: userPhoto 
+                    });
                 });
                 
                 players.sort((a, b) => b.xp - a.xp);
-                
-                // Update Cache
-                localStorage.setItem("bt_ranks_cache", JSON.stringify(players));
-                // Update UI without flickering
                 renderLeaderboard(players);
-            } catch (e) { console.log("Sync Error:", e); }
+            } catch (e) { console.error("Error:", e); }
         }
         fetchFreshData();
 
         function renderLeaderboard(data) {
             if(!data || data.length === 0) return;
 
-            // Render Podium
             const top = data.slice(0, 3);
             document.getElementById("podium-area").innerHTML = `
                 <div class="podium rank-2">
                     <span class="crown">🥈</span>
-                    <span class="podium-name">${top[1] ? top[1].name : '---'}</span>
-                    <span class="podium-xp">${top[1] ? top[1].xp : 0} XP</span>
+                    <img class="p-img" src="${top[1]?.photo || defaultPic}" onerror="this.src='${defaultPic}'">
+                    <span class="podium-name">${top[1]?.name || '---'}</span>
+                    <span class="podium-xp">${top[1]?.xp || 0} XP</span>
                 </div>
                 <div class="podium rank-1">
                     <span class="crown">👑</span>
-                    <span class="podium-name">${top[0] ? top[0].name : '---'}</span>
-                    <span class="podium-xp">${top[0] ? top[0].xp : 0} XP</span>
+                    <img class="p-img" src="${top[0]?.photo || defaultPic}" onerror="this.src='${defaultPic}'">
+                    <span class="podium-name">${top[0]?.name || '---'}</span>
+                    <span class="podium-xp">${top[0]?.xp || 0} XP</span>
                 </div>
                 <div class="podium rank-3">
                     <span class="crown">🥉</span>
-                    <span class="podium-name">${top[2] ? top[2].name : '---'}</span>
-                    <span class="podium-xp">${top[2] ? top[2].xp : 0} XP</span>
+                    <img class="p-img" src="${top[2]?.photo || defaultPic}" onerror="this.src='${defaultPic}'">
+                    <span class="podium-name">${top[2]?.name || '---'}</span>
+                    <span class="podium-xp">${top[2]?.xp || 0} XP</span>
                 </div>
             `;
 
-            // Render List
             let listHtml = "";
             data.slice(3).forEach((p, i) => {
                 const isMe = p.name === currentUser;
@@ -168,6 +171,7 @@
                     <div class="player-row ${isMe ? 'my-rank' : ''}">
                         <div class="player-info">
                             <span class="rank-tag">#${i + 4}</span>
+                            <img class="list-avatar" src="${p.photo}" onerror="this.src='${defaultPic}'">
                             <span class="player-name">${p.name} ${isMe ? '<small>(You)</small>' : ''}</span>
                         </div>
                         <div class="xp-tag"><i class="ri-star-fill"></i> ${p.xp}</div>
