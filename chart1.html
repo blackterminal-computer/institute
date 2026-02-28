@@ -3,182 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wade Warren - Chat</title>
+    <title>Chat App - 100% Ditto</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root {
-            --wa-light-green: #89c191;
-            --msg-bg-me: #89c191;
-            --msg-bg-them: #f2f2f2;
-            --text-main: #1a1a1a;
-            --text-sub: #999;
+            --p-green: #89c191;
+            --bg-green: #7ebf88;
+            --light-grey: #f8faf8;
+            --text-dark: #1a1a1a;
+            --text-muted: #99aab5;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', -apple-system, sans-serif; }
 
-        body { background: #e8f3e9; height: 100vh; display: flex; justify-content: center; align-items: center; }
-
-        .phone-container {
-            background: white; width: 100%; max-width: 400px; height: 92vh;
-            border-radius: 45px; position: relative; overflow: hidden;
-            display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        body {
+            background-color: #e0eadd;
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
         }
 
-        /* Top Header */
-        .chat-header {
-            padding: 20px 20px 15px; display: flex; align-items: center;
-            border-bottom: 0.5px solid #eee; background: white; z-index: 10;
-        }
-        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; }
-        .user-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
-        .user-meta { flex: 1; margin-left: 12px; }
-        .user-meta h4 { font-size: 15px; font-weight: 700; color: var(--text-main); }
-        .user-meta span { font-size: 12px; color: var(--wa-light-green); font-weight: 500; }
-        .header-actions { display: flex; gap: 20px; font-size: 20px; color: #333; }
-
-        /* Message Area */
-        .messages-box {
-            flex: 1; overflow-y: auto; padding: 20px;
-            background: white; display: flex; flex-direction: column; gap: 15px;
-            scrollbar-width: none;
+        .phone {
+            background-color: var(--bg-green);
+            width: 100%; max-width: 414px; height: 95vh;
+            border-radius: 50px; position: relative;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.15);
+            overflow: hidden; transition: all 0.4s ease;
         }
 
-        .date-divider {
-            text-align: center; margin: 10px 0;
+        /* --- SCREEN 1: WELCOME --- */
+        #welcome {
+            height: 100%; display: flex; flex-direction: column;
+            background-image: radial-gradient(rgba(255,255,255,0.1) 1.5px, transparent 1.5px);
+            background-size: 25px 25px;
         }
-        .date-divider span {
-            padding: 6px 16px; background: #f9f9f9; border-radius: 20px;
-            font-size: 12px; color: #aaa; border: 0.5px solid #eee;
+        .nav-top { padding: 30px 25px; display: flex; justify-content: space-between; }
+        .glass-btn {
+            width: 45px; height: 45px; background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px); border-radius: 15px;
+            display: flex; align-items: center; justify-content: center; color: white;
+        }
+        .hero { flex: 1.2; display: flex; justify-content: center; align-items: flex-end; }
+        .hero img { width: 85%; }
+        .welcome-card {
+            background: white; flex: 1; border-radius: 80px 0 0 0;
+            padding: 50px 35px; text-align: center;
+        }
+        .dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 30px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #eee; }
+        .dot.active { width: 28px; height: 8px; border-radius: 10px; background: var(--p-green); }
+        .get-started-btn {
+            width: 100%; height: 65px; background: var(--p-green); color: white;
+            border: none; border-radius: 22px; font-size: 18px; font-weight: 600;
+            margin-top: 40px; box-shadow: 0 15px 30px rgba(137,193,145,0.4);
         }
 
-        .bubble {
-            max-width: 75%; padding: 12px 16px; font-size: 14px; line-height: 1.4;
-            position: relative;
+        /* --- SCREEN 2: CHATS --- */
+        #chats { display: none; height: 100%; background: var(--light-grey); padding: 30px 20px; }
+        .chat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .search-box {
+            background: white; height: 55px; border-radius: 20px;
+            display: flex; align-items: center; padding: 0 20px; margin-bottom: 25px;
         }
+        .search-box input { border: none; outline: none; margin-left: 10px; flex: 1; font-size: 15px; }
+        .chat-row { display: flex; align-items: center; gap: 15px; margin-bottom: 22px; cursor: pointer; }
+        .avatar { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; }
+        .details { flex: 1; border-bottom: 1px solid #f0f2f0; padding-bottom: 12px; }
+        .typing { color: var(--p-green); font-weight: 600; }
+
+        /* --- SCREEN 3: INDIVIDUAL CHAT (WADE WARREN) --- */
+        #personal-chat { display: none; height: 100%; background: white; flex-direction: column; }
+        .p-header { padding: 20px; display: flex; align-items: center; border-bottom: 1px solid #f5f5f5; }
+        .msg-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .bubble { max-width: 75%; padding: 12px 16px; font-size: 14px; line-height: 1.4; position: relative; }
+        .them { background: #f2f2f2; align-self: flex-start; border-radius: 18px 18px 18px 4px; }
+        .me { background: var(--p-green); color: white; align-self: flex-end; border-radius: 18px 18px 4px 18px; }
+        .time-s { font-size: 10px; display: block; margin-top: 5px; opacity: 0.7; }
+        .date-chip { align-self: center; background: #fafafa; padding: 5px 15px; border-radius: 20px; font-size: 12px; color: #bbb; margin: 10px 0; }
         
-        .them {
-            background: var(--msg-bg-them); color: #444;
-            align-self: flex-start; border-radius: 18px 18px 18px 4px;
-        }
+        /* Bottom Controls */
+        .bottom-nav { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 85%; height: 65px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .input-bar { padding: 15px 20px 30px; display: flex; align-items: center; gap: 10px; }
+        .input-field { flex: 1; background: #f6f6f6; height: 50px; border-radius: 25px; display: flex; align-items: center; padding: 0 15px; }
+        .mic-icon { width: 50px; height: 50px; background: #000; color: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
 
-        .me {
-            background: var(--msg-bg-me); color: white;
-            align-self: flex-end; border-radius: 18px 18px 4px 18px;
-        }
-
-        .msg-time {
-            display: block; font-size: 10px; margin-top: 5px; opacity: 0.7;
-        }
-        .me .msg-time { text-align: right; }
-        .ri-check-double-line { font-size: 12px; margin-left: 4px; }
-
-        /* Bottom Input */
-        .input-area {
-            padding: 15px 20px 25px; background: white;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .input-wrap {
-            flex: 1; background: #f6f6f6; height: 50px; border-radius: 25px;
-            display: flex; align-items: center; padding: 0 15px;
-        }
-        .input-wrap input {
-            flex: 1; border: none; background: transparent; outline: none;
-            padding-left: 10px; font-size: 14px;
-        }
-        .mic-btn {
-            width: 50px; height: 50px; background: #000; color: white;
-            border-radius: 15px; display: flex; align-items: center; justify-content: center;
-            font-size: 20px;
-        }
-
-        .swipe-hint {
-            position: absolute; bottom: 8px; width: 100%; text-align: center;
-            font-size: 10px; color: #ccc;
-        }
+        .swipe-hint { position: absolute; bottom: 12px; width: 100%; text-align: center; font-size: 11px; color: #ccc; }
     </style>
 </head>
 <body>
 
-<div class="phone-container">
-    <div class="chat-header">
-        <i class="ri-arrow-left-s-line back-btn"></i>
-        <img src="https://i.pravatar.cc/100?u=wade" class="user-avatar">
-        <div class="user-meta">
-            <h4>Wade Warren</h4>
-            <span>Online</span>
+<div class="phone" id="phone-ui">
+    
+    <div id="welcome">
+        <div class="nav-top">
+            <div class="glass-btn"><i class="ri-close-line"></i></div>
+            <div class="glass-btn"><i class="ri-more-fill"></i></div>
         </div>
-        <div class="header-actions">
-            <i class="ri-phone-line"></i>
-            <i class="ri-more-2-line"></i>
+        <div class="hero"><img src="https://cdni.iconscout.com/illustration/premium/thumb/female-character-holding-speech-bubble-illustration-download-in-svg-png-gif-file-formats--chatting-messages-pack-people-illustrations-4715124.png"></div>
+        <div class="welcome-card">
+            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+            <h1>Hello, Lets Chat</h1>
+            <p style="color:#888; font-size:15px;">Having lots of friends will make your life more colorful</p>
+            <button class="get-started-btn" onclick="showChats()">Get Started</button>
+        </div>
+        <div class="swipe-hint">Swipe up to explore area —</div>
+    </div>
+
+    <div id="chats">
+        <div class="chat-head">
+            <h2 style="font-size:28px;">Chats</h2>
+            <i class="ri-edit-box-line" style="font-size:24px;"></i>
+        </div>
+        <div class="search-box">
+            <i class="ri-search-line" style="color:#ccc;"></i>
+            <input type="text" placeholder="Search here...">
+        </div>
+        <div id="chat-list-items">
+            </div>
+        <div class="bottom-nav">
+            <i class="ri-chat-3-fill" style="color:#222; font-size:24px;"></i>
+            <i class="ri-phone-line" style="color:#ccc; font-size:24px;"></i>
+            <i class="ri-user-line" style="color:#ccc; font-size:24px;"></i>
+            <img src="https://i.pravatar.cc/100?u=me" style="width:32px; height:32px; border-radius:50%;">
         </div>
     </div>
 
-    <div class="messages-box" id="msgBox">
-        <div class="bubble me">
-            OK. I will.
-            <span class="msg-time">9:25 AM <i class="ri-check-double-line"></i></span>
+    <div id="personal-chat">
+        <div class="p-header">
+            <i class="ri-arrow-left-s-line" style="font-size:24px; margin-right:10px;" onclick="showChats()"></i>
+            <img src="https://i.pravatar.cc/100?u=wade" style="width:45px; height:45px; border-radius:50%;">
+            <div style="flex:1; margin-left:12px;">
+                <h4 style="font-size:15px;">Wade Warren</h4>
+                <span style="font-size:12px; color:var(--p-green); font-weight:600;">Online</span>
+            </div>
+            <i class="ri-phone-line" style="font-size:22px; margin-right:20px;"></i>
+            <i class="ri-more-2-line" style="font-size:22px;"></i>
         </div>
-
-        <div class="date-divider"><span>Today</span></div>
-
-        <div class="bubble them">
-            Hello
-            <span class="msg-time">9:25 AM</span>
+        <div class="msg-area">
+            <div class="bubble me">OK. I will.<span class="time-s">9:25 AM <i class="ri-check-double-line"></i></span></div>
+            <div class="date-chip">Today</div>
+            <div class="bubble them">Hello<span class="time-s">9:25 AM</span></div>
+            <div class="bubble me">Hi, Warren<span class="time-s">9:25 AM <i class="ri-check-double-line"></i></span></div>
+            <div class="bubble them">Can you come here today?<span class="time-s">9:26 AM</span></div>
+            <div class="bubble me">Yes, of course dude<span class="time-s">9:26 AM <i class="ri-check-double-line"></i></span></div>
         </div>
-
-        <div class="bubble me">
-            Hi, Warren
-            <span class="msg-time">9:25 AM <i class="ri-check-double-line"></i></span>
-        </div>
-
-        <div class="bubble them">
-            Can you come here today?
-            <span class="msg-time">9:26 AM</span>
-        </div>
-
-        <div class="bubble me">
-            Yes, of course dude
-            <span class="msg-time">9:26 AM <i class="ri-check-double-line"></i></span>
-        </div>
-
-        <div class="bubble me">
-            But i will bring my dog with me
-            <span class="msg-time">9:26 AM <i class="ri-check-double-line"></i></span>
-        </div>
-
-        <div class="bubble them">
-            Okay, i don't mind
-            <span class="msg-time">9:27 AM</span>
-        </div>
-
-        <div class="bubble me">
-            Great, see you soon.
-            <span class="msg-time">9:27 AM <i class="ri-check-double-line"></i></span>
-        </div>
-
-        <div class="bubble them">
-            Yup...Good bye.
-            <span class="msg-time">9:27 AM</span>
+        <div class="input-bar">
+            <div class="input-field">
+                <i class="ri-emotion-line" style="color:#ccc;"></i>
+                <input type="text" placeholder="Message...">
+            </div>
+            <div class="mic-icon"><i class="ri-mic-line"></i></div>
         </div>
     </div>
 
-    <div class="input-area">
-        <div class="input-wrap">
-            <i class="ri-emotion-line" style="color:#aaa;"></i>
-            <input type="text" placeholder="Message...">
-        </div>
-        <div class="mic-btn">
-            <i class="ri-mic-line"></i>
-        </div>
-    </div>
-
-    <div class="swipe-hint">Swipe up to explore area —</div>
 </div>
 
-<script>
-    // Scroll to bottom of chat automatically
-    const box = document.getElementById('msgBox');
-    box.scrollTop = box.scrollHeight;
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = { databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com/" };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Screen Navigation Logic
+    window.showChats = () => {
+        document.getElementById('welcome').style.display = 'none';
+        document.getElementById('personal-chat').style.display = 'none';
+        document.getElementById('chats').style.display = 'block';
+        document.getElementById('phone-ui').style.background = '#f8faf8';
+    };
+
+    window.openPersonalChat = (name) => {
+        if(name === "Wade Warren") {
+            document.getElementById('chats').style.display = 'none';
+            document.getElementById('personal-chat').style.display = 'flex';
+            document.getElementById('phone-ui').style.background = '#fff';
+        }
+    };
+
+    // Live Firebase Data for Chat List
+    onValue(ref(db, 'chats'), (snapshot) => {
+        const data = snapshot.val();
+        const container = document.getElementById('chat-list-items');
+        let html = '';
+        for (let id in data) {
+            const u = data[id];
+            html += `
+                <div class="chat-row" onclick="openPersonalChat('${u.name}')">
+                    <img src="${u.profilePic}" class="avatar">
+                    <div class="details">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span style="font-weight:700;">${u.name}</span>
+                            <span style="font-size:11px; color:#bbb;">${u.time}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px; color:#888;">
+                            <span class="${u.lastMsg === 'Typing...' ? 'typing' : ''}">${u.lastMsg}</span>
+                            ${u.unread > 0 ? `<div style="background:var(--p-green); color:white; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center;">${u.unread}</div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        }
+        container.innerHTML = html;
+    });
 </script>
 
 </body>
