@@ -11,27 +11,40 @@
             background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; 
             display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
+            overflow: hidden;
         }
         .login-card { 
             background: rgba(255,255,255,0.03); padding: 40px 30px; border-radius: 30px; 
             border: 1px solid rgba(255,255,255,0.08); width: 90%; max-width: 380px; 
             text-align: center; backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
         h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; color: #fff; }
         p { font-size: 12px; opacity: 0.5; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+        
         input { 
             width: 100%; padding: 15px; margin: 12px 0; border-radius: 15px; 
             border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); 
             color: white; outline: none; font-size: 14px; transition: 0.3s;
+            box-sizing: border-box;
         }
         input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+
+        .terms-container {
+            display: flex; align-items: center; justify-content: flex-start;
+            margin: 10px 0 20px 5px; font-size: 13px; color: rgba(255,255,255,0.6);
+            cursor: pointer;
+        }
+        .terms-container input { width: 18px; height: 18px; margin-right: 10px; accent-color: var(--accent); }
+
         button { 
-            width: 100%; padding: 16px; margin-top: 20px; border-radius: 15px; border: none; 
+            width: 100%; padding: 16px; border-radius: 15px; border: none; 
             background: linear-gradient(90deg, var(--primary), var(--accent)); 
             color: white; font-weight: 800; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 1px;
         }
         button:active { transform: scale(0.98); }
-        #errorMsg { color: #ef4444; font-size: 12px; margin-top: 15px; display: none; font-weight: 600; }
+        #errorMsg { color: #ff4b4b; font-size: 12px; margin-top: 15px; display: none; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -39,8 +52,14 @@
     <div class="login-card">
         <h1>Student Login</h1>
         <p>Enter Elite Credentials</p>
-        <input type="text" id="userName" placeholder="Full Name (e.g. Abhinnnn)" required>
+        <input type="text" id="userName" placeholder="Full Name (e.g. Abhinav)" required>
         <input type="tel" id="userMobile" placeholder="Mobile Number" maxlength="10" required>
+        
+        <label class="terms-container">
+            <input type="checkbox" id="agreeCheck">
+            I agree to the terms & conditions
+        </label>
+
         <button onclick="handleLogin()">ACCESS TERMINAL</button>
         <div id="errorMsg"></div>
     </div>
@@ -49,7 +68,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Same config as your index.html
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -62,10 +80,24 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // --- AUTO LOGIN CHECK ---
+        if(localStorage.getItem("studentName")) {
+            window.location.href = "index.html";
+        }
+
         window.handleLogin = async () => {
             const name = document.getElementById('userName').value.trim();
             const mobile = document.getElementById('userMobile').value.trim();
+            const agreed = document.getElementById('agreeCheck').checked;
             const error = document.getElementById('errorMsg');
+
+            error.style.display = "none";
+
+            if(!agreed) {
+                error.innerText = "⚠️ Please agree to the terms & conditions.";
+                error.style.display = "block";
+                return;
+            }
 
             if(!name || mobile.length < 10) {
                 error.innerText = "⚠️ Enter valid Name and 10-digit Mobile Number.";
@@ -78,7 +110,6 @@
                 const docSnap = await getDoc(docRef);
 
                 if(docSnap.exists()) {
-                    // Existing User check
                     if(docSnap.data().mobile === mobile) {
                         saveAndRedirect(name);
                     } else {
@@ -86,7 +117,6 @@
                         error.style.display = "block";
                     }
                 } else {
-                    // New Registration
                     await setDoc(doc(db, "students", name), {
                         mobile: mobile,
                         xp: 0,
