@@ -66,7 +66,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -80,7 +80,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- AUTO LOGIN CHECK ---
         if(localStorage.getItem("studentName")) {
             window.location.href = "index.html";
         }
@@ -106,12 +105,13 @@
             }
 
             try {
+                // 1. Check if Name already exists
                 const docRef = doc(db, "students", name);
                 const docSnap = await getDoc(docRef);
 
                 if(docSnap.exists()) {
-                    // Check mobile matching (Consistent with phoneNumber key)
                     const data = docSnap.data();
+                    // Allow login only if number matches
                     if(data.phoneNumber === mobile || data.mobile === mobile) {
                         saveAndRedirect(name);
                     } else {
@@ -119,16 +119,25 @@
                         error.style.display = "block";
                     }
                 } else {
-                    // Yahan humne 'phoneNumber' key add ki hai jo Admin Panel fetch karta hai
-                    await setDoc(doc(db, "students", name), {
-                        phoneNumber: mobile, // For Admin Panel consistency
-                        mobile: mobile,      // Backup
-                        xp: 0,
-                        streak: 1,
-                        paymentStatus: "Pending",
-                        joinedAt: new Date().toISOString()
-                    });
-                    saveAndRedirect(name);
+                    // 2. Name is new, so check if Mobile Number is already used by someone else
+                    const q = query(collection(db, "students"), where("phoneNumber", "==", mobile));
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        error.innerText = "❌ This Mobile Number is already registered.";
+                        error.style.display = "block";
+                    } else {
+                        // 3. Register new student
+                        await setDoc(doc(db, "students", name), {
+                            phoneNumber: mobile,
+                            mobile: mobile,
+                            xp: 0,
+                            streak: 1,
+                            paymentStatus: "Pending",
+                            joinedAt: new Date().toISOString()
+                        });
+                        saveAndRedirect(name);
+                    }
                 }
             } catch (e) {
                 error.innerText = "❌ Connection Error. Try again.";
