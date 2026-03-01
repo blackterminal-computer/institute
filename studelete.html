@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | Student Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        body {
+            background: #020617;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .student-card {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .student-info h4 { margin: 0; font-size: 16px; }
+        .student-info p { margin: 2px 0 0; font-size: 12px; color: #94a3b8; }
+        
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .delete-btn:hover { background: #dc2626; }
+        
+        .loading { text-align: center; margin-top: 50px; color: #6366f1; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2><i class="ri-admin-line"></i> Student Admin</h2>
+        <span id="count" style="background: #1e293b; padding: 5px 12px; border-radius: 20px; font-size: 12px;">0 Students</span>
+    </div>
+
+    <div id="studentList">
+        <div class="loading">Loading students...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 1. Real-time Students Fetching
+        function loadStudents() {
+            onSnapshot(collection(db, "students"), (snapshot) => {
+                const listDiv = document.getElementById("studentList");
+                listDiv.innerHTML = ""; // Clear list
+                document.getElementById("count").innerText = `${snapshot.size} Students`;
+
+                if (snapshot.empty) {
+                    listDiv.innerHTML = "<p style='text-align:center; opacity:0.5;'>No students found.</p>";
+                    return;
+                }
+
+                snapshot.forEach((studentDoc) => {
+                    const data = studentDoc.data();
+                    const studentId = studentDoc.id;
+
+                    const card = document.createElement("div");
+                    card.className = "student-card";
+                    card.innerHTML = `
+                        <div class="student-info">
+                            <h4>${studentId}</h4>
+                            <p>⭐ XP: ${data.xp || 0} | 🔥 Streak: ${data.streak || 0}</p>
+                        </div>
+                        <button class="delete-btn" onclick="deleteStudent('${studentId}')">
+                            <i class="ri-delete-bin-line"></i> Delete
+                        </button>
+                    `;
+                    listDiv.appendChild(card);
+                });
+            });
+        }
+
+        // 2. Delete Logic
+        window.deleteStudent = async (id) => {
+            const confirmDelete = confirm(`Are you sure you want to delete ${id}? This cannot be undone!`);
+            
+            if (confirmDelete) {
+                try {
+                    await deleteDoc(doc(db, "students", id));
+                    alert("Student deleted successfully!");
+                } catch (error) {
+                    console.error("Error deleting:", error);
+                    alert("Failed to delete student.");
+                }
+            }
+        };
+
+        loadStudents();
+    </script>
+</body>
+</html>
