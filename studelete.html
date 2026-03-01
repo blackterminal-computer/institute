@@ -20,6 +20,26 @@
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
+        
+        /* --- Naya Rename Section Style --- */
+        .rename-tool {
+            background: #0f172a;
+            border: 1px dashed #6366f1;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+        .rename-tool h3 { margin-top: 0; font-size: 16px; color: #06b6d4; }
+        .rename-inputs { display: flex; gap: 10px; margin-top: 10px; }
+        .rename-inputs input {
+            flex: 1; background: #020617; border: 1px solid #1e293b;
+            padding: 10px; border-radius: 8px; color: white; outline: none;
+        }
+        .rename-btn-main {
+            background: #6366f1; color: white; border: none; padding: 0 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
         .student-card {
             background: #0f172a;
             border: 1px solid #1e293b;
@@ -57,13 +77,22 @@
         <span id="count" style="background: #1e293b; padding: 5px 12px; border-radius: 20px; font-size: 12px;">0 Students</span>
     </div>
 
+    <div class="rename-tool">
+        <h3><i class="ri-edit-circle-line"></i> Global Rename Tool</h3>
+        <div class="rename-inputs">
+            <input type="text" id="oldName" placeholder="Old Name (e.g. Saira)">
+            <input type="text" id="newName" placeholder="New Name (Abinash kumar AB)">
+            <button class="rename-btn-main" onclick="renameStudentProcess()">Update</button>
+        </div>
+    </div>
+
     <div id="studentList">
         <div class="loading">Loading students...</div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, deleteDoc, doc, onSnapshot, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -120,6 +149,35 @@
                 } catch (error) {
                     console.error("Error deleting:", error);
                     alert("Failed to delete student.");
+                }
+            }
+        };
+
+        // 3. Naya Rename Logic
+        window.renameStudentProcess = async () => {
+            const oldN = document.getElementById("oldName").value.trim();
+            const newN = document.getElementById("newName").value.trim();
+
+            if(!oldN || !newN) return alert("Please enter both names!");
+
+            if(confirm(`Do you want to rename ${oldN} to ${newN}?`)) {
+                try {
+                    const oldRef = doc(db, "students", oldN);
+                    const newRef = doc(db, "students", newN);
+                    const snap = await getDoc(oldRef);
+
+                    if(snap.exists()) {
+                        const data = snap.data();
+                        await setDoc(newRef, data); // Naye name se document banaya
+                        await deleteDoc(oldRef);   // Purana delete kiya
+                        alert("Name Updated Successfully! ✨");
+                        document.getElementById("oldName").value = "";
+                        document.getElementById("newName").value = "";
+                    } else {
+                        alert("Student not found in database!");
+                    }
+                } catch (e) {
+                    alert("Rename failed: " + e.message);
                 }
             }
         };
