@@ -54,6 +54,13 @@
         .student-info p { margin: 2px 0 0; font-size: 12px; color: #94a3b8; }
         .student-info .num-tag { color: #6366f1; font-weight: bold; background: rgba(99,102,241,0.1); padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
         
+        /* --- XP Edit Style --- */
+        .xp-edit-group { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+        .xp-input { width: 80px; background: #020617; border: 1px solid #1e293b; color: #fbbf24; padding: 5px; border-radius: 5px; font-weight: bold; text-align: center; }
+        .xp-save-btn { background: #22c55e; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; }
+
+        .actions { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+
         .delete-btn {
             background: #ef4444;
             color: white;
@@ -93,7 +100,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, deleteDoc, doc, onSnapshot, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, deleteDoc, doc, onSnapshot, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -107,11 +114,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. Real-time Students Fetching (Updated with Phone Number)
+        // 1. Real-time Students Fetching (Updated with XP Edit)
         function loadStudents() {
             onSnapshot(collection(db, "students"), (snapshot) => {
                 const listDiv = document.getElementById("studentList");
-                listDiv.innerHTML = ""; // Clear list
+                listDiv.innerHTML = ""; 
                 document.getElementById("count").innerText = `${snapshot.size} Students`;
 
                 if (snapshot.empty) {
@@ -128,11 +135,18 @@
                     card.innerHTML = `
                         <div class="student-info">
                             <h4>${studentId}</h4>
-                            <p><span class="num-tag">📞 ${data.phoneNumber || 'No Number'}</span> | ⭐ XP: ${data.xp || 0} | 🔥 Streak: ${data.streak || 0}</p>
+                            <p><span class="num-tag">📞 ${data.phoneNumber || 'No Number'}</span> | 🔥 Streak: ${data.streak || 0}</p>
+                            <div class="xp-edit-group">
+                                <span>⭐ XP:</span>
+                                <input type="number" id="xp-${studentId}" class="xp-input" value="${data.xp || 0}">
+                                <button class="xp-save-btn" onclick="updateXP('${studentId}')">Save</button>
+                            </div>
                         </div>
-                        <button class="delete-btn" onclick="deleteStudent('${studentId}')">
-                            <i class="ri-delete-bin-line"></i> Delete
-                        </button>
+                        <div class="actions">
+                            <button class="delete-btn" onclick="deleteStudent('${studentId}')">
+                                <i class="ri-delete-bin-line"></i> Delete
+                            </button>
+                        </div>
                     `;
                     listDiv.appendChild(card);
                 });
@@ -142,19 +156,30 @@
         // 2. Delete Logic
         window.deleteStudent = async (id) => {
             const confirmDelete = confirm(`Are you sure you want to delete ${id}? This cannot be undone!`);
-            
             if (confirmDelete) {
                 try {
                     await deleteDoc(doc(db, "students", id));
                     alert("Student deleted successfully!");
                 } catch (error) {
-                    console.error("Error deleting:", error);
                     alert("Failed to delete student.");
                 }
             }
         };
 
-        // 3. Naya Rename Logic
+        // 3. XP Update Logic (Naya Addition)
+        window.updateXP = async (id) => {
+            const newXP = parseInt(document.getElementById(`xp-${id}`).value);
+            if(isNaN(newXP)) return alert("Please enter a valid number");
+            
+            try {
+                await updateDoc(doc(db, "students", id), { xp: newXP });
+                alert(`${id}'s XP updated to ${newXP}!`);
+            } catch (e) {
+                alert("Error updating XP: " + e.message);
+            }
+        };
+
+        // 4. Naya Rename Logic
         window.renameStudentProcess = async () => {
             const oldN = document.getElementById("oldName").value.trim();
             const newN = document.getElementById("newName").value.trim();
@@ -169,8 +194,8 @@
 
                     if(snap.exists()) {
                         const data = snap.data();
-                        await setDoc(newRef, data); // Naye name se document banaya
-                        await deleteDoc(oldRef);   // Purana delete kiya
+                        await setDoc(newRef, data); 
+                        await deleteDoc(oldRef);   
                         alert("Name Updated Successfully! ✨");
                         document.getElementById("oldName").value = "";
                         document.getElementById("newName").value = "";
