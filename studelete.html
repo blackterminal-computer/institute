@@ -20,25 +20,6 @@
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
-        
-        /* --- Naya Rename Section Style --- */
-        .rename-tool {
-            background: #0f172a;
-            border: 1px dashed #6366f1;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-        }
-        .rename-tool h3 { margin-top: 0; font-size: 16px; color: #06b6d4; }
-        .rename-inputs { display: flex; gap: 10px; margin-top: 10px; }
-        .rename-inputs input {
-            flex: 1; background: #020617; border: 1px solid #1e293b;
-            padding: 10px; border-radius: 8px; color: white; outline: none;
-        }
-        .rename-btn-main {
-            background: #6366f1; color: white; border: none; padding: 0 20px;
-            border-radius: 8px; font-weight: bold; cursor: pointer;
-        }
 
         .student-card {
             background: #0f172a;
@@ -54,7 +35,6 @@
         .student-info p { margin: 2px 0 0; font-size: 12px; color: #94a3b8; }
         .student-info .num-tag { color: #6366f1; font-weight: bold; background: rgba(99,102,241,0.1); padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
         
-        /* --- XP Edit Style --- */
         .xp-edit-group { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
         .xp-input { width: 80px; background: #020617; border: 1px solid #1e293b; color: #fbbf24; padding: 5px; border-radius: 5px; font-weight: bold; text-align: center; }
         .xp-save-btn { background: #22c55e; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; }
@@ -85,15 +65,6 @@
         <span id="count" style="background: #1e293b; padding: 5px 12px; border-radius: 20px; font-size: 12px;">0 Students</span>
     </div>
 
-    <div class="rename-tool">
-        <h3><i class="ri-edit-circle-line"></i> Global Rename Tool</h3>
-        <div class="rename-inputs">
-            <input type="text" id="oldName" placeholder="Old Name (e.g. Saira)">
-            <input type="text" id="newName" placeholder="New Name (Abinash kumar AB)">
-            <button class="rename-btn-main" onclick="renameStudentProcess()">Update</button>
-        </div>
-    </div>
-
     <div id="studentList">
         <div class="loading">Loading students...</div>
     </div>
@@ -114,7 +85,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. Real-time Students Fetching (Updated with XP Edit)
+        // 1. Real-time Students Fetching (XP Edit Logic intact)
         function loadStudents() {
             onSnapshot(collection(db, "students"), (snapshot) => {
                 const listDiv = document.getElementById("studentList");
@@ -166,7 +137,7 @@
             }
         };
 
-        // 3. XP Update Logic (Naya Addition)
+        // 3. XP Update Logic
         window.updateXP = async (id) => {
             const newXP = parseInt(document.getElementById(`xp-${id}`).value);
             if(isNaN(newXP)) return alert("Please enter a valid number");
@@ -176,35 +147,6 @@
                 alert(`${id}'s XP updated to ${newXP}!`);
             } catch (e) {
                 alert("Error updating XP: " + e.message);
-            }
-        };
-
-        // 4. Naya Rename Logic
-        window.renameStudentProcess = async () => {
-            const oldN = document.getElementById("oldName").value.trim();
-            const newN = document.getElementById("newName").value.trim();
-
-            if(!oldN || !newN) return alert("Please enter both names!");
-
-            if(confirm(`Do you want to rename ${oldN} to ${newN}?`)) {
-                try {
-                    const oldRef = doc(db, "students", oldN);
-                    const newRef = doc(db, "students", newN);
-                    const snap = await getDoc(oldRef);
-
-                    if(snap.exists()) {
-                        const data = snap.data();
-                        await setDoc(newRef, data); 
-                        await deleteDoc(oldRef);   
-                        alert("Name Updated Successfully! ✨");
-                        document.getElementById("oldName").value = "";
-                        document.getElementById("newName").value = "";
-                    } else {
-                        alert("Student not found in database!");
-                    }
-                } catch (e) {
-                    alert("Rename failed: " + e.message);
-                }
             }
         };
 
