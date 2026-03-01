@@ -22,7 +22,7 @@
         .btn-paid { background: var(--success); color: #052e16; }
         .btn-unpaid { background: var(--danger); color: white; }
         .btn-date { background: #facc15; color: black; }
-        .btn-rename { background: #a855f7; color: white; } /* Purple color for Rename */
+        .btn-rename { background: #a855f7; color: white; }
         .info-tag { font-size: 10px; color: #94a3b8; background: #1e293b; padding: 5px 10px; border-radius: 8px; margin-bottom: 15px; display: inline-block; }
     </style>
 </head>
@@ -44,11 +44,11 @@
         </div>
 
         <div class="admin-box">
-            <h2><i class="ri-edit-circle-line"></i> Rename Tool</h2>
-            <div class="info-tag">Warning: This deletes the old name record</div>
+            <h2><i class="ri-edit-circle-line"></i> Profile Rename Tool</h2>
+            <div class="info-tag">Note: Old name record will NOT be deleted</div>
             <label>New Name (Full Version)</label>
             <input type="text" id="newNameInput" placeholder="Enter New Name...">
-            <button class="btn btn-rename" onclick="renameStudentProcess()">Update Student Name</button>
+            <button class="btn btn-rename" onclick="renameStudentProcess()">Create Renamed Profile</button>
         </div>
 
         <div class="admin-box">
@@ -106,7 +106,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, arrayUnion, increment, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, arrayUnion, increment, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -191,14 +191,14 @@
             alert("Alert Sent!");
         };
 
-        // NEW: Rename Logic
+        // UPDATED Rename: Copy Only, No Delete
         window.renameStudentProcess = async () => {
             const oldId = document.getElementById('studentList').value;
             const newId = document.getElementById('newNameInput').value.trim();
 
             if(!oldId || !newId) return alert("Select Old Student and Enter New Name!");
 
-            if(confirm(`Do you want to rename ${oldId} to ${newId}?`)) {
+            if(confirm(`Create a new profile for ${newId} using ${oldId}'s data? (Old profile will stay)`)) {
                 try {
                     const oldRef = doc(db, "students", oldId);
                     const newRef = doc(db, "students", newId);
@@ -206,9 +206,8 @@
 
                     if(snap.exists()) {
                         const data = snap.data();
-                        await setDoc(newRef, data); // Copy data to new name
-                        await deleteDoc(oldRef);    // Delete old name
-                        alert("Rename Successful! Reloading list...");
+                        await setDoc(newRef, data); // Sirf naya document banayega
+                        alert("Success! New profile created. Old one is still there.");
                         location.reload(); 
                     } else {
                         alert("Source student not found!");
