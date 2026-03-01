@@ -123,6 +123,7 @@
         <div class="card-label"><i class="ri-user-smile-line"></i> Update Profile Name</div>
         <input type="text" id="nameInput" placeholder="Enter new name...">
         <button class="update-btn" onclick="updateName()">Update Name</button>
+        <p id="cooldownMsg" style="font-size: 10px; color: var(--danger); margin-top: 8px; display: none; text-align: center; font-weight: 600;"></p>
     </div>
 
     <div class="academic-card">
@@ -143,7 +144,7 @@
     <div class="edit-box">
         <div class="card-label"><i class="ri-user-settings-line"></i> Customize Bio</div>
         <textarea id="bioInput" rows="2" placeholder="Write bio..."></textarea>
-        <button class="update-btn" onclick="updateProfile()">Update Bio</button>
+        <button class="update-btn" onclick="updateProfile()">Update Profile</button>
     </div>
 </div>
 
@@ -254,25 +255,55 @@
         document.getElementById("rank").innerText = "#" + (arr.findIndex(x => x.id === studentID) + 1 || "--");
     }
 
-    // NEW: Function to sync data to a new name
+    // Name Update with 30-day Lock Feature
     window.updateName = async () => {
         let newName = document.getElementById("nameInput").value.trim();
+        const msgBox = document.getElementById("cooldownMsg");
+        
         if(!newName || newName === studentID) {
             alert("Please enter a valid new name.");
             return;
         }
 
-        if(confirm(`Do you want to sync your profile to "${newName}"?`)) {
+        try {
             const oldRef = doc(db, "students", studentID);
-            const newRef = doc(db, "students", newName);
-
             const oldSnap = await getDoc(oldRef);
+
             if (oldSnap.exists()) {
-                await setDoc(newRef, oldSnap.data());
-                localStorage.setItem("studentName", newName);
-                alert("Profile Synced to New Name! 🚀");
-                window.location.reload();
+                const data = oldSnap.data();
+                const now = Date.now();
+                const lastChange = data.lastNameChange || 0;
+                const daysPassed = (now - lastChange) / (1000 * 60 * 60 * 24);
+
+                // Check for 30-day Cooldown
+                if (daysPassed < 30) {
+                    const daysLeft = Math.ceil(30 - daysPassed);
+                    msgBox.innerText = `⚠️ You can change your name again in ${daysLeft} days.`;
+                    msgBox.style.display = "block";
+                    return;
+                }
+
+                if(confirm(`Update profile name to "${newName}"? (Note: You won't be able to change it for 30 days)`)) {
+                    const newRef = doc(db, "students", newName);
+                    
+                    // Duplicate check for the new name
+                    const checkNewSnap = await getDoc(newRef);
+                    if(checkNewSnap.exists()) {
+                        alert("This name is already taken by another student.");
+                        return;
+                    }
+
+                    // Sync data and set timestamp
+                    let updatedData = { ...data, lastNameChange: now };
+                    await setDoc(newRef, updatedData);
+                    
+                    localStorage.setItem("studentName", newName);
+                    alert("Profile Name Updated Successfully! 🚀");
+                    window.location.reload();
+                }
             }
+        } catch (e) {
+            alert("Error: " + e.message);
         }
     };
 
