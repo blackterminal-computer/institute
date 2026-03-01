@@ -81,7 +81,6 @@
         .search-wrapper input { background: none; border: none; color: white; width: 100%; outline: none; font-size: 14px; }
         
         .categories { display: flex; gap: 10px; overflow-x: auto; padding: 0 20px 30px; scrollbar-width: none; }
-        .categories::-webkit-scrollbar { display: none; }
         .chip { padding: 10px 20px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap; transition: 0.3s; cursor: pointer; }
         .chip.active { background: #fff; color: #000; border-color: #fff; }
 
@@ -134,10 +133,11 @@
         }
 
         .course-title { font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 20px; }
-        .price-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
         
+        /* UPDATED PRICE ROW FOR VIDEO BUTTON */
+        .price-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .price-info { position: relative; display: flex; flex-direction: column; align-items: flex-start; }
-        .price-info h2 { font-size: 28px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -1px; }
+        .price-info h2 { font-size: 26px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -1px; }
         
         .old-price-pill { 
             position: relative; top: -5px; font-size: 10px; font-weight: 800; color: #fff;
@@ -147,7 +147,24 @@
             display: inline-flex; align-items: center;
         }
 
-        .enroll-btn { background: #fff; color: #000; padding: 14px 28px; border-radius: 20px; font-weight: 800; border: none; flex-shrink: 0; cursor: pointer; }
+        .action-group { display: flex; align-items: center; gap: 8px; }
+        .enroll-btn { background: #fff; color: #000; padding: 12px 22px; border-radius: 16px; font-weight: 800; border: none; cursor: pointer; font-size: 13px; }
+        
+        .video-play-btn { 
+            width: 44px; height: 44px; background: rgba(255, 0, 0, 0.1); 
+            border: 1px solid rgba(255, 0, 0, 0.2); border-radius: 14px; 
+            color: #ff4d4d; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; font-size: 22px; transition: 0.3s;
+        }
+
+        /* --- VIDEO MODAL SYSTEM --- */
+        .video-modal {
+            position: fixed; inset: 0; background: #000; z-index: 4000;
+            display: none; flex-direction: column;
+        }
+        .video-header { padding: 20px; display: flex; align-items: center; gap: 15px; background: #010409; }
+        .video-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; }
+        .video-container iframe { width: 100%; aspect-ratio: 16/9; border: none; }
 
         /* --- POPUP MODAL STYLES --- */
         .modal-overlay {
@@ -158,23 +175,12 @@
             background: #0f172a; border: 1px solid var(--glass-border); border-radius: 35px;
             width: 100%; max-width: 400px; padding: 30px; animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes modalPop { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-        
-        .modal-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: var(--accent); }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
-        .form-group input { 
-            width: 100%; background: var(--glass); border: 1px solid var(--glass-border); 
-            padding: 14px 20px; border-radius: 16px; color: #fff; outline: none; transition: 0.3s;
-        }
-        .form-group input:focus { border-color: var(--accent); background: rgba(255,255,255,0.05); }
         
         .submit-btn { 
             width: 100%; background: var(--whatsapp); color: #fff; border: none; padding: 16px; 
             border-radius: 18px; font-weight: 800; font-size: 14px; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;
         }
-        .close-modal { margin-top: 15px; text-align: center; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; }
 
         /* --- BOTTOM NAV --- */
         .bottom-nav { 
@@ -191,22 +197,24 @@
 
     <div class="modal-overlay" id="enrollModal">
         <div class="modal-card">
-            <h2>Secure Your Seat 🚀</h2>
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="userName" placeholder="Enter your name">
+            <h2 style="margin-bottom:20px; color:var(--accent)">Secure Your Seat 🚀</h2>
+            <div style="margin-bottom:15px">
+                <input type="text" id="userName" placeholder="Full Name" style="width:100%; padding:14px; background:var(--glass); border:1px solid var(--glass-border); border-radius:12px; color:white;">
             </div>
-            <div class="form-group">
-                <label>Mobile Number</label>
-                <input type="tel" id="userPhone" placeholder="WhatsApp number">
+            <div style="margin-bottom:15px">
+                <input type="tel" id="userPhone" placeholder="WhatsApp Number" style="width:100%; padding:14px; background:var(--glass); border:1px solid var(--glass-border); border-radius:12px; color:white;">
             </div>
-            <div class="form-group">
-                <label>Current Location</label>
-                <input type="text" id="userLoc" placeholder="City / State">
-            </div>
-            <button class="submit-btn" onclick="sendToWhatsapp()"><i class="ri-whatsapp-fill"></i> Send Enrollment via WhatsApp</button>
-            <div class="close-modal" onclick="closeModal()">Maybe later</div>
+            <button class="submit-btn" onclick="sendToWhatsapp()"><i class="ri-whatsapp-fill"></i> Send Request</button>
+            <p onclick="closeModal()" style="text-align:center; margin-top:15px; font-size:12px; color:#64748b; cursor:pointer;">Close</p>
         </div>
+    </div>
+
+    <div class="video-modal" id="videoModal">
+        <div class="video-header">
+            <i class="ri-arrow-left-line" style="font-size: 24px;" onclick="closeVideo()"></i>
+            <span style="font-weight: 700; font-size: 14px;" id="videoTitle">Elite Lecture</span>
+        </div>
+        <div class="video-container" id="ytPlayerContainer"></div>
     </div>
 
     <div class="app-bar">
@@ -216,26 +224,8 @@
 
     <div class="carousel-container">
         <div class="carousel-track" id="carouselTrack">
-            <div class="carousel-slide slide-1">
-                <h2>Join the Elite <br>Developer Program</h2>
-                <p>Limited seats available for March batch.</p>
-                <i class="ri-code-s-slash-line"></i>
-            </div>
-            <div class="carousel-slide slide-2">
-                <h2>Master Modern <br>Cyber Security</h2>
-                <p>Learn from industry experts globally.</p>
-                <i class="ri-shield-flash-line"></i>
-            </div>
-            <div class="carousel-slide slide-3">
-                <h2>AI & Machine <br>Learning Lab</h2>
-                <p>Build the future with neural networks.</p>
-                <i class="ri-cpu-line"></i>
-            </div>
-        </div>
-        <div class="carousel-dots">
-            <div class="dot active"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
+            <div class="carousel-slide slide-1"><h2>Premium Tech <br>Developer Program</h2></div>
+            <div class="carousel-slide slide-2"><h2>Master Modern <br>Cyber Security</h2></div>
         </div>
     </div>
 
@@ -244,12 +234,6 @@
             <i class="ri-search-2-line" style="color:var(--accent)"></i>
             <input type="text" id="courseSearch" placeholder="Search elite programs..." onkeyup="filterCourses()">
         </div>
-    </div>
-
-    <div class="categories" id="cat-chips">
-        <div class="chip active" onclick="filterCategory('all', this)">Everything</div>
-        <div class="chip" onclick="filterCategory('hot', this)">Hot 🔥</div>
-        <div class="chip" onclick="filterCategory('new', this)">New Arrival ✨</div>
     </div>
 
     <div class="course-grid" id="course-grid"></div>
@@ -278,44 +262,27 @@
         let allCourses = [];
         let selectedCourse = "";
 
-        // --- ENROLLMENT LOGIC ---
-        window.openEnroll = (courseName) => {
-            selectedCourse = courseName;
-            document.getElementById('enrollModal').style.display = 'flex';
+        // YouTube ID Extractor
+        function extractYouTubeId(url) {
+            if (!url) return null;
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
         }
 
-        window.closeModal = () => {
-            document.getElementById('enrollModal').style.display = 'none';
-        }
+        window.playVideo = (title, videoId) => {
+            document.getElementById('videoTitle').innerText = title;
+            document.getElementById('ytPlayerContainer').innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            document.getElementById('videoModal').style.display = 'flex';
+        };
 
-        window.sendToWhatsapp = () => {
-            const name = document.getElementById('userName').value;
-            const phone = document.getElementById('userPhone').value;
-            const loc = document.getElementById('userLoc').value;
+        window.closeVideo = () => {
+            document.getElementById('ytPlayerContainer').innerHTML = '';
+            document.getElementById('videoModal').style.display = 'none';
+        };
 
-            if(!name || !phone || !loc) {
-                alert("Please fill all details!");
-                return;
-            }
-
-            const wpNumber = "7008186187";
-            const text = `*🚀 NEW ENROLLMENT REQUEST*%0A%0A*Course:* ${selectedCourse}%0A*Name:* ${name}%0A*WhatsApp:* ${phone}%0A*Location:* ${loc}%0A%0A_Sent from Elite Terminal v3_`;
-            
-            window.open(`https://wa.me/${wpNumber}?text=${text}`, '_blank');
-            closeModal();
-        }
-
-        // Carousel Logic
-        let currentSlide = 0;
-        const track = document.getElementById('carouselTrack');
-        const dots = document.querySelectorAll('.dot');
-        
-        function moveCarousel() {
-            currentSlide = (currentSlide + 1) % 3;
-            if(track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
-            dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
-        }
-        setInterval(moveCarousel, 4000);
+        window.openEnroll = (name) => { selectedCourse = name; document.getElementById('enrollModal').style.display = 'flex'; };
+        window.closeModal = () => { document.getElementById('enrollModal').style.display = 'none'; };
 
         onSnapshot(collection(db, "courses"), (snap) => {
             allCourses = [];
@@ -323,32 +290,24 @@
             renderCourses(allCourses);
         });
 
-        window.shareOnWhatsapp = (name, price) => {
-            const text = `*🔥 ELITE PROGRAM ENROLLMENT OPEN*%0A%0A*Course:* ${name}%0A*Price:* ₹${price}%0A*Link:* ${window.location.href}`;
-            window.open(`https://wa.me/?text=${text}`, '_blank');
-        };
-
         function renderCourses(data) {
             const grid = document.getElementById('course-grid');
             grid.innerHTML = data.map((c, index) => {
+                // FIXED KEY: Reading 'ytLink' from your Admin Panel
+                const videoId = extractYouTubeId(c.ytLink); 
+                
                 const bClass = c.tag?.toLowerCase().includes('hot') ? 'bg-hot' : c.tag?.toLowerCase().includes('new') ? 'bg-new' : 'bg-trend';
                 const hasTimer = c.expiryDate ? `<div class="timer-strip" id="timer-${c.id}"><i class="ri-time-line"></i> Loading...</div>` : '';
                 const hasDuration = c.duration ? `<div class="duration-info"><i class="ri-calendar-event-line"></i> ${c.duration}</div>` : '';
-                
                 if(c.expiryDate) startTimer(c.expiryDate, `timer-${c.id}`);
 
                 const images = c.image ? c.image.split(',') : [];
-                const oldPriceHtml = c.oldPrice ? `<div class="old-price-pill">₹${c.oldPrice}</div>` : '';
 
                 return `
                     <div class="course-card" style="animation-delay: ${index * 0.1}s">
                         ${c.tag ? `<div class="m-badge ${bClass}">${c.tag}</div>` : ''}
-                        <div class="share-btn" onclick="shareOnWhatsapp('${c.name}', '${c.newPrice}')"><i class="ri-whatsapp-line"></i></div>
                         <div class="course-img-container" id="slider-${c.id}">
-                            ${images.length > 0 ? 
-                                images.map((img, i) => `<img src="${img.trim()}" class="slide-img ${i === 0 ? 'active' : ''}">`).join('') :
-                                `<div style="height:100%; display:flex; align-items:center; justify-content:center; font-size:50px; color:var(--accent); opacity:0.2;"><i class="ri-terminal-box-line"></i></div>`
-                            }
+                            ${images.length > 0 ? images.map((img, i) => `<img src="${img.trim()}" class="slide-img ${i === 0 ? 'active' : ''}">`).join('') : ''}
                             <div class="img-overlay"></div>
                         </div>
                         <div class="card-body">
@@ -357,55 +316,34 @@
                             <h3 class="course-title">${c.name}</h3>
                             <div class="price-row">
                                 <div class="price-info">
-                                    ${oldPriceHtml}
+                                    ${c.oldPrice ? `<div class="old-price-pill">₹${c.oldPrice}</div>` : ''}
                                     <h2>₹${c.newPrice}</h2>
                                 </div>
-                                <button class="enroll-btn" onclick="openEnroll('${c.name}')">Enroll Now</button>
+                                <div class="action-group">
+                                    ${videoId ? `<div class="video-play-btn" onclick="playVideo('${c.name}', '${videoId}')"><i class="ri-play-fill"></i></div>` : ''}
+                                    <button class="enroll-btn" onclick="openEnroll('${c.name}')">Enroll Now</button>
+                                </div>
                             </div>
                         </div>
                     </div>`;
             }).join('');
-
-            data.forEach(c => {
-                const images = c.image ? c.image.split(',') : [];
-                if(images.length > 1) startMiniSlider(`slider-${c.id}`);
-            });
         }
 
-        function startMiniSlider(containerId) {
-            let current = 0;
-            setInterval(() => {
-                const container = document.getElementById(containerId);
-                if(!container) return;
-                const imgs = container.querySelectorAll('.slide-img');
-                if(imgs.length === 0) return;
-                imgs[current].classList.remove('active');
-                current = (current + 1) % imgs.length;
-                imgs[current].classList.add('active');
-            }, 3000);
-        }
-
-        function startTimer(expiry, elementId) {
+        // Global functions for timer and sliders
+        function startTimer(expiry, id) {
             setInterval(() => {
                 const dist = new Date(expiry).getTime() - new Date().getTime();
-                const el = document.getElementById(elementId);
+                const el = document.getElementById(id);
                 if(!el || dist < 0) return;
-                const h = Math.floor((dist % (1000*60*60*24)) / (1000*60*60));
+                const h = Math.floor(dist / (1000*60*60));
                 const m = Math.floor((dist % (1000*60*60)) / (1000*60));
-                const s = Math.floor((dist % (1000*60)) / 1000);
-                el.innerHTML = `<i class="ri-time-line"></i> Closing in: ${h}h ${m}m ${s}s`;
+                el.innerHTML = `<i class="ri-time-line"></i> Closing in: ${h}h ${m}m`;
             }, 1000);
         }
 
         window.filterCourses = () => {
             const q = document.getElementById('courseSearch').value.toLowerCase();
             renderCourses(allCourses.filter(c => c.name.toLowerCase().includes(q)));
-        };
-
-        window.filterCategory = (cat, el) => {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            el.classList.add('active');
-            renderCourses(cat === 'all' ? allCourses : allCourses.filter(c => c.tag?.toLowerCase().includes(cat)));
         };
     </script>
 </body>
