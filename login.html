@@ -110,15 +110,19 @@
                 const docSnap = await getDoc(docRef);
 
                 if(docSnap.exists()) {
-                    if(docSnap.data().mobile === mobile) {
+                    // Check mobile matching (Consistent with phoneNumber key)
+                    const data = docSnap.data();
+                    if(data.phoneNumber === mobile || data.mobile === mobile) {
                         saveAndRedirect(name);
                     } else {
                         error.innerText = "❌ Name exists with a different number.";
                         error.style.display = "block";
                     }
                 } else {
+                    // Yahan humne 'phoneNumber' key add ki hai jo Admin Panel fetch karta hai
                     await setDoc(doc(db, "students", name), {
-                        mobile: mobile,
+                        phoneNumber: mobile, // For Admin Panel consistency
+                        mobile: mobile,      // Backup
                         xp: 0,
                         streak: 1,
                         paymentStatus: "Pending",
