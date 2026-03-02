@@ -134,7 +134,7 @@
                 </select>
                 <input type="text" id="customReason" placeholder="Describe your reason..." style="display:none; padding: 10px; font-size: 12px;">
                 
-                <input type="text" id="holidayDuration" placeholder="Total days of holiday? (e.g. 5 Days)" style="padding: 10px; font-size: 12px;">
+                <input type="number" id="holidayDuration" placeholder="How many days holiday?" style="padding: 10px; font-size: 12px;">
 
                 <div class="progress-container" id="uploadBarWrap"><div class="progress-bar" id="uploadBar"></div></div>
 
@@ -206,6 +206,11 @@
         onSnapshot(doc(db, "students", studentID), (snap) => {
             if (snap.exists()) {
                 const d = snap.data();
+                const now = Date.now();
+                
+                // Expiry Check Logic
+                let isHolidayOver = d.waiverExpiry ? (now > d.waiverExpiry) : true;
+
                 document.getElementById("showName").innerText = studentID;
                 document.getElementById("showBio").innerText = d.bio || "Student at Black Terminal";
                 document.getElementById("xp").innerText = d.xp || 0;
@@ -216,14 +221,15 @@
                 if(d.waiverStatus === "Pending") {
                     waiverStatusEl.innerText = `Reviewing your request...`;
                     waiverStatusEl.style.display = "block";
-                } else if(d.waiverStatus === "Approved") {
-                    waiverStatusEl.innerText = "Fine Waived! ✅";
+                } else if(d.waiverStatus === "Approved" && !isHolidayOver) {
+                    waiverStatusEl.innerText = "Fine Waived! ✅ (On Leave)";
                     waiverStatusEl.style.color = "var(--success)";
                     waiverStatusEl.style.display = "block";
                 } else {
                     waiverStatusEl.style.display = "none";
                 }
 
+                // Academic & Attendance
                 let level = Math.floor((d.xp || 0) / 1000) + 1; 
                 document.getElementById("lvl-txt").innerText = "LVL " + level + " STUDENT";
                 document.getElementById("showCourse").innerText = d.currentCourse || "Not Assigned";
@@ -253,13 +259,15 @@
                     document.getElementById("ringFill").style.strokeDashoffset = 201 - (201 * finalPerc) / 100;
 
                     const penaltyBox = document.getElementById("penaltyBox");
-                    if(finalPerc < 70 && d.waiverStatus !== "Approved") {
+                    // Condition: Show if low attendance AND (Not approved OR Holiday over)
+                    if(finalPerc < 70 && (d.waiverStatus !== "Approved" || isHolidayOver)) {
                         penaltyBox.style.display = "flex";
                     } else {
                         penaltyBox.style.display = "none";
                     }
                 });
 
+                // Payment history
                 const hList = document.getElementById("historyList");
                 if (d.paymentHistory && d.paymentHistory.length > 0) {
                     hList.innerHTML = "";
@@ -279,11 +287,11 @@
         let reason = document.getElementById("waiverReason").value;
         if(reason === "Other") reason = document.getElementById("customReason").value || "Other Reason";
         
-        let days = document.getElementById("holidayDuration").value.trim();
-        if(!days) return alert("Please specify how many days of holiday.");
+        let days = parseInt(document.getElementById("holidayDuration").value);
+        if(!days || days < 1) return alert("Please enter valid holiday days.");
 
         if(file.size > 1024 * 1024) {
-            alert("File too large! Please upload a file smaller than 1MB.");
+            alert("File too large! Under 1MB please.");
             return;
         }
 
@@ -296,24 +304,22 @@
         btn.innerText = "Uploading...";
 
         const reader = new FileReader();
-        reader.onprogress = (event) => {
-            if (event.lengthComputable) {
-                const percent = (event.loaded / event.total) * 100;
-                bar.style.width = percent + "%";
-            }
-        };
+        reader.onprogress = (e) => { if(e.lengthComputable) bar.style.width = (e.loaded/e.total)*100 + "%"; };
 
         reader.onload = async () => {
             try {
+                // Calculate Expiry: Today + Days
+                const expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
+
                 await updateDoc(doc(db, "students", studentID), { 
                     waiverProof: reader.result,
-                    waiverReason: reason + " (" + days + ")",
-                    waiverStatus: "Pending" 
+                    waiverReason: `${reason} (${days} Days)`,
+                    waiverStatus: "Pending",
+                    waiverExpiry: expiry
                 });
-                alert("Proof uploaded! Status: Pending review.");
-            } catch (err) {
-                alert("Upload failed.");
-            } finally {
+                alert("Waiver request submitted!");
+            } catch (err) { alert("Error uploading."); }
+            finally {
                 barWrap.style.display = "none";
                 btn.disabled = false;
                 btn.innerHTML = `<i class="ri-upload-cloud-2-line"></i> Upload Proof & Submit`;
