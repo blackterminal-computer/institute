@@ -41,7 +41,6 @@
         .stat-num { font-size: 18px; font-weight: 800; color: var(--accent); display: block; }
         .stat-lbl { font-size: 9px; opacity: 0.5; text-transform: uppercase; margin-top: 4px; }
 
-        /* Attendance & Fine UI */
         .attendance-card {
             background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
             padding: 20px; border-radius: 28px; border: 1px solid var(--glass-border); margin-bottom: 20px;
@@ -60,6 +59,10 @@
         }
         .fine-text { color: var(--danger); font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
         .waiver-link { background: var(--primary); color: white; padding: 10px; border-radius: 12px; text-align: center; font-size: 11px; font-weight: 700; cursor: pointer; border: none; }
+
+        /* Progress Bar Style */
+        .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 10px; margin: 10px 0; display: none; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }
 
         .academic-card {
             background: linear-gradient(145deg, rgba(99,102,241,0.15) 0%, rgba(15,23,42,1) 100%);
@@ -132,10 +135,12 @@
                 </select>
                 <input type="text" id="customReason" placeholder="Describe your reason..." style="display:none; padding: 10px; font-size: 12px;">
                 
-                <button class="waiver-link" onclick="document.getElementById('waiverFile').click()">
+                <div class="progress-container" id="uploadBarWrap"><div class="progress-bar" id="uploadBar"></div></div>
+
+                <button class="waiver-link" id="uploadBtn" onclick="document.getElementById('waiverFile').click()">
                     <i class="ri-upload-cloud-2-line"></i> Upload Proof & Submit
                 </button>
-                <input type="file" id="waiverFile" accept="image/*,.pdf" hidden onchange="uploadWaiverProof(this)">
+                <input type="file" id="waiverFile" accept="image/*" hidden onchange="uploadWaiverProof(this)">
                 <p id="waiverStatus" style="font-size: 10px; color: var(--warning); margin: 0; display: none; text-align: center; font-weight: 600;"></p>
             </div>
         </div>
@@ -214,6 +219,8 @@
                     waiverStatusEl.innerText = "Fine Waived! ✅";
                     waiverStatusEl.style.color = "var(--success)";
                     waiverStatusEl.style.display = "block";
+                } else {
+                    waiverStatusEl.style.display = "none";
                 }
 
                 let level = Math.floor((d.xp || 0) / 1000) + 1; 
@@ -226,7 +233,6 @@
                 badge.innerText = "Current: " + (d.paymentStatus || "Pending");
                 badge.style.color = d.paymentStatus === "Paid" ? "#22c55e" : "#ef4444";
 
-                // Attendance Logic
                 const joinDate = new Date(d.admissionDate);
                 const totalCourseDays = (parseInt(d.courseDuration) || 0) * 30;
                 const endDate = new Date(joinDate);
@@ -266,20 +272,52 @@
     }
 
     window.uploadWaiverProof = (input) => {
-        if(!input.files[0]) return;
+        const file = input.files[0];
+        if(!file) return;
+
+        // Firestore per-doc limit is 1MB. 
+        if(file.size > 1024 * 1024) {
+            alert("File too large! Please upload a file smaller than 1MB (Try a screenshot).");
+            return;
+        }
+
         let reason = document.getElementById("waiverReason").value;
         if(reason === "Other") reason = document.getElementById("customReason").value || "Other Reason";
         
+        const barWrap = document.getElementById("uploadBarWrap");
+        const bar = document.getElementById("uploadBar");
+        const btn = document.getElementById("uploadBtn");
+
+        barWrap.style.display = "block";
+        btn.disabled = true;
+        btn.innerText = "Uploading...";
+
         const reader = new FileReader();
-        reader.onload = async () => {
-            await updateDoc(doc(db, "students", studentID), { 
-                waiverProof: reader.result,
-                waiverReason: reason,
-                waiverStatus: "Pending" 
-            });
-            alert("Proof uploaded! Admin will review it shortly.");
+        
+        reader.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percent = (event.loaded / event.total) * 100;
+                bar.style.width = percent + "%";
+            }
         };
-        reader.readAsDataURL(input.files[0]);
+
+        reader.onload = async () => {
+            try {
+                await updateDoc(doc(db, "students", studentID), { 
+                    waiverProof: reader.result,
+                    waiverReason: reason,
+                    waiverStatus: "Pending" 
+                });
+                alert("Proof uploaded! Status: Pending review.");
+            } catch (err) {
+                alert("Upload failed. Firestore limit reached or Network error.");
+            } finally {
+                barWrap.style.display = "none";
+                btn.disabled = false;
+                btn.innerHTML = `<i class="ri-upload-cloud-2-line"></i> Upload Proof & Submit`;
+            }
+        };
+        reader.readAsDataURL(file);
     };
 
     window.updateName = async () => {
