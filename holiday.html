@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BT Admin | Holiday Waiver</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
+            --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
+        }
+        body { 
+            background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 20px;
+            background-image: radial-gradient(circle at 0% 0%, #1e1b4b 0%, transparent 50%);
+        }
+        .header { margin-bottom: 30px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+        .header h1 { font-size: 24px; color: var(--accent); margin: 0; }
+
+        .request-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .request-card { 
+            background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; 
+            backdrop-filter: blur(10px); transition: 0.3s;
+        }
+        .student-name { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 5px; }
+        .reason-tag { 
+            display: inline-block; background: rgba(99, 102, 241, 0.2); color: var(--primary); 
+            padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; margin-bottom: 15px;
+        }
+        .proof-img { 
+            width: 100%; height: 150px; object-fit: cover; border-radius: 12px; 
+            cursor: pointer; border: 1px solid var(--glass-border); margin-bottom: 15px;
+        }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { 
+            padding: 10px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; 
+            font-size: 13px; transition: 0.2s;
+        }
+        .btn-approve { background: var(--success); color: #fff; }
+        .btn-reject { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        .btn:active { transform: scale(0.95); }
+
+        /* Modal for Full Image View */
+        #imgModal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; 
+        }
+        #modalImg { max-width: 90%; max-height: 80%; border-radius: 15px; }
+        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 30px; color: white; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1><i class="ri-calendar-check-line"></i> Holiday Waiver Requests</h1>
+        <p style="font-size: 13px; opacity: 0.6;">Manage student leave proofs and attendance fines.</p>
+    </div>
+
+    <div class="request-grid" id="requestGrid">
+        <p id="loadingMsg" style="text-align: center; opacity: 0.5;">Scanning for pending requests...</p>
+    </div>
+
+    <div id="imgModal">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <img id="modalImg" src="">
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fetch Requests in Real-time
+        onSnapshot(collection(db, "students"), (snap) => {
+            const grid = document.getElementById("requestGrid");
+            grid.innerHTML = "";
+            let hasRequests = false;
+
+            snap.forEach((studentDoc) => {
+                const d = studentDoc.data();
+                const studentName = studentDoc.id;
+
+                // Show only if status is "Pending"
+                if (d.waiverStatus === "Pending") {
+                    hasRequests = true;
+                    grid.innerHTML += `
+                        <div class="request-card">
+                            <div class="student-name">${studentName}</div>
+                            <div class="reason-tag">${d.waiverReason || 'Not Specified'}</div>
+                            <img class="proof-img" src="${d.waiverProof}" onclick="viewImg('${d.waiverProof}')" title="Click to enlarge">
+                            <div class="btn-group">
+                                <button class="btn btn-approve" onclick="handleWaiver('${studentName}', 'Approved')">Approve Fine</button>
+                                <button class="btn btn-reject" onclick="handleWaiver('${studentName}', 'Rejected')">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (!hasRequests) {
+                grid.innerHTML = `<div style="text-align:center; width:100%; grid-column: 1/-1; padding: 50px;">
+                    <i class="ri-checkbox-circle-line" style="font-size: 50px; color: var(--success); opacity: 0.3;"></i>
+                    <p style="opacity: 0.5;">No pending waiver requests at the moment.</p>
+                </div>`;
+            }
+        });
+
+        // Approve or Reject Logic
+        window.handleWaiver = async (id, status) => {
+            if (confirm(`Are you sure you want to ${status} this request?`)) {
+                const ref = doc(db, "students", id);
+                await updateDoc(ref, { 
+                    waiverStatus: status
+                });
+                alert(`Request ${status}!`);
+            }
+        };
+
+        // Image Viewer Logic
+        window.viewImg = (src) => {
+            const modal = document.getElementById("imgModal");
+            const modalImg = document.getElementById("modalImg");
+            modal.style.display = "flex";
+            modalImg.src = src;
+        };
+
+        window.closeModal = () => {
+            document.getElementById("imgModal").style.display = "none";
+        };
+    </script>
+</body>
+</html>
