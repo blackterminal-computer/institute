@@ -21,7 +21,6 @@
         }
 
         .container { width: 100%; max-width: 450px; margin: 0 auto; padding: 20px; }
-
         .profile-header { text-align: center; margin-bottom: 25px; }
         .avatar-wrapper { position: relative; width: 120px; height: 120px; margin: 0 auto 15px; }
         .avatar { width: 100%; height: 100%; border-radius: 38px; object-fit: cover; border: 2px solid var(--accent); padding: 4px; background: var(--glass); }
@@ -36,8 +35,8 @@
         .att-circle { width: 42px; height: 42px; border-radius: 50%; border: 3px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; }
         
         .id-btn { background: var(--glass); color: #fff; border: 1px solid var(--glass-border); padding: 14px; border-radius: 18px; width: 100%; margin-bottom: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .checkin-btn { width: 100%; background: #fff; color: #000; border: none; padding: 16px; border-radius: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .checkin-btn:disabled { background: var(--glass); color: #64748b; box-shadow: none; cursor: not-allowed; }
+        .checkin-btn { width: 100%; background: #fff; color: #000; border: none; padding: 16px; border-radius: 18px; font-weight: 800; cursor: pointer; }
+        .checkin-btn:disabled { background: var(--glass); color: #64748b; cursor: not-allowed; }
 
         .academic-card { background: var(--glass); padding: 20px; border-radius: 25px; margin-bottom: 20px; border: 1px solid var(--glass-border); }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(15px); }
@@ -53,10 +52,10 @@
     <div class="profile-header">
         <div class="avatar-wrapper">
             <img id="photo" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-            <div class="level-tag" id="lvl-txt">LVL 1 STUDENT</div>
+            <div class="level-tag">LVL 1 STUDENT</div>
         </div>
-        <h2 id="showName" style="margin:0;">---</h2>
-        <p id="syncStatus" style="font-size: 12px; opacity: 0.5; margin-top: 5px;">Syncing with Terminal...</p>
+        <h2 id="showName">---</h2>
+        <p id="syncStatus" style="font-size: 12px; opacity: 0.5;">Connected to Terminal</p>
     </div>
 
     <button class="id-btn" onclick="openID()"><i class="ri-qr-code-line"></i> Generate Elite ID Card</button>
@@ -130,38 +129,36 @@
                 document.getElementById("qrCourse").innerText = d.currentCourse || "PGDCA";
                 document.getElementById("showJoinDate").innerText = "Admission: " + (d.admissionDate || "--");
                 if(d.photo) document.getElementById("photo").src = d.photo;
-                document.getElementById("syncStatus").innerText = "Connected to Terminal";
 
-                // --- 6 MONTH CALENDAR LOGIC (Excluding Sat/Sun) ---
-                const durationMonths = d.courseDurationMonths || 6; 
+                // --- WORKING DAYS CALCULATION FIX ---
+                const durationMonths = parseInt(d.courseDurationMonths) || 6; 
                 if(d.admissionDate) {
                     const admissionDate = new Date(d.admissionDate);
                     const expiryDate = new Date(admissionDate);
-                    expiryDate.setMonth(expiryDate.getMonth() + parseInt(durationMonths));
+                    expiryDate.setMonth(expiryDate.getMonth() + durationMonths);
 
                     const today = new Date();
+                    today.setHours(0,0,0,0);
+                    
                     let remainingWorkingDays = 0;
                     let tempDate = new Date(today);
 
-                    // Only count weekdays (Mon-Fri) from today until expiry
                     if (today < expiryDate) {
                         while (tempDate <= expiryDate) {
                             const day = tempDate.getDay();
                             if (day !== 0 && day !== 6) remainingWorkingDays++;
-                            tempDate.setDate(tempDate.setDate(tempDate.getDate() + 1));
+                            tempDate.setDate(tempDate.getDate() + 1); // Fixed syntax
                         }
                     }
                     document.getElementById("expiryText").innerText = remainingWorkingDays + " Days";
                     document.getElementById("durationInfo").innerText = `Course Plan: ${durationMonths} Months`;
                 }
 
-                // Attendance
                 const att = d.attendedDays || 0;
                 const total = d.totalDays || 1;
                 document.getElementById("attCircle").innerText = Math.round((att/total)*100) + "%";
                 document.getElementById("attDays").innerText = `${att}/${total} Days`;
 
-                // Button State
                 const isToday = new Date(d.lastCheckIn || 0).toDateString() === new Date().toDateString();
                 const btn = document.getElementById("checkInBtn");
                 btn.disabled = isToday;
@@ -181,7 +178,7 @@
     window.openID = () => {
         document.getElementById("idModal").style.display = 'flex';
         document.getElementById("qrcode").innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), { text: `BT-ELITE:${studentID}`, width: 150, height: 150 });
+        new QRCode(document.getElementById("qrcode"), { text: `BT-VERIFIED:${studentID}`, width: 150, height: 150 });
     };
 
     window.markAttendance = async () => {
