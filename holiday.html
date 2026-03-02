@@ -82,6 +82,33 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // FIX: Global scope mein functions ko expose karna
+        window.handleWaiver = async (id, status) => {
+            if (confirm(`Are you sure you want to ${status} this request?`)) {
+                try {
+                    const ref = doc(db, "students", id);
+                    await updateDoc(ref, { 
+                        waiverStatus: status
+                    });
+                    alert(`Request ${status} successfully!`);
+                } catch (error) {
+                    console.error("Update Error:", error);
+                    alert("Error updating status. Check console.");
+                }
+            }
+        };
+
+        window.viewImg = (src) => {
+            const modal = document.getElementById("imgModal");
+            const modalImg = document.getElementById("modalImg");
+            modal.style.display = "flex";
+            modalImg.src = src;
+        };
+
+        window.closeModal = () => {
+            document.getElementById("imgModal").style.display = "none";
+        };
+
         // Fetch Requests in Real-time
         onSnapshot(collection(db, "students"), (snap) => {
             const grid = document.getElementById("requestGrid");
@@ -92,7 +119,7 @@
                 const d = studentDoc.data();
                 const studentName = studentDoc.id;
 
-                // Show only if status is "Pending"
+                // Sirf "Pending" requests dikhayega
                 if (d.waiverStatus === "Pending") {
                     hasRequests = true;
                     grid.innerHTML += `
@@ -116,29 +143,6 @@
                 </div>`;
             }
         });
-
-        // Approve or Reject Logic
-        window.handleWaiver = async (id, status) => {
-            if (confirm(`Are you sure you want to ${status} this request?`)) {
-                const ref = doc(db, "students", id);
-                await updateDoc(ref, { 
-                    waiverStatus: status
-                });
-                alert(`Request ${status}!`);
-            }
-        };
-
-        // Image Viewer Logic
-        window.viewImg = (src) => {
-            const modal = document.getElementById("imgModal");
-            const modalImg = document.getElementById("modalImg");
-            modal.style.display = "flex";
-            modalImg.src = src;
-        };
-
-        window.closeModal = () => {
-            document.getElementById("imgModal").style.display = "none";
-        };
     </script>
 </body>
 </html>
