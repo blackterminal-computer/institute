@@ -9,7 +9,7 @@
         :root {
             --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
             --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
-            --success: #22c55e; --danger: #ef4444;
+            --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
         }
 
         body { 
@@ -41,21 +41,25 @@
         .stat-num { font-size: 18px; font-weight: 800; color: var(--accent); display: block; }
         .stat-lbl { font-size: 9px; opacity: 0.5; text-transform: uppercase; margin-top: 4px; }
 
-        /* --- Modern Attendance UI --- */
+        /* Attendance & Fine UI */
         .attendance-card {
-            display: flex; align-items: center; gap: 20px;
             background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            padding: 20px; border-radius: 28px; border: 1px solid var(--glass-border); margin-bottom: 25px;
+            padding: 20px; border-radius: 28px; border: 1px solid var(--glass-border); margin-bottom: 20px;
         }
+        .att-main { display: flex; align-items: center; gap: 20px; margin-bottom: 15px; }
         .progress-ring { position: relative; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; }
         .progress-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
         .progress-ring circle { fill: none; stroke-width: 6; stroke-linecap: round; }
         .ring-bg { stroke: rgba(255, 255, 255, 0.05); }
         .ring-fill { stroke: var(--accent); stroke-dasharray: 201; stroke-dashoffset: 201; transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .perc-txt { position: absolute; font-size: 14px; font-weight: 800; color: #fff; }
-        .att-info { display: flex; flex-direction: column; gap: 4px; }
-        .att-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-        .att-count { font-size: 18px; font-weight: 800; color: #fff; }
+        
+        .fine-box {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 15px; border-radius: 18px; display: none; flex-direction: column; gap: 8px;
+        }
+        .fine-text { color: var(--danger); font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .waiver-link { color: var(--accent); font-size: 11px; text-decoration: underline; cursor: pointer; font-weight: 600; }
 
         .academic-card {
             background: linear-gradient(145deg, rgba(99,102,241,0.15) 0%, rgba(15,23,42,1) 100%);
@@ -107,16 +111,30 @@
     </div>
 
     <div class="attendance-card">
-        <div class="progress-ring">
-            <svg>
-                <circle class="ring-bg" cx="35" cy="35" r="32"></circle>
-                <circle id="ringFill" class="ring-fill" cx="35" cy="35" r="32"></circle>
-            </svg>
-            <span class="perc-txt" id="attPerc">0%</span>
+        <div class="att-main">
+            <div class="progress-ring">
+                <svg><circle class="ring-bg" cx="35" cy="35" r="32"></circle><circle id="ringFill" class="ring-fill" cx="35" cy="35" r="32"></circle></svg>
+                <span class="perc-txt" id="attPerc">0%</span>
+            </div>
+            <div class="att-info">
+                <span class="att-title" id="courseEndStatus">Syncing Status...</span>
+                <span id="attDaysText" style="font-size: 16px; font-weight: 800; color: #fff;">0 / -- Days</span>
+            </div>
         </div>
-        <div class="att-info">
-            <span class="att-title" id="courseEndStatus">Syncing Status...</span>
-            <span class="att-count" id="attDaysText">0 / -- Days</span>
+        
+        <div id="penaltyBox" class="fine-box">
+            <span class="fine-text"><i class="ri-error-warning-fill"></i> Attendance low! Fine: ₹500</span>
+            <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 8px;">
+                <select id="waiverReason" style="background: #1e293b; color: white; border: 1px solid var(--glass-border); padding: 8px; border-radius: 10px; font-size: 11px; outline: none;">
+                    <option value="Medical">🏥 Medical Emergency</option>
+                    <option value="Marriage">💍 Family Marriage</option>
+                    <option value="Vacation">✈️ Planned Vacation</option>
+                    <option value="Other">📝 Other Reason</option>
+                </select>
+                <span class="waiver-link" onclick="document.getElementById('waiverFile').click()">Apply for Waiver (Upload Proof)</span>
+                <input type="file" id="waiverFile" accept="image/*,.pdf" hidden onchange="uploadWaiverProof(this)">
+                <p id="waiverStatus" style="font-size: 10px; color: var(--warning); margin: 0; display: none;"></p>
+            </div>
         </div>
     </div>
 
@@ -180,7 +198,18 @@
                 document.getElementById("xp").innerText = d.xp || 0;
                 document.getElementById("streak").innerText = d.streak || 0;
                 if(d.photo) document.getElementById("photo").src = d.photo;
-                
+
+                // Waiver Status Display
+                const waiverText = document.getElementById("waiverStatus");
+                if(d.waiverStatus === "Pending") {
+                    waiverText.innerText = `Reviewing your ${d.waiverReason} proof...`;
+                    waiverText.style.display = "block";
+                } else if(d.waiverStatus === "Approved") {
+                    waiverText.innerText = "Fine Waived! ✅";
+                    waiverText.style.color = "var(--success)";
+                    waiverText.style.display = "block";
+                }
+
                 let level = Math.floor((d.xp || 0) / 1000) + 1; 
                 document.getElementById("lvl-txt").innerText = "LVL " + level + " STUDENT";
 
@@ -192,27 +221,17 @@
                 badge.innerText = "Current: " + (d.paymentStatus || "Pending");
                 badge.style.color = d.paymentStatus === "Paid" ? "#22c55e" : "#ef4444";
 
-                // --- NEW DYNAMIC LOGIC ---
+                // Attendance Logic (Months * 30)
                 const joinDate = new Date(d.admissionDate);
                 const months = parseInt(d.courseDuration) || 0;
                 const totalCourseDays = months * 30;
-
-                // Calculate End Date and Countdown
                 const endDate = new Date(joinDate);
                 endDate.setDate(endDate.getDate() + totalCourseDays);
-                const today = new Date();
-                const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+                const daysLeft = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
 
                 const statusEl = document.getElementById("courseEndStatus");
-                if (daysLeft > 0) {
-                    statusEl.innerText = `Ends in ${daysLeft} Days`;
-                    statusEl.style.color = "var(--accent)";
-                } else {
-                    statusEl.innerText = "Course Completed 🎓";
-                    statusEl.style.color = "var(--success)";
-                }
+                statusEl.innerText = daysLeft > 0 ? `Ends in ${daysLeft} Days` : "Course Completed 🎓";
 
-                // Attendance Progress Scan
                 onSnapshot(collection(db, "attendance"), (attSnap) => {
                     let count = 0;
                     attSnap.forEach(doc => { if(doc.data().userName === studentID) count++; });
@@ -224,8 +243,17 @@
                     document.getElementById("attPerc").innerText = finalPerc + "%";
                     document.getElementById("attDaysText").innerText = `${count} / ${finalTarget} Days`;
                     document.getElementById("ringFill").style.strokeDashoffset = 201 - (201 * finalPerc) / 100;
+
+                    // Penalty Display Logic
+                    const penaltyBox = document.getElementById("penaltyBox");
+                    if(finalPerc < 70 && d.waiverStatus !== "Approved") {
+                        penaltyBox.style.display = "flex";
+                    } else {
+                        penaltyBox.style.display = "none";
+                    }
                 });
 
+                // History rendering...
                 const hList = document.getElementById("historyList");
                 if (d.paymentHistory && d.paymentHistory.length > 0) {
                     hList.innerHTML = "";
@@ -236,7 +264,7 @@
                                     <div class="h-month">${p.month} <span class="paid-label">Paid</span></div>
                                     <div class="h-amt">INR ${p.amount} • ${p.date}</div>
                                 </div>
-                                <button class="dl-btn" onclick="downloadPremiumInvoice('${p.month}', '${p.amount}', '${p.date}', '${d.courseDuration || 'N/A'}', '${d.currentCourse || 'N/A'}')">
+                                <button class="dl-btn" onclick="downloadPremiumInvoice('${p.month}', '${p.amount}', '${p.date}', '${d.courseDuration}', '${d.currentCourse}')">
                                     <i class="ri-download-cloud-2-line"></i>
                                 </button>
                             </div>`;
@@ -247,44 +275,54 @@
         updateRank();
     }
 
-    // Name Update with 30-day Lock
+    // Waiver Upload
+    window.uploadWaiverProof = (input) => {
+        if(!input.files[0]) return;
+        const reason = document.getElementById("waiverReason").value;
+        const reader = new FileReader();
+        reader.onload = async () => {
+            await updateDoc(doc(db, "students", studentID), { 
+                waiverProof: reader.result,
+                waiverReason: reason,
+                waiverStatus: "Pending" 
+            });
+            alert("Proof uploaded! Admin will review it shortly.");
+        };
+        reader.readAsDataURL(input.files[0]);
+    };
+
+    // Name Update (Ditto Same)
     window.updateName = async () => {
         let newName = document.getElementById("nameInput").value.trim();
         const msgBox = document.getElementById("cooldownMsg");
-        if(!newName || newName === studentID) return alert("Please enter a valid new name.");
-
+        if(!newName || newName === studentID) return alert("Enter new name.");
         try {
             const oldRef = doc(db, "students", studentID);
             const oldSnap = await getDoc(oldRef);
             if (oldSnap.exists()) {
                 const data = oldSnap.data();
                 const now = Date.now();
-                const lastChange = data.lastNameChange || 0;
-                const daysPassed = (now - lastChange) / (1000 * 60 * 60 * 24);
-
+                const daysPassed = (now - (data.lastNameChange || 0)) / (1000 * 60 * 60 * 24);
                 if (daysPassed < 30) {
-                    msgBox.innerText = `⚠️ Cooldown active. Try again in ${Math.ceil(30 - daysPassed)} days.`;
+                    msgBox.innerText = `⚠️ Cooldown active (${Math.ceil(30 - daysPassed)} days left).`;
                     msgBox.style.display = "block";
                     return;
                 }
-
-                if(confirm(`Change name to "${newName}"? (30-day lock will apply)`)) {
+                if(confirm(`Change name to "${newName}"?`)) {
                     const newRef = doc(db, "students", newName);
-                    if((await getDoc(newRef)).exists()) return alert("Name already taken.");
+                    if((await getDoc(newRef)).exists()) return alert("Name taken.");
                     await setDoc(newRef, { ...data, lastNameChange: now });
                     await deleteDoc(oldRef);
                     localStorage.setItem("studentName", newName);
                     window.location.reload();
                 }
             }
-        } catch (e) { alert("Error: " + e.message); }
+        } catch (e) { alert(e.message); }
     };
 
     window.updateProfile = async () => {
         let nBio = document.getElementById("bioInput").value.trim();
-        if(!nBio) return;
-        await updateDoc(doc(db, "students", studentID), { bio: nBio });
-        alert("Bio Updated! ✨");
+        if(nBio) await updateDoc(doc(db, "students", studentID), { bio: nBio });
     };
 
     async function updateRank() {
