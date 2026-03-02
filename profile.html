@@ -60,7 +60,6 @@
         .fine-text { color: var(--danger); font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
         .waiver-link { background: var(--primary); color: white; padding: 10px; border-radius: 12px; text-align: center; font-size: 11px; font-weight: 700; cursor: pointer; border: none; }
 
-        /* Progress Bar Style */
         .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 10px; margin: 10px 0; display: none; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }
 
@@ -135,6 +134,8 @@
                 </select>
                 <input type="text" id="customReason" placeholder="Describe your reason..." style="display:none; padding: 10px; font-size: 12px;">
                 
+                <input type="text" id="holidayDuration" placeholder="Total days of holiday? (e.g. 5 Days)" style="padding: 10px; font-size: 12px;">
+
                 <div class="progress-container" id="uploadBarWrap"><div class="progress-bar" id="uploadBar"></div></div>
 
                 <button class="waiver-link" id="uploadBtn" onclick="document.getElementById('waiverFile').click()">
@@ -275,15 +276,17 @@
         const file = input.files[0];
         if(!file) return;
 
-        // Firestore per-doc limit is 1MB. 
-        if(file.size > 1024 * 1024) {
-            alert("File too large! Please upload a file smaller than 1MB (Try a screenshot).");
-            return;
-        }
-
         let reason = document.getElementById("waiverReason").value;
         if(reason === "Other") reason = document.getElementById("customReason").value || "Other Reason";
         
+        let days = document.getElementById("holidayDuration").value.trim();
+        if(!days) return alert("Please specify how many days of holiday.");
+
+        if(file.size > 1024 * 1024) {
+            alert("File too large! Please upload a file smaller than 1MB.");
+            return;
+        }
+
         const barWrap = document.getElementById("uploadBarWrap");
         const bar = document.getElementById("uploadBar");
         const btn = document.getElementById("uploadBtn");
@@ -293,7 +296,6 @@
         btn.innerText = "Uploading...";
 
         const reader = new FileReader();
-        
         reader.onprogress = (event) => {
             if (event.lengthComputable) {
                 const percent = (event.loaded / event.total) * 100;
@@ -305,12 +307,12 @@
             try {
                 await updateDoc(doc(db, "students", studentID), { 
                     waiverProof: reader.result,
-                    waiverReason: reason,
+                    waiverReason: reason + " (" + days + ")",
                     waiverStatus: "Pending" 
                 });
                 alert("Proof uploaded! Status: Pending review.");
             } catch (err) {
-                alert("Upload failed. Firestore limit reached or Network error.");
+                alert("Upload failed.");
             } finally {
                 barWrap.style.display = "none";
                 btn.disabled = false;
