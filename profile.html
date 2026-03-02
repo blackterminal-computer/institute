@@ -115,7 +115,7 @@
             <span class="perc-txt" id="attPerc">0%</span>
         </div>
         <div class="att-info">
-            <span class="att-title">Course Progress</span>
+            <span class="att-title" id="courseEndStatus">Syncing Status...</span>
             <span class="att-count" id="attDaysText">0 / -- Days</span>
         </div>
     </div>
@@ -192,15 +192,32 @@
                 badge.innerText = "Current: " + (d.paymentStatus || "Pending");
                 badge.style.color = d.paymentStatus === "Paid" ? "#22c55e" : "#ef4444";
 
-                // --- Corrected Attendance Logic: Multiply Duration by 30 ---
+                // --- NEW DYNAMIC LOGIC ---
+                const joinDate = new Date(d.admissionDate);
                 const months = parseInt(d.courseDuration) || 0;
-                const targetDays = months * 30; // 3 months = 90 days, 6 months = 180 days
+                const totalCourseDays = months * 30;
 
+                // Calculate End Date and Countdown
+                const endDate = new Date(joinDate);
+                endDate.setDate(endDate.getDate() + totalCourseDays);
+                const today = new Date();
+                const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+
+                const statusEl = document.getElementById("courseEndStatus");
+                if (daysLeft > 0) {
+                    statusEl.innerText = `Ends in ${daysLeft} Days`;
+                    statusEl.style.color = "var(--accent)";
+                } else {
+                    statusEl.innerText = "Course Completed 🎓";
+                    statusEl.style.color = "var(--success)";
+                }
+
+                // Attendance Progress Scan
                 onSnapshot(collection(db, "attendance"), (attSnap) => {
                     let count = 0;
                     attSnap.forEach(doc => { if(doc.data().userName === studentID) count++; });
                     
-                    const finalTarget = targetDays || 1; 
+                    const finalTarget = totalCourseDays || 1; 
                     const perc = Math.round((count / finalTarget) * 100);
                     const finalPerc = perc > 100 ? 100 : perc;
 
