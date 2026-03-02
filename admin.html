@@ -106,7 +106,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -125,11 +125,10 @@
                 document.getElementById("loginBox").style.display = "none";
                 document.getElementById("panel").style.display = "block";
                 listenAttendance();
-                fetchStudentList(); // New: Loads students for dropdown
+                fetchStudentList();
             } else { showToast("Access Denied", "#ef4444"); }
         }
 
-        // --- New: Fetch All Students for Dropdown ---
         async function fetchStudentList() {
             try {
                 const qSnap = await getDocs(collection(db, "students"));
@@ -141,7 +140,6 @@
             } catch(e) { console.error("Error loading student list", e); }
         }
 
-        // --- Marquee Logic ---
         window.updateMarquee = async function() {
             const m = document.getElementById("marqueeVal").value.trim();
             if(!m) return showToast("Enter text", "#ef4444");
@@ -151,7 +149,6 @@
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- Notice Alert Logic ---
         window.sendOn = async function() {
             const t = document.getElementById("msg").value.trim();
             if(!t) return showToast("Enter message", "#ef4444");
@@ -168,7 +165,6 @@
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- Student Management ---
         window.updateXP = async function() {
             const sName = document.getElementById("studentName").value.trim();
             const xp = document.getElementById("xpAmount").value.trim();
@@ -188,7 +184,7 @@
             } catch(e) { showToast("Error", "#ef4444"); }
         }
 
-        // --- Real-time Attendance Monitor ---
+        // --- FIXED: Real-time Attendance Monitor ---
         function listenAttendance() {
             const today = new Date().toISOString().split('T')[0];
             onSnapshot(collection(db, "attendance"), (snap) => {
@@ -197,9 +193,12 @@
                 let count = 0;
                 snap.forEach(d => {
                     const a = d.data();
+                    // Fallback check: Use userName, then name, then doc ID to avoid 'undefined'
+                    const displayName = a.userName || a.name || d.id;
+                    
                     if(a.date === today) {
                         count++;
-                        list.innerHTML += `<div class="att-item"><b>${a.userName}</b><span><i class="ri-checkbox-circle-fill"></i> Today</span></div>`;
+                        list.innerHTML += `<div class="att-item"><b>${displayName}</b><span><i class="ri-checkbox-circle-fill"></i> Today</span></div>`;
                     }
                 });
                 document.getElementById("present-count").innerText = count;
@@ -207,12 +206,16 @@
             });
         }
 
+        // --- FIXED: Purge All Logs logic ---
         window.clearAttendance = async function() {
             if(!confirm("Are you sure? This will delete ALL attendance logs forever.")) return;
             try {
                 const snap = await getDocs(collection(db, "attendance"));
-                const batch = snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
-                await Promise.all(batch);
+                const batch = writeBatch(db);
+                snap.docs.forEach(d => {
+                    batch.delete(doc(db, "attendance", d.id));
+                });
+                await batch.commit();
                 showToast("Records Purged", "#ef4444");
             } catch(e) { showToast("Error", "#ef4444"); }
         }
