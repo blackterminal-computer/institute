@@ -33,7 +33,6 @@
 
         .container { width: 100%; max-width: 450px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
 
-        /* Premium Profile Header */
         .profile-header { text-align: center; margin-bottom: 35px; position: relative; animation: fadeIn 0.8s ease-out; }
         .avatar-wrapper { position: relative; width: 130px; height: 130px; margin: 0 auto 20px; }
         .avatar { 
@@ -41,6 +40,7 @@
             border: 2.5px solid var(--accent); padding: 5px; background: var(--card-bg);
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             transition: transform 0.3s ease;
+            cursor: pointer;
         }
         .avatar:active { transform: scale(0.95); }
         .level-tag {
@@ -50,7 +50,6 @@
             letter-spacing: 0.5px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        /* Bento Stats Grid */
         .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; }
         .stat-card { 
             background: var(--card-bg); border: 1px solid var(--card-border); 
@@ -59,7 +58,6 @@
         .stat-num { font-size: 20px; font-weight: 800; color: #fff; display: block; }
         .stat-lbl { font-size: 9px; opacity: 0.4; text-transform: uppercase; margin-top: 5px; font-weight: 700; letter-spacing: 0.5px; }
 
-        /* Attendance Card Apple Style */
         .attendance-card {
             background: rgba(255, 255, 255, 0.02);
             padding: 24px; border-radius: 32px; border: 1px solid var(--card-border); 
@@ -81,7 +79,6 @@
         .waiver-link { background: #fff; color: #000; padding: 12px; border-radius: 14px; text-align: center; font-size: 12px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
         .waiver-link:active { transform: scale(0.98); opacity: 0.9; }
 
-        /* Generic Inputs */
         textarea, input[type="text"], input[type="number"], select { 
             width: 100%; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border); 
             padding: 15px; border-radius: 16px; color: white; outline: none; font-size: 14px;
@@ -89,7 +86,6 @@
         }
         textarea:focus, input:focus { border-color: var(--primary); background: rgba(0, 0, 0, 0.5); }
 
-        /* Academic Card */
         .academic-card {
             background: linear-gradient(165deg, rgba(99, 102, 241, 0.1) 0%, rgba(3, 7, 18, 0.1) 100%);
             border-radius: 32px; padding: 24px; border: 1px solid var(--card-border); margin-bottom: 25px;
@@ -99,7 +95,6 @@
         .duration-text { font-size: 14px; color: #94a3b8; margin: 8px 0; display: block; }
         .paid-label { background: rgba(16, 185, 129, 0.1); color: var(--success); font-size: 10px; padding: 6px 14px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.2); font-weight: 700; }
 
-        /* History Items */
         .history-box { background: var(--card-bg); border-radius: 32px; padding: 24px; border: 1px solid var(--card-border); margin-bottom: 25px; }
         .history-item { 
             display: flex; justify-content: space-between; align-items: center;
@@ -108,12 +103,10 @@
         }
         .dl-btn { background: var(--primary); color: white; border: none; width: 42px; height: 42px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
 
-        /* Forms Card */
         .edit-box { background: var(--card-bg); border-radius: 32px; padding: 24px; border: 1px solid var(--card-border); margin-bottom: 15px; }
         .update-btn { width: 100%; background: #fff; color: #000; border: none; padding: 16px; border-radius: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
         .update-btn:active { transform: scale(0.97); }
 
-        /* Sticky Navigation */
         .nav-group { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; }
         .home-nav { background: #fff; color: #000; padding: 18px; border-radius: 24px; text-align: center; font-weight: 800; text-decoration: none; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; gap: 10px; }
         .logout-btn { background: rgba(244, 63, 94, 0.1); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.2); padding: 14px; border-radius: 20px; text-align: center; font-weight: 700; cursor: pointer; backdrop-filter: blur(10px); font-size: 13px; }
@@ -225,6 +218,32 @@
 
     if(!studentID) window.location.href = "login.html";
 
+    // --- Compression Utility ---
+    const compressImage = (file, maxWidth, maxHeight) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                    } else {
+                        if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+                    }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                };
+            };
+        });
+    };
+
     window.toggleCustomInput = (val) => {
         document.getElementById("customReason").style.display = (val === "Other") ? "block" : "none";
     };
@@ -302,7 +321,7 @@
         updateRank();
     }
 
-    window.uploadWaiverProof = (input) => {
+    window.uploadWaiverProof = async (input) => {
         const file = input.files[0];
         if(!file) return;
         let reason = document.getElementById("waiverReason").value;
@@ -316,21 +335,20 @@
         barWrap.style.display = "block";
         btn.disabled = true;
 
-        const reader = new FileReader();
-        reader.onprogress = (e) => { if(e.lengthComputable) bar.style.width = (e.loaded/e.total)*100 + "%"; };
-        reader.onload = async () => {
-            const expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
-            await updateDoc(doc(db, "students", studentID), { 
-                waiverProof: reader.result,
-                waiverReason: `${reason} (${days} Days)`,
-                waiverStatus: "Pending",
-                waiverExpiry: expiry
-            });
-            alert("Application submitted successfully!");
-            barWrap.style.display = "none";
-            btn.disabled = false;
-        };
-        reader.readAsDataURL(file);
+        // Compress Proof
+        const compressedProof = await compressImage(file, 800, 800);
+        
+        const expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
+        await updateDoc(doc(db, "students", studentID), { 
+            waiverProof: compressedProof,
+            waiverReason: `${reason} (${days} Days)`,
+            waiverStatus: "Pending",
+            waiverExpiry: expiry
+        });
+        
+        alert("Application submitted successfully!");
+        barWrap.style.display = "none";
+        btn.disabled = false;
     };
 
     window.updateName = async () => {
@@ -373,13 +391,14 @@
 
     window.logout = () => { if(confirm("End session?")) { localStorage.clear(); window.location.href="login.html"; }};
     
-    document.getElementById("file").onchange = e => {
-        let reader = new FileReader();
-        reader.onload = async () => {
-            document.getElementById("photo").src = reader.result;
-            await updateDoc(doc(db, "students", studentID), { photo: reader.result });
-        };
-        reader.readAsDataURL(e.target.files[0]);
+    document.getElementById("file").onchange = async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        // Compress Profile Photo
+        const compressedData = await compressImage(file, 400, 400);
+        document.getElementById("photo").src = compressedData;
+        await updateDoc(doc(db, "students", studentID), { photo: compressedData });
     };
 
     window.downloadPremiumInvoice = (month, amt, date, duration, course) => {
