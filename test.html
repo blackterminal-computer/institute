@@ -1,342 +1,359 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TERMINAL v5 | Hyper Elite Ultimate</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TERMINAL v3 | Hyper Elite</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@600&display=swap" rel="stylesheet">
 
-<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --accent: #00f2ff; --bg: #05070a;
+            --card-bg: rgba(15, 23, 42, 0.4); --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --gold: #ffb800; --danger: #ff2d55; --success: #00ffa3;
+            --neon-glow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
 
-<style>
-:root{
---primary:#6366f1;
---accent:#00f2ff;
---bg:#05070a;
---glass:rgba(255,255,255,0.05);
---border:rgba(255,255,255,0.1);
---gold:#ffb800;
---success:#00ffa3;
---danger:#ff2d55;
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: var(--bg); color: #fff; padding-bottom: 120px; overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.15), transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(0, 242, 255, 0.1), transparent 40%);
+        }
 
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Outfit',sans-serif;-webkit-tap-highlight-color:transparent;}
-body{
-background:var(--bg);
-color:#fff;
-padding-bottom:120px;
-overflow-x:hidden;
-background-image:
-radial-gradient(circle at 10% 10%, rgba(99,102,241,0.15), transparent 40%),
-radial-gradient(circle at 90% 90%, rgba(0,242,255,0.1), transparent 40%);
-}
+        /* --- Header & Profile --- */
+        .header-elite { padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .profile-hex { position: relative; width: 65px; height: 65px; padding: 3px; background: linear-gradient(45deg, var(--primary), var(--accent)); border-radius: 20px; transform: rotate(-5deg); transition: 0.5s; }
+        .profile-hex img { width: 100%; height: 100%; object-fit: cover; border-radius: 17px; border: 3px solid var(--bg); }
+        .rank-pill { font-size: 8px; font-weight: 900; background: rgba(0, 242, 255, 0.1); color: var(--accent); padding: 4px 10px; border-radius: 100px; border: 1px solid rgba(0, 242, 255, 0.3); text-transform: uppercase; }
 
-/* HEADER */
-.header{
-padding:30px 20px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
+        /* --- Notification Systems --- */
+        #shoutoutBubble {
+            position: fixed; top: 20px; left: 15px; right: 15px; z-index: 10000;
+            background: rgba(10, 15, 25, 0.95); border: 1px solid var(--accent);
+            border-radius: 24px; padding: 12px; display: flex; align-items: center; gap: 12px;
+            backdrop-filter: blur(20px); transform: translateY(-150%); transition: 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: var(--neon-glow);
+        }
+        #shoutoutBubble.active { transform: translateY(0); }
 
-.user-meta{display:flex;align-items:center;gap:15px;}
-.avatar{
-width:60px;height:60px;border-radius:20px;
-padding:3px;
-background:linear-gradient(45deg,var(--primary),var(--accent));
-}
-.avatar img{
-width:100%;height:100%;border-radius:17px;
-border:3px solid var(--bg);
-object-fit:cover;
-}
+        /* --- Activity Panel (Signal Archive) --- */
+        #activityPanel {
+            position: fixed; bottom: -100%; left: 0; right: 0; height: 70vh;
+            background: #080b14; border-top: 2px solid var(--accent);
+            border-radius: 30px 30px 0 0; z-index: 20000; transition: 0.5s ease; padding: 25px 20px; overflow-y: auto;
+        }
+        #activityPanel.open { bottom: 0; }
+        .log-card { display: flex; gap: 12px; padding: 15px; background: var(--glass); border-radius: 18px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
 
-.rank-pill{
-font-size:9px;font-weight:800;
-padding:4px 10px;border-radius:100px;
-border:1px solid var(--accent);
-color:var(--accent);
-}
+        /* --- XP Progress --- */
+        .xp-master-card { margin: 15px 20px; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 30px; padding: 25px; position: relative; overflow: hidden; backdrop-filter: blur(10px); }
+        .progress-container { height: 10px; background: rgba(255,255,255,0.05); border-radius: 100px; margin: 15px 0; border: 1px solid var(--glass-border); }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 100px; width: 0%; box-shadow: 0 0 15px var(--accent); transition: 1.5s cubic-bezier(0.17, 0.85, 0.32, 1.27); }
 
-#streak{
-font-family:'Syncopate';
-color:#ff6400;
-}
+        /* --- Bento Grid --- */
+        .bento-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
+        .bento-box { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 20px; text-decoration: none; color: white; transition: 0.3s; }
+        .bento-box:active { transform: scale(0.95); background: rgba(255,255,255,0.05); }
+        .bento-box i { font-size: 28px; color: var(--accent); margin-bottom: 10px; display: block; }
+        .bento-box.wide { grid-column: span 2; }
+        .bento-box.locked { opacity: 0.5; position: relative; }
 
-/* MARQUEE */
-.marquee{
-margin:0 20px 15px;
-background:var(--glass);
-padding:8px 15px;
-border-radius:100px;
-border:1px solid var(--border);
-overflow:hidden;
-}
-.marquee span{
-display:inline-block;
-white-space:nowrap;
-animation:scroll 15s linear infinite;
-font-size:10px;font-weight:800;color:var(--accent);
-}
-@keyframes scroll{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
-}
+        /* --- UI Controls --- */
+        .float-att { position: fixed; top: 115px; right: 20px; z-index: 999; background: #fff; color: #000; padding: 8px 16px; border-radius: 100px; font-weight: 800; font-size: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); text-decoration: none; }
+        .float-att.done { background: var(--success); }
+        .shout-trigger { position: fixed; bottom: 100px; right: 20px; z-index: 999; background: var(--accent); color: #000; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); cursor: pointer; }
 
-/* XP CARD */
-.xp-card{
-margin:0 20px 20px;
-padding:20px;
-border-radius:30px;
-background:var(--glass);
-border:1px solid var(--border);
-}
-.progress{
-height:10px;border-radius:100px;
-background:rgba(255,255,255,0.05);
-margin-top:15px;overflow:hidden;
-}
-.progress-bar{
-height:100%;
-width:0%;
-background:linear-gradient(90deg,var(--primary),var(--accent));
-transition:1s;
-}
+        .nav-dock { position: fixed; bottom: 20px; left: 15px; right: 15px; background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); border-radius: 30px; display: flex; justify-content: space-around; padding: 15px; z-index: 9999; }
+        .nav-item { color: #52525b; text-decoration: none; font-size: 24px; transition: 0.3s; }
+        .nav-item.active { color: var(--accent); text-shadow: var(--neon-glow); }
 
-/* GRID */
-.grid{
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:15px;
-padding:0 20px;
-}
-.card{
-background:var(--glass);
-border:1px solid var(--border);
-padding:20px;
-border-radius:25px;
-text-align:left;
-transition:.3s;
-}
-.card:active{transform:scale(.95)}
-.card i{font-size:26px;color:var(--accent);}
-.card h3{margin-top:10px;font-size:14px}
-.card p{font-size:10px;opacity:.5}
-
-/* NAV */
-.nav{
-position:fixed;
-bottom:20px;
-left:15px;right:15px;
-background:rgba(10,15,25,0.9);
-border-radius:30px;
-display:flex;
-justify-content:space-around;
-padding:12px;
-border:1px solid var(--border);
-}
-.nav a{color:#555;text-decoration:none;font-size:22px}
-.nav a.active{color:var(--accent)}
-
-/* SHOUT BUBBLE */
-#bubble{
-position:fixed;
-top:20px;
-left:15px;right:15px;
-background:rgba(0,0,0,0.9);
-border:1px solid var(--accent);
-padding:15px;
-border-radius:20px;
-display:none;
-z-index:9999;
-}
-#bubble.active{display:flex;gap:10px;align-items:center}
-
-/* DAILY WORD */
-#dailyWordBox{
-margin:20px;
-padding:20px;
-border-radius:20px;
-background:rgba(0,242,255,0.05);
-border:1px solid var(--accent);
-display:none;
-}
-
-</style>
+        marquee { font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1px; }
+    </style>
 </head>
 <body>
 
-<div id="bubble">
-<img id="bAvatar" width="40" height="40" style="border-radius:12px">
-<div>
-<div id="bUser" style="font-size:10px;font-weight:800;color:var(--accent)"></div>
-<div id="bMsg" style="font-size:13px;font-weight:600"></div>
-</div>
-</div>
+    <div id="shoutoutBubble">
+        <img src="" id="bAvatar" style="width: 45px; height: 45px; border-radius: 12px; object-fit: cover; border: 1px solid var(--accent);">
+        <div style="flex:1">
+            <p id="bUser" style="font-size: 9px; color: var(--accent); font-weight: 900; text-transform: uppercase;"></p>
+            <p id="bMsg" style="font-size: 13px; font-weight: 600; color: #fff;"></p>
+        </div>
+    </div>
 
-<header class="header">
-<div class="user-meta">
-<div class="avatar"><img id="uAvatar"></div>
-<div>
-<div id="rankBadge" class="rank-pill">SYNCING...</div>
-<h2 id="uName">User</h2>
-</div>
-</div>
-<div id="streak">🔥 0</div>
-</header>
+    <div id="activityPanel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="font-family:'Orbitron'; color:var(--accent); font-size:14px;">SIGNAL_HISTORY</h3>
+            <i class="ri-close-circle-fill" onclick="togglePanel()" style="font-size:24px; color:var(--danger);"></i>
+        </div>
+        <div id="logList"></div>
+    </div>
 
-<div class="marquee"><span id="marqueeText">SYSTEM ONLINE...</span></div>
+    <div class="shout-trigger" onclick="togglePanel()"><i class="ri-history-line"></i></div>
+    <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-fingerprint-line"></i> <span id="att-pill-text">Sync Attendance</span></a>
 
-<div id="dailyWordBox">
-<h3 id="wordTitle" style="font-family:'Syncopate';font-size:14px;color:var(--accent)"></h3>
-<p id="wordDesc" style="margin-top:10px;font-size:13px;opacity:.8"></p>
-</div>
+    <header class="header-elite">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="profile-hex"><img id="uAvatar" src=""></div>
+            <div>
+                <div id="rankBadge" class="rank-pill">Neural Linking...</div>
+                <h2 id="uName" style="font-family: 'Syncopate'; font-size: 18px; margin-top: 4px;">Elite</h2>
+            </div>
+        </div>
+        <div id="sCount" style="text-align: right;">
+            <p style="font-size: 9px; opacity: 0.5; font-weight: 800;">STREAK</p>
+            <h3 style="color: #ff6400; font-family: 'Syncopate';">🔥 0</h3>
+        </div>
+    </header>
 
-<div class="xp-card">
-<div style="display:flex;justify-content:space-between">
-<div>
-<p id="levelBadge" style="font-size:10px;color:var(--accent)">LEVEL 1</p>
-<h3 id="xpName">User</h3>
-</div>
-<div id="xpValue" style="font-family:'Syncopate'">0</div>
-</div>
-<div class="progress"><div class="progress-bar" id="xpBar"></div></div>
-</div>
+    <div style="padding: 0 20px; margin-bottom: 10px;">
+        <div style="background: rgba(255,255,255,0.02); border-radius: 100px; padding: 8px 20px; border: 1px solid var(--glass-border);">
+            <marquee id="marqueeMsg">SYSTEM STATUS: ONLINE // ALL ENCRYPTION STABLE...</marquee>
+        </div>
+    </div>
 
-<div class="grid">
-<div class="card" onclick="triggerRaid()">
-<i class="ri-sword-fill" style="color:var(--danger)"></i>
-<h3>Raid</h3>
-<p>Steal XP</p>
-</div>
+    <div id="wordSection" style="margin: 15px 20px; display:none;">
+        <div style="background: var(--card-bg); border: 1px solid var(--glass-border); border-left: 4px solid var(--accent); padding: 15px; border-radius: 20px;">
+            <p style="font-size: 8px; font-weight: 900; color: var(--accent); margin-bottom: 5px;">DAILY_LOG_PROTOCOL</p>
+            <h3 id="wordText" style="font-family:'Orbitron'; font-size: 16px;">LOADING...</h3>
+            <p id="wordDesc" style="font-size: 11px; opacity: 0.7; margin-top: 5px;"></p>
+        </div>
+    </div>
 
-<div class="card" onclick="buyShield()">
-<i class="ri-shield-flash-fill" style="color:var(--success)" id="shieldIcon"></i>
-<h3>Shield</h3>
-<p id="shieldStatus">Inactive</p>
-</div>
+    <div class="xp-master-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <p id="uLevelBadge" style="font-size: 9px; font-weight: 900; color: var(--accent);">PROTOCOL Lvl 1</p>
+                <h3 id="uNameXP" style="font-size: 20px; font-weight: 800;">User</h3>
+            </div>
+            <div style="text-align: right;">
+                <h3 id="xpVal" style="font-family: 'Syncopate'; font-size: 18px;">0</h3>
+                <p style="font-size: 8px; font-weight: 800; opacity: 0.4;">TOTAL XP</p>
+            </div>
+        </div>
+        <div class="progress-container"><div class="progress-bar" id="xpBar"></div></div>
+        <p id="xpTip" style="font-size: 9px; opacity: 0.6; font-weight: 800;">NEXT MILESTONE: 1000 XP</p>
+    </div>
 
-<div class="card" onclick="sendSignal()">
-<i class="ri-message-3-line"></i>
-<h3>Broadcast</h3>
-<p>Costs 50 XP</p>
-</div>
+    <div style="margin: 0 20px 20px;">
+        <div style="background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 10px 15px; display: flex; gap: 10px;">
+            <input type="text" id="shoutInput" placeholder="Broadcast signal... (50 XP)" style="background:none; border:none; color:#fff; flex:1; font-weight:600; font-size: 12px; outline:none;">
+            <button onclick="sendSignal()" style="background:var(--accent); color:#000; border:none; padding:5px 15px; border-radius:10px; font-weight:900; font-size:10px;">SEND</button>
+        </div>
+    </div>
 
-<div class="card" onclick="window.location='leaderboard.html'">
-<i class="ri-medal-fill" style="color:var(--gold)"></i>
-<h3>Ranks</h3>
-<p id="globalRank">#--</p>
-</div>
-</div>
+    <div class="bento-grid">
+        <a href="tournament.html" class="bento-box wide" style="background: linear-gradient(90deg, var(--primary), var(--accent)); padding: 2px;">
+            <div style="background: var(--bg); border-radius: 23px; padding: 18px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="background: var(--danger); font-size: 8px; padding: 2px 8px; border-radius: 4px; font-weight: 900;">LIVE EVENT</span>
+                    <h3 style="font-size: 18px; margin-top: 5px;">TOURNAMENT</h3>
+                </div>
+                <i class="ri-trophy-fill" style="font-size: 32px; color: var(--gold); margin:0;"></i>
+            </div>
+        </a>
+        
+        <div class="bento-box" onclick="triggerChallenge()">
+            <i class="ri-sword-fill" style="color: var(--danger);"></i>
+            <h3>RAID</h3>
+            <p style="font-size: 10px; opacity: 0.5;">Steal XP (50 XP)</p>
+        </div>
+        
+        <div class="bento-box" onclick="buyFocusWall()">
+            <i id="shieldIcon" class="ri-shield-flash-line"></i>
+            <h3 id="wallTitle">SHIELD</h3>
+            <p id="wallStatus" style="font-size: 10px; opacity: 0.5;">Offline</p>
+        </div>
 
-<nav class="nav">
-<a href="index.html" class="active"><i class="ri-home-5-fill"></i></a>
-<a href="battle.html"><i class="ri-sword-line"></i></a>
-<a href="chat.html"><i class="ri-message-3-line"></i></a>
-<a href="profile.html"><i class="ri-user-line"></i></a>
-</nav>
+        <a href="daily-test.html" class="bento-box"><i class="ri-terminal-window-line"></i><h3>EXAMS</h3><p style="font-size: 10px; opacity: 0.5;">Daily Quiz</p></a>
+        <a href="battle.html" class="bento-box"><i class="ri-pulse-line" style="color: var(--danger);"></i><h3>ARENA</h3><p style="font-size: 10px; opacity: 0.5;">1v1 Sync</p></a>
+        <a href="leaderboard.html" class="bento-box"><i class="ri-medal-2-fill" style="color: var(--gold);"></i><h3>RANKS</h3><p id="instRank" style="font-size: 10px; opacity: 0.5;">Global #--</p></a>
+        
+        <div id="unitCard" class="bento-box locked">
+            <i id="unitIcon" class="ri-lock-2-line"></i>
+            <h3>UNIT</h3>
+            <p id="unitMsg" style="font-size: 10px; opacity: 0.5;">5000 XP Lock</p>
+        </div>
+    </div>
 
-<script type="module">
+    <nav class="nav-dock">
+        <a href="index.html" class="nav-item active"><i class="ri-home-smile-2-fill"></i></a>
+        <a href="daily-test.html" class="nav-item"><i class="ri-command-line"></i></a>
+        <a href="battle.html" class="nav-item"><i class="ri-sword-line"></i></a>
+        <a href="chat.html" class="nav-item"><i class="ri-message-3-line"></i></a>
+        <a href="profile.html" class="nav-item"><i class="ri-user-settings-line"></i></a>
+    </nav>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI", 
+            authDomain: "black-terminal-f2c91.firebaseapp.com", 
+            projectId: "black-terminal-f2c91", 
+            storageBucket: "black-terminal-f2c91.appspot.com", 
+            messagingSenderId: "552489994197", 
+            appId: "1:552489994197:web:7662331264c334ffbadf5c" 
+        };
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const student = localStorage.getItem("studentName");
+        if (!student) { window.location.href = "login.html"; }
 
-const student=localStorage.getItem("studentName");
-if(!student) window.location="login.html";
+        // --- UI Functions ---
+        window.togglePanel = () => {
+            document.getElementById('activityPanel').classList.toggle('open');
+        };
 
-/* USER SYNC */
-onSnapshot(doc(db,"students",student),snap=>{
-if(!snap.exists())return;
-const d=snap.data();
-document.getElementById("uName").innerText=student;
-document.getElementById("xpName").innerText=student;
-document.getElementById("uAvatar").src=d.photo||`https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
-document.getElementById("xpValue").innerText=d.xp||0;
-document.getElementById("xpBar").style.width=((d.xp%1000)/10)+"%";
-document.getElementById("levelBadge").innerText="LEVEL "+(Math.floor(d.xp/1000)+1);
-document.getElementById("streak").innerText="🔥 "+(d.streak||0);
-document.getElementById("shieldStatus").innerText=d.focusWall>0?d.focusWall+" Active":"Inactive";
+        // --- Signal/Broadcast ---
+        window.sendSignal = async () => {
+            const msg = document.getElementById("shoutInput").value.trim();
+            if(!msg || student === "Guest") return;
+            const uRef = doc(db, "students", student);
+            const snap = await getDoc(uRef);
+            if(snap.data().xp < 50) return alert("Need 50 XP to Broadcast!");
+            
+            const data = { user: student, text: msg, avatar: snap.data().photo || "", time: Date.now() };
+            await setDoc(doc(db, "interactions", "shoutout"), data);
+            await addDoc(collection(db, "shoutouts"), data);
+            await updateDoc(uRef, { xp: increment(-50) });
+            document.getElementById("shoutInput").value = "";
+        };
 
-if(d.xp>=5000){
-document.getElementById("rankBadge").innerText="ULTRA ELITE";
-document.getElementById("rankBadge").style.color="var(--gold)";
-}else{
-document.getElementById("rankBadge").innerText="NEURAL TRAINEE";
-}
-});
+        // --- Raid & Shield ---
+        window.triggerChallenge = async () => {
+            const uRef = doc(db, "students", student);
+            const snap = await getDoc(uRef);
+            if(snap.data().xp < 50) return alert("RAID costs 50 XP!");
+            
+            const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(15));
+            const allSnap = await getDocs(q);
+            let targets = [];
+            allSnap.forEach(d => { if(d.id !== student) targets.push(d.id); });
+            const target = targets[Math.floor(Math.random() * targets.length)];
+            
+            const tRef = doc(db, "students", target);
+            const tSnap = await getDoc(tRef);
+            
+            if(tSnap.data().focusWall > 0) {
+                await updateDoc(tRef, { focusWall: increment(-1) });
+                await updateDoc(uRef, { xp: increment(-50) });
+                alert(`RAID FAILED! ${target} was shielded.`);
+            } else {
+                const stolen = Math.floor(Math.random() * 41) + 40;
+                await updateDoc(uRef, { xp: increment(stolen - 50) });
+                await updateDoc(tRef, { xp: increment(-stolen) });
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `${student} stole ${stolen} XP from ${target}!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
+                alert(`SUCCESS! Stole ${stolen} XP.`);
+            }
+        };
 
-/* RAID */
-window.triggerRaid=async()=>{
-const ref=doc(db,"students",student);
-const snap=await getDoc(ref);
-if((snap.data().xp||0)<50)return alert("Need 50 XP");
-await updateDoc(ref,{xp:increment(-50)});
-alert("Raid Attempted");
-};
+        window.buyFocusWall = async () => {
+            const uRef = doc(db, "students", student);
+            const snap = await getDoc(uRef);
+            if(snap.data().xp < 150) return alert("Shield costs 150 XP!");
+            await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
+            alert("SHIELD DEPLOYED!");
+        };
 
-/* SHIELD */
-window.buyShield=async()=>{
-const ref=doc(db,"students",student);
-const snap=await getDoc(ref);
-if((snap.data().xp||0)<150)return alert("Need 150 XP");
-await updateDoc(ref,{xp:increment(-150),focusWall:increment(1)});
-alert("Shield Activated");
-};
+        // --- Real-time Sync ---
+        function initTerminal() {
+            // Student Data
+            onSnapshot(doc(db, "students", student), (snap) => {
+                if(snap.exists()){
+                    const d = snap.data();
+                    const xp = d.xp || 0;
+                    document.getElementById("uName").innerText = student;
+                    document.getElementById("uNameXP").innerText = student;
+                    document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+                    document.getElementById("xpVal").innerText = xp;
+                    document.getElementById("sCount").innerHTML = `<p style="font-size: 9px; opacity: 0.5; font-weight: 800;">STREAK</p><h3 style="color: #ff6400; font-family: 'Syncopate';">🔥 ${d.streak || 0}</h3>`;
+                    
+                    // Progress UI
+                    const lvl = Math.floor(xp/1000) + 1;
+                    document.getElementById("uLevelBadge").innerText = `PROTOCOL LVL ${lvl}`;
+                    document.getElementById("xpBar").style.width = (xp % 1000) / 10 + "%";
+                    
+                    // Shield UI
+                    const walls = d.focusWall || 0;
+                    document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers Active` : "Offline";
+                    document.getElementById("shieldIcon").className = walls > 0 ? "ri-shield-check-fill" : "ri-shield-flash-line";
+                    document.getElementById("shieldIcon").style.color = walls > 0 ? "var(--success)" : "var(--accent)";
 
-/* SIGNAL */
-window.sendSignal=async()=>{
-const msg=prompt("Enter message");
-if(!msg)return;
-await setDoc(doc(db,"interactions","shoutout"),{
-user:student,text:msg,
-avatar:`https://api.dicebear.com/7.x/bottts/svg?seed=${student}`,
-time:Date.now()
-});
-};
+                    // Unit Test Lock
+                    if(xp >= 5000) {
+                        const uc = document.getElementById("unitCard");
+                        uc.classList.remove("locked");
+                        document.getElementById("unitIcon").className = "ri-shield-user-fill";
+                        document.getElementById("unitMsg").innerText = "Unlocked";
+                        uc.onclick = () => window.location.href = "unit-test.html";
+                    }
+                }
+            });
 
-/* SHOUT LISTENER */
-onSnapshot(doc(db,"interactions","shoutout"),snap=>{
-if(!snap.exists())return;
-const d=snap.data();
-const b=document.getElementById("bubble");
-document.getElementById("bUser").innerText=d.user;
-document.getElementById("bMsg").innerText=d.text;
-document.getElementById("bAvatar").src=d.avatar;
-b.classList.add("active");
-setTimeout(()=>b.classList.remove("active"),5000);
-});
+            // Signal/Shoutout Listener
+            onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
+                if(snap.exists()){
+                    const d = snap.data();
+                    const b = document.getElementById("shoutoutBubble");
+                    document.getElementById("bUser").innerText = d.user;
+                    document.getElementById("bMsg").innerText = d.text;
+                    document.getElementById("bAvatar").src = d.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.user}`;
+                    b.classList.add("active");
+                    setTimeout(() => b.classList.remove("active"), 5000);
+                }
+            });
 
-/* DAILY WORD */
-onSnapshot(doc(db,"content","dailyWord"),snap=>{
-if(!snap.exists())return;
-const d=snap.data();
-document.getElementById("dailyWordBox").style.display="block";
-document.getElementById("wordTitle").innerText=d.word;
-document.getElementById("wordDesc").innerText=d.description;
-});
+            // Archive Listener
+            const qArchive = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(15));
+            onSnapshot(qArchive, (snap) => {
+                const list = document.getElementById("logList");
+                list.innerHTML = "";
+                snap.forEach(dSnap => {
+                    const d = dSnap.data();
+                    list.innerHTML += `
+                        <div class="log-card">
+                            <img src="${d.avatar}" style="width:35px; height:35px; border-radius:8px;">
+                            <div>
+                                <p style="font-size:10px; color:var(--accent); font-weight:900;">${d.user}</p>
+                                <p style="font-size:12px; font-weight:600;">${d.text}</p>
+                            </div>
+                        </div>`;
+                });
+            });
 
-/* GLOBAL RANK */
-(async()=>{
-const snap=await getDocs(collection(db,"students"));
-let arr=[];
-snap.forEach(s=>arr.push({id:s.id,xp:s.data().xp||0}));
-arr.sort((a,b)=>b.xp-a.xp);
-const r=arr.findIndex(s=>s.id===student)+1;
-if(r>0) document.getElementById("globalRank").innerText="#"+r;
-})();
+            // Marquee & Word of the Day
+            onSnapshot(doc(db, "settings", "marquee"), (snap) => {
+                if(snap.exists()) document.getElementById("marqueeMsg").innerText = snap.data().msg;
+            });
+            onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
+                if(snap.exists()){
+                    document.getElementById("wordSection").style.display = "block";
+                    document.getElementById("wordText").innerText = snap.data().word;
+                    document.getElementById("wordDesc").innerText = snap.data().description;
+                }
+            });
 
-</script>
+            // Attendance Check
+            const today = new Date().toISOString().split('T')[0];
+            onSnapshot(doc(db, "attendance", `${student}_${today}`), (snap) => {
+                const p = document.getElementById("att-pill");
+                if(snap.exists()){
+                    p.classList.add("done");
+                    document.getElementById("att-pill-text").innerText = "Linked";
+                    p.href = "javascript:void(0)";
+                }
+            });
+        }
+
+        initTerminal();
+    </script>
 </body>
 </html>
