@@ -3,275 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Elite Dashboard V2</title>
+    <title>Black Terminal | Elite Dashboard</title>
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #6366f1; --accent: #22d3ee; --bg: #030712;
-            --card-bg: rgba(255, 255, 255, 0.04); 
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --gold: #fde047; --success: #4ade80; --danger: #f87171;
-            --sh-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --primary: #6366f1; 
+            --accent: #06b6d4; 
+            --bg: #050816;
+            --card-bg: rgba(17, 25, 40, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --gold: #fbbf24; 
+            --success: #10b981; 
+            --danger: #f43f5e;
+            --neon-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body { 
-            background: var(--bg); color: #f1f5f9; 
-            padding-bottom: 120px; overflow-x: hidden;
-            background-image: radial-gradient(circle at 0% 0%, #1e1b4b 0%, transparent 40%),
-                              radial-gradient(circle at 100% 60%, #0c4a6e 0%, transparent 40%);
+            background: var(--bg); 
+            color: #f8fafc; 
+            padding-bottom: 120px; 
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.15) 0%, transparent 50%);
+            background-attachment: fixed;
         }
 
-        /* --- V2 Components --- */
+        /* --- Scrollbar Customization --- */
+        ::-webkit-scrollbar { width: 0px; }
+
+        /* --- Interaction UI Styles --- */
         #shoutoutBubble {
-            position: fixed; top: 25px; left: 50%; transform: translateX(-50%) translateY(-150%);
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-150%);
             z-index: 11000; width: 90%; max-width: 350px;
-            background: rgba(15, 23, 42, 0.9); border: 1px solid var(--accent);
-            border-radius: 20px; padding: 12px 18px; display: flex; align-items: center; gap: 15px;
-            backdrop-filter: blur(20px); box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+            background: var(--card-bg); border: 1px solid var(--accent);
+            border-radius: 20px; padding: 12px; display: flex; align-items: center; gap: 12px;
+            box-shadow: var(--neon-shadow); backdrop-filter: blur(20px);
             transition: 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
         #shoutoutBubble.active { transform: translateX(-50%) translateY(0); }
+        .b-av { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--accent); object-fit: cover; background: #1e293b; }
 
-        .premium-header { padding: 35px 24px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .avatar-ring { 
-            position: relative; width: 56px; height: 56px; 
-            border-radius: 18px; background: linear-gradient(45deg, var(--primary), var(--accent));
-            padding: 2px; box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
-        }
-        .avatar-box { width: 100%; height: 100%; border-radius: 16px; overflow: hidden; background: #0f172a; }
-        
-        .streak-pill { 
-            background: rgba(251, 146, 60, 0.1); border: 1px solid rgba(251, 146, 60, 0.2);
-            color: #fb923c; padding: 6px 14px; border-radius: 50px; font-weight: 800; font-size: 11px;
-            display: flex; align-items: center; gap: 5px;
-        }
-
-        .marquee-container { background: rgba(0, 0, 0, 0.3); border-block: 1px solid var(--glass-border); padding: 10px 0; margin-bottom: 20px; }
-        .marquee-content { font-family: 'Orbitron'; font-size: 9px; letter-spacing: 1px; color: var(--accent); font-weight: 600; }
-
-        .label-tag { padding-left: 24px; font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 2px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .label-tag i { color: var(--accent); }
-
-        /* --- Cards V2 --- */
-        .card-v2 { 
-            background: var(--card-bg); border: 1px solid var(--glass-border);
-            border-radius: 28px; padding: 20px; margin: 0 20px 15px;
-            backdrop-filter: blur(10px); transition: 0.3s;
-        }
-        .card-v2:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
-
-        .xp-display { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; }
-        .progress-container { height: 8px; background: rgba(255,255,255,0.05); border-radius: 20px; position: relative; overflow: hidden; }
-        .progress-fill { position: absolute; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 20px; transition: 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-        /* --- Grid V2 --- */
-        .action-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; margin-bottom: 20px; }
-        .action-item { 
-            background: var(--card-bg); border: 1px solid var(--glass-border);
-            padding: 20px; border-radius: 28px; text-decoration: none; color: white;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .action-icon { width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 5px; }
-
-        /* --- Navigation V2 --- */
-        .nav-dock { 
-            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(25px); border: 1px solid var(--glass-border);
-            padding: 10px 20px; border-radius: 30px; display: flex; justify-content: space-between;
-            z-index: 10000; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-        }
-        .nav-tab { color: #94a3b8; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; }
-        .nav-tab.active { color: var(--accent); }
-        .nav-tab i { font-size: 20px; }
-
-        /* Attendance Pill Floating */
-        .float-att { 
-            position: fixed !important; bottom: 100px; right: 20px; z-index: 9999;
-            background: var(--accent) !important; color: #000 !important;
-            padding: 12px 20px; border-radius: 50px; font-weight: 800; font-size: 12px;
-            box-shadow: 0 8px 25px rgba(34, 211, 238, 0.4); border: none;
-            display: flex; align-items: center; gap: 8px; text-decoration: none;
-        }
-        .float-att.done { background: rgba(15, 23, 42, 0.8) !important; color: var(--success) !important; border: 1px solid var(--success); box-shadow: none; }
-
-        /* Activity Button */
-        .shout-trigger { 
-            position: fixed; bottom: 100px; left: 20px; z-index: 9998;
-            background: #1e293b; color: white; width: 48px; height: 48px;
-            border-radius: 18px; display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--glass-border); box-shadow: var(--sh-glow);
-        }
-
-        /* --- Panel Style --- */
         #activityPanel {
             position: fixed; bottom: -100%; left: 0; right: 0; height: 85vh;
-            background: #030712; border-top: 1px solid var(--accent);
+            background: #0d111c; border-top: 2px solid var(--accent);
             border-radius: 35px 35px 0 0; z-index: 20000;
-            transition: 0.5s cubic-bezier(0.32, 0.72, 0, 1); padding: 30px 24px; overflow-y: auto;
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); padding: 25px; overflow-y: auto;
         }
         #activityPanel.open { bottom: 0; }
+        #overlay-blur { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; z-index: 15000; backdrop-filter: blur(8px); }
 
-        /* Animations */
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .stagger-1 { animation: slideUp 0.5s ease forwards; }
-        .stagger-2 { animation: slideUp 0.5s ease 0.1s forwards; opacity: 0; }
-        .stagger-3 { animation: slideUp 0.5s ease 0.2s forwards; opacity: 0; }
+        .log-card { display: flex; gap: 14px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 22px; margin-bottom: 12px; border: 1px solid var(--glass-border); }
+        .log-user { font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: 0.5px; }
+        .log-msg { font-size: 14px; color: #e2e8f0; margin-top: 4px; line-height: 1.4; }
+        .log-footer { display: flex; align-items: center; gap: 15px; margin-top: 12px; }
+        
+        .react-btn { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent); padding: 6px 14px; border-radius: 12px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+        .shout-trigger { position: fixed; bottom: 110px; right: 20px; z-index: 9998; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; width: 50px; height: 50px; border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); transform: rotate(-10deg); }
+
+        /* --- Slider Styling --- */
+        .slider-section { width: 100%; margin: 20px 0; }
+        .label-tag { padding-left: 20px; font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: 1.5px; margin-bottom: 15px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+        .label-tag::before { content: ''; width: 4px; height: 14px; background: var(--accent); border-radius: 10px; }
+
+        .carousel-container { position: relative; width: 100%; }
+        .carousel-track { display: flex; transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1); }
+        .banner-card { min-width: 100%; padding: 0 20px; }
+        .banner-inner { position: relative; border-radius: 28px; overflow: hidden; border: 1px solid var(--glass-border); aspect-ratio: 16 / 8.5; }
+        .slide-img { width: 100%; height: 100%; object-fit: cover; }
+        .banner-text-bar { background: linear-gradient(to top, rgba(13, 17, 28, 0.95), transparent); padding: 20px; position: absolute; bottom: 0; width: 100%; }
+
+        .dots-container { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+        .dot { width: 8px; height: 4px; border-radius: 10px; background: rgba(255,255,255,0.1); transition: 0.3s; }
+        .dot.active { background: var(--accent); width: 24px; }
+
+        /* --- Custom Cards --- */
+        .premium-header { padding: 30px 20px; background: linear-gradient(to bottom, rgba(99, 102, 241, 0.05), transparent); }
+        .user-card { background: var(--card-bg); border-radius: 30px; padding: 20px; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; }
+        .user-card::after { content: ''; position: absolute; top: -50%; right: -20%; width: 150px; height: 150px; background: var(--primary); filter: blur(80px); opacity: 0.1; z-index: 0; }
+        
+        .avatar-box { width: 60px; height: 60px; border-radius: 20px; border: 2px solid var(--accent); padding: 3px; position: relative; z-index: 1; }
+        .avatar-box img { width: 100%; height: 100%; border-radius: 15px; object-fit: cover; }
+
+        .rank-badge { font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 8px; text-transform: uppercase; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 4px; }
+        .badge-gold { background: rgba(251, 191, 36, 0.1); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3); }
+
+        .xp-card { margin: 10px 20px; background: var(--card-bg); border: 1px solid var(--glass-border); padding: 22px; border-radius: 28px; }
+        .progress-track { height: 8px; background: rgba(255,255,255,0.03); border-radius: 20px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 20px; box-shadow: 0 0 10px rgba(6, 182, 212, 0.4); transition: 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
+        .card { background: var(--card-bg); border: 1px solid var(--glass-border); padding: 22px; border-radius: 28px; text-decoration: none; color: white; transition: 0.4s; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .card:active { transform: scale(0.92); background: rgba(255,255,255,0.05); }
+        .card i { font-size: 32px; margin-bottom: 12px; background: linear-gradient(135deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+        .card p { font-size: 10px; opacity: 0.5; margin-top: 4px; font-weight: 600; text-transform: uppercase; }
+
+        .tournament-wrapper { grid-column: span 2; padding: 2px; border-radius: 30px; background: linear-gradient(135deg, #facc15, #ef4444, #6366f1); background-size: 200% 200%; animation: gradShift 3s ease infinite; }
+        @keyframes gradShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .tournament-card { background: #0d111c; border-radius: 28px; padding: 22px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: white; }
+
+        .float-att { position: fixed; top: 25px; right: 20px; z-index: 9999; background: var(--card-bg); backdrop-filter: blur(15px); padding: 10px 18px; border-radius: 18px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--glass-border); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .float-att.done { border-color: var(--success); color: var(--success); }
+
+        .bottom-nav { position: fixed; bottom: 25px; left: 20px; right: 20px; background: rgba(13, 17, 28, 0.9); backdrop-filter: blur(25px); border-radius: 25px; display: flex; justify-content: space-around; padding: 15px; border: 1px solid var(--glass-border); z-index: 10000; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .nav-link { color: #475569; text-decoration: none; text-align: center; font-size: 10px; font-weight: 800; text-transform: uppercase; transition: 0.3s; }
+        .nav-link.active { color: var(--accent); transform: translateY(-5px); }
+        .nav-link i { font-size: 24px; display: block; margin-bottom: 4px; }
+
+        /* Custom Word Section */
+        #wordDisplaySection { margin: 0 20px 20px; }
+        .word-card { background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(99, 102, 241, 0.1)); border-radius: 28px; padding: 25px; border: 1px solid rgba(6, 182, 212, 0.2); position: relative; }
+        
+        #adminAlert { position: fixed; top: 20px; left: 20px; right: 20px; background: rgba(244, 63, 94, 0.15); border: 1px solid var(--danger); backdrop-filter: blur(15px); padding: 18px; border-radius: 22px; z-index: 10001; display: none; }
+
+        .shimmer { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        
+        .pulse { animation: pulse-glow 2s infinite; }
+        @keyframes pulse-glow { 0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); } 70% { box-shadow: 0 0 0 12px rgba(6, 182, 212, 0); } 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); } }
     </style>
 </head>
 <body>
 
     <div id="shoutoutBubble">
-        <img src="" id="bAvatar" style="width: 40px; height: 40px; border-radius: 12px; object-fit: cover;">
-        <div style="flex: 1;">
-            <p style="font-size: 9px; color: var(--accent); font-weight: 800; text-transform: uppercase;" id="bUser">Terminal Link</p>
-            <p style="font-size: 13px; font-weight: 600; color: white;" id="bMsg">Incoming Data...</p>
+        <img src="" id="bAvatar" class="b-av">
+        <div>
+            <span id="bUser" style="font-size:10px; color:var(--accent); font-weight:900; text-transform:uppercase;">SYSTEM</span>
+            <p id="bMsg" style="font-size:13px; font-weight:600; color:#fff;">Awaiting synchronization...</p>
         </div>
     </div>
 
-    <div id="overlay-blur" onclick="togglePanel()" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: none; z-index: 15000;"></div>
-
+    <div id="overlay-blur" onclick="togglePanel()"></div>
     <div id="activityPanel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; position:sticky; top:0; background:#030712; padding-bottom:15px; z-index:10;">
-            <div>
-                <h3 style="font-family:'Orbitron'; font-size:16px; color:var(--accent);">INTERCEPTED SIGNALS</h3>
-                <p style="font-size: 10px; color: #64748b; font-weight: 700;">LIVE TERMINAL LOG</p>
-            </div>
-            <div onclick="togglePanel()" style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center;">
-                <i class="ri-close-line" style="font-size:24px; color:var(--danger);"></i>
-            </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <h3 style="font-family:'Orbitron'; font-size:16px; color:var(--accent); letter-spacing:1px;">SIGNAL_HISTORY</h3>
+            <div onclick="togglePanel()" style="width:40px; height:40px; border-radius:12px; background:rgba(244,63,94,0.1); color:var(--danger); display:flex; align-items:center; justify-content:center; font-size:24px;"><i class="ri-close-line"></i></div>
         </div>
         <div id="logList"></div>
     </div>
 
-    <header class="premium-header stagger-1">
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div class="avatar-ring">
-                <div class="avatar-box"><img id="uAvatar" src="" style="width:100%; height:100%; object-fit:cover;"></div>
-            </div>
-            <div>
-                <span id="rankBadge" class="rank-badge" style="font-size: 9px; font-weight: 900; color: var(--accent); text-transform: uppercase;">Syncing...</span>
-                <h2 id="uName" style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Black Terminal</h2>
-            </div>
-        </div>
-        <div id="sCount" class="streak-pill">🔥 0 Days</div>
-    </header>
+    <div class="shout-trigger pulse" onclick="togglePanel()"><i class="ri-broadcast-line" style="font-size: 24px;"></i></div>
 
-    <div class="marquee-container stagger-1">
-        <div class="marquee-content" id="marqueeMsg">INITIALIZING SECURE CONNECTION...</div>
-    </div>
-
-    <div class="card-v2 stagger-2" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(34, 211, 238, 0.1)); border-color: rgba(34, 211, 238, 0.2);">
-        <div class="xp-display">
+    <div id="adminAlert">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div style="width:45px; height:45px; border-radius:14px; background:var(--danger); display:flex; align-items:center; justify-content:center; color:white; font-size:22px;"><i class="ri-error-warning-line"></i></div>
             <div>
-                <span id="uLevelBadge" style="font-size: 10px; font-weight: 900; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: 5px;">Level 1</span>
-                <h3 id="uNameXP" style="font-size: 18px; font-weight: 800;">Student</h3>
-            </div>
-            <div style="text-align: right;">
-                <span id="xpVal" style="font-family: 'Orbitron'; font-size: 20px; color: white; font-weight: 800;">0 XP</span>
+                <b style="font-size:11px; color:var(--danger); text-transform:uppercase; letter-spacing:1px;">Priority Broadcast</b>
+                <p id="alertText" style="font-size:14px; font-weight:700; color:#fff; margin-top:2px;"></p>
             </div>
         </div>
-        <div class="progress-container">
-            <div class="progress-fill" id="xpBar"></div>
-        </div>
-        <p id="xpTip" style="font-size: 10px; color: #94a3b8; margin-top: 12px; font-weight: 600;">
-            <i class="ri-flashlight-fill" style="color: var(--gold);"></i> <span>Next Milestone: Level 2</span>
-        </p>
     </div>
 
     <a href="attendence.html" id="att-pill" class="float-att pulse">
-        <i class="ri-fingerprint-line" id="att-pill-icon"></i>
-        <span id="att-pill-text">MARK ATTENDANCE</span>
+        <i class="ri-fingerprint-fill" id="att-pill-icon" style="font-size: 18px; color: var(--accent);"></i>
+        <span id="att-pill-text" style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Check-in</span>
     </a>
-    <div class="shout-trigger" onclick="togglePanel()"><i class="ri-broadcast-line"></i></div>
 
-    <div id="wordDisplaySection" class="stagger-2" style="display:none;">
-        <p class="label-tag"><i class="ri-command-line"></i> DAILY_DECRYPTION</p>
-        <div class="card-v2" style="border-left: 4px solid var(--accent); padding-right: 40px; position: relative;">
-            <i class="ri-double-quotes-r" style="position: absolute; top: 20px; right: 20px; font-size: 30px; opacity: 0.1;"></i>
-            <h2 id="wordText" style="font-family: 'Orbitron'; font-size: 18px; color: white; letter-spacing: 1px;">- - -</h2>
-            <p id="wordDesc" style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-top: 10px; font-weight: 500;"></p>
-        </div>
-    </div>
-
-    <div class="card-v2 stagger-3" style="padding: 15px 20px; background: rgba(0,0,0,0.4);">
-        <div style="display:flex; align-items: center; gap:12px;">
-            <i class="ri-chat-voice-line" style="color: var(--accent); font-size: 20px;"></i>
-            <input type="text" id="shoutInput" placeholder="Broadcast to terminal... (50 XP)" 
-                   style="background:transparent; border:none; color:white; font-size:13px; flex:1; outline:none; font-weight:600;">
-            <button onclick="sendSignal()" style="background:var(--accent); color:black; border:none; padding:8px 15px; border-radius:12px; font-size:10px; font-weight:900; text-transform:uppercase;">SEND</button>
-        </div>
-    </div>
-
-    <div class="stagger-3" style="display: flex; gap: 15px; padding: 0 20px; margin-bottom: 20px;">
-        <div class="card-v2" style="flex: 1; margin: 0; padding: 15px 20px;">
-            <p style="font-size: 9px; font-weight: 800; color: #64748b;">GLOBAL RANK</p>
-            <h2 id="instRank" style="font-family: 'Orbitron'; color: var(--gold); font-size: 24px;">#--</h2>
-        </div>
-        <div class="card-v2" id="fee-container" style="flex: 1.5; margin: 0; padding: 15px 20px; display: flex; align-items: center; gap: 12px;">
-            <div id="fee-icon-bg" style="width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05);">
-                <i class="ri-bank-card-line" style="font-size: 18px;"></i>
+    <header class="premium-header">
+        <div class="user-card">
+            <div class="avatar-box"><img id="uAvatar" src="" alt="User"></div>
+            <div style="flex: 1;">
+                <div id="rankBadge" class="rank-badge badge-gold">Elite Terminal</div>
+                <h2 id="uName" style="font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px;">Student</h2>
+                <p id="greetText" style="font-size: 9px; opacity: 0.5; font-weight: 800; text-transform: uppercase; margin-top: 2px;">Syncing Neural Link...</p>
             </div>
+            <div id="sCount" style="background:rgba(255,100,0,0.1); color:#ff6400; padding:10px 15px; border-radius:18px; font-weight:800; font-size:13px; border: 1px solid rgba(255,100,0,0.2);">🔥 0</div>
+        </div>
+    </header>
+
+    <div style="overflow:hidden; background:rgba(6,182,212,0.05); padding:10px 0; border-top:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border); margin-bottom:20px;">
+        <marquee scrollamount="6" id="marqueeMsg" style="font-size:11px; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:1px;">Connecting to secure server...</marquee>
+    </div>
+
+    <div id="wordDisplaySection" style="display: none;">
+        <p class="label-tag">Daily Core Knowledge</p>
+        <div class="word-card">
+            <div style="position:absolute; top:-10px; right:20px; background:var(--accent); color:#000; padding:4px 12px; border-radius:8px; font-size:10px; font-weight:900;">NEW LOG</div>
+            <h2 id="wordText" style="font-family:'Orbitron'; font-size:22px; color:#fff; margin-bottom:10px;">LOADING</h2>
+            <p id="wordDesc" style="font-size:14px; color:#cbd5e1; line-height:1.6; font-weight:500;">Retrieving definition from terminal database...</p>
+        </div>
+    </div>
+
+    <div class="xp-card" style="background: rgba(255,255,255,0.02); margin-bottom:20px;">
+        <div style="display:flex; gap:12px; align-items:center;">
+            <div style="width:35px; height:35px; border-radius:50%; background:rgba(6,182,212,0.1); display:flex; align-items:center; justify-content:center; color:var(--accent);"><i class="ri-quill-pen-line"></i></div>
+            <input type="text" id="shoutInput" placeholder="Broadcast a signal... (50 XP)" style="background:transparent; border:none; color:white; font-size:13px; flex:1; outline:none; font-weight:600;" maxlength="45">
+            <button onclick="sendSignal()" style="background:var(--accent); border:none; color:#000; font-weight:800; font-size:10px; padding:8px 18px; border-radius:12px; text-transform:uppercase;">Post</button>
+        </div>
+    </div>
+
+    <div class="slider-section" id="sliderRoot" style="display: none;">
+        <p class="label-tag">Elite Spotlight</p>
+        <div class="carousel-container">
+            <div class="carousel-track" id="sliderTrack"></div>
+        </div>
+        <div class="dots-container" id="sliderDots"></div>
+    </div>
+
+    <div class="xp-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
             <div>
-                <p id="fee-month-text" style="font-size: 9px; color: #64748b; font-weight: 800;">FEE STATUS</p>
-                <span id="fee-badge" style="font-size: 11px; font-weight: 800;">Loading...</span>
+                <span id="uLevelBadge" style="background:var(--primary); color:white; font-size:10px; padding:4px 10px; border-radius:8px; font-weight:900; text-transform:uppercase;">Level 1</span>
+                <h3 id="uNameXP" style="font-weight:800; font-size: 18px; margin-top:8px;">Student</h3>
+            </div>
+            <div style="text-align:right;">
+                <p style="font-size:10px; opacity:0.5; font-weight:800;">TOTAL POWER</p>
+                <span id="xpVal" style="color:var(--accent); font-weight:900; font-size:20px; font-family:'Orbitron';">0 XP</span>
             </div>
         </div>
+        <div class="progress-track"><div class="progress-fill" id="xpBar"></div></div>
+        <p id="xpTip" style="font-size: 11px; margin-top:12px; color: #94a3b8; font-weight:600; display:flex; align-items:center; gap:6px;">
+            <i class="ri-flashlight-line" style="color:var(--gold)"></i> <span>Analyzing next milestone...</span>
+        </p>
     </div>
 
-    <p class="label-tag stagger-3"><i class="ri-sword-line"></i> TERMINAL_WAR_ZONE</p>
-    <div class="action-grid stagger-3">
-        <div class="action-item" onclick="triggerChallenge()" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2);">
-            <div class="action-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="ri-sword-fill"></i></div>
-            <h4 style="font-size: 13px; font-weight: 800;">RAID</h4>
-            <p style="font-size: 9px; color: #94a3b8; font-weight: 600;">Steal XP (50 XP)</p>
+    <div class="grid" style="margin: 0 0 20px;">
+        <div class="card" style="flex-direction:row; grid-column: span 2; justify-content: space-between; padding: 20px 25px;">
+            <div style="text-align:left;">
+                <p style="margin:0; font-size:10px;">Global Standing</p>
+                <h2 id="instRank" style="font-size:32px; font-family:'Orbitron'; color:var(--gold);">#--</h2>
+            </div>
+            <i class="ri-medal-2-fill" style="font-size:45px; margin:0; opacity:0.8;"></i>
         </div>
-        <div class="action-item" onclick="buyFocusWall()" style="background: rgba(34, 197, 94, 0.05); border-color: rgba(34, 197, 94, 0.2);">
-            <div class="action-icon" style="background: rgba(34, 197, 94, 0.1); color: var(--success);"><i id="shieldIcon" class="ri-shield-flash-line"></i></div>
-            <h4 style="font-size: 13px; font-weight: 800;" id="wallTitle">SHIELD</h4>
-            <p id="wallStatus" style="font-size: 9px; color: #94a3b8; font-weight: 600;">Inactive</p>
+    </div>
+
+    <div id="fee-container" style="margin: 0 20px 20px; padding: 20px; border-radius: 28px; background: var(--card-bg); border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div id="fee-icon-bg" style="width: 45px; height: 45px; border-radius: 15px; background: rgba(99, 102, 241, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 22px;"><i id="fee-icon" class="ri-wallet-3-line"></i></div>
+            <div>
+                <h4 style="font-size: 14px; font-weight: 800;">Monthly Dues</h4>
+                <p id="fee-month-text" style="font-size: 11px; opacity: 0.5; font-weight: 600;">Status check...</p>
+            </div>
+        </div>
+        <span id="fee-badge" style="font-size: 10px; font-weight: 900; padding: 6px 14px; border-radius: 10px;">---</span>
+    </div>
+
+    <p class="label-tag">War Zone Protocol</p>
+    <div class="grid" style="margin-bottom: 25px;">
+        <div class="card" onclick="triggerChallenge()" style="background:rgba(244,63,94,0.05); border-color:rgba(244,63,94,0.2);">
+            <i class="ri-sword-fill" style="color:var(--danger);"></i>
+            <h3>Raid</h3>
+            <p>Steal XP</p>
+        </div>
+        <div class="card" onclick="buyFocusWall()" style="background:rgba(16,185,129,0.05); border-color:rgba(16,185,129,0.2);">
+            <i id="shieldIcon" class="ri-shield-flash-line" style="color:var(--success);"></i>
+            <h3 id="wallTitle">Shield</h3>
+            <p id="wallStatus">Inactive</p>
         </div>
     </div>
 
-    <p class="label-tag stagger-3"><i class="ri-layout-grid-fill"></i> SYSTEMS_ACCESS</p>
-    <div class="action-grid stagger-3" style="grid-template-columns: repeat(2, 1fr);">
-        <a href="daily-test.html" class="action-item">
-            <div class="action-icon" style="background:rgba(99,102,241,0.1); color:var(--primary);"><i class="ri-edit-box-line"></i></div>
-            <h4 style="font-size: 13px; font-weight: 800;">Exams</h4>
-            <p style="font-size: 9px; color:#94a3b8;">Daily Tests</p>
-        </a>
-        <a href="battle.html" class="action-item">
-            <div class="action-icon" style="background:rgba(239,68,68,0.1); color:var(--danger);"><i class="ri-sword-line"></i></div>
-            <h4 style="font-size: 13px; font-weight: 800;">Battle</h4>
-            <p style="font-size: 9px; color:#94a3b8;">PvP Combat</p>
-        </a>
-        <a href="flash.html" class="action-item">
-            <div class="action-icon" style="background:rgba(253,224,71,0.1); color:var(--gold);"><i class="ri-flashlight-fill"></i></div>
-            <h4 style="font-size: 13px; font-weight: 800;">Flash</h4>
-            <p style="font-size: 9px; color:#94a3b8;">Quick Revise</p>
-        </a>
-        <a href="leaderboard.html" class="action-item">
-            <div class="action-icon" style="background:rgba(34,211,238,0.1); color:var(--accent);"><i class="ri-bar-chart-fill"></i></div>
-            <h4 style="font-size: 13px; font-weight: 800;">Ranks</h4>
-            <p style="font-size: 9px; color:#94a3b8;">Leaderboard</p>
+    <div class="grid">
+        <div class="tournament-wrapper">
+            <a href="tournament.html" class="tournament-card">
+                <div>
+                    <span style="background:var(--danger); font-size:9px; padding:3px 10px; border-radius:10px; font-weight:900;">LIVE OPS</span>
+                    <h3 style="margin-top:8px; font-size: 20px; font-family:'Orbitron';">Elite Tournament</h3>
+                </div>
+                <span style="font-size:40px;">🏆</span>
+            </a>
+        </div>
+        <a href="daily-test.html" class="card"><i class="ri-terminal-window-line"></i><h3>Exams</h3><p>Assessments</p></a>
+        <a href="battle.html" class="card"><i class="ri-fire-fill" style="color:var(--danger)"></i><h3>Battle</h3><p>PvP Mode</p></a>
+        <a href="flash.html" class="card"><i class="ri-zap-fill" style="color:var(--gold)"></i><h3>Flash</h3><p>Neural Link</p></a>
+        <a href="leaderboard.html" class="card"><i class="ri-bar-chart-2-fill" style="color:var(--accent)"></i><h3>Ranks</h3><p>Top 100</p></a>
+        <a href="courses.html" class="card"><i class="ri-play-circle-fill"></i><h3>Archive</h3><p>Lectures</p></a>
+        <a href="javascript:void(0)" onclick="handleUnitTest()" id="unitCard" class="card" style="opacity:0.5;">
+            <i class="ri-lock-password-line" id="unitIcon"></i>
+            <h3>Unit Test</h3>
+            <p id="unitMsg">Lock: 5000 XP</p>
         </a>
     </div>
 
-    <nav class="nav-dock">
-        <a href="index.html" class="nav-tab active"><i class="ri-home-6-fill"></i><span>Home</span></a>
-        <a href="daily-test.html" class="nav-tab"><i class="ri-terminal-window-line"></i><span>Exams</span></a>
-        <a href="battle.html" class="nav-tab"><i class="ri-sword-line"></i><span>Battle</span></a>
-        <a href="chat.html" class="nav-tab"><i class="ri-chat-private-line"></i><span>Chat</span></a>
-        <a href="profile.html" class="nav-tab"><i class="ri-user-6-line"></i><span>Profile</span></a>
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link active"><i class="ri-home-smile-2-fill"></i><span>Hub</span></a>
+        <a href="daily-test.html" class="nav-link"><i class="ri-edit-2-line"></i><span>Tests</span></a>
+        <a href="battle.html" class="nav-link"><i class="ri-sword-line"></i><span>War</span></a>
+        <a href="chat.html" class="nav-link"><i class="ri-message-3-line"></i><span>Comm</span></a>
+        <a href="profile.html" class="nav-link"><i class="ri-user-6-line"></i><span>Profile</span></a>
     </nav>
 
     <script type="module">
-        // --- ALL ORIGINAL JAVASCRIPT LOGIC RETAINED BELOW ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -291,6 +309,8 @@
         if (!student) { window.location.href = "login.html"; }
 
         let userXP = 0;
+        let currentSlide = 0;
+        let totalSlides = 0;
 
         window.togglePanel = () => {
             const panel = document.getElementById('activityPanel');
@@ -318,6 +338,19 @@
             } else { alert("Insufficient XP! (Need 50)"); }
         };
 
+        window.sendReaction = async (docId, targetUser) => {
+            try {
+                const logRef = doc(db, "shoutouts", docId);
+                await updateDoc(logRef, { likes: increment(1) });
+                await setDoc(doc(db, "interactions", "shoutout"), {
+                    user: "SYSTEM",
+                    text: `${student} sent 🔥 to ${targetUser}`,
+                    avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${student}`,
+                    time: Date.now()
+                });
+            } catch (e) { console.error(e); }
+        };
+
         window.triggerChallenge = async () => {
             if(student === "Guest") return;
             const uRef = doc(db, "students", student);
@@ -335,14 +368,14 @@
             if(tData.focusWall > 0) {
                 await updateDoc(tRef, { focusWall: increment(-1) });
                 await updateDoc(uRef, { xp: increment(-50) });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: "SECURITY", text: `${targetId}'s Shield blocked ${student}'s attack!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now() });
-                alert(`${targetId}'s Shield absorbed the attack!`);
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "SECURITY", text: `${targetId} ki Focus Wall ne ${student} ka attack rok diya!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now() });
+                alert(`${targetId}'s Shield absorbed the attack! You lost 50 XP.`);
             } else {
                 const stolen = Math.floor(Math.random() * 41) + 40;
                 await updateDoc(uRef, { xp: increment(stolen - 50) });
                 await updateDoc(tRef, { xp: increment(-stolen) });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `🔥 ${student} raided ${targetId} for ${stolen} XP!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
-                alert(`Raid Success! Stole ${stolen} XP.`);
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `🔥 ${student} ne RAID mein ${targetId} se ${stolen} XP chura liye!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
+                alert(`Raid Success! Stole ${stolen} XP from ${targetId}.`);
             }
         };
 
@@ -352,8 +385,71 @@
             const uSnap = await getDoc(uRef);
             if(uSnap.data().xp < 150) return alert("Focus Wall costs 150 XP!");
             await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
-            alert("Focus Wall Deployed!");
+            alert("Focus Wall Deployed! Next attack will be blocked.");
         };
+
+        async function syncSlider() {
+            onSnapshot(doc(db, "settings", "slider"), (snap) => {
+                if(snap.exists()) {
+                    const data = snap.data();
+                    const urls = data.images ? data.images.split(',') : [];
+                    const titles = data.titles ? data.titles.split(',') : [];
+                    const links = data.links ? data.links.split(',') : [];
+                    const track = document.getElementById('sliderTrack');
+                    const dots = document.getElementById('sliderDots');
+                    if(urls.length > 0) {
+                        document.getElementById('sliderRoot').style.display = 'block';
+                        track.innerHTML = ''; dots.innerHTML = '';
+                        totalSlides = urls.length;
+                        urls.forEach((url, i) => {
+                            const redirectLink = (links[i] && links[i].trim() !== "") ? links[i].trim() : "javascript:void(0)";
+                            const slide = document.createElement('a');
+                            slide.href = redirectLink; slide.className = 'banner-card';
+                            slide.innerHTML = `<div class="banner-inner shimmer"><img class="slide-img" src="${url.trim()}" onload="this.parentElement.classList.remove('shimmer')"><div class="banner-text-bar"><h3 style="color:white; font-size: 15px; font-weight: 800; font-family:Orbitron;">${titles[i] ? titles[i].trim() : 'Elite Terminal'}</h3><span style="background:var(--accent); color:#000; padding:4px 10px; border-radius:8px; font-size:9px; font-weight:900; text-transform:uppercase;">Featured</span></div></div>`;
+                            track.appendChild(slide);
+                            const dot = document.createElement('div');
+                            dot.className = `dot ${i === 0 ? 'active' : ''}`;
+                            dots.appendChild(dot);
+                        });
+                    }
+                }
+            });
+        }
+
+        setInterval(() => {
+            if(totalSlides > 1) {
+                currentSlide = (currentSlide + 1) % totalSlides;
+                const track = document.getElementById('sliderTrack');
+                const dots = document.querySelectorAll('.dot');
+                if(track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
+                dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+            }
+        }, 4000);
+
+        async function updateStreakLogic(data) {
+            const today = new Date(); const todayStr = today.toDateString();
+            const lastVisit = localStorage.getItem(student + "_last_visit");
+            let streak = data.streak || 0;
+            if (lastVisit === todayStr) return; 
+            const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+            if (lastVisit === yesterday.toDateString()) streak += 1; else streak = 1;
+            localStorage.setItem(student + "_last_visit", todayStr);
+            localStorage.setItem(student + "_streak", streak);
+            if(student !== "Guest") await updateDoc(doc(db, "students", student), { streak: streak });
+        }
+
+        function loadCache() {
+            if(student === "Guest") return;
+            document.getElementById("uName").innerText = student;
+            const nameXP = document.getElementById("uNameXP");
+            if(nameXP) nameXP.innerText = student; 
+            const cXP = localStorage.getItem("user_xp_cache");
+            const cStreak = localStorage.getItem(student + "_streak");
+            const cMsg = localStorage.getItem("marquee_cache");
+            if(cXP) { userXP = parseInt(cXP); updateXPUI(userXP); }
+            if(cStreak) document.getElementById("sCount").innerText = "🔥 " + cStreak;
+            if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
+        }
 
         function updateXPUI(xp) {
             const currentXP = parseInt(xp) || 0;
@@ -362,9 +458,15 @@
             const currentLevel = Math.floor(currentXP / 1000) + 1;
             document.getElementById("uLevelBadge").innerText = "Level " + currentLevel;
             document.getElementById("xpTip").innerHTML = `<i class="ri-flashlight-fill" style="color:#facc15"></i> Milestone: <b>Level ${currentLevel + 1}</b>`;
+            if(currentXP >= 5000) {
+                const uc = document.getElementById("unitCard");
+                if(uc) { uc.style.opacity = "1"; document.getElementById("unitIcon").className = "ri-shield-flash-line"; document.getElementById("unitMsg").innerText = "Access Granted"; }
+            }
         }
 
         async function syncData() {
+            syncSlider();
+
             onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
@@ -393,11 +495,24 @@
                 list.innerHTML = "";
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
-                    list.innerHTML += `<div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:20px; margin-bottom:12px; border:1px solid var(--glass-border); display:flex; gap:12px;">
-                        <img src="${d.avatar}" style="width:35px; height:35px; border-radius:10px;">
-                        <div><span style="font-size:10px; font-weight:900; color:var(--accent);">${d.user}</span><p style="font-size:13px; color:#cbd5e1; margin-top:3px;">${d.text}</p></div>
-                    </div>`;
+                    list.innerHTML += `<div class="log-card"><img src="${d.avatar}" class="b-av"><div style="flex:1"><span class="log-user">${d.user}</span><p class="log-msg">${d.text}</p><div class="log-footer"><div class="react-btn" onclick="sendReaction('${docSnap.id}', '${d.user}')"><i class="ri-fire-fill"></i> ${d.likes || 0}</div><span style="font-size:9px; opacity:0.3; font-weight:700;">${new Date(d.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div></div>`;
                 });
+            });
+
+            onSnapshot(doc(db, "settings", "marquee"), (snap) => {
+                if(snap.exists()){
+                    const newMsg = snap.data().msg;
+                    document.getElementById("marqueeMsg").innerText = newMsg;
+                    localStorage.setItem("marquee_cache", newMsg);
+                }
+            });
+
+            onSnapshot(doc(db, "notices", "main"), (snap) => {
+                if(snap.exists()){
+                    const data = snap.data();
+                    const alertBox = document.getElementById("adminAlert");
+                    if(data.status === "on") { document.getElementById("alertText").innerText = data.text; alertBox.style.display = "block"; } else alertBox.style.display = "none";
+                }
             });
 
             if(student === "Guest") return;
@@ -405,38 +520,63 @@
             onSnapshot(doc(db, "students", student), (snap) => {
                 if(snap.exists()){
                     const d = snap.data();
-                    document.getElementById("uName").innerText = student;
-                    document.getElementById("uNameXP").innerText = student;
-                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
+                    updateStreakLogic(d);
+                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0);
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
                     userXP = d.xp || 0; updateXPUI(userXP);
                     const walls = d.focusWall || 0;
-                    document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers Active` : "Inactive";
+                    document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers` : "Inactive";
                     document.getElementById("wallTitle").style.color = walls > 0 ? "var(--success)" : "white";
                     document.getElementById("shieldIcon").className = walls > 0 ? "ri-shield-check-fill" : "ri-shield-flash-line";
                     const fBadge = document.getElementById("fee-badge");
-                    fBadge.innerText = d.paymentStatus === "Paid" ? "COMPLETED" : "PENDING";
-                    fBadge.style.color = d.paymentStatus === "Paid" ? "var(--success)" : "var(--danger)";
+                    fBadge.innerText = d.paymentStatus === "Paid" ? "Cleared" : "Unpaid";
+                    fBadge.style.color = d.paymentStatus === "Paid" ? "#10b981" : "#f43f5e";
+                    fBadge.style.background = d.paymentStatus === "Paid" ? "rgba(16,185,129,0.1)" : "rgba(244,63,94,0.1)";
                     const badge = document.getElementById("rankBadge");
-                    if (userXP >= 5000) { badge.innerText = "Gold Elite"; badge.style.color = "#facc15"; }
-                    else if (userXP >= 2000) { badge.innerText = "Silver Elite"; badge.style.color = "#cbd5e1"; }
+                    if (userXP >= 5000) { badge.innerText = "Gold Elite"; badge.className = "rank-badge badge-gold"; }
+                    else if (userXP >= 2000) { badge.innerText = "Silver Elite"; badge.style.color = "#94a3b8"; }
                     else { badge.innerText = "Bronze Trainee"; badge.style.color = "#cd7f32"; }
                 }
             });
 
-            // Attendance Sync
+            const qSnap = await getDocs(collection(db, "students"));
+            let all = []; qSnap.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
+            all.sort((a,b)=>b.xp-a.xp);
+            const r = all.findIndex(s=>s.id === student) + 1;
+            if(r > 0) document.getElementById("instRank").innerText = "#" + r;
+
             const todayISO = new Date().toISOString().split('T')[0];
             onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
                 const pill = document.getElementById("att-pill");
                 if (attSnap.exists()) {
                     pill.classList.remove("pulse"); pill.classList.add("done");
                     document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
-                    document.getElementById("att-pill-text").innerText = "PRESENT TODAY";
+                    document.getElementById("att-pill-text").innerText = "Verified";
                     pill.href = "javascript:void(0)"; 
+                    const hasRewarded = localStorage.getItem(`att_reward_${todayISO}`);
+                    if (!hasRewarded && student !== "Guest") {
+                        const userRef = doc(db, "students", student);
+                        const userSnap = await getDoc(userRef);
+                        const userPhoto = userSnap.exists() ? userSnap.data().photo : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+                        await updateDoc(userRef, { xp: increment(100), attendanceCount: increment(1) });
+                        await setDoc(doc(db, "interactions", "shoutout"), {
+                            user: "SYSTEM",
+                            text: `✨ ${student} verified attendance! +100 XP`,
+                            avatar: userPhoto,
+                            time: Date.now()
+                        });
+                        localStorage.setItem(`att_reward_${todayISO}`, "true");
+                    }
+                } else {
+                    pill.classList.add("pulse"); pill.classList.remove("done");
+                    document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
+                    document.getElementById("att-pill-text").innerText = "Check-in";
+                    pill.href = "attendence.html";
                 }
             });
         }
 
+        loadCache();
         syncData();
     </script>
 </body>
