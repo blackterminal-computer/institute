@@ -201,7 +201,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, updateDoc, collection, getDocs, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, collection, getDocs, setDoc, getDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -218,27 +218,23 @@
 
     if(!studentID) window.location.href = "login.html";
 
-    // --- Compression Utility ---
+    // --- Compression Logic ---
     const compressImage = (file, maxWidth, maxHeight) => {
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = (event) => {
+            reader.onload = (e) => {
                 const img = new Image();
-                img.src = event.target.result;
+                img.src = e.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) {
-                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
-                    } else {
-                        if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
-                    }
+                    let width = img.width, height = img.height;
+                    if (width > height) { if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; } }
+                    else { if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; } }
                     canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                    resolve(canvas.toDataURL('image/jpeg', 0.7));
                 };
             };
         });
@@ -284,16 +280,17 @@
                 badge.style.color = d.paymentStatus === "Paid" ? "var(--success)" : "var(--danger)";
 
                 const joinDate = new Date(d.admissionDate);
-                const totalCourseDays = (parseInt(d.courseDuration) || 0) * 30;
+                const totalCourseDays = (parseInt(d.courseDuration) || 1) * 30;
                 const endDate = new Date(joinDate);
                 endDate.setDate(endDate.getDate() + totalCourseDays);
                 const daysLeft = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
                 document.getElementById("courseEndStatus").innerText = daysLeft > 0 ? `${daysLeft} days remaining` : "Term Complete";
 
-                onSnapshot(collection(db, "attendance"), (attSnap) => {
-                    let count = 0;
-                    attSnap.forEach(doc => { if(doc.data().userName === studentID) count++; });
-                    const finalTarget = totalCourseDays || 1; 
+                // --- Optimized Attendance Counter ---
+                const q = query(collection(db, "attendance"), where("userName", "==", studentID));
+                onSnapshot(q, (attSnap) => {
+                    let count = attSnap.size; // Direct size count from Firebase
+                    const finalTarget = totalCourseDays; 
                     const perc = Math.round((count / finalTarget) * 100);
                     const finalPerc = perc > 100 ? 100 : perc;
 
@@ -329,26 +326,20 @@
         let days = parseInt(document.getElementById("holidayDuration").value);
         if(!days || days < 1) return alert("Please specify valid days.");
 
-        const barWrap = document.getElementById("uploadBarWrap");
-        const bar = document.getElementById("uploadBar");
         const btn = document.getElementById("uploadBtn");
-        barWrap.style.display = "block";
-        btn.disabled = true;
+        btn.disabled = true; btn.innerText = "Compressing...";
 
-        // Compress Proof
         const compressedProof = await compressImage(file, 800, 800);
-        
         const expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
+        
         await updateDoc(doc(db, "students", studentID), { 
             waiverProof: compressedProof,
             waiverReason: `${reason} (${days} Days)`,
             waiverStatus: "Pending",
             waiverExpiry: expiry
         });
-        
-        alert("Application submitted successfully!");
-        barWrap.style.display = "none";
-        btn.disabled = false;
+        alert("Submitted!");
+        btn.disabled = false; btn.innerHTML = `<i class="ri-upload-cloud-2-line"></i> Submit Leave Proof`;
     };
 
     window.updateName = async () => {
@@ -380,6 +371,7 @@
     window.updateProfile = async () => {
         let nBio = document.getElementById("bioInput").value.trim();
         if(nBio) await updateDoc(doc(db, "students", studentID), { bio: nBio });
+        alert("Bio Updated!");
     };
 
     async function updateRank() {
@@ -394,11 +386,9 @@
     document.getElementById("file").onchange = async (e) => {
         const file = e.target.files[0];
         if(!file) return;
-        
-        // Compress Profile Photo
-        const compressedData = await compressImage(file, 400, 400);
-        document.getElementById("photo").src = compressedData;
-        await updateDoc(doc(db, "students", studentID), { photo: compressedData });
+        const compressed = await compressImage(file, 400, 400);
+        document.getElementById("photo").src = compressed;
+        await updateDoc(doc(db, "students", studentID), { photo: compressed });
     };
 
     window.downloadPremiumInvoice = (month, amt, date, duration, course) => {
