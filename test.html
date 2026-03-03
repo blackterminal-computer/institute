@@ -26,7 +26,6 @@
 
         /* --- Animations --- */
         @keyframes rotate { 100% { transform: rotate(360deg); } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         /* --- Header --- */
         .header-elite { padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
@@ -46,7 +45,7 @@
         }
         #shoutoutBubble.active { transform: translateY(0); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
 
-        /* --- XP Card WITH ROTATING ANIMATION --- */
+        /* --- XP Card --- */
         .xp-master-card { margin: 15px 20px; background: var(--card-bg); border: 1px solid var(--glass); border-radius: 35px; padding: 25px; position: relative; overflow: hidden; }
         .xp-master-card::before { 
             content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; 
@@ -87,12 +86,16 @@
         .nav-item.active { color: var(--accent); }
         .nav-item i { font-size: 26px; }
 
-        /* --- FIXED SLIDER CSS --- */
+        /* --- SMOOTH SLIDER CSS --- */
         .slider-wrap { margin: 15px 20px; }
-        .slider-inner { border-radius: 30px; overflow: hidden; border: 1px solid var(--glass); aspect-ratio: 16/9; position: relative; background: var(--card-bg); }
-        .slider-track { display: flex; transition: 0.8s cubic-bezier(0.85, 0, 0.15, 1); height: 100%; width: 100%; }
+        .slider-inner { border-radius: 30px; overflow: hidden; border: 1px solid var(--glass); aspect-ratio: 16/9; position: relative; background: #000; }
+        .slider-track { display: flex; transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1); height: 100%; width: 100%; }
         .slide { min-width: 100%; height: 100%; flex-shrink: 0; }
         .slide img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- SMOOTH MARQUEE --- */
+        .marquee-container { background: rgba(255,255,255,0.02); border-radius: 100px; padding: 10px 20px; border: 1px solid var(--glass); overflow: hidden; position: relative; }
+        #marqueeMsg { font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1px; white-space: nowrap; display: inline-block; }
     </style>
 </head>
 <body>
@@ -117,7 +120,6 @@
     </div>
 
     <div class="shout-trigger" onclick="togglePanel()"><i class="ri-history-line"></i></div>
-
     <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-fingerprint-line"></i> <span id="att-pill-text">Verify Link</span></a>
 
     <header class="header-elite">
@@ -135,8 +137,8 @@
     </header>
 
     <div style="padding: 0 20px; margin-bottom: 10px;">
-        <div style="background: rgba(255,255,255,0.02); border-radius: 100px; padding: 10px 20px; border: 1px solid var(--glass); overflow: hidden;">
-            <marquee scrollamount="5" id="marqueeMsg" style="font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1px; display: block;">SYSTEM STATUS: ONLINE // DATA SYNC IN PROGRESS // ALL NEURAL NODES ACTIVE...</marquee>
+        <div class="marquee-container">
+            <marquee scrollamount="6" id="marqueeMsg">SYSTEM STATUS: ONLINE // FETCHING ADMIN BROADCAST...</marquee>
         </div>
     </div>
 
@@ -221,16 +223,20 @@
         const student = localStorage.getItem("studentName");
         if (!student) { window.location.href = "login.html"; }
 
-        // --- Slider Logic ---
+        // --- Optimized Slider Sync ---
         let currentSlide = 0;
         let totalSlides = 0;
+        let sliderInterval;
+
         function startSlider() {
-            setInterval(() => {
+            if(sliderInterval) clearInterval(sliderInterval);
+            sliderInterval = setInterval(() => {
                 if (totalSlides > 1) {
                     currentSlide = (currentSlide + 1) % totalSlides;
-                    document.getElementById("sliderTrack").style.transform = `translateX(-${currentSlide * 100}%)`;
+                    const track = document.getElementById("sliderTrack");
+                    if(track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
                 }
-            }, 4000);
+            }, 4500);
         }
 
         window.togglePanel = () => {
@@ -287,7 +293,7 @@
         };
 
         async function initTerminal() {
-            // Identity Sync
+            // User Data Sync
             onSnapshot(doc(db, "students", student), (snap) => {
                 if(snap.exists()){
                     const d = snap.data(); const xp = d.xp || 0;
@@ -315,14 +321,20 @@
                         document.getElementById("unitMsg").innerText = "Access Granted";
                         uc.onclick = () => window.location.href = "unit-test.html";
                     }
-
                     const badge = document.getElementById("rankBadge");
                     if(xp >= 5000) { badge.innerText = "ULTRA ELITE"; badge.style.color = "var(--gold)"; }
                     else { badge.innerText = "NEURAL TRAINEE"; badge.style.color = "var(--accent)"; }
                 }
             });
 
-            // Attendance Auto-Reward
+            // Marquee Admin Sync (Fetched from content/marquee)
+            onSnapshot(doc(db, "content", "marquee"), (snap) => {
+                if(snap.exists()) {
+                    document.getElementById("marqueeMsg").innerText = snap.data().text || "SYSTEM ONLINE // NO BROADCAST";
+                }
+            });
+
+            // Attendance Check
             const today = new Date().toISOString().split('T')[0];
             onSnapshot(doc(db, "attendance", `${student}_${today}`), async (snap) => {
                 const p = document.getElementById("att-pill");
@@ -346,33 +358,26 @@
                 }
             });
 
-            // History Logs
-            const qLog = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(20));
-            onSnapshot(qLog, (snap) => {
-                const list = document.getElementById("logList"); list.innerHTML = "";
-                snap.forEach(dSnap => {
-                    const d = dSnap.data();
-                    list.innerHTML += `<div class="log-card"><img src="${d.avatar}" style="width:35px; height:35px; border-radius:10px;"><div><span style="font-size:10px; font-weight:900; color:var(--accent);">${d.user}</span><p style="font-size:12px; margin-top:3px;">${d.text}</p></div></div>`;
-                });
-            });
-
-            // Slider Fix
+            // Slider Sync & Fix
             onSnapshot(doc(db, "settings", "slider"), (snap) => {
                 if(snap.exists()){
                     const d = snap.data(); const urls = d.images ? d.images.split(",") : [];
-                    const track = document.getElementById("sliderTrack"); track.innerHTML = "";
+                    const track = document.getElementById("sliderTrack"); 
+                    track.innerHTML = "";
                     totalSlides = urls.length;
                     if(totalSlides > 0) {
                         document.getElementById("sliderRoot").style.display = "block";
                         urls.forEach(url => {
                             track.innerHTML += `<div class="slide"><img src="${url.trim()}"></div>`;
                         });
+                        currentSlide = 0;
+                        track.style.transform = `translateX(0%)`;
                         startSlider();
                     }
                 }
             });
 
-            // Global Rank Calculation
+            // Global Rank
             const qRank = await getDocs(collection(db, "students"));
             let all = []; qRank.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
             all.sort((a,b)=>b.xp-a.xp);
