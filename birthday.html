@@ -1,1 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Admin | Birthday Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.1);
+            --bday: #f472b6;
+        }
+
+        body {
+            background: var(--bg); color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0; padding: 20px;
+            background-image: radial-gradient(circle at bottom left, #1e1b4b, transparent);
+            min-height: 100vh;
+        }
+
+        .container { max-width: 800px; margin: 0 auto; }
+
+        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+        h1 { font-family: 'Orbitron'; font-size: 1.2rem; color: var(--accent); letter-spacing: 2px; }
+
+        /* Search & Stats Section */
+        .controls {
+            display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="date"] {
+            background: var(--glass); border: 1px solid var(--glass-border);
+            padding: 12px 15px; border-radius: 12px; color: white;
+            outline: none; font-size: 14px; width: 100%;
+        }
+
+        /* Student List Table */
+        .admin-card {
+            background: var(--glass); border: 1px solid var(--glass-border);
+            border-radius: 24px; overflow: hidden; backdrop-filter: blur(10px);
+        }
+
+        .student-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px 20px; border-bottom: 1px solid var(--glass-border);
+            transition: 0.3s;
+        }
+
+        .student-item:hover { background: rgba(255,255,255,0.02); }
+
+        .info { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--glass-border); }
+        .name-box h4 { font-size: 14px; margin: 0; }
+        .name-box p { font-size: 10px; opacity: 0.5; margin: 0; text-transform: uppercase; }
+
+        .action-area { display: flex; align-items: center; gap: 10px; }
+        
+        .dob-input { width: 130px !important; padding: 6px !important; font-size: 12px !important; }
+
+        .btn-update {
+            background: var(--primary); border: none; color: white;
+            padding: 8px 15px; border-radius: 10px; font-weight: 800;
+            font-size: 10px; cursor: pointer; text-transform: uppercase;
+        }
+
+        .btn-update:active { transform: scale(0.95); }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .student-item { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .action-area { width: 100%; justify-content: space-between; }
+            .dob-input { flex: 1; }
+        }
+
+        .status-badge {
+            background: rgba(244, 114, 182, 0.1); color: var(--bday);
+            padding: 2px 8px; border-radius: 5px; font-size: 9px; font-weight: 900;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1><i class="ri-settings-4-fill"></i> ELITE ADMIN</h1>
+            <a href="index.html" style="color: var(--accent); text-decoration: none; font-size: 12px; font-weight: 800;">CLOSE X</a>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="searchBar" placeholder="Search student name..." onkeyup="filterStudents()">
+            <div style="background: var(--glass); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                <span id="studentCount" style="color: var(--accent); font-weight: 900;">0</span> <small style="font-size: 9px; opacity: 0.5;">MEMBERS</small>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div style="padding: 15px 20px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between;">
+                <span style="font-size: 10px; font-weight: 900; opacity: 0.5;">STUDENT IDENTITY</span>
+                <span style="font-size: 10px; font-weight: 900; opacity: 0.5;">SET BIRTHDAY (MM-DD)</span>
+            </div>
+            <div id="studentList">
+                <div style="padding: 40px; text-align: center; opacity: 0.5;">Syncing terminal database...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Your Firebase Config (Same as Dashboard)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fetch and Display Students
+        async function loadStudents() {
+            const listContainer = document.getElementById("studentList");
+            
+            onSnapshot(collection(db, "students"), (snap) => {
+                listContainer.innerHTML = "";
+                document.getElementById("studentCount").innerText = snap.size;
+
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const studentId = docSnap.id;
+                    const dob = data.dob || ""; // Current DOB in DB
+
+                    const item = document.createElement("div");
+                    item.className = "student-item";
+                    item.setAttribute("data-name", studentId.toLowerCase());
+                    
+                    item.innerHTML = `
+                        <div class="info">
+                            <img src="${data.photo || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + studentId}" class="avatar">
+                            <div class="name-box">
+                                <h4>${studentId}</h4>
+                                <p>${dob ? '<span class="status-badge">🎂 ' + dob + '</span>' : 'No Date Set'}</p>
+                            </div>
+                        </div>
+                        <div class="action-area">
+                            <input type="text" class="dob-input" id="input-${studentId}" placeholder="MM-DD" value="${dob}">
+                            <button class="btn-update" onclick="updateBday('${studentId}')">SAVE</button>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                });
+            });
+        }
+
+        // Global function to update DOB
+        window.updateBday = async (id) => {
+            const val = document.getElementById(`input-${id}`).value.trim();
+            
+            // Validation: Format MM-DD hona chahiye
+            const regex = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
+            if(!regex.test(val) && val !== "") {
+                alert("Please use MM-DD format (Example: 03-25)");
+                return;
+            }
+
+            try {
+                const ref = doc(db, "students", id);
+                await updateDoc(ref, { dob: val });
+                alert("Birthday updated successfully!");
+            } catch (e) {
+                alert("Error updating: " + e.message);
+            }
+        };
+
+        // Search Filter
+        window.filterStudents = () => {
+            const term = document.getElementById("searchBar").value.toLowerCase();
+            const items = document.querySelectorAll(".student-item");
+            items.forEach(item => {
+                const name = item.getAttribute("data-name");
+                item.style.display = name.includes(term) ? "flex" : "none";
+            });
+        };
+
+        loadStudents();
+    </script>
+</body>
+</html>
 
