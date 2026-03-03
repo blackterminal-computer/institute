@@ -7,6 +7,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
@@ -21,18 +22,29 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
         .stats-bar { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 20px; }
-        .timer-pill { background: rgba(34, 197, 94, 0.1); color: var(--success); padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(34, 197, 94, 0.2); font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 14px; }
-        .card { width: 100%; max-width: 600px; background: var(--glass); border: 1px solid var(--glass-border); padding: 30px 20px; border-radius: 30px; backdrop-filter: blur(20px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .timer-pill { background: rgba(34, 197, 94, 0.1); color: var(--success); padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(34, 197, 94, 0.2); font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 14px; transition: 0.3s; }
+        .timer-warning { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); animation: pulse 1s infinite; }
+        
+        .card { width: 100%; max-width: 600px; background: var(--glass); border: 1px solid var(--glass-border); padding: 30px 20px; border-radius: 30px; backdrop-filter: blur(20px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden; }
         #q-num { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
         #q { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 25px; }
+        
         .options-grid { display: grid; gap: 12px; }
-        .opt { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 18px; border-radius: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; font-weight: 600; }
-        .opt.correct { background: rgba(34, 197, 94, 0.1) !important; border-color: var(--success) !important; color: var(--success); }
-        .opt.wrong { background: rgba(239, 68, 68, 0.1) !important; border-color: var(--danger) !important; color: var(--danger); }
+        .opt { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 18px; border-radius: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; font-weight: 600; position: relative; }
+        .opt:active { transform: scale(0.98); }
+        .opt.correct { background: rgba(34, 197, 94, 0.15) !important; border-color: var(--success) !important; color: var(--success); box-shadow: 0 0 15px rgba(34, 197, 94, 0.1); }
+        .opt.wrong { background: rgba(239, 68, 68, 0.15) !important; border-color: var(--danger) !important; color: var(--danger); animation: shake 0.4s; }
         .opt.lock { pointer-events: none; opacity: 0.7; }
+        
         .footer { width: 100%; max-width: 600px; margin-top: 25px; display: flex; justify-content: flex-end; }
-        button { padding: 16px 35px; border: none; border-radius: 20px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 800; cursor: pointer; }
+        button { padding: 16px 35px; border: none; border-radius: 20px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4); }
+        button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Animations */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
         .l-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .l-table td { padding: 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
         .rank-badge { width: 24px; height: 24px; background: var(--primary); display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11px; font-weight: 800; }
@@ -57,18 +69,21 @@
     </div>
 
     <div class="card" id="lockBox" style="display:none; text-align: center;">
-        <i class="ri-shield-check-fill" style="font-size: 50px; color: var(--success);"></i>
-        <h2 style="margin-top:10px">Exam Finished!</h2>
-        <p style="opacity: 0.7; font-size: 14px; margin-bottom: 20px;">+100 XP added to your Global Profile.</p>
-        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 20px; border: 1px solid var(--glass-border);">
-            <p style="font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: 1px;">NEXT ATTEMPT IN</p>
-            <div id="count" style="font-size: 32px; font-weight: 800; color: #fff;">00h 00m 00s</div>
+        <i class="ri-shield-check-fill" style="font-size: 60px; color: var(--success); filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.4));"></i>
+        <h2 style="margin-top:15px; font-weight: 800;">Exam Finished!</h2>
+        <p id="score-text" style="opacity: 0.9; font-size: 16px; margin: 10px 0; color: var(--accent); font-weight: 800;"></p>
+        <p style="opacity: 0.7; font-size: 13px; margin-bottom: 25px;">XP has been synced to your terminal profile.</p>
+        
+        <div style="background: rgba(255,255,255,0.02); padding: 25px; border-radius: 25px; border: 1px solid var(--glass-border);">
+            <p style="font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: 1.5px;">NEXT ATTEMPT UNLOCKS IN</p>
+            <div id="count" style="font-size: 32px; font-weight: 800; color: #fff; margin-top: 5px;">00h 00m 00s</div>
         </div>
-        <div style="margin-top: 25px; text-align: left;">
-            <p style="font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 10px;">GLOBAL STANDINGS</p>
+
+        <div style="margin-top: 30px; text-align: left;">
+            <p style="font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 12px; letter-spacing: 1px;">GLOBAL STANDINGS</p>
             <table class="l-table"><tbody id="leaderboard-body"></tbody></table>
         </div>
-        <button onclick="window.location.href='index.html'" style="margin-top: 25px; width: 100%; background: var(--glass); border: 1px solid var(--glass-border);">Back to Home</button>
+        <button onclick="window.location.href='index.html'" style="margin-top: 30px; width: 100%; background: var(--glass); border: 1px solid var(--glass-border); box-shadow: none;">Back to Home</button>
     </div>
 
     <script type="module">
@@ -103,7 +118,6 @@
         let student = localStorage.getItem("studentName") || "Guest";
         let questions = [], index = 0, score = 0, locked = false, time = 20, timerInterval;
 
-        // --- CHECK LOCK ON LOAD ---
         const todayStr = new Date().toDateString();
         if (localStorage.getItem("daily_done_" + student) === todayStr) {
             lockScreen();
@@ -120,6 +134,8 @@
         function showQ() {
             if (index >= questions.length) { finish(); return; }
             locked = false; time = 20;
+            const timerBox = document.getElementById("timer-box");
+            timerBox.classList.remove("timer-warning");
             document.getElementById("nextBtn").disabled = true;
             const q = questions[index];
             document.getElementById("q-num").innerText = `Question ${index + 1} of ${questions.length}`;
@@ -128,7 +144,7 @@
             const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
             document.getElementById("options").innerHTML = opts.map(o => `
                 <div class="opt" onclick="window.selectOpt('${o.id}', this)">
-                    <span style="color:var(--accent); margin-right:12px;">${o.id}.</span> ${o.v}
+                    <span style="color:var(--accent); margin-right:12px; font-family:'Orbitron'; font-size:12px;">${o.id}</span> ${o.v}
                 </div>
             `).join('');
         }
@@ -138,11 +154,13 @@
             locked = true;
             document.getElementById("nextBtn").disabled = false;
             const correct = questions[index].correct;
-            if (v === correct) { el.classList.add("correct"); score++; }
-            else { 
+            if (v === correct) { 
+                el.classList.add("correct"); 
+                score++; 
+            } else { 
                 el.classList.add("wrong");
                 document.querySelectorAll(".opt").forEach(o => {
-                    if(o.innerText.includes(correct + ".")) o.classList.add("correct");
+                    if(o.innerText.trim().startsWith(correct)) o.classList.add("correct");
                 });
             }
             document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
@@ -154,25 +172,30 @@
             timerInterval = setInterval(() => {
                 time--;
                 document.getElementById("timer").innerText = time + "s";
+                if(time <= 5) document.getElementById("timer-box").classList.add("timer-warning");
+                
                 if (time <= 0 && !locked) { 
                     locked = true; 
                     document.getElementById("nextBtn").disabled = false;
                     const correct = questions[index].correct;
                     document.querySelectorAll(".opt").forEach(o => {
-                        if(o.innerText.includes(correct + ".")) o.classList.add("correct");
+                        if(o.innerText.trim().startsWith(correct)) o.classList.add("correct");
                         o.classList.add("lock");
                     });
                 }
             }, 1000);
         }
 
-        // --- FINAL SYNC LOGIC ---
         async function finish() {
             clearInterval(timerInterval);
-            // 1. Immediately Set Lock in LocalStorage
             localStorage.setItem("daily_done_" + student, new Date().toDateString());
             
-            // 2. Update XP in Firebase
+            // Score Calculation
+            const finalPercent = (score / questions.length) * 100;
+            if(finalPercent >= 80) {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            }
+
             if(student !== "Guest") {
                 try {
                     await updateDoc(doc(db, "students", student), {
@@ -186,6 +209,7 @@
         async function lockScreen() {
             document.getElementById("examBox").style.display = "none";
             document.getElementById("lockBox").style.display = "block";
+            document.getElementById("score-text").innerText = `You scored: ${score}/${questions.length}`;
             
             const countdown = () => {
                 const now = new Date();
@@ -206,7 +230,9 @@
             document.getElementById("leaderboard-body").innerHTML = p.slice(0, 5).map((u, i) => `
                 <tr>
                     <td style="width:40px"><span class="rank-badge ${i<3?'top-rank':''}">${i+1}</span></td>
-                    <td style="color:${u.n === student ? 'var(--accent)' : '#fff'}">${u.n} ${u.n === student ? '<b>(YOU)</b>' : ''}</td>
+                    <td style="color:${u.n === student ? 'var(--accent)' : '#fff'}; font-weight:${u.n === student ? '800':'400'}">
+                        ${u.n} ${u.n === student ? '<span style="font-size:8px; background:var(--accent); color:#000; padding:1px 4px; border-radius:4px; margin-left:5px;">YOU</span>' : ''}
+                    </td>
                     <td style="text-align:right; font-weight:800; color:var(--success)">${u.x} XP</td>
                 </tr>
             `).join('');
