@@ -25,7 +25,7 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
 
-        /* --- NEW: Interaction UI Styles --- */
+        /* --- Interaction UI Styles --- */
         #shoutoutBubble {
             position: fixed; top: 20px; right: 20px; z-index: 11000;
             max-width: 260px; background: rgba(15, 23, 42, 0.95);
@@ -55,7 +55,7 @@
         .react-btn:active { transform: scale(0.9); }
         .shout-trigger { position: fixed; bottom: 100px; left: 20px; z-index: 9998; background: var(--accent); color: #000; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); cursor: pointer; }
 
-        /* --- Optimized Slider Styling --- */
+        /* --- Slider Styling --- */
         .slider-section { width: 100%; margin: 10px 0 15px 0; overflow: hidden; }
         .label-tag { padding-left: 20px; font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1.2px; margin-bottom: 10px; text-transform: uppercase; }
         .carousel-container { position: relative; width: 100%; overflow: hidden; }
@@ -70,7 +70,6 @@
         .shimmer { background: linear-gradient(90deg, #0f172a 25%, #1e293b 50%, #0f172a 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* Rest of Original CSS */
         #adminAlert { position: fixed; top: 20px; left: 20px; right: 20px; background: rgba(99, 102, 241, 0.2); border: 1px solid var(--primary); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 15px; border-radius: 18px; z-index: 10001; display: none; animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideDown { from { transform: translateY(-120%); } to { transform: translateY(0); } }
         .float-att { position: fixed !important; top: 100px; right: 15px; z-index: 9999; background: rgba(255, 255, 255, 0.05) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 14px; border-radius: 50px; display: flex; align-items: center; gap: 6px; text-decoration: none; color: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.3s; }
@@ -111,6 +110,10 @@
         .badge-gold { background: rgba(250, 204, 21, 0.2); color: #facc15; border: 0.5px solid #facc15; }
         .badge-silver { background: rgba(203, 213, 225, 0.2); color: #cbd5e1; border: 0.5px solid #cbd5e1; }
         .badge-bronze { background: rgba(205, 127, 50, 0.2); color: #cd7f32; border: 0.5px solid #cd7f32; }
+
+        .war-card { border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; overflow: hidden; }
+        .war-card:active { transform: scale(0.95); }
+        .war-icon-bg { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; font-size: 20px; }
     </style>
 </head>
 <body>
@@ -207,6 +210,20 @@
         <span id="fee-badge" style="font-size: 9px; font-weight: 900; padding: 5px 10px; border-radius: 8px; text-transform: uppercase;">---</span>
     </div>
 
+    <p class="label-tag">Terminal War Zone</p>
+    <div class="grid" style="margin-bottom: 20px;">
+        <div class="card war-card" onclick="triggerChallenge()" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2);">
+            <div class="war-icon-bg" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="ri-sword-fill"></i></div>
+            <h4 style="font-size: 13px;">Challenge</h4>
+            <p style="font-size: 9px; opacity: 0.6;">Steal XP (Costs 50)</p>
+        </div>
+        <div class="card war-card" onclick="buyFocusWall()" style="background: rgba(34, 197, 94, 0.05); border-color: rgba(34, 197, 94, 0.2);">
+            <div class="war-icon-bg" style="background: rgba(34, 197, 94, 0.1); color: var(--success);"><i id="shieldIcon" class="ri-shield-flash-line"></i></div>
+            <h4 style="font-size: 13px;" id="wallTitle">Focus Wall</h4>
+            <p id="wallStatus" style="font-size: 9px; opacity: 0.6;">Inactive</p>
+        </div>
+    </div>
+
     <div class="grid">
         <div class="tournament-wrapper">
             <a href="tournament.html" class="tournament-card">
@@ -237,7 +254,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -258,7 +275,6 @@
         let currentSlide = 0;
         let totalSlides = 0;
 
-        // --- INTERACTION LOGIC ---
         window.togglePanel = () => {
             const panel = document.getElementById('activityPanel');
             panel.classList.toggle('open');
@@ -298,7 +314,43 @@
             } catch (e) { console.error(e); }
         };
 
-        // --- ORIGINAL SYNC FUNCTIONS ---
+        window.triggerChallenge = async () => {
+            if(student === "Guest") return;
+            const uRef = doc(db, "students", student);
+            const uSnap = await getDoc(uRef);
+            const uData = uSnap.data();
+            if(uData.xp < 50) return alert("Knowledge Challenge costs 50 XP!");
+            const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(10));
+            const snap = await getDocs(q);
+            let targets = [];
+            snap.forEach(d => { if(d.id !== student) targets.push(d.id); });
+            const targetId = targets[Math.floor(Math.random() * targets.length)];
+            const tRef = doc(db, "students", targetId);
+            const tSnap = await getDoc(tRef);
+            const tData = tSnap.data();
+            if(tData.focusWall > 0) {
+                await updateDoc(tRef, { focusWall: increment(-1) });
+                await updateDoc(uRef, { xp: increment(-50) });
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "SECURITY", text: `${targetId} ki Focus Wall ne ${student} ka attack rok diya!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now() });
+                alert(`${targetId}'s Shield absorbed the attack! You lost 50 XP.`);
+            } else {
+                const stolen = Math.floor(Math.random() * 41) + 40;
+                await updateDoc(uRef, { xp: increment(stolen - 50) });
+                await updateDoc(tRef, { xp: increment(-stolen) });
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `🔥 ${student} ne RAID mein ${targetId} se ${stolen} XP chura liye!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
+                alert(`Raid Success! Stole ${stolen} XP from ${targetId}.`);
+            }
+        };
+
+        window.buyFocusWall = async () => {
+            if(student === "Guest") return;
+            const uRef = doc(db, "students", student);
+            const uSnap = await getDoc(uRef);
+            if(uSnap.data().xp < 150) return alert("Focus Wall costs 150 XP!");
+            await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
+            alert("Focus Wall Deployed! Next attack will be blocked.");
+        };
+
         async function syncSlider() {
             onSnapshot(doc(db, "settings", "slider"), (snap) => {
                 if(snap.exists()) {
@@ -316,7 +368,7 @@
                             const redirectLink = (links[i] && links[i].trim() !== "") ? links[i].trim() : "javascript:void(0)";
                             const slide = document.createElement('a');
                             slide.href = redirectLink; slide.className = 'banner-card';
-                            slide.innerHTML = `<div class="banner-inner shimmer"><img class="slide-img" src="${url.trim()}" onload="this.parentElement.classList.remove('shimmer')"><div class="banner-text-bar"><h3 style="color:white; font-size: 14px; font-weight: 800;">${titles[i] ? titles[i].trim() : 'Elite Terminal'}</h3><span style="background:var(--accent); color:#000; padding:3px 8px; border-radius:6px; font-size:9px; font-weight:900; text-transform:uppercase;">FEATURED</span></div></div>`;
+                            slide.innerHTML = `<div class="banner-inner shimmer"><img class="slide-img" src="${url.trim()}" onload="this.parentElement.classList.remove('shimmer')"><div class="banner-text-bar"><h3 style="color:white; font-size: 14px; font-weight: 800;">${titles[i] ? titles[i].trim() : 'Elite Terminal'}</h3><span style="background:var(--accent); color:#000; padding:3px 8px; border-radius:66px; font-size:9px; font-weight:900; text-transform:uppercase;">FEATURED</span></div></div>`;
                             track.appendChild(slide);
                             const dot = document.createElement('div');
                             dot.className = `dot ${i === 0 ? 'active' : ''}`;
@@ -378,7 +430,21 @@
         async function syncData() {
             syncSlider();
 
-            // Bubble Listener
+            // --- 12 AM CLEANUP LOGIC ---
+            const lastCleanup = localStorage.getItem("last_cleanup_date");
+            const todayDate = new Date().toDateString();
+            if (lastCleanup !== todayDate) {
+                const yesterdayLimit = new Date().setHours(0, 0, 0, 0); 
+                const qCleanup = query(collection(db, "shoutouts"));
+                const cleanupSnap = await getDocs(qCleanup);
+                cleanupSnap.forEach(async (docSnap) => {
+                    if (docSnap.data().time < yesterdayLimit) {
+                        try { await deleteDoc(doc(db, "shoutouts", docSnap.id)); } catch (e) { console.log(e); }
+                    }
+                });
+                localStorage.setItem("last_cleanup_date", todayDate);
+            }
+
             let bTimer;
             onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
                 if(snap.exists()){
@@ -392,7 +458,6 @@
                 }
             });
 
-            // History Listener
             const qH = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(15));
             onSnapshot(qH, (snap) => {
                 const list = document.getElementById("logList");
@@ -428,6 +493,10 @@
                     document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
                     userXP = d.xp || 0; updateXPUI(userXP);
+                    const walls = d.focusWall || 0;
+                    document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers Active` : "Inactive";
+                    document.getElementById("wallTitle").style.color = walls > 0 ? "var(--success)" : "white";
+                    document.getElementById("shieldIcon").className = walls > 0 ? "ri-shield-check-fill" : "ri-shield-flash-line";
                     const fBadge = document.getElementById("fee-badge");
                     fBadge.innerText = d.paymentStatus === "Paid" ? "Completed" : "Pending";
                     fBadge.style.color = d.paymentStatus === "Paid" ? "#22c55e" : "#ef4444";
@@ -445,15 +514,36 @@
             const r = all.findIndex(s=>s.id === student) + 1;
             if(r > 0) document.getElementById("instRank").innerText = "#" + r;
 
+            // --- Real-time Attendance & XP Sync Logic ---
             const todayISO = new Date().toISOString().split('T')[0];
-            const attSnap = await getDoc(doc(db, "attendance", `${student}_${todayISO}`));
-            if (attSnap.exists()) {
+            onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
                 const pill = document.getElementById("att-pill");
-                pill.classList.remove("pulse"); pill.classList.add("done");
-                document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
-                document.getElementById("att-pill-text").innerText = "Present";
-                pill.href = "javascript:void(0)";
-            }
+                if (attSnap.exists()) {
+                    pill.classList.remove("pulse"); pill.classList.add("done");
+                    document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
+                    document.getElementById("att-pill-text").innerText = "Present";
+                    pill.href = "javascript:void(0)"; 
+                    const hasRewarded = localStorage.getItem(`att_reward_${todayISO}`);
+                    if (!hasRewarded && student !== "Guest") {
+                        const userRef = doc(db, "students", student);
+                        const userSnap = await getDoc(userRef);
+                        const userPhoto = userSnap.exists() ? userSnap.data().photo : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+                        await updateDoc(userRef, { xp: increment(100), attendanceCount: increment(1) });
+                        await setDoc(doc(db, "interactions", "shoutout"), {
+                            user: "SUCCESS",
+                            text: `✨ ${student} marked attendance & earned 100 XP!`,
+                            avatar: userPhoto,
+                            time: Date.now()
+                        });
+                        localStorage.setItem(`att_reward_${todayISO}`, "true");
+                    }
+                } else {
+                    pill.classList.add("pulse"); pill.classList.remove("done");
+                    document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
+                    document.getElementById("att-pill-text").innerText = "Attendance";
+                    pill.href = "attendence.html";
+                }
+            });
         }
 
         loadCache();
