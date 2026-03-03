@@ -24,10 +24,11 @@
                 radial-gradient(circle at 90% 90%, rgba(0, 242, 255, 0.1), transparent 40%);
         }
 
-        /* --- Global Animations --- */
+        /* --- Animations --- */
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        /* --- Header & Identity --- */
+        /* --- Header --- */
         .header-elite { padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
         .profile-hex { position: relative; width: 70px; height: 70px; padding: 3px; background: linear-gradient(45deg, var(--primary), var(--accent)); border-radius: 22px; transform: rotate(-5deg); transition: 0.5s; }
         .profile-hex img { width: 100%; height: 100%; object-fit: cover; border-radius: 19px; border: 3px solid var(--bg); }
@@ -35,7 +36,7 @@
         .user-info h2 { font-family: 'Syncopate', sans-serif; font-size: 18px; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
         .rank-pill { font-size: 9px; font-weight: 800; background: rgba(0, 242, 255, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(0, 242, 255, 0.3); display: inline-block; }
 
-        /* --- Modern Notification --- */
+        /* --- Notification --- */
         #shoutoutBubble {
             position: fixed; top: 20px; left: 15px; right: 15px; z-index: 10000;
             background: rgba(10, 15, 25, 0.9); border: 1px solid var(--glass);
@@ -45,7 +46,18 @@
         }
         #shoutoutBubble.active { transform: translateY(0); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
 
-        /* --- Activity Panel (From v2) --- */
+        /* --- XP Card WITH ROTATING ANIMATION --- */
+        .xp-master-card { margin: 15px 20px; background: var(--card-bg); border: 1px solid var(--glass); border-radius: 35px; padding: 25px; position: relative; overflow: hidden; }
+        .xp-master-card::before { 
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; 
+            background: conic-gradient(transparent, transparent, var(--accent), transparent); 
+            animation: rotate 6s linear infinite; opacity: 0.1; 
+        }
+        
+        .progress-container { position: relative; height: 12px; background: rgba(255,255,255,0.03); border-radius: 100px; margin: 20px 0; border: 1px solid var(--glass); z-index: 1; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 100px; width: 0%; box-shadow: 0 0 15px var(--accent); transition: 1.5s cubic-bezier(0.17, 0.85, 0.32, 1.27); }
+
+        /* --- Activity Panel --- */
         #activityPanel {
             position: fixed; bottom: -100%; left: 0; right: 0; height: 70vh;
             background: #05070a; border-top: 2px solid var(--accent);
@@ -56,14 +68,9 @@
         #overlay-blur { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; z-index: 15000; backdrop-filter: blur(5px); }
         .log-card { display: flex; gap: 12px; padding: 15px; background: var(--card-bg); border-radius: 20px; margin-bottom: 12px; border: 1px solid var(--glass); }
 
-        /* --- XP Master Card --- */
-        .xp-master-card { margin: 15px 20px; background: var(--card-bg); border: 1px solid var(--glass); border-radius: 35px; padding: 25px; position: relative; overflow: hidden; }
-        .progress-container { position: relative; height: 12px; background: rgba(255,255,255,0.03); border-radius: 100px; margin: 20px 0; border: 1px solid var(--glass); }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 100px; width: 0%; box-shadow: 0 0 15px var(--accent); transition: 1.5s cubic-bezier(0.17, 0.85, 0.32, 1.27); }
-
-        /* --- Interactive Bento --- */
+        /* --- Bento --- */
         .bento-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
-        .bento-box { background: var(--card-bg); border: 1px solid var(--glass); border-radius: 30px; padding: 20px; position: relative; transition: 0.3s; overflow: hidden; text-decoration: none; color: #fff; }
+        .bento-box { background: var(--card-bg); border: 1px solid var(--glass); border-radius: 30px; padding: 20px; position: relative; transition: 0.3s; overflow: hidden; }
         .bento-box:active { transform: scale(0.95); }
         .bento-box i { font-size: 28px; color: var(--accent); }
         .bento-box.wide { grid-column: span 2; }
@@ -110,7 +117,7 @@
 
     <div class="shout-trigger" onclick="togglePanel()"><i class="ri-history-line"></i></div>
 
-    <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-fingerprint-line"></i> <span id="att-pill-text">Attendance</span></a>
+    <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-fingerprint-line"></i> <span id="att-pill-text">Verify Link</span></a>
 
     <header class="header-elite">
         <div class="user-meta" style="display: flex; align-items: center; gap: 20px;">
@@ -152,7 +159,7 @@
             </div>
         </div>
         <div class="progress-container"><div class="progress-bar" id="xpBar"></div></div>
-        <div style="display:flex; justify-content:space-between; font-size:9px; font-weight:800; opacity:0.5;">
+        <div style="display:flex; justify-content:space-between; font-size:9px; font-weight:800; opacity:0.5; position:relative; z-index:1;">
             <span id="instRank">GLOBAL RANK #--</span>
             <span id="xpTip">NEXT MILESTONE: 1000 XP</span>
         </div>
@@ -182,14 +189,15 @@
         <div class="bento-box wide" style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <i class="ri-bank-card-line" style="font-size: 24px;"></i>
-                <div><h3 style="font-size: 14px;">Monthly Fee</h3><p id="fee-month-text" style="font-size: 10px; opacity: 0.5;">Checking status...</p></div>
+                <div><h3 style="font-size: 14px;">Status Protocol</h3><p id="fee-text" style="font-size: 10px; opacity: 0.5;">Monthly Syncing...</p></div>
             </div>
-            <span id="fee-badge" style="font-size: 9px; font-weight: 900; padding: 5px 10px; border-radius: 8px; text-transform: uppercase;">---</span>
+            <span id="fee-badge" style="font-size: 9px; font-weight: 900; padding: 5px 10px; border-radius: 8px;">---</span>
         </div>
 
         <a href="daily-test.html" class="bento-box"><i class="ri-terminal-window-line"></i><h3 style="margin-top:10px;">EXAMS</h3><p>Core Protocols</p></a>
         <a href="battle.html" class="bento-box"><i class="ri-pulse-line" style="color: var(--danger);"></i><h3 style="margin-top:10px;">ARENA</h3><p>PvP Sync</p></a>
-        <div id="unitCard" class="bento-box wide gold" style="opacity: 0.4;"><i id="unitIcon" class="ri-lock-line"></i><h3 style="margin-top:10px;">UNIT TEST PROTOCOL</h3><p id="unitMsg">Required: 5000 XP</p></div>
+        <div id="unitCard" class="bento-box gold" style="opacity: 0.4;"><i id="unitIcon" class="ri-lock-line"></i><h3 style="margin-top:10px;">UNIT</h3><p id="unitMsg">5000 XP Lock</p></div>
+        <a href="leaderboard.html" class="bento-box"><i class="ri-medal-2-fill" style="color: var(--gold);"></i><h3 style="margin-top:10px;">RANKS</h3><p>Top Elites</p></a>
     </div>
 
     <nav class="nav-dock">
@@ -220,7 +228,7 @@
             if(student === "Guest") return;
             const uRef = doc(db, "students", student);
             const uSnap = await getDoc(uRef);
-            if(uSnap.data().xp < 50) return alert("RAID costs 50 XP!");
+            if(uSnap.data().xp < 50) return alert("Need 50 XP!");
             const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(15));
             const snap = await getDocs(q);
             let ts = []; snap.forEach(d => { if(d.id !== student) ts.push(d.id); });
@@ -231,14 +239,14 @@
             if(tSnap.data().focusWall > 0) {
                 await updateDoc(tRef, { focusWall: increment(-1) });
                 await updateDoc(uRef, { xp: increment(-50) });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: "SECURITY", text: `${target} ne attack block kar diya!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now() });
-                alert("RAID FAILED! " + target + " was shielded.");
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "SYSTEM", text: `${target}'s Shield Blocked ${student}!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Shield", time: Date.now() });
+                alert("RAID BLOCKED!");
             } else {
                 const stolen = Math.floor(Math.random() * 41) + 40;
                 await updateDoc(uRef, { xp: increment(stolen - 50) });
                 await updateDoc(tRef, { xp: increment(-stolen) });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `🔥 ${student} ne ${target} se ${stolen} XP chura liye!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
-                alert(`STOLE ${stolen} XP FROM ${target}!`);
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `🔥 ${student} looted ${stolen} XP from ${target}!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
+                alert(`SUCCESS! Looeted ${stolen} XP.`);
             }
         };
 
@@ -247,7 +255,7 @@
             const snap = await getDoc(uRef);
             if(snap.data().xp < 150) return alert("Shield Costs 150 XP!");
             await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
-            alert("SHIELD DEPLOYED!");
+            alert("SHIELD ACTIVATED!");
         };
 
         window.sendSignal = async () => {
@@ -255,7 +263,7 @@
             if(!msg || student === "Guest") return;
             const uRef = doc(db, "students", student);
             const snap = await getDoc(uRef);
-            if(snap.data().xp < 50) return alert("Need 50 XP!");
+            if(snap.data().xp < 50) return alert("Need 50 XP to Shout!");
             const data = { user: student, text: msg, avatar: snap.data().photo || "", time: Date.now() };
             await setDoc(doc(db, "interactions", "shoutout"), data);
             await addDoc(collection(db, "shoutouts"), data);
@@ -281,7 +289,7 @@
                     document.getElementById("shieldIcon").style.color = walls > 0 ? "var(--success)" : "#52525b";
 
                     const fBadge = document.getElementById("fee-badge");
-                    fBadge.innerText = d.paymentStatus === "Paid" ? "Completed" : "Pending";
+                    fBadge.innerText = d.paymentStatus === "Paid" ? "Cleared" : "Pending";
                     fBadge.style.color = d.paymentStatus === "Paid" ? "var(--success)" : "var(--danger)";
                     fBadge.style.background = d.paymentStatus === "Paid" ? "rgba(0,255,163,0.1)" : "rgba(255,45,85,0.1)";
 
@@ -289,7 +297,7 @@
                         const uc = document.getElementById("unitCard");
                         uc.style.opacity = "1";
                         document.getElementById("unitIcon").className = "ri-shield-user-fill";
-                        document.getElementById("unitMsg").innerText = "Access Unlocked";
+                        document.getElementById("unitMsg").innerText = "Access Granted";
                         uc.onclick = () => window.location.href = "unit-test.html";
                     }
 
@@ -299,7 +307,7 @@
                 }
             });
 
-            // Attendance Auto-XP Reward
+            // Attendance Auto-Reward
             const today = new Date().toISOString().split('T')[0];
             onSnapshot(doc(db, "attendance", `${student}_${today}`), async (snap) => {
                 const p = document.getElementById("att-pill");
@@ -310,12 +318,11 @@
                     if(!localStorage.getItem(`reward_${today}`)) {
                         await updateDoc(doc(db, "students", student), { xp: increment(100) });
                         localStorage.setItem(`reward_${today}`, "true");
-                        alert("Attendance Verified! +100 XP");
                     }
                 }
             });
 
-            // Word of the Day Sync
+            // Word of the Day
             onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
                 if (snap.exists()) {
                     document.getElementById('wordDisplaySection').style.display = 'block';
@@ -324,7 +331,7 @@
                 }
             });
 
-            // Global Activity Logs
+            // History Logs
             const qLog = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(20));
             onSnapshot(qLog, (snap) => {
                 const list = document.getElementById("logList"); list.innerHTML = "";
@@ -334,7 +341,19 @@
                 });
             });
 
-            // Comms Notification
+            // Slider
+            onSnapshot(doc(db, "settings", "slider"), (snap) => {
+                if(snap.exists()){
+                    const d = snap.data(); const urls = d.images ? d.images.split(",") : [];
+                    const track = document.getElementById("sliderTrack"); track.innerHTML = "";
+                    if(urls.length > 0) {
+                        document.getElementById("sliderRoot").style.display = "block";
+                        urls.forEach(url => track.innerHTML += `<div class="slide"><img src="${url.trim()}"></div>`);
+                    }
+                }
+            });
+
+            // Comms
             onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
                 if(snap.exists()){
                     const d = snap.data(); const b = document.getElementById("shoutoutBubble");
@@ -345,13 +364,6 @@
                     setTimeout(() => b.classList.remove("active"), 5000);
                 }
             });
-
-            // Rank Calc
-            const qS = await getDocs(collection(db, "students"));
-            let all = []; qS.forEach(s => all.push({id:s.id, xp:s.data().xp||0}));
-            all.sort((a,b)=>b.xp-a.xp);
-            const r = all.findIndex(s=>s.id === student) + 1;
-            if(r > 0) document.getElementById("instRank").innerText = "GLOBAL RANK #" + r;
         }
 
         initTerminal();
