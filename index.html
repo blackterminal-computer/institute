@@ -496,7 +496,7 @@
                 }
             });
 
-            // --- ATTENDANCE BUTTON SYNC & CLICK HANDLER ---
+            // --- ATTENDANCE + XP + PROFILE SYNC LOGIC ---
             const todayISO = new Date().toISOString().split('T')[0];
             const attDocId = `${student}_${todayISO}`;
             const pill = document.getElementById("att-pill");
@@ -506,18 +506,32 @@
                     pill.classList.remove("pulse"); pill.classList.add("done");
                     document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
                     document.getElementById("att-pill-text").innerText = "Present";
-                    pill.onclick = null; // Already marked
+                    pill.onclick = () => alert("Today's attendance already marked!");
                 } else {
                     pill.onclick = async () => {
                         try {
+                            // 1. Mark attendance for profile count
                             await setDoc(doc(db, "attendance", attDocId), {
-                                userName: student, // CRITICAL: This links to profile count
+                                userName: student,
                                 date: todayISO,
                                 timestamp: Date.now(),
                                 status: "Present"
                             });
-                            alert("Attendance Marked! +1 Day added to profile.");
-                        } catch (e) { console.error("Attendance Error:", e); }
+
+                            // 2. Reward 100 XP
+                            const userRef = doc(db, "students", student);
+                            await updateDoc(userRef, { xp: increment(100) });
+
+                            // 3. System Announcement
+                            await setDoc(doc(db, "interactions", "shoutout"), {
+                                user: "SYSTEM",
+                                text: `🎊 ${student} marked present and earned 100 XP!`,
+                                avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Win",
+                                time: Date.now()
+                            });
+
+                            alert("Attendance Marked! +100 XP Received 🚀");
+                        } catch (e) { console.error("Error:", e); }
                     };
                 }
             });
