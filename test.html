@@ -3,187 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Terminal | Elite Dashboard v3</title>
+    <title>TERMINAL v3 | Hyper Elite</title>
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
-            --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
-            --gold: #facc15; --success: #22c55e; --danger: #ef4444;
-            --neon-glow: 0 0 15px rgba(6, 182, 212, 0.4);
+            --primary: #6366f1; --accent: #00f2ff; --bg: #05070a;
+            --card-bg: rgba(15, 23, 42, 0.4); --glass: rgba(255, 255, 255, 0.03);
+            --gold: #ffb800; --danger: #ff2d55; --success: #00ffa3;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: #f8fafc; padding-bottom: 110px; overflow-x: hidden; background-image: radial-gradient(circle at top right, #1e1b4b, transparent); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: var(--bg); color: #fff; padding-bottom: 120px; overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.15), transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(0, 242, 255, 0.1), transparent 40%);
+        }
 
-        /* Popups & Panels */
-        #shoutoutBubble { position: fixed; top: 20px; right: 20px; z-index: 11000; max-width: 260px; background: rgba(15, 23, 42, 0.95); border: 1.5px solid var(--accent); border-radius: 18px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: var(--neon-glow); backdrop-filter: blur(15px); transform: translateX(150%); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        #shoutoutBubble.active { transform: translateX(0); }
-        #activityPanel { position: fixed; bottom: -100%; left: 0; right: 0; height: 75vh; background: #0b0f1a; border-top: 3px solid var(--accent); border-radius: 30px 30px 0 0; z-index: 20000; transition: 0.5s ease; padding: 25px 20px; overflow-y: auto; }
-        #activityPanel.open { bottom: 0; }
-        #overlay-blur { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; z-index: 15000; backdrop-filter: blur(4px); }
+        /* --- Header & Profile --- */
+        .header-elite { padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .profile-hex { position: relative; width: 70px; height: 70px; padding: 3px; background: linear-gradient(45deg, var(--primary), var(--accent)); border-radius: 22px; transform: rotate(-5deg); transition: 0.5s; }
+        .profile-hex img { width: 100%; height: 100%; object-fit: cover; border-radius: 19px; border: 3px solid var(--bg); }
+        .user-info h2 { font-family: 'Syncopate', sans-serif; font-size: 18px; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
+        .rank-pill { font-size: 9px; font-weight: 800; background: rgba(0, 242, 255, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(0, 242, 255, 0.3); display: inline-block; }
+
+        /* --- Notification Bubble --- */
+        #shoutoutBubble {
+            position: fixed; top: 20px; left: 15px; right: 15px; z-index: 10000;
+            background: rgba(10, 15, 25, 0.9); border: 1px solid var(--glass);
+            border-radius: 24px; padding: 15px; display: flex; align-items: center; gap: 15px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            transform: translateY(-150%); transition: 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        #shoutoutBubble.active { transform: translateY(0); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+
+        /* --- XP System --- */
+        .xp-master-card { margin: 15px 20px; background: var(--card-bg); border: 1px solid var(--glass); border-radius: 35px; padding: 25px; position: relative; overflow: hidden; }
+        .progress-container { position: relative; height: 12px; background: rgba(255,255,255,0.03); border-radius: 100px; margin: 20px 0; border: 1px solid var(--glass); }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 100px; width: 0%; box-shadow: 0 0 15px var(--accent); transition: 1.5s cubic-bezier(0.17, 0.85, 0.32, 1.27); }
+
+        /* --- Bento Grid --- */
+        .bento-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
+        .bento-box { background: var(--card-bg); border: 1px solid var(--glass); border-radius: 30px; padding: 20px; position: relative; transition: 0.3s; overflow: hidden; text-decoration: none; color: white; }
+        .bento-box:active { background: rgba(255,255,255,0.05); transform: translateY(4px); }
+        .bento-box i { font-size: 28px; color: var(--accent); }
+        .bento-box.wide { grid-column: span 2; }
+        .bento-box.gold { border-color: rgba(255, 184, 0, 0.3); background: linear-gradient(135deg, rgba(255, 184, 0, 0.05), transparent); }
+
+        /* --- UI Elements --- */
+        .float-att { position: fixed; top: 110px; right: 20px; z-index: 999; background: #fff; color: #000; padding: 10px 20px; border-radius: 100px; font-weight: 800; font-size: 11px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); text-decoration: none; }
+        .float-att.done { background: var(--success); }
+        .nav-dock { position: fixed; bottom: 20px; left: 15px; right: 15px; background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(25px); border: 1px solid var(--glass); border-radius: 35px; display: flex; justify-content: space-around; padding: 15px; z-index: 9999; }
+        .nav-item { color: #52525b; text-decoration: none; position: relative; }
+        .nav-item.active { color: var(--accent); }
+        .nav-item i { font-size: 26px; }
 
         /* Slider */
-        .slider-section { width: 100%; margin: 10px 0 15px 0; overflow: hidden; }
-        .carousel-track { display: flex; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; }
-        .banner-card { min-width: 100%; padding: 0 20px; box-sizing: border-box; }
-        .banner-inner { border-radius: 24px; overflow: hidden; position: relative; aspect-ratio: 16/8; border: 1px solid var(--glass-border); background: #0f172a; }
-        .slide-img { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Grid & Cards */
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 20px; }
-        .card { background: var(--glass); border: 1px solid var(--glass-border); padding: 20px; border-radius: 24px; text-decoration: none; color: white; transition: 0.3s; position: relative; }
-        .card.locked { opacity: 0.5; filter: grayscale(1); }
-        
-        /* Nav & Elements */
-        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); border-radius: 22px; display: flex; justify-content: space-around; padding: 12px; border: 1px solid var(--glass-border); z-index: 10000; }
-        .nav-link { color: #64748b; text-decoration: none; text-align: center; font-size: 10px; font-weight: 700; }
-        .nav-link.active { color: var(--accent); }
-        .nav-link i { font-size: 22px; display: block; margin-bottom: 2px; }
-
-        /* Utility */
-        .label-tag { padding-left: 20px; font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1.2px; margin: 15px 0 10px; text-transform: uppercase; }
-        .xp-card { margin: 10px 20px; background: var(--glass); border: 1px solid var(--glass-border); padding: 18px; border-radius: 24px; }
-        .progress-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; transition: 1s; }
-        .shout-trigger { position: fixed; bottom: 100px; left: 20px; z-index: 9998; background: var(--accent); color: #000; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); }
-        .float-att { position: fixed; top: 100px; right: 15px; z-index: 9999; background: rgba(255,255,255,0.05); padding: 8px 14px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 6px; text-decoration: none; color: white; font-size: 10px; font-weight: 800; }
+        .slider-wrap { margin-top: 10px; padding: 0 20px; }
+        .slider-inner { border-radius: 35px; overflow: hidden; border: 1px solid var(--glass); aspect-ratio: 16/9; position: relative; }
+        .slider-track { display: flex; transition: 0.8s cubic-bezier(0.85, 0, 0.15, 1); height: 100%; }
+        .slide { min-width: 100%; height: 100%; }
+        .slide img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
 
     <div id="shoutoutBubble">
-        <img src="" id="bAvatar" class="b-av" style="width:35px; height:35px; border-radius:10px;">
-        <div><span style="font-size:8px; color:var(--accent); font-weight:900;" id="bUser">SYSTEM</span><p style="font-size:11px; font-weight:600;" id="bMsg">Syncing...</p></div>
-    </div>
-
-    <div id="overlay-blur" onclick="togglePanel()"></div>
-    <div id="activityPanel">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; sticky: top:0; background:#0b0f1a; z-index:10;">
-            <h3 style="font-family:'Orbitron'; font-size:14px; color:var(--accent);">SIGNAL_ARCHIVE</h3>
-            <i class="ri-close-line" onclick="togglePanel()" style="font-size:24px; color:var(--danger);"></i>
+        <div id="bAvatarCont" style="padding: 2px; background: var(--accent); border-radius: 15px;">
+            <img src="" id="bAvatar" style="width: 45px; height: 45px; border-radius: 13px; display: block; object-fit: cover;">
         </div>
-        <div id="logList"></div>
+        <div style="flex:1">
+            <p id="bUser" style="font-size: 10px; color: var(--accent); font-weight: 800; text-transform: uppercase;"></p>
+            <p id="bMsg" style="font-size: 14px; font-weight: 600; color: #fff;"></p>
+        </div>
     </div>
 
-    <div class="shout-trigger" onclick="togglePanel()"><i class="ri-history-line"></i></div>
-    <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-fingerprint-fill"></i> <span id="att-pill-text">Attendance</span></a>
+    <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-fingerprint-line"></i> <span id="att-pill-text">Verify Link</span></a>
 
-    <header style="padding: 25px 20px 10px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); overflow: hidden;"><img id="uAvatar" src="" style="width:100%; height:100%;"></div>
-            <div>
-                <div id="rankBadge" style="font-size:8px; font-weight:900; background:rgba(6,182,212,0.1); color:var(--accent); padding:2px 8px; border-radius:4px; text-transform:uppercase;">Trainee</div>
-                <h2 id="uName" style="font-size: 18px; font-weight: 800;">Loading...</h2>
+    <header class="header-elite">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div class="profile-hex"><img id="uAvatar" src=""></div>
+            <div class="user-info">
+                <div id="rankBadge" class="rank-pill">SYNCING...</div>
+                <h2 id="uName">Loading...</h2>
             </div>
         </div>
-        <div id="sCount" style="background:rgba(255,100,0,0.1); color:#ff6400; padding:8px 15px; border-radius:15px; font-weight:800; font-size:12px;">🔥 0</div>
+        <div id="sCount" style="text-align: right;">
+            <p style="font-size: 10px; opacity: 0.5; font-weight: 800;">STREAK</p>
+            <h3 id="streakVal" style="color: #ff6400; font-family: 'Syncopate';">🔥 0</h3>
+        </div>
     </header>
 
-    <div id="wordDisplaySection" style="margin: 20px; display: none;">
-        <p class="label-tag">DAILY_LEARNING_LOG</p>
-        <div class="card" style="border-left: 4px solid var(--accent);">
-            <h2 id="wordText" style="font-family:'Orbitron'; font-size:16px;"></h2>
-            <p id="wordDesc" style="font-size:12px; opacity:0.7; margin-top:5px;"></p>
+    <div class="xp-master-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <p id="uLevelBadge" style="font-size: 10px; font-weight: 800; color: var(--accent);">PROTOCOL 01</p>
+                <h3 id="uNameXP" style="font-size: 22px; font-weight: 800;">User</h3>
+            </div>
+            <div style="text-align: right;">
+                <h3 id="xpVal" style="font-family: 'Syncopate'; font-size: 20px;">0</h3>
+                <p style="font-size: 9px; opacity: 0.4;">TOTAL XP</p>
+            </div>
         </div>
+        <div class="progress-container"><div class="progress-bar" id="xpBar"></div></div>
     </div>
 
-    <div class="xp-card" style="margin-bottom:15px; background:rgba(6,182,212,0.05);">
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="shoutInput" placeholder="Broadcast signal (50 XP)" style="background:transparent; border:none; color:white; flex:1; outline:none; font-size:12px;">
-            <button onclick="sendSignal()" style="background:var(--accent); border:none; padding:6px 15px; border-radius:10px; font-weight:900; font-size:10px; color:black;">SEND</button>
+    <div class="slider-wrap" id="sliderRoot" style="display: none;">
+        <div class="slider-inner"><div class="slider-track" id="sliderTrack"></div></div>
+    </div>
+
+    <p style="padding: 25px 20px 10px; font-family: 'Syncopate'; font-size: 10px; color: var(--accent); opacity: 0.6;">Protocol_Menu</p>
+    <div class="bento-grid">
+        <div class="bento-box" onclick="triggerChallenge()"><i class="ri-sword-fill" style="color: var(--danger);"></i><h3 style="margin-top:10px;">RAID</h3><p>Extract XP</p></div>
+        <div class="bento-box" onclick="buyFocusWall()"><i id="shieldIcon" class="ri-shield-flash-fill"></i><h3 style="margin-top:10px;">SHIELD</h3><p id="wallStatus">Offline</p></div>
+        
+        <div class="bento-box wide" style="display:flex; gap:15px; align-items:center;">
+            <input type="text" id="shoutInput" placeholder="Broadcast signal..." style="background:none; border:none; color:#fff; flex:1; font-weight:600; outline:none;">
+            <button onclick="sendSignal()" style="background:var(--accent); color:#000; border:none; padding:10px 20px; border-radius:15px; font-weight:900; font-size:10px;">SEND</button>
         </div>
+
+        <a href="daily-test.html" class="bento-box"><i class="ri-terminal-window-line"></i><h3 style="margin-top:10px;">EXAMS</h3></a>
+        <a href="leaderboard.html" class="bento-box gold"><i class="ri-medal-2-fill" style="color: var(--gold);"></i><h3 style="margin-top:10px;">RANKS</h3><p id="instRank">#--</p></a>
     </div>
 
-    <div class="slider-section" id="sliderRoot" style="display:none;">
-        <p class="label-tag">Elite Spotlight</p>
-        <div class="carousel-container"><div class="carousel-track" id="sliderTrack"></div></div>
-        <div class="dots-container" id="sliderDots"></div>
-    </div>
-
-    <div class="xp-card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div><span id="uLevelBadge" style="background:var(--primary); color:white; font-size:9px; padding:2px 8px; border-radius:4px; font-weight:900;">LEVEL 1</span><h3 id="uNameXP" style="margin-top:4px;">User</h3></div>
-            <span id="xpVal" style="color:var(--accent); font-weight:800;">0 XP</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" id="xpBar"></div></div>
-    </div>
-
-    <p class="label-tag">War Zone</p>
-    <div class="grid">
-        <div class="card" onclick="triggerChallenge()" style="background:rgba(239,68,68,0.05);"><i class="ri-sword-fill" style="color:var(--danger); font-size:24px;"></i><h4>RAID</h4><p>Steal XP</p></div>
-        <div class="card" onclick="buyFocusWall()" style="background:rgba(34,197,94,0.05);"><i id="shieldIcon" class="ri-shield-flash-line" style="color:var(--success); font-size:24px;"></i><h4 id="wallTitle">SHIELD</h4><p id="wallStatus">Inactive</p></div>
-    </div>
-
-    <p class="label-tag">Commands</p>
-    <div class="grid">
-        <a href="daily-test.html" class="card"><i class="ri-edit-box-line"></i><h3>Exams</h3></a>
-        <a href="leaderboard.html" class="card"><i class="ri-medal-fill" style="color:var(--gold)"></i><h3>Ranks</h3></a>
-        <a href="courses.html" class="card"><i class="ri-mac-line"></i><h3>Courses</h3></a>
-        <div class="card locked" id="unitCard" onclick="handleUnitTest()"><i class="ri-lock-2-fill" id="unitIcon"></i><h3 id="unitTitle">Unit Test</h3><p id="unitMsg">Lock: 5000 XP</p></div>
-    </div>
-
-    <nav class="bottom-nav">
-        <a href="index.html" class="nav-link active"><i class="ri-home-5-fill"></i><span>Home</span></a>
-        <a href="daily-test.html" class="nav-link"><i class="ri-edit-line"></i><span>Exams</span></a>
-        <a href="chat.html" class="nav-link"><i class="ri-chat-3-line"></i><span>Chat</span></a>
-        <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
+    <nav class="nav-dock">
+        <a href="index.html" class="nav-item active"><i class="ri-home-smile-2-fill"></i></a>
+        <a href="daily-test.html" class="nav-item"><i class="ri-command-line"></i></a>
+        <a href="chat.html" class="nav-item"><i class="ri-message-3-line"></i></a>
+        <a href="profile.html" class="nav-item"><i class="ri-user-settings-line"></i></a>
     </nav>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, addDoc, query, orderBy, limit, increment, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI", authDomain: "black-terminal-f2c91.firebaseapp.com", projectId: "black-terminal-f2c91", storageBucket: "black-terminal-f2c91.appspot.com", messagingSenderId: "552489994197", appId: "1:552489994197:web:7662331264c334ffbadf5c" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // Global functions for HTML access
-        window.togglePanel = () => {
-            const p = document.getElementById('activityPanel');
-            p.classList.toggle('open');
-            document.getElementById('overlay-blur').style.display = p.classList.contains('open') ? 'block' : 'none';
-        };
-
-        window.sendSignal = async () => {
-            const input = document.getElementById("shoutInput");
-            if(!input.value.trim() || student === "Guest") return;
-            const uRef = doc(db, "students", student);
-            const snap = await getDoc(uRef);
-            if(snap.data().xp < 50) return alert("Low XP!");
-            const data = { user: student, text: input.value, avatar: snap.data().photo || "", time: Date.now(), likes: 0 };
-            await setDoc(doc(db, "interactions", "shoutout"), data);
-            await addDoc(collection(db, "shoutouts"), data);
-            await updateDoc(uRef, { xp: increment(-50) });
-            input.value = "";
-        };
-
-        window.sendReaction = async (id) => {
-            await updateDoc(doc(db, "shoutouts", id), { likes: increment(1) });
-        };
-
+        // --- Core Logic ---
         window.triggerChallenge = async () => {
             const uRef = doc(db, "students", student);
-            const snap = await getDoc(uRef);
-            if(snap.data().xp < 50) return alert("Need 50 XP!");
+            const uSnap = await getDoc(uRef);
+            if(uSnap.data().xp < 50) return alert("Low XP!");
+            
             const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(10));
-            const targets = await getDocs(q);
-            let pool = []; targets.forEach(d => { if(d.id !== student) pool.push(d.id); });
+            const snap = await getDocs(q);
+            let pool = []; snap.forEach(d => { if(d.id !== student) pool.push(d.id); });
             const target = pool[Math.floor(Math.random() * pool.length)];
             const tRef = doc(db, "students", target);
             const tSnap = await getDoc(tRef);
+
             if(tSnap.data().focusWall > 0) {
                 await updateDoc(tRef, { focusWall: increment(-1) });
                 await updateDoc(uRef, { xp: increment(-50) });
-                alert("Shield Blocked!");
+                alert(`BLOCKED! ${target} had a shield.`);
             } else {
                 const stolen = Math.floor(Math.random() * 50) + 30;
                 await updateDoc(uRef, { xp: increment(stolen - 50) });
                 await updateDoc(tRef, { xp: increment(-stolen) });
-                alert(`Stole ${stolen} XP!`);
+                await setDoc(doc(db, "interactions", "raid_news"), { attacker: student, target, stolen, time: Date.now() });
+                alert(`STOLE ${stolen} XP from ${target}!`);
             }
         };
 
@@ -192,100 +176,74 @@
             const snap = await getDoc(uRef);
             if(snap.data().xp < 150) return alert("Need 150 XP!");
             await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
-            alert("Shield Active!");
+            alert("SHIELD ACTIVE!");
         };
 
-        // UI Update Logic
+        window.sendSignal = async () => {
+            const val = document.getElementById("shoutInput").value;
+            if(!val.trim()) return;
+            const uRef = doc(db, "students", student);
+            const snap = await getDoc(uRef);
+            if(snap.data().xp < 50) return alert("Need 50 XP!");
+            const data = { user: student, text: val, avatar: snap.data().photo || "", time: Date.now() };
+            await setDoc(doc(db, "interactions", "shoutout"), data);
+            await updateDoc(uRef, { xp: increment(-50) });
+            document.getElementById("shoutInput").value = "";
+        };
+
+        // --- Realtime Sync ---
         function startSync() {
-            // Slider
-            onSnapshot(doc(db, "settings", "slider"), (s) => {
-                if(!s.exists()) return;
-                const urls = s.data().images.split(',');
-                const track = document.getElementById("sliderTrack");
-                const dots = document.getElementById("sliderDots");
-                track.innerHTML = ""; dots.innerHTML = "";
-                urls.forEach((u, i) => {
-                    track.innerHTML += `<div class="banner-card"><div class="banner-inner"><img src="${u.trim()}" class="slide-img"></div></div>`;
-                    dots.innerHTML += `<div class="dot ${i===0?'active':''}"></div>`;
-                });
-                document.getElementById("sliderRoot").style.display = "block";
-            });
-
-            // Signal Archive
-            onSnapshot(query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(15)), (s) => {
-                const list = document.getElementById("logList"); list.innerHTML = "";
-                s.forEach(d => {
-                    const data = d.data();
-                    list.innerHTML += `<div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px; margin-bottom:10px; display:flex; gap:12px;">
-                        <img src="${data.avatar}" style="width:30px; height:30px; border-radius:8px;">
-                        <div style="flex:1">
-                            <p style="font-size:10px; color:var(--accent); font-weight:800;">${data.user}</p>
-                            <p style="font-size:12px;">${data.text}</p>
-                            <div onclick="sendReaction('${d.id}')" style="margin-top:8px; display:inline-block; font-size:10px; background:rgba(0,242,255,0.1); padding:4px 10px; border-radius:6px;">🔥 ${data.likes || 0}</div>
-                        </div>
-                    </div>`;
-                });
-            });
-
-            // Daily Word
-            onSnapshot(doc(db, "content", "dailyWord"), (s) => {
-                if(s.exists()){
-                    document.getElementById("wordDisplaySection").style.display = "block";
-                    document.getElementById("wordText").innerText = s.data().word;
-                    document.getElementById("wordDesc").innerText = s.data().description;
-                }
-            });
-
-            // User Profile
+            // User Data
             onSnapshot(doc(db, "students", student), (s) => {
                 if(s.exists()){
                     const d = s.data(); const xp = d.xp || 0;
                     document.getElementById("uName").innerText = student;
                     document.getElementById("uNameXP").innerText = student;
+                    document.getElementById("streakVal").innerText = "🔥 " + (d.streak || 0);
+                    document.getElementById("xpVal").innerText = xp;
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
-                    document.getElementById("xpVal").innerText = xp + " XP";
                     document.getElementById("xpBar").style.width = (xp % 1000) / 10 + "%";
-                    document.getElementById("uLevelBadge").innerText = "LEVEL " + (Math.floor(xp/1000)+1);
-                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0);
-                    
-                    const walls = d.focusWall || 0;
-                    document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers` : "Inactive";
-                    
-                    if(xp >= 5000) {
-                        const uc = document.getElementById("unitCard");
-                        uc.classList.remove("locked");
-                        document.getElementById("unitIcon").className = "ri-shield-flash-line";
-                        document.getElementById("unitMsg").innerText = "Unlocked";
-                    }
+                    document.getElementById("uLevelBadge").innerText = "PROTOCOL " + (Math.floor(xp/1000)+1);
+                    document.getElementById("wallStatus").innerText = (d.focusWall || 0) > 0 ? d.focusWall + " Active" : "Offline";
+                    document.getElementById("shieldIcon").style.color = (d.focusWall || 0) > 0 ? "var(--success)" : "#52525b";
                 }
             });
-            
-            // Shoutout Bubble
-            let timer;
+
+            // Shoutouts
             onSnapshot(doc(db, "interactions", "shoutout"), (s) => {
                 if(s.exists()){
-                    const d = s.data();
-                    const b = document.getElementById("shoutoutBubble");
+                    const d = s.data(); const b = document.getElementById("shoutoutBubble");
                     document.getElementById("bUser").innerText = d.user;
                     document.getElementById("bMsg").innerText = d.text;
-                    document.getElementById("bAvatar").src = d.avatar;
+                    document.getElementById("bAvatar").src = d.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.user}`;
                     b.classList.add("active");
-                    clearTimeout(timer); timer = setTimeout(() => b.classList.remove("active"), 5000);
+                    setTimeout(() => b.classList.remove("active"), 5000);
+                }
+            });
+
+            // Raid Alerts
+            onSnapshot(doc(db, "interactions", "raid_news"), (s) => {
+                if(s.exists()){
+                    const d = s.data(); const b = document.getElementById("shoutoutBubble");
+                    document.getElementById("bUser").innerText = "BATTLE ALERT";
+                    document.getElementById("bMsg").innerText = `${d.attacker} raided ${d.target} [-${d.stolen} XP]`;
+                    document.getElementById("bAvatar").src = "https://cdn-icons-png.flaticon.com/512/8030/8030132.png";
+                    b.classList.add("active");
+                    setTimeout(() => b.classList.remove("active"), 6000);
+                }
+            });
+
+            // Slider
+            onSnapshot(doc(db, "settings", "slider"), (s) => {
+                if(s.exists()){
+                    const urls = s.data().images.split(",");
+                    const track = document.getElementById("sliderTrack");
+                    track.innerHTML = "";
+                    urls.forEach(u => track.innerHTML += `<div class="slide"><img src="${u.trim()}"></div>`);
+                    document.getElementById("sliderRoot").style.display = "block";
                 }
             });
         }
-
-        // Auto Slider
-        let cur = 0;
-        setInterval(() => {
-            const track = document.getElementById("sliderTrack");
-            const dots = document.querySelectorAll(".dot");
-            if(track && track.children.length > 1) {
-                cur = (cur + 1) % track.children.length;
-                track.style.transform = `translateX(-${cur * 100}%)`;
-                dots.forEach((d, i) => d.classList.toggle('active', i === cur));
-            }
-        }, 4000);
 
         startSync();
     </script>
