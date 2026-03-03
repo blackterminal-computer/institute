@@ -535,10 +535,23 @@
                     const hasRewarded = localStorage.getItem(`att_reward_${todayISO}`);
                     if (!hasRewarded && student !== "Guest") {
                         const userRef = doc(db, "students", student);
+                        const userSnap = await getDoc(userRef);
+                        const userData = userSnap.data();
+
+                        // 1. Update Database
                         await updateDoc(userRef, {
                             xp: increment(100),
                             attendanceCount: increment(1)
                         });
+
+                        // 2. TRIGGER SYSTEM BUBBLE (With Profile Pic)
+                        await setDoc(doc(db, "interactions", "shoutout"), {
+                            user: "SYSTEM",
+                            text: `✨ ${student} earned 100 XP for Today's Attendance!`,
+                            avatar: userData.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`,
+                            time: Date.now()
+                        });
+
                         localStorage.setItem(`att_reward_${todayISO}`, "true");
                     }
                 } else {
