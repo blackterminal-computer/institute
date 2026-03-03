@@ -25,6 +25,9 @@
                 radial-gradient(circle at 90% 90%, rgba(0, 242, 255, 0.1), transparent 40%);
         }
 
+        /* --- Animations --- */
+        @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
         /* --- Header --- */
         .header-elite { padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
         .profile-hex { position: relative; width: 65px; height: 65px; padding: 3px; background: linear-gradient(45deg, var(--primary), var(--accent)); border-radius: 20px; transform: rotate(-5deg); transition: 0.3s; }
@@ -33,7 +36,7 @@
         .user-info h2 { font-family: 'Syncopate', sans-serif; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
         .rank-pill { font-size: 8px; font-weight: 800; background: rgba(0, 242, 255, 0.1); color: var(--accent); padding: 4px 10px; border-radius: 100px; border: 1px solid rgba(0, 242, 255, 0.3); display: inline-block; }
 
-        /* --- Shoutout Notification --- */
+        /* --- Notification Pop --- */
         #shoutoutBubble {
             position: fixed; top: 20px; left: 15px; right: 15px; z-index: 10000;
             background: rgba(10, 15, 25, 0.9); border: 1px solid var(--accent);
@@ -42,6 +45,16 @@
             box-shadow: var(--neon-glow);
         }
         #shoutoutBubble.active { transform: translateY(0); }
+
+        /* --- Signal Archive Panel --- */
+        #archivePanel {
+            position: fixed; bottom: -100%; left: 0; right: 0; height: 70vh;
+            background: #0b0f1a; border-top: 2px solid var(--accent);
+            border-radius: 30px 30px 0 0; z-index: 20000;
+            transition: 0.5s ease; padding: 25px 20px; overflow-y: auto;
+        }
+        #archivePanel.open { bottom: 0; }
+        .log-card { background: var(--glass); border-radius: 20px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
 
         /* --- XP Master Card --- */
         .xp-master-card { margin: 15px 20px; background: var(--card-bg); border: 1px solid var(--glass); border-radius: 35px; padding: 25px; position: relative; overflow: hidden; }
@@ -54,28 +67,22 @@
         /* --- Bento Grid --- */
         .bento-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 20px; }
         .bento-box { background: var(--card-bg); border: 1px solid var(--glass); border-radius: 28px; padding: 18px; position: relative; transition: 0.3s; text-decoration: none; color: #fff; }
-        .bento-box:active { transform: scale(0.96); background: rgba(255,255,255,0.05); }
+        .bento-box:active { transform: scale(0.96); }
         .bento-box i { font-size: 24px; color: var(--accent); display: block; margin-bottom: 8px; }
-        .bento-box h3 { font-size: 14px; font-weight: 700; }
-        .bento-box p { font-size: 9px; opacity: 0.5; font-weight: 600; text-transform: uppercase; }
         .bento-box.wide { grid-column: span 2; }
-        .bento-box.gold { border-color: rgba(255, 184, 0, 0.3); }
+
+        /* --- Marquee (Smooth) --- */
+        .marquee-box { margin: 0 20px 15px; background: rgba(255,255,255,0.02); border-radius: 100px; padding: 10px 20px; border: 1px solid var(--glass); overflow: hidden; white-space: nowrap; }
+        .marquee-content { display: inline-block; animation: scroll 15s linear infinite; font-size: 9px; font-weight: 800; color: var(--accent); letter-spacing: 1px; }
 
         /* --- Floating Action --- */
-        .float-att { position: fixed; top: 110px; right: 20px; z-index: 999; background: #fff; color: #000; padding: 8px 16px; border-radius: 100px; font-weight: 800; font-size: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: 0.3s; }
+        .float-att { position: fixed; top: 110px; right: 20px; z-index: 999; background: #fff; color: #000; padding: 8px 16px; border-radius: 100px; font-weight: 800; font-size: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         .float-att.done { background: var(--success); }
+        .archive-trigger { position: fixed; bottom: 100px; left: 20px; z-index: 9998; background: var(--accent); color: #000; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); }
 
-        /* --- Nav Dock --- */
         .nav-dock { position: fixed; bottom: 20px; left: 15px; right: 15px; background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(20px); border: 1px solid var(--glass); border-radius: 30px; display: flex; justify-content: space-around; padding: 12px; z-index: 9999; }
-        .nav-item { color: #52525b; text-decoration: none; transition: 0.3s; font-size: 22px; }
+        .nav-item { color: #52525b; text-decoration: none; font-size: 22px; }
         .nav-item.active { color: var(--accent); }
-
-        /* --- Slider --- */
-        .slider-wrap { padding: 0 20px; margin-bottom: 20px; }
-        .slider-inner { border-radius: 30px; overflow: hidden; border: 1px solid var(--glass); aspect-ratio: 16/8; position: relative; }
-        .slider-track { display: flex; transition: 0.6s ease-in-out; height: 100%; }
-        .slide { min-width: 100%; height: 100%; }
-        .slide img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -88,16 +95,24 @@
         </div>
     </div>
 
-    <a href="attendence.html" id="att-pill" class="float-att">
-        <i class="ri-fingerprint-fill"></i> <span id="att-pill-text">Verify Link</span>
-    </a>
+    <div id="archivePanel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="font-family:'Syncopate'; font-size:12px; color:var(--accent);">SIGNAL_ARCHIVE</h3>
+            <i class="ri-close-circle-fill" onclick="toggleArchive()" style="font-size:24px; color:var(--danger);"></i>
+        </div>
+        <div id="logList"></div>
+    </div>
+
+    <div class="archive-trigger" onclick="toggleArchive()"><i class="ri-history-line"></i></div>
+
+    <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-fingerprint-fill"></i> <span id="att-pill-text">Verify Link</span></a>
 
     <header class="header-elite">
         <div style="display: flex; align-items: center; gap: 15px;">
             <div class="profile-hex"><img id="uAvatar" src=""></div>
             <div class="user-info">
                 <div id="rankBadge" class="rank-pill">SYNCING...</div>
-                <h2 id="uName">Loading</h2>
+                <h2 id="uName">Elite</h2>
             </div>
         </div>
         <div id="sCount" style="text-align: right;">
@@ -106,29 +121,32 @@
         </div>
     </header>
 
-    <div style="padding: 0 20px; margin-bottom: 10px;">
-        <div style="background: rgba(255,255,255,0.02); border-radius: 100px; padding: 8px 18px; border: 1px solid var(--glass);">
-            <marquee scrollamount="5" id="marqueeMsg" style="font-size: 9px; font-weight: 800; color: var(--accent);">CONNECTING TO TERMINAL NODES...</marquee>
+    <div class="marquee-box">
+        <div class="marquee-content" id="marqueeMsg">SYSTEM STATUS: ONLINE // WAITING FOR TERMINAL SYNC...</div>
+    </div>
+
+    <div id="dailyWordBox" style="margin: 0 20px 15px; display: none;">
+        <div class="bento-box wide" style="border-left: 4px solid var(--accent);">
+            <p style="color: var(--accent); font-size: 9px; font-weight: 800; margin-bottom: 5px;">DAILY_LEARNING_LOG</p>
+            <h3 id="wordTitle" style="font-family: 'Syncopate'; letter-spacing: 1px;">-</h3>
+            <p id="wordDesc" style="opacity: 0.8; text-transform: none; margin-top: 5px; font-size: 11px; line-height: 1.4;"></p>
         </div>
     </div>
 
     <div class="xp-master-card">
         <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-            <div>
-                <p id="uLevelBadge" style="font-size: 9px; font-weight: 800; color: var(--accent);">LEVEL 01</p>
-                <h3 id="uNameXP" style="font-size: 20px; font-weight: 800;">User</h3>
-            </div>
-            <div style="text-align: right;">
-                <h3 id="xpVal" style="font-family: 'Syncopate'; font-size: 18px;">0</h3>
-                <p style="font-size: 8px; opacity: 0.4;">TOTAL XP</p>
-            </div>
+            <div><p id="uLevelBadge" style="font-size: 9px; font-weight: 800; color: var(--accent);">LEVEL 01</p><h3 id="uNameXP" style="font-size: 20px; font-weight: 800;">User</h3></div>
+            <div style="text-align: right;"><h3 id="xpVal" style="font-family: 'Syncopate'; font-size: 18px;">0</h3><p style="font-size: 8px; opacity: 0.4;">TOTAL XP</p></div>
         </div>
         <div class="progress-container"><div class="progress-bar" id="xpBar"></div></div>
-        <p id="xpTip" style="font-size: 8px; font-weight: 800; opacity: 0.5;">NEXT GOAL: 1000 XP</p>
     </div>
 
-    <div class="slider-wrap" id="sliderRoot" style="display: none;">
-        <div class="slider-inner"><div class="slider-track" id="sliderTrack"></div></div>
+    <div style="margin: 0 20px 20px; padding: 15px; background: var(--card-bg); border-radius: 24px; border: 1px solid var(--glass); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="width: 35px; height: 35px; background: rgba(0, 242, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i class="ri-bank-card-line" style="color: var(--accent);"></i></div>
+            <div><h4 style="font-size: 12px; font-weight: 700;">Monthly Fee</h4><p style="font-size: 9px; opacity: 0.5;">Terminal Status</p></div>
+        </div>
+        <span id="feeBadge" style="font-size: 9px; font-weight: 900; padding: 5px 12px; border-radius: 8px; text-transform: uppercase;">Checking...</span>
     </div>
 
     <div class="bento-grid">
@@ -144,21 +162,11 @@
             <button onclick="sendSignal()" style="background:var(--accent); color:#000; border:none; padding:8px 15px; border-radius:12px; font-weight:900; font-size:9px;">SEND</button>
         </div>
 
-        <div class="bento-box" onclick="triggerChallenge()">
-            <i class="ri-sword-fill" style="color: var(--danger);"></i>
-            <h3>RAID</h3>
-            <p>Extract XP</p>
-        </div>
-        <div class="bento-box" onclick="buyFocusWall()">
-            <i id="shieldIcon" class="ri-shield-flash-fill"></i>
-            <h3>SHIELD</h3>
-            <p id="wallStatus">Inactive</p>
-        </div>
+        <div class="bento-box" onclick="triggerChallenge()"><i class="ri-sword-fill" style="color: var(--danger);"></i><h3>RAID</h3><p>Extract XP</p></div>
+        <div class="bento-box" onclick="buyFocusWall()"><i id="shieldIcon" class="ri-shield-flash-fill"></i><h3>SHIELD</h3><p id="wallStatus">Inactive</p></div>
 
         <a href="daily-test.html" class="bento-box"><i class="ri-edit-box-line"></i><h3>EXAMS</h3><p>Daily Tests</p></a>
-        <a href="battle.html" class="bento-box"><i class="ri-pulse-line" style="color:var(--danger)"></i><h3>ARENA</h3><p>PvP Sync</p></a>
-        <a href="leaderboard.html" class="bento-box gold"><i class="ri-medal-fill" style="color:var(--gold)"></i><h3>RANKS</h3><p id="instRank">#-- Global</p></a>
-        <div id="unitCard" class="bento-box" style="opacity: 0.3;"><i id="unitIcon" class="ri-lock-line"></i><h3>UNIT</h3><p id="unitMsg">Locked</p></div>
+        <a href="leaderboard.html" class="bento-box gold"><i class="ri-medal-fill" style="color:var(--gold);"></i><h3>RANKS</h3><p id="instRank">#-- Global</p></a>
     </div>
 
     <nav class="nav-dock">
@@ -173,66 +181,33 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Configuration
         const firebaseConfig = { apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI", authDomain: "black-terminal-f2c91.firebaseapp.com", projectId: "black-terminal-f2c91", storageBucket: "black-terminal-f2c91.appspot.com", messagingSenderId: "552489994197", appId: "1:552489994197:web:7662331264c334ffbadf5c" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const student = localStorage.getItem("studentName") || "Guest";
 
-        let currentSlide = 0, totalSlides = 0;
+        window.toggleArchive = () => document.getElementById("archivePanel").classList.toggle("open");
 
-        // Features
         window.sendSignal = async () => {
             const input = document.getElementById("shoutInput");
-            const msg = input.value.trim();
-            if(!msg || student === "Guest") return;
+            if(!input.value.trim() || student === "Guest") return;
             const uRef = doc(db, "students", student);
             const snap = await getDoc(uRef);
             if(snap.data().xp >= 50) {
-                await addDoc(collection(db, "shoutouts"), { user: student, text: msg, avatar: snap.data().photo || "", time: Date.now() });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: student, text: msg, avatar: snap.data().photo || "", time: Date.now() });
+                const data = { user: student, text: input.value, avatar: snap.data().photo || "", time: Date.now(), likes: 0 };
+                await setDoc(doc(db, "interactions", "shoutout"), data);
+                await addDoc(collection(db, "shoutouts"), data);
                 await updateDoc(uRef, { xp: increment(-50) });
                 input.value = "";
             } else alert("Need 50 XP!");
         };
 
-        window.triggerChallenge = async () => {
-            if(student === "Guest") return;
-            const uRef = doc(db, "students", student);
-            const uSnap = await getDoc(uRef);
-            if(uSnap.data().xp < 50) return alert("Min 50 XP needed to Raid!");
-            
-            const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(10));
-            const snap = await getDocs(q);
-            let targets = []; snap.forEach(d => { if(d.id !== student) targets.push(d.id); });
-            const targetId = targets[Math.floor(Math.random() * targets.length)];
-            const tRef = doc(db, "students", targetId);
-            const tSnap = await getDoc(tRef);
-
-            if(tSnap.data().focusWall > 0) {
-                await updateDoc(tRef, { focusWall: increment(-1) });
-                await updateDoc(uRef, { xp: increment(-50) });
-                alert(`FAIL! ${targetId} had a Shield active.`);
-            } else {
-                const stolen = Math.floor(Math.random() * 40) + 40;
-                await updateDoc(uRef, { xp: increment(stolen - 50) });
-                await updateDoc(tRef, { xp: increment(-stolen) });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `${student} extracted ${stolen} XP from ${targetId}!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
-                alert(`SUCCESS! Stole ${stolen} XP.`);
-            }
+        window.addReaction = async (id) => {
+            const ref = doc(db, "shoutouts", id);
+            await updateDoc(ref, { likes: increment(1) });
         };
 
-        window.buyFocusWall = async () => {
-            const uRef = doc(db, "students", student);
-            const snap = await getDoc(uRef);
-            if(snap.data().xp < 150) return alert("Need 150 XP for Shield!");
-            await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
-            alert("SHIELD ACTIVE!");
-        };
-
-        // Real-time Sync
         function initSync() {
-            // Identity & XP
             onSnapshot(doc(db, "students", student), (snap) => {
                 if(snap.exists()){
                     const d = snap.data();
@@ -241,78 +216,56 @@
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
                     document.getElementById("xpVal").innerText = d.xp || 0;
                     document.getElementById("sCount").innerHTML = `<p style="font-size: 8px; opacity: 0.5; font-weight: 800;">STREAK</p><h3 style="color: #ff6400; font-family: 'Syncopate'; font-size: 18px;">🔥 ${d.streak || 0}</h3>`;
+                    document.getElementById("xpBar").style.width = (d.xp % 1000) / 10 + "%";
                     
-                    const xp = d.xp || 0;
-                    document.getElementById("uLevelBadge").innerText = "PROTOCOL LEVEL " + (Math.floor(xp/1000)+1);
-                    document.getElementById("xpBar").style.width = (xp % 1000) / 10 + "%";
-                    
+                    const fBadge = document.getElementById("feeBadge");
+                    fBadge.innerText = d.paymentStatus === "Paid" ? "Completed" : "Pending";
+                    fBadge.style.color = d.paymentStatus === "Paid" ? "var(--success)" : "var(--danger)";
+                    fBadge.style.background = d.paymentStatus === "Paid" ? "rgba(0,255,163,0.1)" : "rgba(255,45,85,0.1)";
+
                     document.getElementById("wallStatus").innerText = (d.focusWall || 0) > 0 ? d.focusWall + " Active" : "Inactive";
                     document.getElementById("shieldIcon").style.color = (d.focusWall || 0) > 0 ? "var(--success)" : "#52525b";
-                    
-                    if(xp >= 5000) {
-                        const uc = document.getElementById("unitCard");
-                        uc.style.opacity = "1";
-                        document.getElementById("unitIcon").className = "ri-shield-check-fill";
-                        document.getElementById("unitMsg").innerText = "Unlocked";
-                        uc.onclick = () => window.location.href = "unit-test.html";
-                    }
-
-                    const badge = document.getElementById("rankBadge");
-                    badge.innerText = xp >= 5000 ? "ULTRA ELITE" : "NEURAL TRAINEE";
-                    badge.style.color = xp >= 5000 ? "var(--gold)" : "var(--accent)";
                 }
             });
 
-            // Shoutouts
-            onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
+            onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
                 if(snap.exists()){
                     const d = snap.data();
-                    const b = document.getElementById("shoutoutBubble");
-                    document.getElementById("bUser").innerText = d.user;
-                    document.getElementById("bMsg").innerText = d.text;
-                    document.getElementById("bAvatar").src = d.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.user}`;
-                    b.classList.add("active");
-                    setTimeout(() => b.classList.remove("active"), 5000);
+                    document.getElementById("dailyWordBox").style.display = "block";
+                    document.getElementById("wordTitle").innerText = d.word;
+                    document.getElementById("wordDesc").innerText = d.description;
                 }
             });
 
-            // Marquee
             onSnapshot(doc(db, "settings", "marquee"), (snap) => {
                 if(snap.exists()) document.getElementById("marqueeMsg").innerText = snap.data().msg;
             });
 
-            // Slider
-            onSnapshot(doc(db, "settings", "slider"), (snap) => {
-                if(snap.exists()){
-                    const urls = snap.data().images ? snap.data().images.split(",") : [];
-                    const track = document.getElementById("sliderTrack");
-                    track.innerHTML = ""; totalSlides = urls.length;
-                    if(totalSlides > 0) {
-                        document.getElementById("sliderRoot").style.display = "block";
-                        urls.forEach(u => track.innerHTML += `<div class="slide"><img src="${u.trim()}"></div>`);
-                    }
-                }
+            const qA = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(20));
+            onSnapshot(qA, (snap) => {
+                const list = document.getElementById("logList"); list.innerHTML = "";
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    list.innerHTML += `<div class="log-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:9px; color:var(--accent); font-weight:900;">${d.user}</span>
+                            <div onclick="addReaction('${docSnap.id}')" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:8px; font-size:10px;">🔥 ${d.likes || 0}</div>
+                        </div>
+                        <p style="font-size:12px; margin-top:5px;">${d.text}</p>
+                    </div>`;
+                });
             });
 
-            // Attendance
-            const today = new Date().toISOString().split('T')[0];
-            onSnapshot(doc(db, "attendance", `${student}_${today}`), (snap) => {
-                const p = document.getElementById("att-pill");
+            onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
                 if(snap.exists()){
-                    p.classList.add("done");
-                    document.getElementById("att-pill-text").innerText = "Linked";
-                    p.href = "javascript:void(0)";
+                    const d = snap.data(); const b = document.getElementById("shoutoutBubble");
+                    document.getElementById("bUser").innerText = d.user;
+                    document.getElementById("bMsg").innerText = d.text;
+                    document.getElementById("bAvatar").src = d.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.user}`;
+                    b.classList.add("active"); setTimeout(() => b.classList.remove("active"), 5000);
                 }
             });
         }
-
-        setInterval(() => {
-            if(totalSlides > 1) {
-                currentSlide = (currentSlide + 1) % totalSlides;
-                document.getElementById("sliderTrack").style.transform = `translateX(-${currentSlide * 100}%)`;
-            }
-        }, 4000);
-
         initSync();
     </script>
 </body>
