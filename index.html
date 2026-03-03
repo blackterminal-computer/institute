@@ -521,15 +521,26 @@
             const r = all.findIndex(s=>s.id === student) + 1;
             if(r > 0) document.getElementById("instRank").innerText = "#" + r;
 
-            // --- Real-time Attendance Check & Redirect Sync ---
+            // --- Real-time Attendance & XP Sync Logic ---
             const todayISO = new Date().toISOString().split('T')[0];
-            onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), (attSnap) => {
+            onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
                 const pill = document.getElementById("att-pill");
                 if (attSnap.exists()) {
                     pill.classList.remove("pulse"); pill.classList.add("done");
                     document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
                     document.getElementById("att-pill-text").innerText = "Present";
                     pill.href = "javascript:void(0)"; 
+
+                    // Reward Sync
+                    const hasRewarded = localStorage.getItem(`att_reward_${todayISO}`);
+                    if (!hasRewarded && student !== "Guest") {
+                        const userRef = doc(db, "students", student);
+                        await updateDoc(userRef, {
+                            xp: increment(100),
+                            attendanceCount: increment(1)
+                        });
+                        localStorage.setItem(`att_reward_${todayISO}`, "true");
+                    }
                 } else {
                     pill.classList.add("pulse"); pill.classList.remove("done");
                     document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
