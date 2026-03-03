@@ -220,6 +220,120 @@ body { background: var(--bg); color: #fff; padding-bottom: 110px; overflow-x: hi
         <a href="profile.html" class="nav-item"><i class="ri-user-settings-line"></i></a>
     </nav>
 
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+    authDomain: "black-terminal-f2c91.firebaseapp.com",
+    projectId: "black-terminal-f2c91",
+    storageBucket: "black-terminal-f2c91.appspot.com",
+    messagingSenderId: "552489994197",
+    appId: "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const student = localStorage.getItem("studentName") || "Guest";
+
+// --- Terminal Sync Engine ---
+async function startTerminal() {
+    if(student === "Guest") return;
+
+    // 1. Core Profile Listener
+    onSnapshot(doc(db, "students", student), (snap) => {
+        if(snap.exists()){
+            const d = snap.data();
+            document.getElementById("uName").innerText = student;
+            document.getElementById("uNameXP").innerText = student;
+            document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+            document.getElementById("streakVal").innerText = "🔥 " + (d.streak || 0);
+            
+            // XP Progress
+            const xp = d.xp || 0;
+            document.getElementById("xpVal").innerText = xp;
+            document.getElementById("xpBar").style.width = (xp % 1000) / 10 + "%";
+            document.getElementById("uLevelBadge").innerText = "LEVEL " + (Math.floor(xp / 1000) + 1).toString().padStart(2, '0');
+
+            // Shield Status
+            const walls = d.focusWall || 0;
+            const sIcon = document.getElementById("shieldIcon");
+            document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers` : "Offline";
+            sIcon.style.color = walls > 0 ? "var(--success)" : "rgba(255,255,255,0.2)";
+        }
+    });
+
+    // 2. Global Interactions (Broadcasts)
+    let bTimer;
+    onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
+        if(snap.exists()){
+            const d = snap.data();
+            const b = document.getElementById("shoutoutBubble");
+            document.getElementById("bUser").innerText = d.user;
+            document.getElementById("bMsg").innerText = d.text;
+            document.getElementById("bAvatar").src = d.avatar;
+            b.classList.add("active");
+            clearTimeout(bTimer);
+            bTimer = setTimeout(() => b.classList.remove("active"), 5000);
+        }
+    });
+
+    // 3. Word of Day
+    onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
+        if(snap.exists()){
+            document.getElementById("wordText").innerText = snap.data().word;
+            document.getElementById("wordDesc").innerText = snap.data().description;
+        }
+    });
+}
+
+// --- Actions ---
+window.sendSignal = async () => {
+    const input = document.getElementById("shoutInput");
+    const msg = input.value.trim();
+    if(!msg || student === "Guest") return;
+
+    const uRef = doc(db, "students", student);
+    const snap = await getDoc(uRef);
+    if(snap.data().xp >= 50) {
+        const data = {
+            user: student, text: msg,
+            avatar: snap.data().photo || "",
+            time: Date.now()
+        };
+        await updateDoc(uRef, { xp: increment(-50) });
+        await setDoc(doc(db, "interactions", "shoutout"), data);
+        input.value = "";
+    } else {
+        alert("LOW XP: Signal failed.");
+    }
+};
+
+window.buyFocusWall = async () => {
+    const uRef = doc(db, "students", student);
+    const snap = await getDoc(uRef);
+    if(snap.data().xp >= 150) {
+        await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
+        alert("Shield Deployed.");
+    }
+};
+
+window.triggerChallenge = async () => {
+    // Basic Raid Logic
+    alert("Scanning for targets...");
+    // Aapka purana Raid logic yahan add kar sakte hain
+};
+
+window.togglePanel = () => {
+    const p = document.getElementById("activityPanel");
+    p.style.bottom = p.style.bottom === "0px" ? "-100%" : "0px";
+    document.getElementById("overlay-blur").style.display = p.style.bottom === "0px" ? "block" : "none";
+};
+
+startTerminal();
+
+    
+    </script>
 </body>
 </html>
