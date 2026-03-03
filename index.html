@@ -25,7 +25,6 @@
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
 
-        /* --- Interaction UI Styles --- */
         #shoutoutBubble {
             position: fixed; top: 20px; right: 20px; z-index: 11000;
             max-width: 260px; background: rgba(15, 23, 42, 0.95);
@@ -116,7 +115,6 @@
     </style>
 </head>
 <body>
-
     <div id="shoutoutBubble">
         <img src="" id="bAvatar" class="b-av">
         <div>
@@ -274,13 +272,7 @@
         let currentSlide = 0;
         let totalSlides = 0;
 
-        // --- CORE UTILITIES ---
-        window.togglePanel = () => {
-            const panel = document.getElementById('activityPanel');
-            panel.classList.toggle('open');
-            document.getElementById('overlay-blur').style.display = panel.classList.contains('open') ? 'block' : 'none';
-        };
-
+        // --- Distance Function ---
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -288,6 +280,13 @@
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
+
+        // --- INTERACTION LOGIC ---
+        window.togglePanel = () => {
+            const panel = document.getElementById('activityPanel');
+            panel.classList.toggle('open');
+            document.getElementById('overlay-blur').style.display = panel.classList.contains('open') ? 'block' : 'none';
+        };
 
         window.sendSignal = async () => {
             const msg = document.getElementById("shoutInput").value.trim();
@@ -319,6 +318,7 @@
             } catch (e) { console.error(e); }
         };
 
+        // --- WAR ZONE ACTIONS ---
         window.triggerChallenge = async () => {
             if(student === "Guest") return;
             const uRef = doc(db, "students", student);
@@ -337,7 +337,7 @@
                 await updateDoc(tRef, { focusWall: increment(-1) });
                 await updateDoc(uRef, { xp: increment(-50) });
                 await setDoc(doc(db, "interactions", "shoutout"), {
-                    user: "SECURITY", text: `${targetId}'s Shield blocked ${student}'s attack!`,
+                    user: "SECURITY", text: `${targetId} ki Focus Wall ne ${student} ka attack rok diya!`,
                     avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now()
                 });
                 alert(`${targetId}'s Shield absorbed the attack! You lost 50 XP.`);
@@ -346,7 +346,7 @@
                 await updateDoc(uRef, { xp: increment(stolen - 50) });
                 await updateDoc(tRef, { xp: increment(-stolen) });
                 await setDoc(doc(db, "interactions", "shoutout"), {
-                    user: "RAID", text: `🔥 ${student} raided ${targetId} for ${stolen} XP!`,
+                    user: "RAID", text: `🔥 ${student} ne RAID mein ${targetId} se ${stolen} XP chura liye!`,
                     avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now()
                 });
                 alert(`Raid Success! Stole ${stolen} XP from ${targetId}.`);
@@ -362,7 +362,7 @@
             alert("Focus Wall Deployed!");
         };
 
-        // --- SYNC FUNCTIONS ---
+        // --- ORIGINAL SYNC FUNCTIONS ---
         async function syncSlider() {
             onSnapshot(doc(db, "settings", "slider"), (snap) => {
                 if(snap.exists()) {
@@ -433,10 +433,15 @@
             const currentLevel = Math.floor(currentXP / 1000) + 1;
             document.getElementById("uLevelBadge").innerText = "Level " + currentLevel;
             document.getElementById("xpTip").innerHTML = `<i class="ri-flashlight-fill" style="color:#facc15"></i> Milestone: <b>Level ${currentLevel + 1}</b>`;
+            if(currentXP >= 5000) {
+                const uc = document.getElementById("unitCard");
+                if(uc) { uc.classList.remove("locked"); document.getElementById("unitIcon").className = "ri-shield-flash-line"; document.getElementById("unitMsg").innerText = "Unlocked"; }
+            }
         }
 
         async function syncData() {
             syncSlider();
+
             let bTimer;
             onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
                 if(snap.exists()){
@@ -486,13 +491,20 @@
                     userXP = d.xp || 0; updateXPUI(userXP);
                     const walls = d.focusWall || 0;
                     document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers Active` : "Inactive";
+                    document.getElementById("wallTitle").style.color = walls > 0 ? "var(--success)" : "white";
+                    document.getElementById("shieldIcon").className = walls > 0 ? "ri-shield-check-fill" : "ri-shield-flash-line";
                     const fBadge = document.getElementById("fee-badge");
                     fBadge.innerText = d.paymentStatus === "Paid" ? "Completed" : "Pending";
                     fBadge.style.color = d.paymentStatus === "Paid" ? "#22c55e" : "#ef4444";
+                    fBadge.style.background = d.paymentStatus === "Paid" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)";
+                    const badge = document.getElementById("rankBadge");
+                    if (userXP >= 5000) { badge.innerText = "Gold Elite"; badge.className = "rank-badge badge-gold"; }
+                    else if (userXP >= 2000) { badge.innerText = "Silver Elite"; badge.className = "rank-badge badge-silver"; }
+                    else { badge.innerText = "Bronze Trainee"; badge.className = "rank-badge badge-bronze"; }
                 }
             });
 
-            // --- LOCATION BASED ATTENDANCE + XP + PROFILE SYNC ---
+            // --- LOCATION BASED ATTENDANCE LOGIC (Replaced Old Logic) ---
             const todayISO = new Date().toISOString().split('T')[0];
             const attDocId = `${student}_${todayISO}`;
             const pill = document.getElementById("att-pill");
@@ -528,7 +540,7 @@
                                 document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
                             }
                         }, () => {
-                            alert("Enable Location Access!");
+                            alert("Please enable Location Access!");
                             document.getElementById("att-pill-text").innerText = "Attendance";
                         }, { enableHighAccuracy: true });
                     };
