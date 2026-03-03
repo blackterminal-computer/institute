@@ -55,7 +55,7 @@
         .react-btn:active { transform: scale(0.9); }
         .shout-trigger { position: fixed; bottom: 100px; left: 20px; z-index: 9998; background: var(--accent); color: #000; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); cursor: pointer; }
 
-        /* --- Optimized Slider Styling --- */
+        /* --- Slider Styling --- */
         .slider-section { width: 100%; margin: 10px 0 15px 0; overflow: hidden; }
         .label-tag { padding-left: 20px; font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1.2px; margin-bottom: 10px; text-transform: uppercase; }
         .carousel-container { position: relative; width: 100%; overflow: hidden; }
@@ -111,7 +111,6 @@
         .badge-silver { background: rgba(203, 213, 225, 0.2); color: #cbd5e1; border: 0.5px solid #cbd5e1; }
         .badge-bronze { background: rgba(205, 127, 50, 0.2); color: #cd7f32; border: 0.5px solid #cd7f32; }
 
-        /* --- WAR ZONE NEW STYLES --- */
         .war-card { border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; overflow: hidden; }
         .war-card:active { transform: scale(0.95); }
         .war-icon-bg { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; font-size: 20px; }
@@ -276,7 +275,6 @@
         let currentSlide = 0;
         let totalSlides = 0;
 
-        // --- INTERACTION LOGIC ---
         window.togglePanel = () => {
             const panel = document.getElementById('activityPanel');
             panel.classList.toggle('open');
@@ -316,44 +314,30 @@
             } catch (e) { console.error(e); }
         };
 
-        // --- WAR ZONE ACTIONS ---
         window.triggerChallenge = async () => {
             if(student === "Guest") return;
             const uRef = doc(db, "students", student);
             const uSnap = await getDoc(uRef);
             const uData = uSnap.data();
             if(uData.xp < 50) return alert("Knowledge Challenge costs 50 XP!");
-
             const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(10));
             const snap = await getDocs(q);
             let targets = [];
             snap.forEach(d => { if(d.id !== student) targets.push(d.id); });
-
             const targetId = targets[Math.floor(Math.random() * targets.length)];
             const tRef = doc(db, "students", targetId);
             const tSnap = await getDoc(tRef);
             const tData = tSnap.data();
-
             if(tData.focusWall > 0) {
                 await updateDoc(tRef, { focusWall: increment(-1) });
                 await updateDoc(uRef, { xp: increment(-50) });
-                await setDoc(doc(db, "interactions", "shoutout"), {
-                    user: "SECURITY",
-                    text: `${targetId} ki Focus Wall ne ${student} ka attack rok diya!`,
-                    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security",
-                    time: Date.now()
-                });
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "SECURITY", text: `${targetId} ki Focus Wall ne ${student} ka attack rok diya!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now() });
                 alert(`${targetId}'s Shield absorbed the attack! You lost 50 XP.`);
             } else {
-                const stolen = Math.floor(Math.random() * 41) + 40; // 40-80 XP
+                const stolen = Math.floor(Math.random() * 41) + 40;
                 await updateDoc(uRef, { xp: increment(stolen - 50) });
                 await updateDoc(tRef, { xp: increment(-stolen) });
-                await setDoc(doc(db, "interactions", "shoutout"), {
-                    user: "RAID",
-                    text: `🔥 ${student} ne RAID mein ${targetId} se ${stolen} XP chura liye!`,
-                    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid",
-                    time: Date.now()
-                });
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `🔥 ${student} ne RAID mein ${targetId} se ${stolen} XP chura liye!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
                 alert(`Raid Success! Stole ${stolen} XP from ${targetId}.`);
             }
         };
@@ -367,7 +351,6 @@
             alert("Focus Wall Deployed! Next attack will be blocked.");
         };
 
-        // --- ORIGINAL SYNC FUNCTIONS ---
         async function syncSlider() {
             onSnapshot(doc(db, "settings", "slider"), (snap) => {
                 if(snap.exists()) {
@@ -447,7 +430,6 @@
         async function syncData() {
             syncSlider();
 
-            // Bubble Listener
             let bTimer;
             onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
                 if(snap.exists()){
@@ -461,7 +443,6 @@
                 }
             });
 
-            // History Listener
             const qH = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(15));
             onSnapshot(qH, (snap) => {
                 const list = document.getElementById("logList");
@@ -497,13 +478,10 @@
                     document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
                     userXP = d.xp || 0; updateXPUI(userXP);
-                    
-                    // --- Realtime Wall Sync ---
                     const walls = d.focusWall || 0;
                     document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers Active` : "Inactive";
                     document.getElementById("wallTitle").style.color = walls > 0 ? "var(--success)" : "white";
                     document.getElementById("shieldIcon").className = walls > 0 ? "ri-shield-check-fill" : "ri-shield-flash-line";
-
                     const fBadge = document.getElementById("fee-badge");
                     fBadge.innerText = d.paymentStatus === "Paid" ? "Completed" : "Pending";
                     fBadge.style.color = d.paymentStatus === "Paid" ? "#22c55e" : "#ef4444";
@@ -521,7 +499,7 @@
             const r = all.findIndex(s=>s.id === student) + 1;
             if(r > 0) document.getElementById("instRank").innerText = "#" + r;
 
-            // --- Real-time Attendance & XP Sync Logic ---
+            // --- Real-time Attendance & XP Sync Logic (OPTIMIZED TRIGGER) ---
             const todayISO = new Date().toISOString().split('T')[0];
             onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
                 const pill = document.getElementById("att-pill");
@@ -531,24 +509,21 @@
                     document.getElementById("att-pill-text").innerText = "Present";
                     pill.href = "javascript:void(0)"; 
 
-                    // Reward Sync
                     const hasRewarded = localStorage.getItem(`att_reward_${todayISO}`);
                     if (!hasRewarded && student !== "Guest") {
                         const userRef = doc(db, "students", student);
                         const userSnap = await getDoc(userRef);
-                        const userData = userSnap.data();
+                        const userPhoto = userSnap.exists() ? userSnap.data().photo : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
 
-                        // 1. Update Database
                         await updateDoc(userRef, {
                             xp: increment(100),
                             attendanceCount: increment(1)
                         });
 
-                        // 2. TRIGGER SYSTEM BUBBLE (With Profile Pic)
                         await setDoc(doc(db, "interactions", "shoutout"), {
-                            user: "SYSTEM",
-                            text: `✨ ${student} earned 100 XP for Today's Attendance!`,
-                            avatar: userData.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`,
+                            user: "SUCCESS",
+                            text: `✨ ${student} marked attendance & earned 100 XP!`,
+                            avatar: userPhoto,
                             time: Date.now()
                         });
 
