@@ -27,16 +27,13 @@
 
         @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
-        /* --- Header & Rank Logic --- */
+        /* --- Header & Rank UI --- */
         .header-elite { padding: 40px 20px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
         .profile-hex { position: relative; width: 65px; height: 65px; padding: 2px; background: linear-gradient(45deg, var(--primary), var(--accent)); border-radius: 50%; overflow: hidden; }
         .profile-hex img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
         
         .rank-tag { font-size: 8px; font-weight: 800; color: var(--bronze); text-transform: uppercase; margin-bottom: 2px; display: block; }
         .user-info h2 { font-family: 'Syncopate', sans-serif; font-size: 18px; text-transform: capitalize; letter-spacing: 1px; }
-
-        /* --- Global Rank Box --- */
-        .global-rank-box { background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 12px; border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; margin-top: 8px; width: fit-content; }
 
         /* --- Shoutout Pop --- */
         #shoutoutBubble {
@@ -47,14 +44,24 @@
         }
         #shoutoutBubble.active { transform: translateY(0); }
 
+        /* --- Archive Panel --- */
+        #archivePanel {
+            position: fixed; bottom: -100%; left: 0; right: 0; height: 70vh;
+            background: #0b0f1a; border-top: 2px solid var(--accent);
+            border-radius: 30px 30px 0 0; z-index: 20000;
+            transition: 0.5s ease; padding: 25px 20px; overflow-y: auto;
+        }
+        #archivePanel.open { bottom: 0; }
+        .log-card { background: var(--glass); border-radius: 20px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+
         /* --- Bento & Cards --- */
         .bento-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 20px; }
-        .bento-box { background: var(--card-bg); border: 1px solid var(--glass); border-radius: 28px; padding: 18px; text-decoration: none; color: #fff; transition: 0.2s; }
+        .bento-box { background: var(--card-bg); border: 1px solid var(--glass); border-radius: 28px; padding: 18px; text-decoration: none; color: #fff; transition: 0.2s; position: relative; }
         .bento-box:active { transform: scale(0.96); }
         .bento-box i { font-size: 24px; color: var(--accent); margin-bottom: 8px; display: block; }
         .bento-box.wide { grid-column: span 2; }
 
-        /* --- Marquee --- */
+        /* --- Marquee (Smooth) --- */
         .marquee-box { margin: 0 20px 15px; background: rgba(0, 242, 255, 0.05); border-radius: 100px; padding: 8px 20px; border: 1px solid rgba(0, 242, 255, 0.2); overflow: hidden; white-space: nowrap; }
         .marquee-content { display: inline-block; animation: scroll 15s linear infinite; font-size: 10px; font-weight: 700; color: var(--accent); }
 
@@ -62,6 +69,7 @@
         .float-att { position: fixed; top: 115px; right: 20px; z-index: 999; background: #fff; color: #000; padding: 6px 14px; border-radius: 100px; font-weight: 800; font-size: 9px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
         .float-att.done { background: var(--success); }
         .streak-pill { background: rgba(255, 100, 0, 0.15); color: #ff6400; padding: 6px 14px; border-radius: 100px; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+        .archive-trigger { position: fixed; bottom: 100px; left: 20px; z-index: 9998; background: var(--accent); color: #000; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); }
 
         .nav-dock { position: fixed; bottom: 20px; left: 15px; right: 15px; background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(20px); border: 1px solid var(--glass); border-radius: 30px; display: flex; justify-content: space-around; padding: 12px; z-index: 9999; }
         .nav-item { color: #52525b; text-decoration: none; font-size: 22px; text-align: center; }
@@ -75,6 +83,16 @@
         <img src="" id="bAvatar" style="width: 40px; height: 40px; border-radius: 12px;">
         <div style="flex:1"><p id="bUser" style="font-size: 8px; color: var(--accent); font-weight: 900;"></p><p id="bMsg" style="font-size: 12px; font-weight: 600;"></p></div>
     </div>
+
+    <div id="archivePanel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="font-family:'Syncopate'; font-size:12px; color:var(--accent);">SIGNAL_ARCHIVE</h3>
+            <i class="ri-close-circle-fill" onclick="toggleArchive()" style="font-size:24px; color:var(--danger);"></i>
+        </div>
+        <div id="logList"></div>
+    </div>
+
+    <div class="archive-trigger" onclick="toggleArchive()"><i class="ri-history-line"></i></div>
 
     <a href="attendence.html" id="att-pill" class="float-att"><i class="ri-checkbox-circle-fill"></i> <span id="att-pill-text">Present</span></a>
 
@@ -93,7 +111,7 @@
     </header>
 
     <div class="marquee-box">
-        <div class="marquee-content" id="marqueeMsg">OS - CIT course added ! Join Today 🤗</div>
+        <div class="marquee-content" id="marqueeMsg">SYSTEM ONLINE // TERMINAL SYNC ACTIVE...</div>
     </div>
 
     <div id="dailyWordBox" style="margin: 0 20px 20px;">
@@ -101,16 +119,22 @@
             <i class="ri-terminal-box-line"></i> DAILY_LEARNING_LOG
         </p>
         <div class="bento-box wide" style="border-left: 3px solid var(--accent); background: rgba(0, 242, 255, 0.02);">
-            <h3 id="wordTitle" style="font-family: 'Syncopate'; font-size: 18px; margin-bottom: 10px;">DACL</h3>
-            <p id="wordDesc" style="font-size: 12px; opacity: 0.7; line-height: 1.5; text-transform: none;">
-                Short for Discretionary Access Control List, a DACL is a security feature in operating systems like Microsoft Windows. It defines the permissions.
-            </p>
+            <h3 id="wordTitle" style="font-family: 'Syncopate'; font-size: 18px; margin-bottom: 10px;">LOADING...</h3>
+            <p id="wordDesc" style="font-size: 12px; opacity: 0.7; line-height: 1.5; text-transform: none;"></p>
         </div>
     </div>
 
     <div style="margin: 0 20px 20px; background: var(--card-bg); border-radius: 20px; padding: 10px 15px; border: 1px solid var(--glass); display: flex; align-items: center; gap: 10px;">
         <input type="text" id="shoutInput" placeholder="Broadcast a signal... (50 XP)" style="background: none; border: none; color: #fff; flex: 1; outline: none; font-size: 13px;">
         <button onclick="sendSignal()" style="background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 900; font-size: 10px;">SEND</button>
+    </div>
+
+    <div style="margin: 0 20px 20px; padding: 15px; background: var(--card-bg); border-radius: 24px; border: 1px solid var(--glass); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="width: 35px; height: 35px; background: rgba(0, 242, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i class="ri-bank-card-line" style="color: var(--accent);"></i></div>
+            <div><h4 style="font-size: 12px; font-weight: 700;">Monthly Fee</h4><p style="font-size: 9px; opacity: 0.5;">Terminal Sync</p></div>
+        </div>
+        <span id="feeBadge" style="font-size: 9px; font-weight: 900; padding: 5px 12px; border-radius: 8px; text-transform: uppercase;">Checking...</span>
     </div>
 
     <div class="bento-grid">
@@ -122,13 +146,12 @@
         </div>
 
         <div class="bento-box" onclick="triggerChallenge()"><i class="ri-sword-fill" style="color: var(--danger);"></i><h3>Challenge</h3><p>Steal XP (Costs 50)</p></div>
-        <div class="bento-box"><i class="ri-shield-flash-fill" style="color: var(--success);"></i><h3>Focus Wall</h3><p id="wallStatus">1 Layers Active</p></div>
+        <div class="bento-box" onclick="buyShield()"><i id="shieldIcon" class="ri-shield-flash-fill" style="color: var(--success);"></i><h3>Focus Wall</h3><p id="wallStatus">Inactive</p></div>
 
         <a href="daily-test.html" class="bento-box"><i class="ri-edit-box-line"></i><h3>Exams</h3><p>Daily Tests</p></a>
         <a href="battle.html" class="bento-box"><i class="ri-sword-line" style="color: var(--danger);"></i><h3>Battle</h3><p>1vs1 PvP</p></a>
         
         <a href="flashcards.html" class="bento-box"><i class="ri-flashlight-fill" style="color: var(--gold);"></i><h3>Flash</h3><p>Quick Revise</p></a>
-        
         <div class="bento-box"><i class="ri-bar-chart-fill" style="color: var(--accent);"></i><h3>Ranks</h3><p id="instRank">Top Elite</p></div>
 
         <a href="courses.html" class="bento-box wide"><i class="ri-layout-grid-line"></i><h3>Courses</h3><p>Video Lectures</p></a>
@@ -160,25 +183,30 @@
         const db = getFirestore(app);
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // Logic for Dynamic Ranks & XP
-        function initTerminal() {
+        window.toggleArchive = () => document.getElementById("archivePanel").classList.toggle("open");
+
+        async function initTerminal() {
+            // User Data & Rank Logic
             onSnapshot(doc(db, "students", student), (snap) => {
                 if(snap.exists()){
-                    const d = snap.data();
-                    const xp = d.xp || 0;
+                    const d = snap.data(); const xp = d.xp || 0;
                     document.getElementById("uName").innerText = student;
                     document.getElementById("uNameBottom").innerText = student;
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
                     document.getElementById("xpBottom").innerText = xp + " XP";
                     document.getElementById("streakDays").innerText = d.streak || 0;
                     
-                    // Bronze Trainee Logic
                     const rTitle = document.getElementById("rankTitle");
                     if(xp < 1000) { rTitle.innerText = "BRONZE TRAINEE"; rTitle.style.color = "#cd7f32"; }
                     else if(xp < 3000) { rTitle.innerText = "SILVER ELITE"; rTitle.style.color = "#c0c0c0"; }
                     else { rTitle.innerText = "GOLD MASTER"; rTitle.style.color = "#ffb800"; }
 
-                    document.getElementById("wallStatus").innerText = (d.focusWall || 0) + " Layers Active";
+                    const fBadge = document.getElementById("feeBadge");
+                    fBadge.innerText = d.paymentStatus === "Paid" ? "Completed" : "Pending";
+                    fBadge.style.color = d.paymentStatus === "Paid" ? "var(--success)" : "var(--danger)";
+                    fBadge.style.background = d.paymentStatus === "Paid" ? "rgba(0,255,163,0.1)" : "rgba(255,45,85,0.1)";
+
+                    document.getElementById("wallStatus").innerText = (d.focusWall || 0) > 0 ? d.focusWall + " Layers Active" : "Inactive";
                     
                     if(xp >= 5000) {
                         const uc = document.getElementById("unitCard");
@@ -190,14 +218,29 @@
 
             // Global Rank Calculation
             onSnapshot(collection(db, "students"), (snap) => {
-                let all = [];
-                snap.forEach(s => all.push({name: s.id, xp: s.data().xp || 0}));
+                let all = []; snap.forEach(s => all.push({id: s.id, xp: s.data().xp || 0}));
                 all.sort((a,b) => b.xp - a.xp);
-                const rank = all.findIndex(x => x.name === student) + 1;
+                const rank = all.findIndex(x => x.id === student) + 1;
                 document.getElementById("globalRankBadge").innerText = "#" + (rank > 0 ? rank : "--");
             });
 
-            // DACL Learning Log Fetch
+            // Signal History & Reactions
+            const qS = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(20));
+            onSnapshot(qS, (snap) => {
+                const list = document.getElementById("logList"); list.innerHTML = "";
+                snap.forEach(ds => {
+                    const d = ds.data();
+                    list.innerHTML += `<div class="log-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:9px; color:var(--accent); font-weight:900;">${d.user}</span>
+                            <div onclick="addReaction('${ds.id}')" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:8px; font-size:10px;">🔥 ${d.likes || 0}</div>
+                        </div>
+                        <p style="font-size:12px; margin-top:5px;">${d.text}</p>
+                    </div>`;
+                });
+            });
+
+            // Dynamic Content
             onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
                 if(snap.exists()){
                     document.getElementById("wordTitle").innerText = snap.data().word;
@@ -205,16 +248,18 @@
                 }
             });
 
-            // Shoutout Sync
+            onSnapshot(doc(db, "settings", "marquee"), (snap) => {
+                if(snap.exists()) document.getElementById("marqueeMsg").innerText = snap.data().msg;
+            });
+
+            // Real-time Shoutout Popup
             onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
                 if(snap.exists()){
-                    const d = snap.data();
-                    const b = document.getElementById("shoutoutBubble");
+                    const d = snap.data(); const b = document.getElementById("shoutoutBubble");
                     document.getElementById("bUser").innerText = d.user;
                     document.getElementById("bMsg").innerText = d.text;
                     document.getElementById("bAvatar").src = d.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.user}`;
-                    b.classList.add("active");
-                    setTimeout(() => b.classList.remove("active"), 5000);
+                    b.classList.add("active"); setTimeout(() => b.classList.remove("active"), 5000);
                 }
             });
         }
@@ -225,10 +270,16 @@
             const uRef = doc(db, "students", student);
             const uSnap = await getDoc(uRef);
             if(uSnap.data().xp >= 50) {
-                await setDoc(doc(db, "interactions", "shoutout"), { user: student, text: val, avatar: uSnap.data().photo || "", time: Date.now() });
+                const data = { user: student, text: val, avatar: uSnap.data().photo || "", time: Date.now(), likes: 0 };
+                await setDoc(doc(db, "interactions", "shoutout"), data);
+                await addDoc(collection(db, "shoutouts"), data);
                 await updateDoc(uRef, { xp: increment(-50) });
                 document.getElementById("shoutInput").value = "";
-            } else alert("Insufficient XP!");
+            } else alert("Need 50 XP!");
+        };
+
+        window.addReaction = async (id) => {
+            await updateDoc(doc(db, "shoutouts", id), { likes: increment(1) });
         };
 
         initTerminal();
