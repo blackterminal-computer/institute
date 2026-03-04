@@ -1,157 +1,177 @@
 <!DOCTYPE html>
-<html lang="en" id="mainHtml">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaveSmart v3.5 | Pro Strategy Center</title>
+    <title>Finance OS IV | Aero-Dynamic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg-dark: #020617; --card-bg: rgba(30, 41, 59, 0.4); }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-dark); 
-            color: #f8fafc;
-            background-image: radial-gradient(circle at 0% 0%, #1e293b 0%, #020617 100%);
+        :root {
+            --bg-dark: #020617;
+            --glass: rgba(15, 23, 42, 0.6);
+            --accent-sky: #0ea5e9;
+            --accent-gold: #f59e0b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 50% -20%, #1e293b 0%, #020617 100%);
+            color: #f1f5f9;
             min-height: 100vh;
         }
-        .glass-card { background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px; }
-        .neo-bar { height: 100%; border-radius: 12px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
-        .bill-row { border-left: 4px solid #f43f5e; transition: all 0.3s; background: rgba(255,255,255,0.03); }
-        .paid-row { border-left-color: #10b981 !important; opacity: 0.3; filter: grayscale(1); }
-        input { background: rgba(15, 23, 42, 0.9) !important; color: white !important; border: 1px solid #334155 !important; border-radius: 12px !important; }
-        .strategy-glow { box-shadow: 0 0 15px rgba(234, 179, 8, 0.1); }
+
+        .aero-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,255,255,0.05);
+        }
+
+        .glow-text-red { color: #f43f5e; text-shadow: 0 0 20px rgba(244, 63, 94, 0.4); }
+        .glow-text-gold { color: #f59e0b; text-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+
+        .counter-btn {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .counter-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.1); }
+
+        .bill-row { border-left: 4px solid #f43f5e; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .paid-row { border-left-color: #10b981 !important; opacity: 0.25; filter: blur(0.5px); }
+        
+        input { background: rgba(0,0,0,0.3) !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 16px !important; color: white !important; outline: none !important; }
+        input:focus { border-color: var(--accent-sky) !important; box-shadow: 0 0 10px rgba(14, 165, 233, 0.2); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-10">
 
     <div class="max-w-4xl mx-auto">
-        <header class="mb-10 flex justify-between items-start">
+        <header class="mb-12 flex justify-between items-center px-2">
             <div>
-                <h1 class="text-3xl font-extrabold tracking-tighter">Command <span class="text-yellow-500">v3.5</span></h1>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Revenue Mix & Strategy</p>
+                <h1 class="text-4xl font-black tracking-tighter text-white uppercase italic">OS <span class="text-sky-500">IV</span></h1>
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em]">Aero-Dynamic Intelligence</p>
             </div>
-            <div class="text-right">
-                <div id="statusBadge" class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter mb-1 border">STABLE</div>
-                <p id="todayDate" class="text-[10px] text-slate-500 font-bold"></p>
-            </div>
+            <div id="statusBadge" class="text-[9px] font-black px-4 py-1.5 rounded-full border border-white/10 bg-white/5 tracking-[0.2em] transition-all duration-500">SYNCED</div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="md:col-span-2 glass-card p-8 flex flex-col justify-center border-b-4 border-yellow-500 strategy-glow">
-                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Net Debt Remaining</p>
-                <h2 id="totalLiability" class="text-6xl font-black text-white mt-1 tracking-tighter">₹0</h2>
-                <div class="mt-6 grid grid-cols-2 gap-4">
-                    <div class="bg-white/5 p-4 rounded-2xl">
-                        <p class="text-[9px] text-slate-500 uppercase font-black">Daily Velocity</p>
-                        <p id="dailyVelocity" class="text-xl font-bold text-yellow-500">₹0</p>
-                    </div>
-                    <div class="bg-white/5 p-4 rounded-2xl">
-                        <p class="text-[9px] text-slate-500 uppercase font-black">Est. Freedom</p>
-                        <p id="daysToFreedom" class="text-xl font-bold text-green-400">—</p>
-                    </div>
+        <div class="aero-card p-10 mb-10 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-sky-500/10 blur-[120px]"></div>
+            <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-3">Position Alpha</p>
+            <h2 id="totalLiability" class="text-7xl md:text-8xl font-black tracking-tighter glow-text-red mb-8 transition-all duration-700">₹0</h2>
+            
+            <div class="flex justify-center items-center gap-10 border-t border-white/5 pt-10">
+                <div class="text-center">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase mb-1 tracking-widest">Velocity</p>
+                    <p id="dailyVelocity" class="text-2xl font-black text-white">₹0</p>
                 </div>
-            </div>
-
-            <div class="glass-card p-6 flex flex-col">
-                <h3 class="text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">Credit Card</h3>
-                <input type="number" id="ccBill" oninput="calculate()" class="w-full p-4 font-bold text-xl mb-4" placeholder="₹ Total">
-                <div id="ccPaymentList" class="space-y-2 mb-4 max-h-32 overflow-y-auto"></div>
-                <div class="flex gap-2 mt-auto">
-                    <input type="number" id="ccPartialInput" placeholder="Pay ₹" class="w-full p-2 text-sm">
-                    <button onclick="addCCPayment()" class="bg-yellow-600 px-4 rounded-xl font-bold text-lg">﹢</button>
+                <div class="w-px h-12 bg-white/10"></div>
+                <div class="text-center">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase mb-1 tracking-widest">Projection</p>
+                    <p id="daysToFreedom" class="text-2xl font-black text-sky-400">—</p>
                 </div>
             </div>
         </div>
 
-        <div class="glass-card p-6 mb-8 border-t-4 border-blue-500">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Optimization Strategy</h3>
-                <span id="efficiencyPer" class="text-xs font-bold text-blue-400">0% Efficient</span>
-            </div>
-            <div class="flex flex-col md:flex-row gap-6 items-center">
-                <div class="flex-1 w-full">
-                    <div class="h-3 bg-white/5 rounded-full overflow-hidden mb-4">
-                        <div id="efficiencyBar" class="neo-bar bg-gradient-to-r from-blue-600 to-cyan-400" style="width: 0%"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="text-center p-2 bg-white/5 rounded-xl border border-white/5">
-                            <p class="text-[8px] text-slate-500 font-bold">DRIVING REQ.</p>
-                            <p id="reqDriving" class="text-xl font-black text-orange-500">0</p>
-                        </div>
-                        <div class="text-center p-2 bg-white/5 rounded-xl border border-white/5">
-                            <p class="text-[8px] text-slate-500 font-bold">COMPUTER REQ.</p>
-                            <p id="reqComp" class="text-xl font-black text-purple-500">0</p>
-                        </div>
-                    </div>
-                </div>
-                <div id="strategyAdvice" class="flex-1 text-sm font-medium text-slate-300 bg-blue-500/5 p-5 rounded-2xl border border-blue-500/20 leading-relaxed italic">
-                    Analyzing your revenue mix...
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="glass-card p-6">
-                <h3 class="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">Current Progress</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <div>
-                            <p class="font-bold text-orange-400">Driving</p>
-                            <p class="text-[10px] text-slate-500 font-bold">₹4,500 / seat</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <button onclick="updateCount('driving', -1)" class="w-10 h-10 bg-white/5 rounded-full font-bold hover:bg-white/10">－</button>
-                            <span id="drivingCount" class="text-2xl font-black">0</span>
-                            <button onclick="updateCount('driving', 1)" class="w-10 h-10 bg-orange-600 rounded-full font-bold hover:bg-orange-700">﹢</button>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <div>
-                            <p class="font-bold text-purple-400">Computer</p>
-                            <p class="text-[10px] text-slate-500 font-bold">₹500 / seat</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <button onclick="updateCount('computer', -1)" class="w-10 h-10 bg-white/5 rounded-full font-bold hover:bg-white/10">－</button>
-                            <span id="computerCount" class="text-2xl font-black">0</span>
-                            <button onclick="updateCount('computer', 1)" class="w-10 h-10 bg-purple-600 rounded-full font-bold hover:bg-purple-700">﹢</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-card p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="aero-card p-8 border-t-4 border-sky-500">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-sm font-black uppercase tracking-widest text-slate-400 italic">Fixed Liabilities</h3>
-                    <button onclick="toggleAddBill()" class="text-yellow-500 text-[10px] font-black uppercase tracking-widest bg-yellow-500/10 px-2 py-1 rounded">﹢ New</button>
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Strategy Matrix</h3>
+                    <span id="efficiencyPer" class="text-xs font-bold text-sky-400">0%</span>
                 </div>
-                <div id="addBillForm" class="hidden mb-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <div class="grid grid-cols-2 gap-2 mb-2">
-                        <input type="text" id="newName" placeholder="Name" class="p-2 text-xs">
-                        <input type="number" id="newAmount" placeholder="₹ Amount" class="p-2 text-xs">
+                <div id="strategyAdvice" class="text-sm text-slate-300 italic bg-black/20 p-5 rounded-2xl border border-white/5 mb-6 leading-relaxed">
+                    Analyzing cash flow...
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1 bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
+                        <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">Driving</p>
+                        <p id="reqDriving" class="text-2xl font-black text-white">0</p>
                     </div>
-                    <button onclick="addNewBill()" class="w-full bg-blue-600 p-2 rounded-lg text-xs font-black uppercase tracking-widest">Add Liability</button>
+                    <div class="flex-1 bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
+                        <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">Computer</p>
+                        <p id="reqComp" class="text-2xl font-black text-white">0</p>
+                    </div>
                 </div>
-                <div id="billContainer" class="space-y-3"></div>
+            </div>
+
+            <div class="aero-card p-8">
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Credit Interface</h3>
+                <input type="number" id="ccBill" oninput="calculate()" class="w-full p-5 font-black text-2xl mb-6 tracking-tighter" placeholder="₹ Total Bill">
+                <div id="ccPaymentList" class="space-y-3 mb-6 max-h-32 overflow-y-auto pr-2"></div>
+                <div class="flex gap-3">
+                    <input type="number" id="ccPartialInput" placeholder="Add Payment" class="flex-1 p-3 text-sm font-bold">
+                    <button onclick="addCCPayment()" class="counter-btn w-12 h-12 rounded-2xl font-bold text-xl text-sky-400">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="aero-card p-8">
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8">Admissions Engine</h3>
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center bg-black/20 p-5 rounded-3xl border border-white/5">
+                        <div>
+                            <p class="font-black text-white">DRIVING</p>
+                            <p class="text-[9px] text-slate-500 font-bold">REVENUE: ₹4,500</p>
+                        </div>
+                        <div class="flex items-center gap-5">
+                            <button onclick="updateCount('driving', -1)" class="counter-btn w-12 h-12 rounded-full text-xl font-bold text-slate-400">－</button>
+                            <span id="drivingCount" class="text-3xl font-black w-8 text-center">0</span>
+                            <button onclick="updateCount('driving', 1)" class="counter-btn w-12 h-12 rounded-full text-xl font-bold text-sky-400 border-sky-500/30">＋</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center bg-black/20 p-5 rounded-3xl border border-white/5">
+                        <div>
+                            <p class="font-black text-white">COMPUTER</p>
+                            <p class="text-[9px] text-slate-500 font-bold">REVENUE: ₹500</p>
+                        </div>
+                        <div class="flex items-center gap-5">
+                            <button onclick="updateCount('computer', -1)" class="counter-btn w-12 h-12 rounded-full text-xl font-bold text-slate-400">－</button>
+                            <span id="computerCount" class="text-3xl font-black w-8 text-center">0</span>
+                            <button onclick="updateCount('computer', 1)" class="counter-btn w-12 h-12 rounded-full text-xl font-bold text-sky-400 border-sky-500/30">＋</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="aero-card p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Liability Registry</h3>
+                    <button onclick="toggleAddBill()" class="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 px-3 py-1 rounded-full">New ENTRY</button>
+                </div>
+                <div id="addBillForm" class="hidden mb-6 p-6 bg-black/30 rounded-3xl border border-white/10 space-y-4">
+                    <div class="flex gap-3">
+                        <input type="text" id="newName" placeholder="Name" class="flex-1 p-3 text-xs font-bold">
+                        <input type="number" id="newAmount" placeholder="₹" class="w-24 p-3 text-xs font-bold">
+                    </div>
+                    <button onclick="addNewBill()" class="w-full bg-sky-600 p-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-sky-500 transition-all">Register Liability</button>
+                </div>
+                <div id="billContainer" class="space-y-4"></div>
             </div>
         </div>
     </div>
 
     <script>
         let counts = { driving: 0, computer: 0 };
-        let bills = JSON.parse(localStorage.getItem('ss_bills_v35')) || [
+        let bills = JSON.parse(localStorage.getItem('f_os_bills')) || [
             { id: 1, name: 'iPhone EMI', amount: 8000, paid: false },
             { id: 2, name: 'Android EMI', amount: 5000, paid: false },
             { id: 3, name: 'Rent', amount: 7000, paid: false },
             { id: 4, name: 'Car Payment', amount: 8500, paid: false }
         ];
-        let ccPayments = JSON.parse(localStorage.getItem('ss_cc_payments_v35')) || [];
+        let ccPayments = JSON.parse(localStorage.getItem('f_os_ccp')) || [];
 
         function addCCPayment() {
             const val = parseFloat(document.getElementById('ccPartialInput').value);
             if(val > 0) {
-                ccPayments.push({ id: Date.now(), amount: val, date: new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short'}) });
-                localStorage.setItem('ss_cc_payments_v35', JSON.stringify(ccPayments));
+                ccPayments.push({ id: Date.now(), amount: val, date: new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short'}) });
+                localStorage.setItem('f_os_ccp', JSON.stringify(ccPayments));
                 document.getElementById('ccPartialInput').value = '';
                 calculate();
             }
@@ -159,7 +179,7 @@
 
         function removeCCPayment(id) {
             ccPayments = ccPayments.filter(p => p.id !== id);
-            localStorage.setItem('ss_cc_payments_v35', JSON.stringify(ccPayments));
+            localStorage.setItem('f_os_ccp', JSON.stringify(ccPayments));
             calculate();
         }
 
@@ -171,7 +191,7 @@
 
         function togglePaid(idx) { 
             bills[idx].paid = !bills[idx].paid; 
-            localStorage.setItem('ss_bills_v35', JSON.stringify(bills));
+            localStorage.setItem('f_os_bills', JSON.stringify(bills));
             calculate(); 
         }
 
@@ -181,91 +201,85 @@
             const n = document.getElementById('newName').value, a = document.getElementById('newAmount').value;
             if(n && a) {
                 bills.push({ id: Date.now(), name: n, amount: parseFloat(a), paid: false });
-                localStorage.setItem('ss_bills_v35', JSON.stringify(bills));
+                localStorage.setItem('f_os_bills', JSON.stringify(bills));
                 calculate(); toggleAddBill();
             }
         }
 
         function removeBill(id) {
             bills = bills.filter(b => b.id !== id);
-            localStorage.setItem('ss_bills_v35', JSON.stringify(bills));
+            localStorage.setItem('f_os_bills', JSON.stringify(bills));
             calculate();
         }
 
         function calculate() {
             const ccInput = document.getElementById('ccBill');
-            if(ccInput.value) localStorage.setItem('ss_cc_main_v35', ccInput.value);
-            else ccInput.value = localStorage.getItem('ss_cc_main_v35') || '';
+            if(ccInput.value) localStorage.setItem('f_os_cc_main', ccInput.value);
+            else ccInput.value = localStorage.getItem('f_os_cc_main') || '';
 
             const today = new Date();
-            document.getElementById('todayDate').innerText = today.toDateString();
-
             const totalCC = parseFloat(ccInput.value) || 0;
             const totalPaidCC = ccPayments.reduce((s, p) => s + p.amount, 0);
             const ccBalance = Math.max(0, totalCC - totalPaidCC);
 
-            // Render Bills
             let unpaidFixed = 0;
             const billContainer = document.getElementById('billContainer');
             billContainer.innerHTML = '';
             bills.forEach((b, i) => {
                 if(!b.paid) unpaidFixed += b.amount;
                 billContainer.innerHTML += `
-                    <div class="flex justify-between items-center p-3 rounded-2xl bill-row ${b.paid ? 'paid-row' : ''}">
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" ${b.paid ? 'checked' : ''} onchange="togglePaid(${i})" class="w-5 h-5 accent-yellow-500">
-                            <span class="text-xs font-bold">${b.name}</span>
+                    <div class="flex justify-between items-center p-4 rounded-2xl bill-row bg-white/5 border border-white/5 ${b.paid ? 'paid-row' : ''}">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" ${b.paid ? 'checked' : ''} onchange="togglePaid(${i})" class="w-5 h-5 rounded-lg accent-sky-500">
+                            <span class="text-xs font-black uppercase tracking-widest text-slate-300">${b.name}</span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-black text-xs">₹${b.amount.toLocaleString()}</span>
-                            <button onclick="removeBill(${b.id})" class="text-slate-600">×</button>
+                        <div class="flex items-center gap-4">
+                            <span class="font-black text-sm">₹${b.amount.toLocaleString()}</span>
+                            <button onclick="removeBill(${b.id})" class="text-slate-600 hover:text-red-500">×</button>
                         </div>
                     </div>`;
             });
 
-            // Financial Engine
             const currentEarned = (counts.driving * 4500) + (counts.computer * 500);
             const totalFixedCosts = unpaidFixed + ccBalance;
             const netLiability = Math.max(0, totalFixedCosts - currentEarned);
 
-            // Strategy Logic
-            const efficiency = totalFixedCosts > 0 ? Math.min(100, (currentEarned / totalFixedCosts) * 100) : 100;
-            document.getElementById('efficiencyBar').style.width = efficiency + '%';
-            document.getElementById('efficiencyPer').innerText = `${Math.round(efficiency)}% Coverage`;
+            // Glow Class Toggle
+            const totalDisplay = document.getElementById('totalLiability');
+            if (netLiability <= 0) {
+                totalDisplay.className = "text-7xl md:text-8xl font-black tracking-tighter glow-text-gold mb-8 transition-all duration-700";
+                document.getElementById('statusBadge').className = "text-[9px] font-black px-4 py-1.5 rounded-full border border-green-500/20 bg-green-500/10 text-green-400 tracking-[0.2em]";
+                document.getElementById('statusBadge').innerText = "PROFIT PHASE";
+            } else {
+                totalDisplay.className = "text-7xl md:text-8xl font-black tracking-tighter glow-text-red mb-8 transition-all duration-700";
+                document.getElementById('statusBadge').className = "text-[9px] font-black px-4 py-1.5 rounded-full border border-red-500/20 bg-red-500/10 text-red-400 tracking-[0.2em]";
+                document.getElementById('statusBadge').innerText = "LIABILITY ACTIVE";
+            }
 
+            // Strategy Advice
             const adviceBox = document.getElementById('strategyAdvice');
             if (netLiability > 0) {
                 const dNeeded = Math.ceil(netLiability / 4500);
-                const cNeeded = Math.ceil(netLiability / 500);
-                adviceBox.innerHTML = `💡 <span class="text-blue-400 font-bold italic">Strategy:</span> You need <b>${dNeeded}</b> Driving or <b>${cNeeded}</b> Computer admissions to clear today's liability.`;
-                adviceBox.classList.remove('text-green-400');
+                adviceBox.innerHTML = `OPTIMIZATION: FOCUS ON <span class="text-white font-bold">${dNeeded} DRIVING</span> ADMISSIONS TO CLEAR DEFICIT BY PROJECTED DATE.`;
             } else {
-                const surplus = Math.abs(totalFixedCosts - currentEarned);
-                adviceBox.innerHTML = `💰 <span class="text-green-400 font-bold italic">Profit Phase:</span> You have a surplus of <b>₹${surplus.toLocaleString()}</b>. Keep building your wealth!`;
-                adviceBox.classList.add('text-green-400');
+                adviceBox.innerHTML = `FINANCIAL CLEARANCE ACHIEVED. SURPLUS REGISTERED AT <span class="text-green-400 font-bold">₹${Math.abs(totalFixedCosts - currentEarned).toLocaleString()}</span>.`;
             }
 
-            // Velocity Logic
             const dayOfMonth = today.getDate();
             const velocity = currentEarned / dayOfMonth;
             const daysLeft = velocity > 0 ? Math.ceil(netLiability / velocity) : '—';
 
-            // Final UI Render
             document.getElementById('totalLiability').innerText = `₹${netLiability.toLocaleString()}`;
             document.getElementById('dailyVelocity').innerText = `₹${Math.round(velocity).toLocaleString()}`;
-            document.getElementById('daysToFreedom').innerText = netLiability > 0 ? `${daysLeft} Days` : 'PAID';
+            document.getElementById('daysToFreedom').innerText = netLiability > 0 ? `${daysLeft} Days` : 'CLEAR';
             document.getElementById('reqDriving').innerText = Math.ceil(netLiability / 4500);
             document.getElementById('reqComp').innerText = Math.ceil(netLiability / 500);
-            
-            const badge = document.getElementById('statusBadge');
-            badge.innerText = netLiability > 0 ? 'LIABILITY' : 'PROFIT';
-            badge.className = `px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter mb-1 border ${netLiability > 0 ? 'text-red-500 border-red-500/20 bg-red-500/10' : 'text-green-500 border-green-500/20 bg-green-500/10'}`;
+            document.getElementById('efficiencyPer').innerText = `${Math.round(totalFixedCosts > 0 ? (currentEarned / totalFixedCosts) * 100 : 100)}% COVERAGE`;
 
-            // CC Payments List Render
             document.getElementById('ccPaymentList').innerHTML = ccPayments.map(p => `
-                <div class="flex justify-between text-[10px] bg-white/5 p-2 rounded-lg">
-                    <span>₹${p.amount} <span class="text-slate-500">| ${p.date}</span></span>
-                    <button onclick="removeCCPayment(${p.id})" class="text-red-500">×</button>
+                <div class="flex justify-between text-[10px] font-bold bg-white/5 p-3 rounded-xl border border-white/5">
+                    <span>₹${p.amount.toLocaleString()} <span class="text-slate-600 mx-2">/</span> ${p.date}</span>
+                    <button onclick="removeCCPayment(${p.id})" class="text-red-500">REMOVE</button>
                 </div>
             `).join('');
         }
