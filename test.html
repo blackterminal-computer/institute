@@ -3,286 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Terminal | Elite Dashboard</title>
+    <title>Black Terminal | Pro Dashboard</title>
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Syncopate:wght@700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #4f46e5; /* Softer indigo for primary */
-            --accent: #0ea5e9; /* Brighter sky blue for accent */
-            --bg: #0f172a; /* Slightly lighter slate bg */
-            --glass: rgba(255, 255, 255, 0.05); /* More subtle glass */
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --gold: #eab308; /* Softer gold */
-            --success: #22c55e;
-            --danger: #ef4444;
-            --neon-glow: 0 0 12px rgba(14, 165, 233, 0.3); /* Softer glow */
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
+            --primary: #8b5cf6; --accent: #00f2ff; --bg: #05070a;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --neon: 0 0 15px rgba(0, 242, 255, 0.3);
+            --gold: #ffd700;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Space Grotesk', sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body { 
-            background: var(--bg); color: var(--text-primary); 
-            padding-bottom: 120px; 
-            overflow-x: hidden;
-            background-image: radial-gradient(circle at top right, #1e293b, transparent);
+            background: var(--bg); color: #e2e8f0; 
+            background-image: radial-gradient(circle at 50% -20%, #1e1b4b, transparent);
+            min-height: 100vh; padding-bottom: 100px;
         }
 
-        /* --- Interaction UI Styles --- */
+        /* --- Custom Header Style --- */
+        .glass-header {
+            background: rgba(5, 7, 10, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .avatar-ring {
+            width: 48px; height: 48px; border-radius: 14px;
+            padding: 2px; background: linear-gradient(135deg, var(--primary), var(--accent));
+        }
+        .avatar-ring img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; background: #000; }
+
+        /* --- Marquee / Ticker --- */
+        .system-ticker {
+            background: rgba(0, 242, 255, 0.05);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+            padding: 6px 0; overflow: hidden;
+        }
+        .ticker-content {
+            display: inline-block; white-space: nowrap;
+            font-size: 11px; font-weight: 700; color: var(--accent);
+            animation: ticker 20s linear infinite; text-transform: uppercase;
+        }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* --- XP Dashboard --- */
+        .main-stats {
+            margin: 20px; padding: 20px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), transparent);
+            border-radius: 28px; border: 1px solid var(--border);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .xp-label { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+        .level-pill {
+            background: var(--primary); color: white;
+            padding: 4px 12px; border-radius: 8px; font-size: 10px; font-weight: 900;
+        }
+
+        .progress-container {
+            height: 10px; background: rgba(255,255,255,0.05);
+            border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .progress-bar {
+            height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent));
+            width: 0%; transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        /* --- Action Grid --- */
+        .action-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 20px;
+        }
+
+        .terminal-card {
+            background: var(--card-bg); border: 1px solid var(--border);
+            padding: 18px; border-radius: 24px; position: relative;
+            transition: all 0.3s ease; overflow: hidden;
+            text-decoration: none; color: white;
+        }
+        .terminal-card:active { transform: scale(0.96); background: rgba(255,255,255,0.08); }
+        .terminal-card i { font-size: 24px; color: var(--accent); margin-bottom: 10px; display: block; }
+        .terminal-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .terminal-card p { font-size: 10px; opacity: 0.5; }
+
+        .full-width { grid-column: span 2; }
+
+        /* --- Shoutout UI --- */
         #shoutoutBubble {
-            position: fixed; top: 24px; right: 24px; z-index: 11000;
-            max-width: 280px; background: rgba(15, 23, 42, 0.95);
-            border: 1px solid var(--glass-border); border-radius: 20px;
-            padding: 12px; display: flex; align-items: center; gap: 12px;
-            box-shadow: var(--neon-glow); backdrop-filter: blur(20px);
-            transform: translateX(150%); transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: fixed; top: 90px; left: 20px; right: 20px;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(15px);
+            padding: 12px; border-radius: 15px; border: 1px solid var(--accent);
+            display: flex; align-items: center; gap: 12px; z-index: 2000;
+            transform: translateY(-200%); transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
-        #shoutoutBubble.active { transform: translateX(0); }
-        .b-av { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--accent); object-fit: cover; }
+        #shoutoutBubble.active { transform: translateY(0); }
 
+        /* --- Bottom Nav --- */
+        .bottom-nav {
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            background: rgba(5, 7, 10, 0.85); border: 1px solid var(--border);
+            backdrop-filter: blur(20px); border-radius: 22px;
+            display: flex; justify-content: space-around; padding: 12px; z-index: 5000;
+        }
+        .nav-item { color: #64748b; text-decoration: none; text-align: center; font-size: 10px; font-weight: 600; }
+        .nav-item.active { color: var(--accent); text-shadow: var(--neon); }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 2px; }
+
+        /* --- Locked State --- */
+        .locked { filter: grayscale(1); opacity: 0.6; }
+        .lock-icon { position: absolute; top: 12px; right: 12px; color: #ef4444; font-size: 16px; }
+
+        /* Floating Attendance */
+        .att-btn {
+            position: fixed; bottom: 100px; right: 20px; width: 56px; height: 56px;
+            background: var(--accent); color: black; border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-shadow: var(--neon); z-index: 4000;
+        }
+        .done { background: #22c55e !important; box-shadow: none !important; }
+
+        /* Activity Panel */
         #activityPanel {
-            position: fixed; bottom: -100%; left: 0; right: 0; height: 80vh;
-            background: #0f172a; border-top: 2px solid var(--accent);
-            border-radius: 32px 32px 0 0; z-index: 20000;
-            transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); padding: 28px 24px; overflow-y: auto;
+            position: fixed; top: 0; right: -100%; width: 100%; height: 100%;
+            background: var(--bg); z-index: 10000; transition: 0.4s;
+            padding: 25px; overflow-y: auto;
         }
-        #activityPanel.open { bottom: 0; }
-        #overlay-blur { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; z-index: 15000; backdrop-filter: blur(6px); }
-
-        .log-card { display: flex; gap: 14px; padding: 16px; background: var(--glass); border-radius: 20px; margin-bottom: 14px; border: 1px solid var(--glass-border); }
-        .log-user { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
-        .log-msg { font-size: 14px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
-        .log-footer { display: flex; align-items: center; gap: 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
-        
-        .react-btn { background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.15); color: var(--accent); padding: 6px 14px; border-radius: 12px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; }
-        .react-btn:hover { background: rgba(14, 165, 233, 0.12); }
-        .react-btn:active { transform: scale(0.96); }
-        .shout-trigger { position: fixed; bottom: 110px; left: 24px; z-index: 9998; background: var(--accent); color: #fff; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); cursor: pointer; transition: 0.2s; }
-        .shout-trigger:hover { transform: scale(1.05); }
-
-        /* --- Slider Styling --- */
-        .slider-section { width: 100%; margin: 12px 0 18px 0; overflow: hidden; }
-        .label-tag { padding-left: 24px; font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase; }
-        .carousel-container { position: relative; width: 100%; overflow: hidden; }
-        .carousel-track { display: flex; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); width: 100%; }
-        .banner-card { min-width: 100%; padding: 0 24px; box-sizing: border-box; text-decoration: none; display: block; }
-        .banner-inner { position: relative; border-radius: 28px; overflow: hidden; border: 1px solid var(--glass-border); background: #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.4); aspect-ratio: 16 / 8; width: 100%; }
-        .slide-img { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 0; left: 0; }
-        .banner-text-bar { background: linear-gradient(transparent, rgba(15, 23, 42, 0.85)); backdrop-filter: blur(6px); padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.04); display: flex; justify-content: space-between; align-items: center; position: absolute; bottom: 0; width: 100%; z-index: 2; }
-        .dots-container { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
-        .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: 0.4s; }
-        .dot.active { background: var(--accent); width: 20px; border-radius: 12px; }
-        .shimmer { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); background-size: 200% 100%; animation: loading 1.2s infinite; }
-        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-        #adminAlert { position: fixed; top: 24px; left: 24px; right: 24px; background: rgba(79, 70, 229, 0.15); border: 1px solid var(--primary); backdrop-filter: blur(20px); padding: 16px; border-radius: 20px; z-index: 10001; display: none; animation: slideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes slideDown { from { transform: translateY(-120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .float-att { position: fixed !important; top: 110px; right: 18px; z-index: 9999; background: rgba(255, 255, 255, 0.04) !important; backdrop-filter: blur(16px); padding: 10px 16px; border-radius: 50px; display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text-primary); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); transition: 0.3s; }
-        .float-att i { font-size: 20px; color: var(--accent); }
-        .float-att span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .float-att.done { background: rgba(34, 197, 94, 0.08) !important; border-color: rgba(34, 197, 94, 0.2); color: var(--success); }
-        .float-att.done i { color: var(--success); }
-        .pulse { animation: soft-pulse 2s infinite ease-in-out; }
-        @keyframes soft-pulse { 0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.3); } 70% { box-shadow: 0 0 0 12px rgba(14, 165, 233, 0); } 100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); } }
-        .marquee-container { background: rgba(79, 70, 229, 0.04); padding: 10px 0; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--glass-border); margin-bottom: 12px; }
-        .marquee-content { display: inline-block; padding-left: 100%; font-size: 11px; font-weight: 600; color: var(--accent); animation: scroll 18s linear infinite; }
-        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        .xp-card { margin: 12px 24px; background: var(--glass); border: 1px solid var(--glass-border); padding: 20px; border-radius: 28px; backdrop-filter: blur(12px); }
-        .progress-track { height: 8px; background: rgba(255,255,255,0.04); border-radius: 12px; margin-top: 12px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .rank-section { margin: 0 24px 24px; background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(14, 165, 233, 0.08)); border-radius: 28px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(14, 165, 233, 0.15); }
-        .rank-data p { font-size: 11px; opacity: 0.6; font-weight: 700; letter-spacing: 1.2px; }
-        .rank-data h2 { font-size: 32px; color: var(--gold); font-weight: 800; }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 0 24px; }
-        .tournament-wrapper { grid-column: span 2; background: linear-gradient(90deg, #eab308, #ef4444, #4f46e5, #eab308); background-size: 300%; animation: bRotate 5s linear infinite; padding: 2px; border-radius: 28px; }
-        @keyframes bRotate { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
-        .tournament-card { background: #1e293b; border-radius: 26px; padding: 24px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: white; }
-        .card { background: var(--glass); border: 1px solid var(--glass-border); padding: 24px; border-radius: 28px; text-decoration: none; color: white; transition: 0.3s; position: relative; }
-        .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-        .card i { font-size: 32px; margin-bottom: 10px; display: block; color: var(--accent); }
-        .card h3 { font-size: 15px; font-weight: 700; }
-        .card p { font-size: 11px; opacity: 0.6; }
-        .card.locked { opacity: 0.6; pointer-events: none; }
-        .lock-badge { position: absolute; top: 16px; right: 16px; font-size: 15px; color: var(--danger); }
-        .bottom-nav { position: fixed; bottom: 18px; left: 18px; right: 18px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border-radius: 24px; display: flex; justify-content: space-around; padding: 14px; border: 1px solid var(--glass-border); z-index: 10000; box-shadow: 0 -6px 30px rgba(0,0,0,0.25); }
-        .nav-link { color: var(--text-secondary); text-decoration: none; text-align: center; font-size: 11px; font-weight: 600; transition: 0.2s; }
-        .nav-link.active { color: var(--accent); }
-        .nav-link i { font-size: 24px; display: block; margin-bottom: 4px; }
-        .premium-header { padding: 28px 24px 12px; display: flex; justify-content: space-between; align-items: center; }
-        .user-meta { display: flex; align-items: center; gap: 14px; }
-        .avatar-box { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--accent); overflow: hidden; background: var(--glass); }
-        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
-        .rank-badge { font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 6px; text-transform: uppercase; margin-bottom: 3px; display: inline-block; }
-        .badge-gold { background: rgba(234, 179, 8, 0.15); color: #eab308; border: 0.5px solid #eab308; }
-        .badge-silver { background: rgba(203, 213, 225, 0.15); color: #cbd5e1; border: 0.5px solid #cbd5e1; }
-        .badge-bronze { background: rgba(205, 127, 50, 0.15); color: #cd7f32; border: 0.5px solid #cd7f32; }
-
-        .war-card { border: 1px solid rgba(255,255,255,0.04); transition: 0.3s; overflow: hidden; }
-        .war-card:active { transform: scale(0.96); }
-        .war-icon-bg { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 22px; }
+        #activityPanel.open { right: 0; }
     </style>
 </head>
 <body>
 
     <div id="shoutoutBubble">
-        <img src="" id="bAvatar" class="b-av">
+        <img src="" id="bAvatar" style="width: 40px; height: 40px; border-radius: 10px;">
         <div>
-            <span style="font-size:9px; color:var(--accent); font-weight:800;" id="bUser">SYSTEM</span>
-            <p style="font-size:12px; font-weight:500;" id="bMsg">Waiting for signals...</p>
+            <span id="bUser" style="color: var(--accent); font-weight: 800; font-size: 10px;">SYSTEM</span>
+            <p id="bMsg" style="font-size: 13px; font-weight: 500;"></p>
         </div>
     </div>
 
-    <div id="overlay-blur" onclick="togglePanel()"></div>
+    <div id="adminAlert" style="margin: 10px 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 12px; border-radius: 15px; display: none;">
+        <p id="alertText" style="color: #ef4444; font-size: 12px; font-weight: 700;"></p>
+    </div>
+
+    <header class="glass-header">
+        <div class="user-profile">
+            <div class="avatar-ring"><img id="uAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"></div>
+            <div>
+                <p id="greetText" style="font-size: 10px; opacity: 0.5; font-weight: 700;">WELCOME BACK,</p>
+                <h2 id="uName" style="font-size: 16px; font-weight: 800; letter-spacing: 0.5px;">Student</h2>
+            </div>
+        </div>
+        <div id="sCount" style="font-weight: 800; font-size: 13px; color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 6px 12px; border-radius: 10px;">🔥 0</div>
+    </header>
+
+    <div class="system-ticker">
+        <div class="ticker-content" id="marqueeMsg">INITIALIZING SECURE TERMINAL CONNECTION...</div>
+    </div>
+
+    <section class="main-stats">
+        <div class="xp-label">
+            <div>
+                <span id="uLevelBadge" class="level-pill">Level 1</span>
+                <h3 id="uNameXP" style="margin-top: 5px; font-size: 20px;">0 XP</h3>
+            </div>
+            <div style="text-align: right;">
+                <p style="font-size: 9px; opacity: 0.5; font-weight: 800;">GLOBAL RANK</p>
+                <h2 id="instRank" style="color: var(--accent); font-family: 'Syncopate';">#--</h2>
+            </div>
+        </div>
+        <div class="progress-container">
+            <div id="xpBar" class="progress-bar"></div>
+        </div>
+        <p id="xpTip" style="font-size: 10px; margin-top: 10px; opacity: 0.7;"></p>
+    </section>
+
+    <div id="wordDisplaySection" style="margin: 0 20px 20px; display: none;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 15px; border-radius: 20px;">
+            <span style="font-size: 9px; color: var(--accent); font-weight: 800;">DAILY_BYTE_LOG</span>
+            <h2 id="wordText" style="margin: 5px 0; font-size: 18px; color: #fff;"></h2>
+            <p id="wordDesc" style="font-size: 12px; opacity: 0.6; line-height: 1.4;"></p>
+        </div>
+    </div>
+
+    <div style="margin: 0 20px 20px;">
+        <div style="background: #0f172a; border: 1px solid var(--border); border-radius: 15px; padding: 8px 15px; display: flex; align-items: center; gap: 10px;">
+            <input type="text" id="shoutInput" placeholder="Broadcast a signal (50 XP)..." style="background: transparent; border: none; color: white; flex: 1; outline: none; font-size: 13px;">
+            <button onclick="sendSignal()" style="background: var(--accent); border: none; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 10px;">SEND</button>
+        </div>
+    </div>
+
+    <div class="action-grid">
+        <a href="tournament.html" class="terminal-card full-width" style="background: linear-gradient(90deg, #6366f1, #06b6d4); border: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="background: #000; font-size: 8px; padding: 2px 8px; border-radius: 5px;">LIVE EVENT</span>
+                    <h3 style="margin-top: 5px; font-size: 18px;">Elite Tournament</h3>
+                </div>
+                <i class="ri-trophy-fill" style="color: #fff; font-size: 32px;"></i>
+            </div>
+        </a>
+
+        <div class="terminal-card" onclick="triggerChallenge()">
+            <i class="ri-sword-fill" style="color: #ef4444;"></i>
+            <h3>XP Raid</h3>
+            <p>Challenge Elites</p>
+        </div>
+
+        <div class="terminal-card" onclick="buyFocusWall()">
+            <i id="shieldIcon" class="ri-shield-flash-line" style="color: #22c55e;"></i>
+            <h3 id="wallTitle">Shield</h3>
+            <p id="wallStatus">Inactive</p>
+        </div>
+
+        <a href="daily-test.html" class="terminal-card">
+            <i class="ri-edit-box-line"></i>
+            <h3>Exams</h3>
+            <p>Daily Knowledge</p>
+        </a>
+
+        <a href="leaderboard.html" class="terminal-card">
+            <i class="ri-bar-chart-fill"></i>
+            <h3>Ranks</h3>
+            <p>Top Elites</p>
+        </a>
+
+        <a href="courses.html" class="terminal-card">
+            <i class="ri-mac-line"></i>
+            <h3>Lectures</h3>
+            <p>Video Core</p>
+        </a>
+
+        <div id="unitCard" class="terminal-card locked" onclick="handleUnitTest()">
+            <i class="ri-lock-2-fill lock-icon"></i>
+            <i class="ri-shield-user-line"></i>
+            <h3>Unit Test</h3>
+            <p id="unitMsg">Need 5000 XP</p>
+        </div>
+    </div>
+
+    <a href="attendence.html" id="att-pill" class="att-btn">
+        <i class="ri-fingerprint-2-fill" id="att-pill-icon"></i>
+    </a>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item active"><i class="ri-home-7-fill"></i><span>Home</span></a>
+        <a href="daily-test.html" class="nav-item"><i class="ri-terminal-window-line"></i><span>Tests</span></a>
+        <a href="battle.html" class="nav-item"><i class="ri-sword-line"></i><span>Battle</span></a>
+        <a href="chat.html" class="nav-item"><i class="ri-message-3-line"></i><span>Chat</span></a>
+        <a href="profile.html" class="nav-item"><i class="ri-user-6-line"></i><span>Profile</span></a>
+    </nav>
+
     <div id="activityPanel">
-        <div style="display:flex; justify-content:space-between; margin-bottom:24px; position:sticky; top:0; background:#0f172a; padding-bottom:12px; z-index:10;">
-            <h3 style="font-size:15px; color:var(--accent); font-weight:700;">SIGNAL ARCHIVE</h3>
-            <i class="ri-close-line" onclick="togglePanel()" style="font-size:26px; color:var(--danger);"></i>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="color:var(--accent)">SIGNAL LOGS</h3>
+            <i class="ri-close-fill" onclick="togglePanel()" style="font-size:30px;"></i>
         </div>
         <div id="logList"></div>
     </div>
 
-    <div class="shout-trigger" onclick="togglePanel()"><i class="ri-history-line"></i></div>
-
-    <div id="adminAlert">
-        <div style="display:flex; align-items:center; gap:14px;">
-            <i class="ri-error-warning-fill" style="font-size:26px; color:var(--gold);"></i>
-            <div>
-                <b style="font-size:13px; color:var(--accent); text-transform:uppercase;">System Message</b>
-                <p id="alertText" style="font-size:15px; font-weight:500; margin-top:3px;"></p>
-            </div>
-        </div>
+    <div onclick="togglePanel()" style="position:fixed; top:150px; left:0; background:var(--accent); color:black; padding:5px 8px; border-radius:0 8px 8px 0; z-index:1000;">
+        <i class="ri-history-line"></i>
     </div>
-
-    <a href="attendence.html" id="att-pill" class="float-att pulse">
-        <i class="ri-fingerprint-fill" id="att-pill-icon"></i>
-        <span id="att-pill-text">Attendance</span>
-    </a>
-
-    <header class="premium-header">
-        <div class="user-meta">
-            <div class="avatar-box"><img id="uAvatar" src="" alt="Avatar"></div>
-            <div>
-                <div id="rankBadge" class="rank-badge">Elite Rank</div>
-                <p id="greetText" style="font-size: 11px; opacity: 0.6; font-weight: 700; text-transform: uppercase;">Syncing...</p>
-                <h2 id="uName" style="font-size: 20px; font-weight: 800;">Student</h2>
-            </div>
-        </div>
-        <div id="sCount" style="background:rgba(255,100,0,0.08); color:#ff6400; padding:9px 16px; border-radius:16px; font-weight:800; font-size:13px;">🔥 0 Days</div>
-    </header>
-
-    <div class="marquee-container">
-        <div class="marquee-content" id="marqueeMsg">Syncing with terminal...</div>
-    </div>
-
-    <div id="wordDisplaySection" style="margin: 24px; display: none; animation: slideUp 0.8s ease;">
-        <p class="label-tag" style="margin-left: 0;">
-            <i class="ri-terminal-box-line" style="display: inline; font-size: 13px; color: var(--accent);"></i> 
-            DAILY_LEARNING_LOG
-        </p>
-        
-        <div class="card" style="
-            background: var(--glass); 
-            border: 1px solid var(--glass-border); 
-            border-left: 4px solid var(--accent); 
-            border-radius: 24px; 
-            padding: 24px;
-            backdrop-filter: blur(12px);
-        ">
-            <h2 id="wordText" style="font-size: 20px; color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700;">LOADING...</h2>
-            <div style="height: 1px; background: rgba(255,255,255,0.04); margin: 14px 0;"></div>
-            <p id="wordDesc" style="font-size: 14px; opacity: 0.8; line-height: 1.7; color: var(--text-secondary); font-weight: 400; margin: 0;">
-                Fetching definition from terminal...
-            </p>
-        </div>
-    </div>
-
-    <div class="xp-card" style="margin-bottom: 18px; padding: 14px; background: rgba(14,165,233,0.04); border-color: rgba(14,165,233,0.15);">
-        <div style="display:flex; gap:12px;">
-            <input type="text" id="shoutInput" placeholder="Broadcast a signal... (50 XP)" style="background:transparent; border:none; color:white; font-size:13px; flex:1; outline:none;" maxlength="45">
-            <button onclick="sendSignal()" style="background:var(--accent); border:none; color:#fff; font-weight:800; font-size:10px; padding:7px 14px; border-radius:10px; text-transform:uppercase;">Send</button>
-        </div>
-    </div>
-
-    <div class="slider-section" id="sliderRoot" style="display: none;">
-        <p class="label-tag">Elite Spotlight</p>
-        <div class="carousel-container">
-            <div class="carousel-track" id="sliderTrack"></div>
-        </div>
-        <div class="dots-container" id="sliderDots"></div>
-    </div>
-
-    <div class="xp-card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 10px;">
-            <div>
-                <span id="uLevelBadge" style="background:var(--primary); color:white; font-size:10px; padding:3px 10px; border-radius:6px; font-weight:800; text-transform:uppercase; display:block; width:fit-content; margin-bottom:5px;">Level 1</span>
-                <span id="uNameXP" style="font-weight:800; font-size: 16px;">Loading...</span>
-            </div>
-            <span id="xpVal" style="color:var(--accent); font-weight:800;">0 XP</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" id="xpBar"></div></div>
-        <p id="xpTip" style="font-size: 11px; margin-top: 12px; color: var(--accent); display: flex; align-items: center; gap: 6px;">
-            <i class="ri-flashlight-fill" style="color:var(--gold)"></i> <span>Loading milestone...</span>
-        </p>
-    </div>
-
-    <div class="rank-section">
-        <div class="rank-data"><p>GLOBAL RANK</p><h2 id="instRank">#--</h2></div>
-        <i class="ri-medal-fill" style="font-size:36px; color:var(--gold);"></i>
-    </div>
-    
-    <div class="fee-card" id="fee-container" style="margin: 18px 24px; padding: 20px; border-radius: 28px; display: flex; justify-content: space-between; align-items: center; background: var(--glass); border: 1px solid var(--glass-border);">
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <div id="fee-icon-bg" style="width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px;"><i id="fee-icon" class="ri-refund-2-line"></i></div>
-            <div><h4 style="font-size: 14px; font-weight: 700;">Monthly Fee</h4><p id="fee-month-text" style="font-size: 11px; opacity: 0.6;">Checking terminal...</p></div>
-        </div>
-        <span id="fee-badge" style="font-size: 10px; font-weight: 800; padding: 6px 12px; border-radius: 10px; text-transform: uppercase;">---</span>
-    </div>
-
-    <p class="label-tag">Terminal War Zone</p>
-    <div class="grid" style="margin-bottom: 24px;">
-        <div class="card war-card" onclick="triggerChallenge()" style="background: rgba(239, 68, 68, 0.04); border-color: rgba(239, 68, 68, 0.15);">
-            <div class="war-icon-bg" style="background: rgba(239, 68, 68, 0.08); color: var(--danger);"><i class="ri-sword-fill"></i></div>
-            <h4 style="font-size: 14px;">Challenge</h4>
-            <p style="font-size: 10px; opacity: 0.6;">Steal XP (Costs 50)</p>
-        </div>
-        <div class="card war-card" onclick="buyFocusWall()" style="background: rgba(34, 197, 94, 0.04); border-color: rgba(34, 197, 94, 0.15);">
-            <div class="war-icon-bg" style="background: rgba(34, 197, 94, 0.08); color: var(--success);"><i id="shieldIcon" class="ri-shield-flash-line"></i></div>
-            <h4 style="font-size: 14px;" id="wallTitle">Focus Wall</h4>
-            <p id="wallStatus" style="font-size: 10px; opacity: 0.6;">Inactive</p>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="tournament-wrapper">
-            <a href="tournament.html" class="tournament-card">
-                <div><span style="background:#ef4444; font-size:9px; padding:3px 10px; border-radius:12px; font-weight:800;">LIVE</span><h3 style="margin-top:6px; font-size: 20px;">Tournament</h3></div>
-                <div style="font-size:40px;">🏆</div>
-            </a>
-        </div>
-        <a href="daily-test.html" class="card"><i class="ri-edit-box-line"></i><h3>Exams</h3><p>Daily Tests</p></a>
-        <a href="battle.html" class="card"><i class="ri-sword-line" style="color:#ef4444"></i><h3>Battle</h3><p>1vs1 PvP</p></a>
-        <a href="flash.html" class="card"><i class="ri-flashlight-fill" style="color:var(--gold)"></i><h3>Flash</h3><p>Quick Revise</p></a>
-        <a href="leaderboard.html" class="card"><i class="ri-bar-chart-fill" style="color:var(--accent)"></i><h3>Ranks</h3><p>Top Elite</p></a>
-        <a href="courses.html" class="card"><i class="ri-mac-line"></i><h3>Courses</h3><p>Video Lectures</p></a>
-        <a href="javascript:void(0)" onclick="handleUnitTest()" id="unitCard" class="card locked">
-            <i class="ri-lock-2-line" id="unitIcon"></i>
-            <i class="ri-error-warning-fill lock-badge" id="lockStatus"></i>
-            <h3>Unit Test</h3>
-            <p id="unitMsg">Lock: 5000 XP</p>
-        </a>
-    </div>
-
-    <nav class="bottom-nav">
-        <a href="index.html" class="nav-link active"><i class="ri-home-5-fill"></i><span>Home</span></a>
-        <a href="daily-test.html" class="nav-link"><i class="ri-edit-line"></i><span>Exams</span></a>
-        <a href="battle.html" class="nav-link"><i class="ri-sword-line"></i><span>Battle</span></a>
-        <a href="chat.html" class="nav-link"><i class="ri-chat-3-line"></i><span>Chat</span></a>
-        <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
-    </nav>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -304,13 +293,9 @@
         if (!student) { window.location.href = "login.html"; }
 
         let userXP = 0;
-        let currentSlide = 0;
-        let totalSlides = 0;
 
         window.togglePanel = () => {
-            const panel = document.getElementById('activityPanel');
-            panel.classList.toggle('open');
-            document.getElementById('overlay-blur').style.display = panel.classList.contains('open') ? 'block' : 'none';
+            document.getElementById('activityPanel').classList.toggle('open');
         };
 
         window.sendSignal = async () => {
@@ -333,19 +318,6 @@
             } else { alert("Insufficient XP! (Need 50)"); }
         };
 
-        window.sendReaction = async (docId, targetUser) => {
-            try {
-                const logRef = doc(db, "shoutouts", docId);
-                await updateDoc(logRef, { likes: increment(1) });
-                await setDoc(doc(db, "interactions", "shoutout"), {
-                    user: "SYSTEM",
-                    text: `${student} sent 🔥 to ${targetUser}`,
-                    avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${student}`,
-                    time: Date.now()
-                });
-            } catch (e) { console.error(e); }
-        };
-
         window.triggerChallenge = async () => {
             if(student === "Guest") return;
             const uRef = doc(db, "students", student);
@@ -363,14 +335,14 @@
             if(tData.focusWall > 0) {
                 await updateDoc(tRef, { focusWall: increment(-1) });
                 await updateDoc(uRef, { xp: increment(-50) });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: "SECURITY", text: `${targetId} ki Focus Wall ne ${student} ka attack rok diya!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now() });
-                alert(`${targetId}'s Shield absorbed the attack! You lost 50 XP.`);
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "SECURITY", text: `${targetId} blocked ${student}'s raid!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Security", time: Date.now() });
+                alert(`${targetId}'s Shield absorbed the attack!`);
             } else {
                 const stolen = Math.floor(Math.random() * 41) + 40;
                 await updateDoc(uRef, { xp: increment(stolen - 50) });
                 await updateDoc(tRef, { xp: increment(-stolen) });
-                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `🔥 ${student} ne RAID mein ${targetId} se ${stolen} XP chura liye!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
-                alert(`Raid Success! Stole ${stolen} XP from ${targetId}.`);
+                await setDoc(doc(db, "interactions", "shoutout"), { user: "RAID", text: `${student} raided ${targetId} for ${stolen} XP!`, avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Raid", time: Date.now() });
+                alert(`Raid Success! Stole ${stolen} XP.`);
             }
         };
 
@@ -380,95 +352,28 @@
             const uSnap = await getDoc(uRef);
             if(uSnap.data().xp < 150) return alert("Focus Wall costs 150 XP!");
             await updateDoc(uRef, { xp: increment(-150), focusWall: increment(1) });
-            alert("Focus Wall Deployed! Next attack will be blocked.");
+            alert("Focus Wall Deployed!");
         };
-
-        async function syncSlider() {
-            onSnapshot(doc(db, "settings", "slider"), (snap) => {
-                if(snap.exists()) {
-                    const data = snap.data();
-                    const urls = data.images ? data.images.split(',') : [];
-                    const titles = data.titles ? data.titles.split(',') : [];
-                    const links = data.links ? data.links.split(',') : [];
-                    const track = document.getElementById('sliderTrack');
-                    const dots = document.getElementById('sliderDots');
-                    if(urls.length > 0) {
-                        document.getElementById('sliderRoot').style.display = 'block';
-                        track.innerHTML = ''; dots.innerHTML = '';
-                        totalSlides = urls.length;
-                        urls.forEach((url, i) => {
-                            const redirectLink = (links[i] && links[i].trim() !== "") ? links[i].trim() : "javascript:void(0)";
-                            const slide = document.createElement('a');
-                            slide.href = redirectLink; slide.className = 'banner-card';
-                            slide.innerHTML = `<div class="banner-inner shimmer"><img class="slide-img" src="${url.trim()}" onload="this.parentElement.classList.remove('shimmer')"><div class="banner-text-bar"><h3 style="color:white; font-size: 15px; font-weight: 700;">${titles[i] ? titles[i].trim() : 'Elite Terminal'}</h3><span style="background:var(--accent); color:#fff; padding:4px 10px; border-radius:66px; font-size:10px; font-weight:800; text-transform:uppercase;">FEATURED</span></div></div>`;
-                            track.appendChild(slide);
-                            const dot = document.createElement('div');
-                            dot.className = `dot ${i === 0 ? 'active' : ''}`;
-                            dots.appendChild(dot);
-                        });
-                    }
-                }
-            });
-        }
-
-        setInterval(() => {
-            if(totalSlides > 1) {
-                currentSlide = (currentSlide + 1) % totalSlides;
-                const track = document.getElementById('sliderTrack');
-                const dots = document.querySelectorAll('.dot');
-                if(track) track.style.transform = `translateX(-${currentSlide * 100}%)`;
-                dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
-            }
-        }, 4000);
-
-        async function updateStreakLogic(data) {
-            const today = new Date(); const todayStr = today.toDateString();
-            const lastVisit = localStorage.getItem(student + "_last_visit");
-            let streak = data.streak || 0;
-            if (lastVisit === todayStr) return; 
-            const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-            if (lastVisit === yesterday.toDateString()) streak += 1; else streak = 1;
-            localStorage.setItem(student + "_last_visit", todayStr);
-            localStorage.setItem(student + "_streak", streak);
-            if(student !== "Guest") await updateDoc(doc(db, "students", student), { streak: streak });
-        }
-
-        function loadCache() {
-            if(student === "Guest") return;
-            document.getElementById("uName").innerText = student;
-            const nameXP = document.getElementById("uNameXP");
-            if(nameXP) nameXP.innerText = student; 
-            const cXP = localStorage.getItem("user_xp_cache");
-            const cStreak = localStorage.getItem(student + "_streak");
-            const cMsg = localStorage.getItem("marquee_cache");
-            if(cXP) { userXP = parseInt(cXP); updateXPUI(userXP); }
-            if(cStreak) document.getElementById("sCount").innerText = "🔥 " + cStreak + " Days";
-            if(cMsg) document.getElementById("marqueeMsg").innerText = cMsg;
-        }
 
         function updateXPUI(xp) {
             const currentXP = parseInt(xp) || 0;
-            document.getElementById("xpVal").innerText = currentXP + " XP";
+            document.getElementById("uNameXP").innerText = currentXP + " XP";
             document.getElementById("xpBar").style.width = ((currentXP % 1000) / 1000 * 100) + "%";
             const currentLevel = Math.floor(currentXP / 1000) + 1;
             document.getElementById("uLevelBadge").innerText = "Level " + currentLevel;
-            document.getElementById("xpTip").innerHTML = `<i class="ri-flashlight-fill" style="color:#eab308"></i> Milestone: <b>Level ${currentLevel + 1}</b>`;
+            document.getElementById("xpTip").innerText = `Next: Level ${currentLevel + 1}`;
             if(currentXP >= 5000) {
-                const uc = document.getElementById("unitCard");
-                if(uc) { uc.classList.remove("locked"); document.getElementById("unitIcon").className = "ri-shield-flash-line"; document.getElementById("unitMsg").innerText = "Unlocked"; }
+                document.getElementById("unitCard").classList.remove("locked");
+                document.getElementById("unitMsg").innerText = "Unlocked";
             }
         }
 
         async function syncData() {
-            syncSlider();
-
-            // Word of the Day Listener (New Added)
             onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
                 if (snap.exists()) {
-                    const data = snap.data();
                     document.getElementById('wordDisplaySection').style.display = 'block';
-                    document.getElementById('wordText').innerText = data.word;
-                    document.getElementById('wordDesc').innerText = data.description;
+                    document.getElementById('wordText').innerText = snap.data().word;
+                    document.getElementById('wordDesc').innerText = snap.data().description;
                 }
             });
 
@@ -485,22 +390,8 @@
                 }
             });
 
-            const qH = query(collection(db, "shoutouts"), orderBy("time", "desc"), limit(15));
-            onSnapshot(qH, (snap) => {
-                const list = document.getElementById("logList");
-                list.innerHTML = "";
-                snap.forEach(docSnap => {
-                    const d = docSnap.data();
-                    list.innerHTML += `<div class="log-card"><img src="${d.avatar}" class="b-av" style="width:36px; height:36px;"><div style="flex:1"><span class="log-user">${d.user}</span><p class="log-msg">${d.text}</p><div class="log-footer"><div class="react-btn" onclick="sendReaction('${docSnap.id}', '${d.user}')"><i class="ri-fire-fill"></i> <span style="font-weight:700">${d.likes || 0}</span></div><span style="font-size:9px; opacity:0.4;">${new Date(d.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div></div>`;
-                });
-            });
-
             onSnapshot(doc(db, "settings", "marquee"), (snap) => {
-                if(snap.exists()){
-                    const newMsg = snap.data().msg;
-                    document.getElementById("marqueeMsg").innerText = newMsg;
-                    localStorage.setItem("marquee_cache", newMsg);
-                }
+                if(snap.exists()) document.getElementById("marqueeMsg").innerText = snap.data().msg;
             });
 
             onSnapshot(doc(db, "notices", "main"), (snap) => {
@@ -516,22 +407,12 @@
             onSnapshot(doc(db, "students", student), (snap) => {
                 if(snap.exists()){
                     const d = snap.data();
-                    updateStreakLogic(d);
-                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
+                    document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0);
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
                     userXP = d.xp || 0; updateXPUI(userXP);
                     const walls = d.focusWall || 0;
-                    document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Layers Active` : "Inactive";
-                    document.getElementById("wallTitle").style.color = walls > 0 ? "var(--success)" : "white";
+                    document.getElementById("wallStatus").innerText = walls > 0 ? `${walls} Active` : "Inactive";
                     document.getElementById("shieldIcon").className = walls > 0 ? "ri-shield-check-fill" : "ri-shield-flash-line";
-                    const fBadge = document.getElementById("fee-badge");
-                    fBadge.innerText = d.paymentStatus === "Paid" ? "Completed" : "Pending";
-                    fBadge.style.color = d.paymentStatus === "Paid" ? "#22c55e" : "#ef4444";
-                    fBadge.style.background = d.paymentStatus === "Paid" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)";
-                    const badge = document.getElementById("rankBadge");
-                    if (userXP >= 5000) { badge.innerText = "Gold Elite"; badge.className = "rank-badge badge-gold"; }
-                    else if (userXP >= 2000) { badge.innerText = "Silver Elite"; badge.className = "rank-badge badge-silver"; }
-                    else { badge.innerText = "Bronze Trainee"; badge.className = "rank-badge badge-bronze"; }
                 }
             });
 
@@ -541,46 +422,21 @@
             const r = all.findIndex(s=>s.id === student) + 1;
             if(r > 0) document.getElementById("instRank").innerText = "#" + r;
 
-            // --- Real-time Attendance & XP Sync Logic (OPTIMIZED TRIGGER) ---
             const todayISO = new Date().toISOString().split('T')[0];
             onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
                 const pill = document.getElementById("att-pill");
                 if (attSnap.exists()) {
-                    pill.classList.remove("pulse"); pill.classList.add("done");
+                    pill.classList.add("done");
                     document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
-                    document.getElementById("att-pill-text").innerText = "Present";
-                    pill.href = "javascript:void(0)"; 
-
                     const hasRewarded = localStorage.getItem(`att_reward_${todayISO}`);
-                    if (!hasRewarded && student !== "Guest") {
-                        const userRef = doc(db, "students", student);
-                        const userSnap = await getDoc(userRef);
-                        const userPhoto = userSnap.exists() ? userSnap.data().photo : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
-
-                        await updateDoc(userRef, {
-                            xp: increment(100),
-                            attendanceCount: increment(1)
-                        });
-
-                        await setDoc(doc(db, "interactions", "shoutout"), {
-                            user: "SUCCESS",
-                            text: `✨ ${student} marked attendance & earned 100 XP!`,
-                            avatar: userPhoto,
-                            time: Date.now()
-                        });
-
+                    if (!hasRewarded) {
+                        await updateDoc(doc(db, "students", student), { xp: increment(100), attendanceCount: increment(1) });
                         localStorage.setItem(`att_reward_${todayISO}`, "true");
                     }
-                } else {
-                    pill.classList.add("pulse"); pill.classList.remove("done");
-                    document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
-                    document.getElementById("att-pill-text").innerText = "Attendance";
-                    pill.href = "attendence.html";
                 }
             });
         }
 
-        loadCache();
         syncData();
     </script>
 </body>
