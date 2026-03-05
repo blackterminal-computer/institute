@@ -3,90 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Terminal Exam</title>
+    <title>BT | Terminal Exam v2.0</title>
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
-            --primary: #6366f1; --accent: #06b6d4; --bg: #020617;
-            --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
-            --success: #22c55e; --danger: #ef4444;
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --danger: #f43f5e;
+            --terminal-green: #10b981;
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
         body { 
-            background: var(--bg); color: #f8fafc; min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center; padding: 20px;
-            background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
+            background: var(--bg); 
+            color: #f8fafc; 
+            min-height: 100vh;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            overflow-x: hidden;
         }
-        .stats-bar { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 20px; }
-        .timer-pill { background: rgba(34, 197, 94, 0.1); color: var(--success); padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(34, 197, 94, 0.2); font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 14px; transition: 0.3s; }
-        .timer-warning { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); animation: pulse 1s infinite; }
+
+        /* Scanline Effect */
+        body::before {
+            content: " ";
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            z-index: 100;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .stats-bar { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; z-index: 10; }
         
-        .card { width: 100%; max-width: 600px; background: var(--glass); border: 1px solid var(--glass-border); padding: 30px 20px; border-radius: 30px; backdrop-filter: blur(20px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden; }
-        #q-num { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        #q { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 25px; }
+        .brand { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        .brand i { color: var(--accent); }
+
+        .timer-pill { 
+            background: rgba(16, 185, 129, 0.1); 
+            color: var(--success); 
+            padding: 8px 16px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(16, 185, 129, 0.2); 
+            font-family: 'Fira Code', monospace;
+            font-weight: 600; 
+            font-size: 14px; 
+            transition: all 0.3s ease;
+        }
+
+        .timer-warning { 
+            background: rgba(244, 63, 94, 0.15); 
+            color: var(--danger); 
+            border-color: var(--danger); 
+            animation: pulse 1s infinite; 
+        }
+
+        .card { 
+            width: 100%; 
+            max-width: 600px; 
+            background: var(--glass); 
+            border: 1px solid var(--glass-border); 
+            padding: 32px 24px; 
+            border-radius: 24px; 
+            backdrop-filter: blur(20px); 
+            position: relative; 
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #q-num { font-family: 'Fira Code', monospace; font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; display: block; opacity: 0.8; }
+        #q { font-size: 22px; font-weight: 700; line-height: 1.4; margin-bottom: 28px; color: #fff; }
         
-        .options-grid { display: grid; gap: 12px; }
-        .opt { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 18px; border-radius: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; font-weight: 600; position: relative; }
-        .opt:active { transform: scale(0.98); }
-        .opt.correct { background: rgba(34, 197, 94, 0.15) !important; border-color: var(--success) !important; color: var(--success); box-shadow: 0 0 15px rgba(34, 197, 94, 0.1); }
-        .opt.wrong { background: rgba(239, 68, 68, 0.15) !important; border-color: var(--danger) !important; color: var(--danger); animation: shake 0.4s; }
-        .opt.lock { pointer-events: none; opacity: 0.7; }
+        .options-grid { display: grid; gap: 14px; }
+        .opt { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--glass-border); 
+            padding: 20px; 
+            border-radius: 16px; 
+            cursor: pointer; 
+            transition: 0.2s all; 
+            display: flex; 
+            align-items: center; 
+            font-weight: 500; 
+            font-size: 16px;
+        }
         
-        .footer { width: 100%; max-width: 600px; margin-top: 25px; display: flex; justify-content: flex-end; }
-        button { padding: 16px 35px; border: none; border-radius: 20px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4); }
-        button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .opt:hover:not(.lock) { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); transform: translateX(4px); }
+        .opt.correct { background: rgba(16, 185, 129, 0.15) !important; border-color: var(--success) !important; color: var(--success); font-weight: 700; }
+        .opt.wrong { background: rgba(244, 63, 94, 0.15) !important; border-color: var(--danger) !important; color: var(--danger); animation: shake 0.4s; }
+        .opt.lock { cursor: default; }
+        
+        .footer { width: 100%; max-width: 600px; margin-top: 24px; display: flex; justify-content: flex-end; }
+        
+        .btn-primary { 
+            padding: 14px 28px; 
+            border-radius: 14px; 
+            background: #fff; 
+            color: #000; 
+            font-weight: 700; 
+            border: none;
+            cursor: pointer; 
+            transition: 0.3s; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+        }
+
+        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 
         /* Animations */
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
-        .l-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .l-table td { padding: 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
-        .rank-badge { width: 24px; height: 24px; background: var(--primary); display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11px; font-weight: 800; }
-        .top-rank { background: #fbbf24; color: #000; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
     </style>
 </head>
 <body>
 
     <div class="stats-bar">
-        <div style="font-weight: 800; font-size: 18px;">Daily<span style="color:var(--accent)">Exam</span></div>
-        <div class="timer-pill" id="timer-box"><i class="ri-time-line"></i> <span id="timer">20s</span></div>
+        <div class="brand"><i class="ri-terminal-box-fill"></i>BT_TERMINAL</div>
+        <div class="timer-pill" id="timer-box"><i class="ri-timer-flash-line"></i> <span id="timer">20s</span></div>
     </div>
 
     <div class="card" id="examBox">
-        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 30px; overflow: hidden;">
-            <div id="p-fill" style="height: 100%; background: var(--primary); width: 0%; transition: 0.5s;"></div>
+        <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 24px; overflow: hidden;">
+            <div id="p-fill" style="height: 100%; background: var(--accent); width: 0%; transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
         </div>
-        <span id="q-num">Connecting...</span>
-        <h3 id="q">Wait...</h3>
+        <span id="q-num">Initializing...</span>
+        <h3 id="q">Fetching System Data...</h3>
         <div class="options-grid" id="options"></div>
-        <div class="footer"><button id="nextBtn" disabled>Next Question <i class="ri-arrow-right-line"></i></button></div>
+        <div class="footer"><button id="nextBtn" class="btn-primary" disabled>Next Sequence <i class="ri-arrow-right-line"></i></button></div>
     </div>
 
     <div class="card" id="lockBox" style="display:none; text-align: center;">
-        <i class="ri-shield-check-fill" style="font-size: 60px; color: var(--success); filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.4));"></i>
-        <h2 style="margin-top:15px; font-weight: 800;">Exam Finished!</h2>
-        <p id="score-text" style="opacity: 0.9; font-size: 16px; margin: 10px 0; color: var(--accent); font-weight: 800;"></p>
-        <p style="opacity: 0.7; font-size: 13px; margin-bottom: 25px;">XP has been synced to your terminal profile.</p>
+        <div style="margin-bottom: 20px;">
+            <i class="ri-checkbox-circle-fill" style="font-size: 56px; color: var(--success);"></i>
+        </div>
+        <h2 style="font-weight: 800; font-size: 24px;">Terminal Sync Complete</h2>
+        <p id="score-text" style="font-family: 'Fira Code'; margin: 12px 0; color: var(--accent); font-size: 18px;"></p>
         
-        <div style="background: rgba(255,255,255,0.02); padding: 25px; border-radius: 25px; border: 1px solid var(--glass-border);">
-            <p style="font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: 1.5px;">NEXT ATTEMPT UNLOCKS IN</p>
-            <div id="count" style="font-size: 32px; font-weight: 800; color: #fff; margin-top: 5px;">00h 00m 00s</div>
+        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 20px; border: 1px solid var(--glass-border); margin: 24px 0;">
+            <p style="font-size: 10px; font-weight: 800; opacity: 0.5; letter-spacing: 2px;">NEXT PROTOCOL UNLOCKS IN</p>
+            <div id="count" style="font-size: 28px; font-weight: 700; color: #fff; margin-top: 8px; font-family: 'Fira Code';">00:00:00</div>
         </div>
 
-        <div style="margin-top: 30px; text-align: left;">
-            <p style="font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 12px; letter-spacing: 1px;">GLOBAL STANDINGS</p>
-            <table class="l-table"><tbody id="leaderboard-body"></tbody></table>
+        <div style="text-align: left;">
+            <p style="font-size: 11px; font-weight: 800; opacity: 0.5; margin-bottom: 12px;">SYSTEM RANKINGS</p>
+            <table style="width:100%; border-collapse: collapse;"><tbody id="leaderboard-body"></tbody></table>
         </div>
-        <button onclick="window.location.href='index.html'" style="margin-top: 30px; width: 100%; background: var(--glass); border: 1px solid var(--glass-border); box-shadow: none;">Back to Home</button>
     </div>
 
     <script type="module">
+        // [Firebase config remains the same as your original snippet]
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, updateDoc, increment, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -115,7 +195,7 @@
             { question: "Time complexity of searching in a balanced BST?", a: "O(n)", b: "O(log n)", c: "O(1)", d: "O(n²)", correct: "B" }
         ];
 
-        let student = localStorage.getItem("studentName") || "Guest";
+        let student = localStorage.getItem("studentName") || "Root_User";
         let questions = [], index = 0, score = 0, locked = false, time = 20, timerInterval;
 
         const todayStr = new Date().toDateString();
@@ -137,14 +217,22 @@
             const timerBox = document.getElementById("timer-box");
             timerBox.classList.remove("timer-warning");
             document.getElementById("nextBtn").disabled = true;
+            
             const q = questions[index];
-            document.getElementById("q-num").innerText = `Question ${index + 1} of ${questions.length}`;
+            const examBox = document.getElementById("examBox");
+            
+            // Subtle transition effect
+            examBox.style.transform = "translateY(10px)";
+            setTimeout(() => examBox.style.transform = "translateY(0px)", 50);
+
+            document.getElementById("q-num").innerText = `Sequence ${index + 1} // ${questions.length}`;
             document.getElementById("p-fill").style.width = ((index + 1) / questions.length * 100) + "%";
             document.getElementById("q").innerText = q.question;
+            
             const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
             document.getElementById("options").innerHTML = opts.map(o => `
                 <div class="opt" onclick="window.selectOpt('${o.id}', this)">
-                    <span style="color:var(--accent); margin-right:12px; font-family:'Orbitron'; font-size:12px;">${o.id}</span> ${o.v}
+                    <span style="font-family:'Fira Code'; color:var(--accent); margin-right:15px; font-size:12px; border: 1px solid rgba(6,182,212,0.2); padding: 2px 6px; border-radius: 4px;">${o.id}</span> ${o.v}
                 </div>
             `).join('');
         }
@@ -154,32 +242,39 @@
             locked = true;
             document.getElementById("nextBtn").disabled = false;
             const correct = questions[index].correct;
+            
             if (v === correct) { 
                 el.classList.add("correct"); 
                 score++; 
+                hapticFeedback(50);
             } else { 
                 el.classList.add("wrong");
                 document.querySelectorAll(".opt").forEach(o => {
-                    if(o.innerText.trim().startsWith(correct)) o.classList.add("correct");
+                    if(o.innerText.includes(` ${questions[index][correct.toLowerCase()]}`)) o.classList.add("correct");
                 });
             }
             document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
         };
 
+        function hapticFeedback(ms) {
+            if (window.navigator.vibrate) window.navigator.vibrate(ms);
+        }
+
         document.getElementById("nextBtn").onclick = () => { index++; showQ(); };
 
         function startTimer() {
             timerInterval = setInterval(() => {
+                if (locked) return;
                 time--;
                 document.getElementById("timer").innerText = time + "s";
                 if(time <= 5) document.getElementById("timer-box").classList.add("timer-warning");
                 
-                if (time <= 0 && !locked) { 
+                if (time <= 0) { 
                     locked = true; 
                     document.getElementById("nextBtn").disabled = false;
                     const correct = questions[index].correct;
                     document.querySelectorAll(".opt").forEach(o => {
-                        if(o.innerText.trim().startsWith(correct)) o.classList.add("correct");
+                        if(o.innerText.includes(` ${questions[index][correct.toLowerCase()]}`)) o.classList.add("correct");
                         o.classList.add("lock");
                     });
                 }
@@ -190,18 +285,14 @@
             clearInterval(timerInterval);
             localStorage.setItem("daily_done_" + student, new Date().toDateString());
             
-            // Score Calculation
-            const finalPercent = (score / questions.length) * 100;
-            if(finalPercent >= 80) {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            if((score / questions.length) >= 0.7) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#06b6d4', '#10b981'] });
             }
 
-            if(student !== "Guest") {
+            if(student !== "Root_User") {
                 try {
-                    await updateDoc(doc(db, "students", student), {
-                        xp: increment(100)
-                    });
-                } catch (e) { console.error("Firebase Sync Error", e); }
+                    await updateDoc(doc(db, "students", student), { xp: increment(score * 10) });
+                } catch (e) { console.error("Sync Error", e); }
             }
             lockScreen();
         }
@@ -209,7 +300,7 @@
         async function lockScreen() {
             document.getElementById("examBox").style.display = "none";
             document.getElementById("lockBox").style.display = "block";
-            document.getElementById("score-text").innerText = `You scored: ${score}/${questions.length}`;
+            document.getElementById("score-text").innerText = `Accuracy: ${(score/questions.length)*100}% [${score}/${questions.length}]`;
             
             const countdown = () => {
                 const now = new Date();
@@ -219,23 +310,22 @@
                 let h = String(Math.floor(diff / 3600000)).padStart(2, '0');
                 let m = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
                 let s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
-                document.getElementById("count").innerText = `${h}h ${m}m ${s}s`;
+                document.getElementById("count").innerText = `${h}:${m}:${s}`;
             };
             setInterval(countdown, 1000); countdown();
 
-            // Load Leaderboard
-            const snap = await getDocs(collection(db, "students"));
-            let p = []; snap.forEach(d => p.push({ n: d.id, x: d.data().xp || 0 }));
-            p.sort((a, b) => b.x - a.x);
-            document.getElementById("leaderboard-body").innerHTML = p.slice(0, 5).map((u, i) => `
-                <tr>
-                    <td style="width:40px"><span class="rank-badge ${i<3?'top-rank':''}">${i+1}</span></td>
-                    <td style="color:${u.n === student ? 'var(--accent)' : '#fff'}; font-weight:${u.n === student ? '800':'400'}">
-                        ${u.n} ${u.n === student ? '<span style="font-size:8px; background:var(--accent); color:#000; padding:1px 4px; border-radius:4px; margin-left:5px;">YOU</span>' : ''}
-                    </td>
-                    <td style="text-align:right; font-weight:800; color:var(--success)">${u.x} XP</td>
-                </tr>
-            `).join('');
+            try {
+                const snap = await getDocs(collection(db, "students"));
+                let p = []; snap.forEach(d => p.push({ n: d.id, x: d.data().xp || 0 }));
+                p.sort((a, b) => b.x - a.x);
+                document.getElementById("leaderboard-body").innerHTML = p.slice(0, 5).map((u, i) => `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 12px 0; font-family:'Fira Code'; font-size:12px; color:var(--accent);">0${i+1}</td>
+                        <td style="padding: 12px 0; font-weight: 600;">${u.n}</td>
+                        <td style="padding: 12px 0; text-align: right; color: var(--success); font-family:'Fira Code'; font-size:12px;">${u.x}XP</td>
+                    </tr>
+                `).join('');
+            } catch(e) {}
         }
     </script>
 </body>
