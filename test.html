@@ -630,6 +630,76 @@
 
         loadCache();
         syncData();
+        
+        
+        let currentRating = 0;
+const student = localStorage.getItem("studentName") || "Guest";
+
+// Star interaction logic
+window.setRating = (val) => {
+    currentRating = val;
+    const stars = document.querySelectorAll('#stars i');
+    stars.forEach((s, i) => {
+        s.className = i < val ? "ri-star-fill" : "ri-star-line";
+        s.style.color = i < val ? "#facc15" : "#475569";
+    });
+    
+    document.getElementById('reviewText').style.display = "block";
+    const btn = document.getElementById('submitBtn');
+    btn.style.background = "var(--accent)"; 
+    btn.style.color = "#000"; 
+    btn.style.cursor = "pointer";
+    btn.innerText = "Submit Feedback";
+};
+
+// Submission logic
+window.submitReview = async () => {
+    if (currentRating === 0) return;
+    
+    try {
+        await addDoc(collection(db, "reviews"), {
+            user: student,
+            rating: currentRating,
+            comment: document.getElementById("reviewText").value,
+            timestamp: Date.now()
+        });
+        
+        localStorage.setItem("reviewed", "true");
+        document.getElementById('reviewModal').style.display = 'none';
+        alert("Feedback recorded! Thanks, " + student);
+    } catch (e) {
+        console.error(e);
+        alert("Error saving feedback");
+    }
+};
+
+// Trigger logic (Page load ke 5sec baad dikhayein)
+setTimeout(() => { 
+    if(!localStorage.getItem("reviewed")) {
+        document.getElementById('reviewModal').style.display = 'flex'; 
+    }
+}, 5000);
+
     </script>
+    
+    <div id="reviewModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#0b0f1a; border:1px solid #1e293b; padding:30px; border-radius:30px; width:100%; max-width:380px; text-align:center; box-shadow: 0 15px 30px rgba(0,0,0,0.5);">
+        <h3 style="color:#f8fafc; font-size:18px; margin-bottom:10px;">Rate Your Experience</h3>
+        <p style="color:#64748b; font-size:12px; margin-bottom:20px;">We value your feedback, Student.</p>
+        
+        <div id="stars" style="display:flex; justify-content:center; gap:12px; margin-bottom:25px;">
+            <i class="ri-star-line" style="font-size:32px; color:#475569; cursor:pointer;" onclick="setRating(1)"></i>
+            <i class="ri-star-line" style="font-size:32px; color:#475569; cursor:pointer;" onclick="setRating(2)"></i>
+            <i class="ri-star-line" style="font-size:32px; color:#475569; cursor:pointer;" onclick="setRating(3)"></i>
+            <i class="ri-star-line" style="font-size:32px; color:#475569; cursor:pointer;" onclick="setRating(4)"></i>
+            <i class="ri-star-line" style="font-size:32px; color:#475569; cursor:pointer;" onclick="setRating(5)"></i>
+        </div>
+
+        <textarea id="reviewText" placeholder="What's on your mind?" style="display:none; width:100%; background:rgba(255,255,255,0.03); border:1px solid #1e293b; padding:15px; border-radius:16px; color:white; height:80px; margin-bottom:20px; outline:none; resize:none;"></textarea>
+        
+        <button id="submitBtn" onclick="submitReview()" style="background:#334155; color:#94a3b8; border:none; padding:14px 30px; border-radius:16px; font-weight:800; width:100%; cursor:not-allowed;">Select a rating</button>
+    </div>
+</div>
+
 </body>
 </html>
