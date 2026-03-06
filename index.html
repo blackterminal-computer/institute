@@ -158,6 +158,40 @@
 
 
 /* Paste Khatam */
+/* --- DAILY LEARNING LOG SCROLLABLE CONTAINER --- */
+.daily-log-section {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.log-scroll-wrapper {
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding: 0 20px; /* Left-Right padding for smooth edge spacing */
+    padding-bottom: 15px;
+    scrollbar-width: none; /* Firefox scrollbar hide */
+    -webkit-overflow-scrolling: touch; /* Mobile smooth scrolling */
+    scroll-snap-type: x mandatory;
+}
+
+.log-scroll-wrapper::-webkit-scrollbar {
+    display: none; /* Chrome/Safari scrollbar hide */
+}
+
+.log-card {
+    flex: 0 0 280px; /* Har card ki width fix */
+    scroll-snap-align: start;
+    background: #0b0f1a;
+    border: 1px solid #1e293b;
+    padding: 20px;
+    border-radius: 20px;
+    transition: transform 0.3s ease;
+}
+
+.log-card:active {
+    transform: scale(0.98); /* Touch feedback */
+}
 
     </style>
 </head>
@@ -241,6 +275,13 @@
             <button onclick="sendSignal()" style="background:var(--accent); border:none; color:black; font-weight:900; font-size:9px; padding:6px 12px; border-radius:8px; text-transform:uppercase;">Send</button>
         </div>
     </div>
+    
+    <div class="daily-log-section" style="margin: 20px 0;">
+    <h3 style="color: #64748b; font-size: 14px; margin-bottom: 15px; padding-left: 20px;">DAILY_LEARNING_LOG</h3>
+    <div class="log-scroll-wrapper" id="learningLogWrapper" style="display: flex; overflow-x: auto; gap: 15px; padding: 0 20px;">
+        </div>
+</div>
+
 
     <div class="slider-section" id="sliderRoot" style="display: none;">
         <p class="label-tag">Elite Spotlight</p>
@@ -509,6 +550,23 @@
 
         async function syncData() {
             syncSlider();
+            
+            
+            // syncData() function ke andar ye code paste karein
+onSnapshot(query(collection(db, "daily_logs"), orderBy("timestamp", "desc")), (snapshot) => {
+    const logWrapper = document.getElementById('learningLogWrapper');
+    logWrapper.innerHTML = ""; 
+    snapshot.forEach((doc) => {
+        const data = doc.data();
+        logWrapper.innerHTML += `
+            <div class="log-card" style="flex: 0 0 280px; background: #0b0f1a; border: 1px solid #1e293b; padding: 20px; border-radius: 20px;">
+                <h3 style="color:var(--accent); font-size:14px;">${data.title}</h3>
+                <p style="color:#94a3b8; font-size:12px; margin-top:10px;">${data.content}</p>
+            </div>
+        `;
+    });
+});
+
 
             // Word of the Day Listener (New Added)
             onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
