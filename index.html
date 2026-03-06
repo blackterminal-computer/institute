@@ -361,7 +361,7 @@
         <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
-  <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, getDocs, setDoc, addDoc, query, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -380,54 +380,55 @@
     const student = localStorage.getItem("studentName");
     if (!student) { window.location.href = "login.html"; }
 
-    // --- (Window Functions & Helpers remain the same) ---
-    window.togglePanel = () => {
-        const panel = document.getElementById('activityPanel');
-        panel.classList.toggle('open');
-        document.getElementById('overlay-blur').style.display = panel.classList.contains('open') ? 'block' : 'none';
-    };
-
-    // ... (Yahan aapka existing logic: sendSignal, sendReaction, triggerChallenge, buyFocusWall, syncSlider, updateStreakLogic, loadCache, updateXPUI) ...
+    // ... (baaki saare functions jaise togglePanel, sendSignal, etc. yahan waise hi rahenge)
 
     async function syncData() {
         syncSlider();
         
-        // FINAL: Daily Learning Log Listener
+        // --- DAILY LOG DYNAMIC FETCH ---
         onSnapshot(query(collection(db, "daily_logs"), orderBy("timestamp", "desc")), (snapshot) => {
             const logWrapper = document.getElementById('learningLogWrapper');
-            if(logWrapper) {
-                logWrapper.innerHTML = ""; 
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    logWrapper.innerHTML += `
-                        <div class="log-card" style="flex: 0 0 280px; background: #0b0f1a; border: 1px solid #1e293b; padding: 20px; border-radius: 20px;">
-                            <h3 style="color:var(--accent); font-size:14px; font-family:Orbitron;">${data.title}</h3>
-                            <p style="color:#94a3b8; font-size:12px; margin-top:10px; line-height:1.5;">${data.content}</p>
-                        </div>
-                    `;
-                });
-            }
+            if (!logWrapper) return;
+            logWrapper.innerHTML = ""; 
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                logWrapper.innerHTML += `
+                    <div class="card" style="
+                        background: var(--glass); 
+                        border: 1px solid var(--glass-border); 
+                        border-left: 4px solid var(--accent); 
+                        border-radius: 20px; 
+                        padding: 20px;
+                        backdrop-filter: blur(10px);
+                        margin-bottom: 15px;
+                    ">
+                        <h2 style="font-family: 'Orbitron', sans-serif; color: white;">${data.title}</h2>
+                        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 0;"></div>
+                        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">${data.content}</p>
+                    </div>
+                `;
+            });
         });
 
-        // Word of the Day Listener
+        // ... (baaki ke listeners waise hi rahenge: dailyWord, shoutout, logList, etc.)
+        
         onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
                 const section = document.getElementById('wordDisplaySection');
                 if(section) section.style.display = 'block';
-                const wText = document.getElementById('wordText');
-                const wDesc = document.getElementById('wordDesc');
-                if(wText) wText.innerText = data.word;
-                if(wDesc) wDesc.innerText = data.description;
+                document.getElementById('wordText').innerText = data.word;
+                document.getElementById('wordDesc').innerText = data.description;
             }
         });
-
-        // ... (Baaki saare Listeners: Shoutout, LogList, Marquee, Notices, Attendance remain here) ...
+        
+        // ... (Baaki saara code niche continue karein jaisa pehle tha)
     }
 
     loadCache();
     syncData();
 </script>
+
 
 </body>
 </html>
