@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Admin Panel | Elite Terminal</title>
+    </head>
+<body style="background:#050505; color:white; padding:40px;">
+    <h1>Admin Console</h1>
+
+    <div style="background:#111; padding:20px; border-radius:20px; margin-bottom:30px;">
+        <h3>Add New Course</h3>
+        <input type="text" id="cName" placeholder="Course Name" style="width:100%; padding:10px; margin-bottom:10px; background:transparent; border:1px solid #333; color:white;">
+        <input type="number" id="cXP" placeholder="Required XP" style="width:100%; padding:10px; margin-bottom:10px; background:transparent; border:1px solid #333; color:white;">
+        <input type="text" id="cUrl" placeholder="Notes URL (PDF/Drive)" style="width:100%; padding:10px; margin-bottom:10px; background:transparent; border:1px solid #333; color:white;">
+        <button onclick="addCourse()" style="padding:10px 20px; background:var(--accent); border:none; cursor:pointer;">Publish Course</button>
+    </div>
+
+    <div id="requestList">
+        <h3>Pending Requests</h3>
+    </div>
+
+    <script type="module">
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        const db = getFirestore();
+
+        // Add Course Function
+        window.addCourse = async () => {
+            await addDoc(collection(db, "courses"), {
+                name: document.getElementById('cName').value,
+                requiredXP: parseInt(document.getElementById('cXP').value),
+                notesUrl: document.getElementById('cUrl').value
+            });
+            alert("Course Published!");
+        };
+
+        // Display Requests
+        onSnapshot(collection(db, "requests"), (snap) => {
+            const list = document.getElementById('requestList');
+            snap.forEach(d => {
+                const req = d.data();
+                list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #333;">${req.topic}</div>`;
+            });
+        });
+    </script>
+</body>
+</html>
