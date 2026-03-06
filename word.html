@@ -3,42 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Admin Panel</title>
+    <title>BT | Admin Word Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        /* CSS yahan daala hai taaki style miss na ho */
+        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; }
         body { 
-            background: #020617; color: white; font-family: sans-serif; 
+            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; 
             margin: 0; padding: 20px; display: flex; justify-content: center; 
-            align-items: center; min-height: 100vh; 
         }
-        .admin-card { 
-            width: 100%; max-width: 400px; background: #0b0f1a; 
-            padding: 30px; border-radius: 20px; border: 1px solid #1e293b; 
+        .admin-card {
+            width: 100%; max-width: 500px; background: rgba(255,255,255,0.03); 
+            padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
         }
-        input, textarea { 
-            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; 
-            border: 1px solid #334155; background: #020617; color: white; box-sizing: border-box; 
+        h2 { font-size: 18px; color: var(--accent); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
+        input, textarea {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box;
         }
-        button { 
-            width: 100%; padding: 12px; background: #6366f1; border: none; 
-            border-radius: 10px; color: white; font-weight: bold; cursor: pointer; 
+        button {
+            width: 100%; background: var(--primary); color: white; border: none;
+            padding: 15px; border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.3s;
         }
+        button:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
 
     <div class="admin-card">
-        <h2>Deploy Log</h2>
-        <input type="text" id="wordInput" placeholder="Topic Title">
-        <textarea id="descInput" placeholder="Explanation..." rows="4"></textarea>
+        <h2><i class="ri-terminal-window-line"></i> Update Daily Log</h2>
+        <input type="text" id="wordInput" placeholder="Enter Topic / Word">
+        <textarea id="descInput" placeholder="Enter detailed explanation..." rows="5"></textarea>
         <button id="updateBtn">DEPLOY TO TERMINAL</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Apna Config Yahan Paste Karein
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -48,21 +49,28 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         };
 
-        const db = getFirestore(initializeApp(firebaseConfig));
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
         document.getElementById('updateBtn').onclick = async () => {
-            const title = document.getElementById('wordInput').value.trim();
-            const content = document.getElementById('descInput').value.trim();
-            if(!title || !content) return alert("Fields empty!");
-            
+            const word = document.getElementById('wordInput').value.trim();
+            const desc = document.getElementById('descInput').value.trim();
+            const btn = document.getElementById('updateBtn');
+
+            if(!word || !desc) return alert("Fields are empty!");
+
+            btn.innerText = "SYNCING...";
             try {
-                await addDoc(collection(db, "daily_logs"), {
-                    title: title,
-                    content: content,
-                    timestamp: Date.now()
+                await setDoc(doc(db, "content", "dailyWord"), {
+                    word: word,
+                    description: desc,
+                    updatedAt: Date.now()
                 });
-                alert("Deployed Successfully!");
+                alert("Homepage Updated!");
+                document.getElementById('wordInput').value = "";
+                document.getElementById('descInput').value = "";
             } catch (e) { alert("Error: " + e.message); }
+            btn.innerText = "DEPLOY TO TERMINAL";
         };
     </script>
 </body>
