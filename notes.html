@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Terminal v4.0 | Final</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root { --accent: #06b6d4; --bg: #010409; --glass: rgba(255, 255, 255, 0.05); }
+        body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
+        
+        .course-card { 
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.08); 
+            border-radius: 25px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px);
+        }
+        .notes-btn { 
+            background: transparent; border: 1px solid var(--accent); color: var(--accent); 
+            padding: 12px; border-radius: 12px; font-size: 12px; width: 100%; 
+            margin-top: 15px; cursor: pointer; transition: 0.3s;
+        }
+        .notes-btn:disabled { border-color: #334155; color: #475569; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <h2 style="margin-bottom: 20px;">Elite Library</h2>
+    <div id="course-grid"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Initialize Firebase
+        const db = getFirestore(initializeApp({
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            projectId: "black-terminal-f2c91",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        }));
+
+        // Fetch User XP (Replace with actual Auth fetch later)
+        const userXP = 750;
+
+        window.downloadNotes = (url) => {
+            if (url && url !== 'undefined') window.open(url, '_blank');
+            else alert("No download link available.");
+        };
+
+        // Render Data from Firebase (Data-Driven)
+        const q = query(collection(db, "courses"));
+        onSnapshot(q, (snap) => {
+            const grid = document.getElementById('course-grid');
+            grid.innerHTML = "";
+            
+            snap.forEach((doc) => {
+                const c = doc.data();
+                if(c.active === false) return; // Admin Control: Hidden courses
+
+                const isLocked = userXP < c.requiredXP;
+                
+                grid.innerHTML += `
+                    <div class="course-card">
+                        <h3 style="margin-bottom:5px;">${c.name}</h3>
+                        <p style="font-size:12px; opacity:0.5; margin-bottom:10px;">Req: ${c.requiredXP} XP</p>
+                        <button class="notes-btn" ${isLocked ? 'disabled' : ''} 
+                            onclick="downloadNotes('${c.notesUrl}')">
+                            ${isLocked 
+                                ? '<i class="ri-lock-2-line"></i> ' + c.requiredXP + ' XP Required' 
+                                : '<i class="ri-download-2-line"></i> Download Notes'}
+                        </button>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
