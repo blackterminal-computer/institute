@@ -2,25 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Admin Word Control</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .admin-card { width: 100%; max-width: 500px; background: rgba(255,255,255,0.03); padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
-        h2 { font-size: 18px; color: var(--accent); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
-        input, textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box; }
-        button { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.3s; }
-        button:active { transform: scale(0.98); }
-    </style>
-</head>
+    <title>BT | Admin</title>
+    </head>
 <body>
-
     <div class="admin-card">
-        <h2><i class="ri-terminal-window-line"></i> Update Daily Log</h2>
-        <input type="text" id="wordInput" placeholder="Enter Topic / Word">
-        <textarea id="descInput" placeholder="Enter detailed explanation..." rows="5"></textarea>
+        <h2>Update Daily Log</h2>
+        <input type="text" id="wordInput" placeholder="Title">
+        <textarea id="descInput" placeholder="Content..."></textarea>
         <button id="updateBtn">DEPLOY TO TERMINAL</button>
     </div>
 
@@ -28,47 +16,21 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // CONFIG: Apna config yahan paste karein
-        const firebaseConfig = { 
-            apiKey: "YOUR_API_KEY",
-            authDomain: "black-terminal-f2c91.firebaseapp.com",
-            projectId: "black-terminal-f2c91",
-            storageBucket: "black-terminal-f2c91.appspot.com",
-            messagingSenderId: "552489994197",
-            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        const firebaseConfig = { /* APKA CONFIG YAHAN RAKHEIN */ };
+        const db = getFirestore(initializeApp(firebaseConfig));
+
+        document.getElementById('updateBtn').onclick = async () => {
+            const title = document.getElementById('wordInput').value.trim();
+            const content = document.getElementById('descInput').value.trim();
+            if(!title || !content) return alert("Empty!");
+            
+            await addDoc(collection(db, "daily_logs"), {
+                title: title,
+                content: content,
+                timestamp: Date.now()
+            });
+            alert("Updated!");
         };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Function Logic
-        document.getElementById('updateBtn').addEventListener('click', async () => {
-            const word = document.getElementById('wordInput').value.trim();
-            const desc = document.getElementById('descInput').value.trim();
-            const btn = document.getElementById('updateBtn');
-
-            if(!word || !desc) return alert("Fields are empty!");
-
-            btn.disabled = true;
-            btn.innerText = "DEPLOYING...";
-
-            try {
-                // 'daily_logs' collection mein data add ho raha hai
-                await addDoc(collection(db, "daily_logs"), {
-                    title: word,
-                    content: desc,
-                    timestamp: Date.now()
-                });
-                alert("Terminal Updated Successfully!");
-                document.getElementById('wordInput').value = "";
-                document.getElementById('descInput').value = "";
-            } catch (e) { 
-                console.error("Error adding document: ", e);
-                alert("Error: " + e.message); 
-            }
-            btn.disabled = false;
-            btn.innerText = "DEPLOY TO TERMINAL";
-        });
     </script>
 </body>
 </html>
