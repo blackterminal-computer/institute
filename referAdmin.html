@@ -33,7 +33,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -50,7 +50,6 @@
             for (const d of snap.docs) {
                 const data = d.data();
                 if (data.referred_by) {
-                    // Referrer ka current wallet balance fetch kar rahe hain
                     const refDoc = await getDoc(doc(db, "students", data.referred_by));
                     const wallet = refDoc.exists() ? (refDoc.data().wallet || 0) : 0;
 
@@ -62,7 +61,8 @@
                         <td><span class="btn ${data.status}">${data.status || 'pending'}</span></td>
                         <td class="action-group">
                             ${data.status !== 'verified' ? `<button onclick="updateStatus('${d.id}', '${data.referred_by}', 'verified')" class="btn verified">Verify</button>` : '✅'}
-                            ${data.status !== 'rejected' ? `<button onclick="updateStatus('${d.id}', '${data.referred_by}', 'rejected')" class="btn rejected">Reject</button>` : ''}
+                            <button onclick="clearReferral('${d.id}', '${data.referred_by}')" class="btn" style="background:#64748b">Clear</button>
+                            <button onclick="resetWallet('${data.referred_by}')" class="btn" style="background:#ef4444">Reset Bal</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -73,7 +73,20 @@
         window.updateStatus = async (sid, ref, status) => {
             await updateDoc(doc(db, "students", sid), { status: status });
             if(status === 'verified') await updateDoc(doc(db, "students", ref), { wallet: increment(100) });
-            else if(status === 'rejected') await updateDoc(doc(db, "students", ref), { wallet: increment(-100) });
+        };
+
+        // Referral status ko wapas 'pending' kar dega
+        window.clearReferral = async (sid, ref) => {
+            if(confirm("Clear this referral?")) {
+                await updateDoc(doc(db, "students", sid), { status: "pending" });
+            }
+        };
+
+        // Referrer ka wallet 0 kar dega
+        window.resetWallet = async (ref) => {
+            if(confirm("Reset wallet to ₹0 for " + ref + "?")) {
+                await setDoc(doc(db, "students", ref), { wallet: 0 }, { merge: true });
+            }
         };
     </script>
 </body>
