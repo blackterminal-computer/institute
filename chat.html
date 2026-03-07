@@ -3,81 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Student Lounge</title>
+    <title>Lounge v13</title>
     <style>
         :root { --bg: #050505; --accent: #007aff; --card: #1c1c1e; }
         body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; }
         
         #onlineBar { display: flex; gap: 12px; padding: 15px; border-bottom: 1px solid #333; overflow-x: auto; background: #0a0a0a; }
         .u-item { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 55px; }
-        /* Professional Avatar Styling */
         .u-item img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; }
-        .u-item span { font-size: 9px; color: #aaa; }
+        .u-item span { font-size: 9px; color: #aaa; text-align: center; }
 
         #chatBox { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .bubble { background: var(--card); padding: 12px 16px; border-radius: 18px; max-width: 80%; align-self: flex-start; }
+        .bubble { background: var(--card); padding: 10px 14px; border-radius: 18px; max-width: 80%; align-self: flex-start; position: relative; }
         .mine { background: var(--accent); align-self: flex-end; }
-        
-        .footer { padding: 15px; background: #1c1c1e; display: flex; gap: 10px; align-items: center; }
-        input { flex: 1; background: #000; border: none; color: white; padding: 12px; border-radius: 20px; }
-        button { background: var(--accent); border: none; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; }
+        .time { font-size: 8px; opacity: 0.6; display: block; margin-top: 4px; }
     </style>
 </head>
 <body>
 
-    <div style="padding:10px; text-align:center; font-size: 11px;">TOTAL ONLINE: <b id="totalOnline">0</b></div>
+    <div style="padding:10px; text-align:center; font-size: 11px;">ACTIVE USERS: <b id="totalOnline">0</b></div>
     <div id="onlineBar"></div>
-    <div id="chatBox"></div>
+    <div id="chatBox">...Loading Lounge...</div>
     
-    <div class="footer">
-        <input id="mIn" placeholder="Type a message...">
-        <button onclick="send()">Send</button>
+    <div class="footer" style="padding: 15px; background: #1c1c1e; display: flex; gap: 10px; align-items: center;">
+        <input id="mIn" style="flex:1; background:#000; border:none; color:white; padding:12px; border-radius:20px;" placeholder="Message...">
+        <button onclick="send()" style="background:var(--accent); border:none; color:white; padding:10px 20px; border-radius:20px;">Send</button>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, onSnapshot, query, orderBy, limitToLast, addDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = { 
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.appspot.com",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const firebaseConfig = { /* Apna Config Yahan Rakhein */ };
+    const db = getFirestore(initializeApp(firebaseConfig));
     const student = localStorage.getItem("studentName") || "User_" + Math.floor(Math.random()*999);
 
-    // Final Presence & Profile Logic
+    // Render Users
     onSnapshot(query(collection(db, "students"), where("isOnline", "==", true)), (snap) => {
         const bar = document.getElementById("onlineBar");
         document.getElementById("totalOnline").innerText = snap.size;
         bar.innerHTML = "";
-        
         snap.forEach(d => {
             const data = d.data();
-            // Fallback logic: database photo missing? use DiceBear robot!
-            const pic = (data.photo && data.photo.startsWith('http')) 
-                        ? data.photo 
-                        : `https://api.dicebear.com/7.x/bottts/svg?seed=${d.id}`;
-            
-            bar.innerHTML += `
-                <div class="u-item">
-                    <img src="${pic}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=fallback'">
-                    <span>${data.displayName || d.id}</span>
-                </div>`;
+            const pic = (data.photo && data.photo.startsWith('http')) ? data.photo : `https://api.dicebear.com/7.x/bottts/svg?seed=${d.id}`;
+            bar.innerHTML += `<div class="u-item"><img src="${pic}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=fallback'"><span>${data.displayName || d.id}</span></div>`;
         });
     });
 
+    // Chat with Timestamp
     onSnapshot(query(collection(db, "global_chat"), orderBy("time"), limitToLast(12)), (snap) => {
         const box = document.getElementById("chatBox");
         box.innerHTML = "";
         snap.forEach(d => {
             const data = d.data();
-            box.innerHTML += `<div class="bubble ${data.name === student ? 'mine' : ''}">${data.msg}</div>`;
+            const time = new Date(data.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            box.innerHTML += `<div class="bubble ${data.name === student ? 'mine' : ''}">${data.msg}<span class="time">${time}</span></div>`;
         });
         box.scrollTop = box.scrollHeight;
     });
