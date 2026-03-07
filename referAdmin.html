@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BT | Admin Referral Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root { --bg: #020617; --card: #0f172a; --accent: #6366f1; }
+        body { background: var(--bg); color: white; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .table-card { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid #1e293b; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 15px; border-bottom: 1px solid #1e293b; text-align: left; }
+        .status-btn { padding: 6px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .pending { background: #facc15; color: #000; }
+        .verified { background: #22c55e; color: #fff; cursor: default; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Referral Management Dashboard</h2>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Referrer</th>
+                        <th>Student Referred</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-tbody">
+                    <tr><td colspan="4">Loading data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.firebasestorage.app",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        }));
+
+        async function fetchReferrals() {
+            const snap = await getDocs(collection(db, "students"));
+            const tbody = document.getElementById("admin-tbody");
+            tbody.innerHTML = "";
+            
+            snap.forEach(d => {
+                const data = d.data();
+                if (data.referred_by) {
+                    const row = document.createElement("tr");
+                    const isVerified = data.status === 'verified';
+                    
+                    row.innerHTML = `
+                        <td>${data.referred_by}</td>
+                        <td>${d.id}</td>
+                        <td><span class="status-btn ${data.status || 'pending'}">${data.status || 'pending'}</span></td>
+                        <td>${isVerified ? '✅ Paid' : `<button onclick="verify('${d.id}', '${data.referred_by}')" class="status-btn pending">Verify & Pay</button>`}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            });
+        }
+
+        window.verify = async (studentId, referrer) => {
+            if(!confirm("Verify student and release ₹100 to "+referrer+"?")) return;
+            try {
+                // 1. Status Update
+                await updateDoc(doc(db, "students", studentId), { status: "verified" });
+                // 2. Wallet Update
+                await updateDoc(doc(db, "students", referrer), { wallet: increment(100) });
+                alert("Payment Released Successfully!");
+                fetchReferrals();
+            } catch (e) { alert("Error: " + e.message); }
+        };
+        fetchReferrals();
+    </script>
+</body>
+</html>
