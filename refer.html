@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BT | Refer & Earn</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
     <style>
         :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08); --gold: #facc15; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: #f8fafc; padding-bottom: 120px; background-image: radial-gradient(circle at bottom left, #1e1b4b, transparent); min-height: 100vh; }
         header { padding: 25px 20px 10px; display: flex; align-items: center; gap: 15px; }
         .back-btn { width: 42px; height: 42px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; }
-        .hero-section { text-align: center; padding: 20px; }
+        .hero-section { text-align: center; padding: 30px 20px; }
         .reward-box { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.1)); border: 1px solid var(--glass-border); margin: 0 20px; padding: 25px; border-radius: 30px; text-align: center; backdrop-filter: blur(10px); }
+        .reward-amt { font-size: 48px; font-weight: 800; color: var(--gold); margin: 5px 0; }
         .share-card { background: var(--glass); border: 1px solid var(--glass-border); margin: 20px; padding: 25px; border-radius: 28px; }
         .code-area { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; border: 1px dashed var(--accent); margin: 15px 0; }
         .refer-code { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: var(--accent); }
@@ -33,13 +36,24 @@
 
     <header>
         <a href="index.html" class="back-btn"><i class="ri-arrow-left-s-line"></i></a>
-        <h1>Refer & <span style="color:var(--gold)">Earn</span></h1>
+        <h1>Refer & Earn</h1>
     </header>
 
     <div class="hero-section">
-        <i class="ri-gift-2-fill" style="font-size: 60px; color: var(--gold);"></i>
-        <h2 id="total-earned">₹0</h2>
-        <p style="opacity: 0.6; font-size: 12px;">Total Earnings from Network</p>
+        <h2 style="margin-top:10px;">Invite Friends</h2>
+        <p style="opacity:0.6; font-size:13px;">Get rewards for every new enrollment</p>
+    </div>
+
+    <div class="milestone-bar">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; opacity:0.8;">
+            <span>TOTAL EARNINGS</span> <span id="total-earned" style="color:var(--gold)">₹0</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="p-bar"></div></div>
+    </div>
+
+    <div class="reward-box">
+        <p style="font-size: 11px; font-weight: 800; opacity: 0.6; letter-spacing: 1px;">CURRENT TIER REWARD</p>
+        <div class="reward-amt">₹<span id="reward-amt">0</span></div>
     </div>
 
     <div class="share-card">
@@ -48,69 +62,74 @@
             <span class="refer-code" id="user-code">BT-7742</span>
             <i class="ri-file-copy-line" style="color:var(--accent)" onclick="copyCode()"></i>
         </div>
-        <a href="#" id="wa-share" class="whatsapp-btn"><i class="ri-whatsapp-line"></i> SHARE ON WHATSAPP</a>
+        <a href="#" class="whatsapp-btn"><i class="ri-whatsapp-line"></i> SHARE ON WHATSAPP</a>
     </div>
 
     <div class="share-card">
         <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--accent);">Manual Refer</h3>
         <select id="student-dropdown" class="input-dropdown">
-            <option value="">Select Student Name</option>
+            <option value="">Loading students...</option>
         </select>
         <button onclick="saveManualReferral()" class="submit-btn">SUBMIT REFERRAL</button>
     </div>
 
-    <div class="milestone-bar">
-        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; opacity:0.8;">
-            <span>PROGRESS</span> <span id="p-text" style="color:var(--accent)">0/10</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" id="p-bar"></div></div>
-    </div>
+    
 
     <div style="margin: 20px;">
         <h3 style="font-size: 14px; margin-bottom: 10px;">Referred Students</h3>
         <div id="referral-list"></div>
     </div>
 
-    
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link"><i class="ri-home-5-line"></i><span>Home</span></a>
+        <a href="refer.html" class="nav-link active"><i class="ri-gift-fill"></i><span>Refer</span></a>
+    </nav>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, onSnapshot, collection, query, where, getDocs, setDoc, serverTimestamp, increment, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = { /* Apna Config */ };
+        const firebaseConfig = { /* Apna Config Yahan Daalein */ };
         const db = getFirestore(initializeApp(firebaseConfig));
         const student = localStorage.getItem("studentName");
 
-        // Load Student List for Dropdown
+        // 1. Fetch Students to Dropdown
         async function loadStudents() {
-            const snap = await getDocs(collection(db, "students"));
-            const dropdown = document.getElementById("student-dropdown");
-            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
+            try {
+                const snap = await getDocs(collection(db, "students"));
+                const dropdown = document.getElementById("student-dropdown");
+                dropdown.innerHTML = '<option value="">Select Student Name</option>';
+                snap.forEach(d => {
+                    if(d.id !== student) {
+                        dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`;
+                    }
+                });
+            } catch(e) { console.error("Error loading students", e); }
         }
         loadStudents();
 
-        // UI Updates
+        // 2. Real-time Updates
         onSnapshot(doc(db, "students", student), (d) => {
             if(d.exists()){
                 const refs = d.data().total_referrals || 0;
                 document.getElementById('total-earned').innerText = `₹${refs * 100}`;
-                document.getElementById('p-text').innerText = `${refs%10}/10`;
+                document.getElementById('reward-amt').innerText = (Math.floor(refs/10)+1)*100;
                 document.getElementById('p-bar').style.width = `${(refs%10)*10}%`;
             }
         });
 
-        // Submit Referral
+        // 3. Save Referral
         window.saveManualReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
             if(!refName) return alert("Select a student!");
             try {
-                await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending", updated_at: serverTimestamp() }, { merge: true });
+                await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending", created_at: serverTimestamp() }, { merge: true });
                 await updateDoc(doc(db, "students", student), { total_referrals: increment(1) });
-                alert("Referral Submitted!");
-            } catch (e) { alert("Error saving."); }
+                alert("Referral Submitted Successfully!");
+            } catch (e) { alert("Error saving data!"); }
         };
 
-        window.copyCode = () => { navigator.clipboard.writeText(document.getElementById('user-code').innerText); alert("Copied!"); }
+        window.copyCode = () => { navigator.clipboard.writeText(document.getElementById('user-code').innerText); alert("Code Copied!"); }
     </script>
 </body>
 </html>
