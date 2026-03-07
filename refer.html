@@ -53,7 +53,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -64,33 +64,38 @@
         }));
 
         const student = localStorage.getItem("studentName") || "Guest";
+        let currentCount = 0;
 
-        async function updateMilestone(count) {
-            let progress = count % 10;
-            let tier = Math.floor(count / 10);
-            
-            for(let i = 1; i <= 10; i++) {
-                document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+        setInterval(loadReferralHistory, 3000);
+
+        onSnapshot(doc(db, "students", student), (d) => {
+            if(d.exists()) {
+                let data = d.data();
+                let balance = data.wallet || 0;
+                if(currentCount === 0 && balance > 0) {
+                    updateDoc(doc(db, "students", student), { wallet: 0 });
+                    balance = 0;
+                }
+                document.getElementById('wallet-balance').innerText = `₹${balance}`;
             }
-            
-            document.getElementById("milestone-text").innerText = `${progress} / 10 Referrals`;
-            document.getElementById("reward-info").innerText = `Current Reward: ₹${(tier + 1) * 100} per referral`;
-        }
-
-        async function loadStudents() {
-            const dropdown = document.getElementById("student-dropdown");
-            const snap = await getDocs(collection(db, "students"));
-            dropdown.innerHTML = '<option value="">Select Student</option>';
-            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
-        }
+        });
 
         async function loadReferralHistory() {
             const listDiv = document.getElementById("referral-list");
             const q = query(collection(db, "students"), where("referred_by", "==", student));
             const snap = await getDocs(q);
+            currentCount = snap.size;
             
-            updateMilestone(snap.size); 
+            // Progress Update
+            let progress = currentCount % 10;
+            let tier = Math.floor(currentCount / 10);
+            for(let i = 1; i <= 10; i++) {
+                document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+            }
+            document.getElementById("milestone-text").innerText = `${progress} / 10 Referrals`;
+            document.getElementById("reward-info").innerText = `Current Reward: ₹${(tier + 1) * 100} per referral`;
             
+            // List Rendering
             listDiv.innerHTML = snap.empty ? '<p style="font-size:12px; opacity:0.5;">No referrals yet.</p>' : "";
             snap.forEach(d => {
                 const data = d.data();
@@ -101,19 +106,21 @@
             });
         }
 
+        async function loadStudents() {
+            const dropdown = document.getElementById("student-dropdown");
+            const snap = await getDocs(collection(db, "students"));
+            dropdown.innerHTML = '<option value="">Select Student</option>';
+            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
+        }
+
         loadStudents();
         loadReferralHistory();
-
-        onSnapshot(doc(db, "students", student), (d) => {
-            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
-        });
 
         window.processReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
             if(!refName) return alert("Select student!");
             await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
             alert("Referral Submitted!");
-            loadReferralHistory();
         };
     </script>
 </body>
