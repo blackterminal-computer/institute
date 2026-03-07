@@ -58,7 +58,7 @@
                         <td>₹${wallet} <button onclick="editWallet('${data.referred_by}', ${wallet})" class="btn" style="background:#475569">Edit</button></td>
                         <td><span class="btn">${data.status || 'pending'}</span></td>
                         <td class="action-group">
-                            ${data.status !== 'verified' ? `<button onclick="verify('${d.id}', '${data.referred_by}')" class="btn verified">Verify</button>` : '✅'}
+                            ${data.status !== 'verified' ? `<button onclick="verify('${d.id}', '${data.referred_by}')" class="btn verified">Verify</button>` : `<button onclick="updateReferralStatus('${d.id}', 'pending')" class="btn" style="background:var(--danger)">Unverify</button>`}
                             <button onclick="clearHistory('${d.id}')" class="btn" style="background:#64748b">Clear</button>
                             <button onclick="resetMilestone('${data.referred_by}')" class="btn" style="background:var(--danger)">Reset Milestone</button>
                         </td>
@@ -68,8 +68,13 @@
             }
         });
 
+        // Naya Helper function add kiya gaya
+        window.updateReferralStatus = async (sid, newStatus) => {
+            await updateDoc(doc(db, "students", sid), { status: newStatus });
+            alert("Status updated to " + newStatus);
+        };
+
         window.verify = async (sid, ref) => {
-            // Count existing verified referrals for tier calculation
             const q = query(collection(db, "students"), where("referred_by", "==", ref), where("status", "==", "verified"));
             const snap = await getDocs(q);
             const count = snap.size;
