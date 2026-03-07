@@ -3,77 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Wallet & Refer</title>
+    <title>BT | Premium Referral</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --glass: rgba(255, 255, 255, 0.05); }
+        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 20px; }
-        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
-        .btn-ui { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; }
-        .input-ui { width: 100%; padding: 15px; background: #000; border: 1px solid var(--accent); border-radius: 12px; color: white; margin: 10px 0; }
+        .card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-ui { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; }
+        .log-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; }
     </style>
 </head>
 <body>
 
     <div class="card" style="text-align:center;">
-        <p>Wallet Balance</p>
+        <p>Wallet Balance (Verified Only)</p>
         <h1 id="wallet-balance" style="color:var(--accent);">₹0</h1>
     </div>
 
     <div class="card">
-        <h3>Manual Refer (Get ₹100)</h3>
-        <select id="student-dropdown" class="input-ui">
-            <option>Loading...</option>
+        <h3>Manual Refer</h3>
+        <select id="student-dropdown" class="card" style="width:100%; background:#000; color:#fff; border:1px solid #444;">
+            <option>Select Student...</option>
         </select>
-        <button onclick="processReferral()" class="btn-ui">SUBMIT & EARN ₹100</button>
+        <button onclick="submitReferral()" class="btn-ui">SUBMIT FOR REVIEW</button>
     </div>
+
+    <h3>Referral History</h3>
+    <div id="history-list" class="card"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, serverTimestamp, increment, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, query, where, getDocs, setDoc, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-            authDomain: "black-terminal-f2c91.firebaseapp.com",
-            projectId: "black-terminal-f2c91",
-            storageBucket: "black-terminal-f2c91.firebasestorage.app",
-            messagingSenderId: "552489994197",
-            appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
+        const firebaseConfig = { /* Apna Config Yahan Daalein */ };
         const db = getFirestore(initializeApp(firebaseConfig));
-        const student = localStorage.getItem("studentName") || "Guest";
+        const user = localStorage.getItem("studentName") || "Guest";
 
-        // 1. Load Dropdown
-        async function loadStudents() {
-            const dropdown = document.getElementById("student-dropdown");
-            const snap = await getDocs(collection(db, "students"));
-            dropdown.innerHTML = '<option value="">Select Student</option>';
-            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
+        // 1. Tiered Earning Logic
+        function calculateEarnings(verifiedRefs) {
+            let total = 0;
+            for(let i = 0; i < verifiedRefs; i++) {
+                if(i < 10) total += 100;
+                else if(i < 20) total += 200;
+                else total += 300;
+            }
+            return total;
         }
-        loadStudents();
 
-        // 2. Real-time Wallet UI
-        onSnapshot(doc(db, "students", student), (d) => {
-            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
+        // 2. Load List & Calculate Wallet (Real-time)
+        const q = query(collection(db, "students"), where("referred_by", "==", user));
+        onSnapshot(q, (snap) => {
+            let verifiedCount = 0;
+            const history = document.getElementById('history-list');
+            history.innerHTML = "";
+            snap.forEach(d => {
+                const data = d.data();
+                if(data.status === "verified") verifiedCount++;
+                history.innerHTML += `<div class="log-item">${d.id} <span>${data.status || 'pending'}</span></div>`;
+            });
+            document.getElementById('wallet-balance').innerText = `₹${calculateEarnings(verifiedCount)}`;
         });
 
-        // 3. Process Referral & Pay
-        window.processReferral = async () => {
+        // 3. Submit for Review
+        window.submitReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
-            if(!refName) return alert("Select student!");
-            
-            try {
-                // Refer kiye gaye student ka status update
-                await setDoc(doc(db, "students", refName), { referred_by: student, status: "verified" }, { merge: true });
-                
-                // Apne (Referrer) ke wallet mein ₹100 add
-                await updateDoc(doc(db, "students", student), { 
-                    wallet: increment(100),
-                    total_referrals: increment(1) 
-                });
-                
-                alert("Referral Successful! ₹100 added to your wallet.");
-            } catch (e) { alert("Error: " + e.message); }
+            if(!refName) return alert("Select Student!");
+            await setDoc(doc(db, "students", refName), { 
+                referred_by: user, 
+                status: "pending", 
+                created_at: serverTimestamp() 
+            }, { merge: true });
+            alert("Submitted for review!");
         };
     </script>
 </body>
