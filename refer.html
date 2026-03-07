@@ -23,7 +23,7 @@
     <div class="card">
         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
             <span id="milestone-text" style="font-size:12px; font-weight:bold;">0 / 10 Referrals</span>
-            <span id="reward-info" style="font-size:12px; color:var(--accent);">Reward: ₹100</span>
+            <span id="reward-info" style="font-size:12px; color:var(--accent);">Reward: ₹100 per referral</span>
         </div>
         <div style="height:8px; background:#000; border-radius:10px; display:flex; gap:2px; margin-bottom:15px;">
             <div id="m1" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
@@ -52,7 +52,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, getDocs, setDoc, query, where, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -64,12 +64,7 @@
 
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // UI Real-time Listener
-        onSnapshot(doc(db, "students", student), (d) => {
-            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
-        });
-
-        // Referral Data Listener (Jab Admin Verify karega, ye auto update hoga)
+        // Referral Listener - Sab kuch yahan calculate hoga
         onSnapshot(query(collection(db, "students"), where("referred_by", "==", student)), (snap) => {
             const listDiv = document.getElementById("referral-list");
             listDiv.innerHTML = "";
@@ -84,11 +79,14 @@
                 </div>`;
             });
 
-            // Tier Calculation
+            // Tier Calculation Logic
             let tier = Math.floor(verifiedCount / 10);
             let rewardPerRef = (tier === 0) ? 100 : (tier === 1) ? 200 : 300;
+            let totalWallet = verifiedCount * rewardPerRef;
             let progress = verifiedCount % 10;
 
+            // UI Update
+            document.getElementById('wallet-balance').innerText = `₹${totalWallet}`;
             document.getElementById("milestone-text").innerText = `${verifiedCount} Total Verified Referrals`;
             document.getElementById("reward-info").innerText = `Reward: ₹${rewardPerRef} per referral`;
             
