@@ -10,7 +10,7 @@
         body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding: 10px; margin: 0; }
         .container { max-width: 900px; margin: auto; }
         .table-card { background: var(--card); border-radius: 16px; padding: 15px; border: 1px solid #1e293b; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
         th, td { padding: 12px; border-bottom: 1px solid #1e293b; font-size: 14px; }
         .btn { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; margin: 2px; }
         .action-group { display: flex; gap: 5px; }
@@ -30,7 +30,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -58,7 +58,8 @@
                         <td><span class="btn">${data.status || 'pending'}</span></td>
                         <td class="action-group">
                             ${data.status !== 'verified' ? `<button onclick="updateStatus('${d.id}', 'verified')" class="btn" style="background:var(--success)">Verify</button>` : '✅'}
-                            <button onclick="clearHistory('${d.id}')" class="btn" style="background:#64748b">Clear History</button>
+                            <button onclick="clearHistory('${d.id}')" class="btn" style="background:#64748b">Clear</button>
+                            <button onclick="resetMilestone('${data.referred_by}')" class="btn" style="background:var(--danger)">Reset Milestone</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -66,23 +67,28 @@
             }
         });
 
-        // Verify Status
         window.updateStatus = async (sid, status) => {
             await updateDoc(doc(db, "students", sid), { status: status });
         };
 
-        // Clear Referral Status
         window.clearHistory = async (sid) => {
-            if(confirm("Clear this referral status?")) {
-                await updateDoc(doc(db, "students", sid), { status: "pending" });
-            }
+            if(confirm("Clear this referral?")) await updateDoc(doc(db, "students", sid), { status: "pending" });
         };
 
-        // Edit Wallet Manual
         window.editWallet = async (ref, current) => {
             const newBal = prompt("Enter new wallet balance:", current);
-            if(newBal !== null) {
-                await setDoc(doc(db, "students", ref), { wallet: parseInt(newBal) }, { merge: true });
+            if(newBal !== null) await setDoc(doc(db, "students", ref), { wallet: parseInt(newBal) }, { merge: true });
+        };
+
+        // Milestone Reset Logic: Referrer ke saare referrals ko 'pending' kar dega
+        window.resetMilestone = async (ref) => {
+            if(confirm("Are you sure? This will reset all referrals for " + ref)) {
+                const q = query(collection(db, "students"), where("referred_by", "==", ref));
+                const snap = await getDocs(q);
+                snap.forEach(async (d) => {
+                    await updateDoc(doc(db, "students", d.id), { status: "pending" });
+                });
+                alert("Milestone reset to 0!");
             }
         };
     </script>
