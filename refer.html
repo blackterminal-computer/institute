@@ -17,7 +17,7 @@
 
     <div class="card" style="text-align:center;">
         <p>Wallet Balance (Verified)</p>
-        <h1 id="wallet-balance" style="color:var(--accent);">₹0</h1>
+        <h1 id="wallet-balance" style="color:var(--accent);">₹Loading...</h1>
     </div>
 
     <div class="card">
@@ -54,7 +54,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -66,20 +66,28 @@
 
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // Auto-refresh logic (2 seconds)
-        setInterval(() => {
-            loadReferralHistory();
-            loadStudents(); 
-        }, 2000);
+        // Auto-refresh interval
+        setInterval(() => { loadReferralHistory(); loadStudents(); }, 2000);
+
+        // Fetch & Clean Balance
+        onSnapshot(doc(db, "students", student), (d) => {
+            if(d.exists()) {
+                let wallet = d.data().wallet || 0;
+                // FORCE RESET: Agar 500 hai to 0 kar do (Sirf testing ke liye)
+                if(wallet === 500) {
+                    updateDoc(doc(db, "students", student), { wallet: 0 });
+                    wallet = 0;
+                }
+                document.getElementById('wallet-balance').innerText = `₹${wallet}`;
+            }
+        });
 
         async function updateMilestone(count) {
             let progress = count % 10;
             let tier = Math.floor(count / 10);
-            
             for(let i = 1; i <= 10; i++) {
                 document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
             }
-            
             document.getElementById("milestone-text").innerText = `${progress} / 10 Referrals`;
             document.getElementById("reward-info").innerText = `Current Reward: ₹${(tier + 1) * 100} per referral`;
         }
@@ -87,7 +95,6 @@
         async function loadStudents() {
             const dropdown = document.getElementById("student-dropdown");
             const snap = await getDocs(collection(db, "students"));
-            // Keep current value if possible, or just refresh list
             const currentVal = dropdown.value;
             dropdown.innerHTML = '<option value="">Select Student</option>';
             snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
@@ -98,9 +105,7 @@
             const listDiv = document.getElementById("referral-list");
             const q = query(collection(db, "students"), where("referred_by", "==", student));
             const snap = await getDocs(q);
-            
             updateMilestone(snap.size); 
-            
             listDiv.innerHTML = snap.empty ? '<p style="font-size:12px; opacity:0.5;">No referrals yet.</p>' : "";
             snap.forEach(d => {
                 const data = d.data();
@@ -113,10 +118,6 @@
 
         loadStudents();
         loadReferralHistory();
-
-        onSnapshot(doc(db, "students", student), (d) => {
-            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
-        });
 
         window.processReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
