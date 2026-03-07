@@ -13,9 +13,6 @@
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 12px; border-bottom: 1px solid #1e293b; font-size: 14px; }
         .btn { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; margin: 2px; }
-        .pending { background: var(--warning); color: #000; }
-        .verified { background: var(--success); color: white; }
-        .rejected { background: var(--danger); color: white; }
         .action-group { display: flex; gap: 5px; }
     </style>
 </head>
@@ -33,7 +30,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -57,12 +54,11 @@
                     row.innerHTML = `
                         <td>${data.referred_by}</td>
                         <td>${d.id}</td>
-                        <td>₹${wallet}</td>
-                        <td><span class="btn ${data.status}">${data.status || 'pending'}</span></td>
+                        <td>₹${wallet} <button onclick="editWallet('${data.referred_by}', ${wallet})" class="btn" style="background:#475569">Edit</button></td>
+                        <td><span class="btn">${data.status || 'pending'}</span></td>
                         <td class="action-group">
-                            ${data.status !== 'verified' ? `<button onclick="updateStatus('${d.id}', '${data.referred_by}', 'verified')" class="btn verified">Verify</button>` : '✅'}
-                            <button onclick="clearReferral('${d.id}', '${data.referred_by}')" class="btn" style="background:#64748b">Clear</button>
-                            <button onclick="resetWallet('${data.referred_by}')" class="btn" style="background:#ef4444">Reset Bal</button>
+                            ${data.status !== 'verified' ? `<button onclick="updateStatus('${d.id}', 'verified')" class="btn" style="background:var(--success)">Verify</button>` : '✅'}
+                            <button onclick="clearHistory('${d.id}')" class="btn" style="background:#64748b">Clear History</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -70,22 +66,23 @@
             }
         });
 
-        window.updateStatus = async (sid, ref, status) => {
+        // Verify Status
+        window.updateStatus = async (sid, status) => {
             await updateDoc(doc(db, "students", sid), { status: status });
-            if(status === 'verified') await updateDoc(doc(db, "students", ref), { wallet: increment(100) });
         };
 
-        // Referral status ko wapas 'pending' kar dega
-        window.clearReferral = async (sid, ref) => {
-            if(confirm("Clear this referral?")) {
+        // Clear Referral Status
+        window.clearHistory = async (sid) => {
+            if(confirm("Clear this referral status?")) {
                 await updateDoc(doc(db, "students", sid), { status: "pending" });
             }
         };
 
-        // Referrer ka wallet 0 kar dega
-        window.resetWallet = async (ref) => {
-            if(confirm("Reset wallet to ₹0 for " + ref + "?")) {
-                await setDoc(doc(db, "students", ref), { wallet: 0 }, { merge: true });
+        // Edit Wallet Manual
+        window.editWallet = async (ref, current) => {
+            const newBal = prompt("Enter new wallet balance:", current);
+            if(newBal !== null) {
+                await setDoc(doc(db, "students", ref), { wallet: parseInt(newBal) }, { merge: true });
             }
         };
     </script>
