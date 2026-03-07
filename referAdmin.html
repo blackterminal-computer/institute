@@ -3,23 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
+    <title>BT | Admin Command Center</title>
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
-        .item { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .header { margin-bottom: 10px; font-weight: bold; color: #6366f1; }
-        .actions { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
-        button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        :root { --bg: #020617; --card-bg: rgba(30, 41, 59, 0.5); --accent: #6366f1; }
+        body { background: var(--bg); color: #f8fafc; font-family: 'Inter', sans-serif; padding: 20px; }
+        
+        .section-wrapper { margin-bottom: 40px; }
+        .referrer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .wallet-badge { background: #06b6d4; color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        
+        .scroll-container { display: flex; gap: 16px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+        .ref-card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); min-width: 140px; padding: 16px; border-radius: 20px; }
+        .status-pill { font-size: 10px; padding: 4px 8px; border-radius: 20px; background: rgba(0,0,0,0.3); margin-bottom: 10px; display: inline-block;}
+        button { width: 100%; padding: 8px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; background: #334155; color: white; }
     </style>
 </head>
 <body>
 
-    <h2>Referral List</h2>
-    <div id="list-container"></div>
+    <h2 style="margin-bottom: 30px;">Admin Command Center</h2>
+    <div id="admin-container"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -30,42 +36,57 @@
         }));
 
         onSnapshot(collection(db, "students"), (snap) => {
-            const container = document.getElementById("list-container");
+            const container = document.getElementById("admin-container");
             container.innerHTML = "";
-            
-            snap.forEach((d) => {
+            const groups = {};
+            const walletData = {}; // Referrer ke wallet tracking ke liye
+
+            snap.forEach(d => {
                 const data = d.data();
                 if (data.referred_by) {
-                    const div = document.createElement("div");
-                    div.className = "item";
-                    div.innerHTML = `
-                        <div class="header">${data.referred_by} → ${d.id}</div>
-                        <div>Status: <b>${data.status || 'pending'}</b></div>
-                        <div class="actions">
-                            ${data.status !== 'verified' 
-                                ? `<button style="background:green; color:white;" onclick="verify('${d.id}', '${data.referred_by}')">Verify</button>` 
-                                : `<button style="background:red; color:white;" onclick="updateStatus('${d.id}', 'pending')">Unverify</button>`}
-                            <button style="background:gray; color:white;" onclick="updateStatus('${d.id}', 'pending')">Clear</button>
-                        </div>
-                    `;
-                    container.appendChild(div);
+                    if (!groups[data.referred_by]) groups[data.referred_by] = [];
+                    groups[data.referred_by].push({ id: d.id, ...data });
+                    walletData[data.referred_by] = data.wallet || 0;
                 }
             });
+
+            for (const referrer in groups) {
+                const section = document.createElement("div");
+                section.className = "section-wrapper";
+                // Yahan Live Wallet dikh raha hai
+                section.innerHTML = `
+                    <div class="referrer-header">
+                        <span style="font-weight:800; font-size:20px;">${referrer}</span>
+                        <span class="wallet-badge">₹${walletData[referrer]}</span>
+                    </div>
+                    <div class="scroll-container" id="row-${referrer}"></div>
+                `;
+                container.appendChild(section);
+
+                const scroll = document.getElementById(`row-${referrer}`);
+                groups[referrer].forEach(ref => {
+                    const card = document.createElement("div");
+                    card.className = "ref-card";
+                    const isVerified = ref.status === 'verified';
+                    card.innerHTML = `
+                        <div style="font-weight:700; font-size:14px; margin-bottom:8px;">${ref.id}</div>
+                        <div class="status-pill" style="color:${isVerified ? '#22c55e' : '#facc15'}">${ref.status || 'pending'}</div>
+                        <button onclick="toggleStatus('${ref.id}', '${ref.status}', '${referrer}')">
+                            ${isVerified ? 'UNVERIFY' : 'VERIFY'}
+                        </button>
+                    `;
+                    scroll.appendChild(card);
+                });
+            }
         });
 
-        window.updateStatus = async (sid, status) => await updateDoc(doc(db, "students", sid), { status });
-        
-        window.verify = async (sid, ref) => {
-            const q = query(collection(db, "students"), where("referred_by", "==", ref), where("status", "==", "verified"));
-            const snap = await getDocs(q);
-            const count = snap.size;
-            let amount = (count >= 20) ? 300 : (count >= 10) ? 200 : 100;
-            
-            await updateDoc(doc(db, "students", sid), { status: 'verified' });
-            // Wallet show nahi karna hai, par calculation ke liye update rakhna zaroori hai
-            await updateDoc(doc(db, "students", ref), { 
-                wallet: increment(amount), 
-                total_lifetime_earnings: increment(amount) 
+        window.toggleStatus = async (sid, currentStatus, refName) => {
+            const newStatus = (currentStatus === 'verified') ? 'pending' : 'verified';
+            // Amount calculation logic
+            const amount = 100; // Default amount
+            await updateDoc(doc(db, "students", sid), { status: newStatus });
+            await updateDoc(doc(db, "students", refName), { 
+                wallet: increment(currentStatus === 'verified' ? -amount : amount) 
             });
         };
     </script>
