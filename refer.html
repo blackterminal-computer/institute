@@ -11,13 +11,21 @@
         .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
         .input-ui { width: 100%; padding: 15px; background: #000; border: 1px solid var(--accent); border-radius: 12px; color: white; margin: 10px 0; }
         .btn-ui { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; }
+        .flex-cards { display: flex; gap: 10px; }
+        .flex-cards .card { flex: 1; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="card" style="text-align:center;">
-        <p>Wallet Balance</p>
-        <h1 id="wallet-balance" style="color:var(--accent);">₹0</h1>
+    <div class="flex-cards">
+        <div class="card">
+            <p style="font-size: 12px; opacity: 0.7;">Wallet Balance</p>
+            <h1 id="wallet-balance" style="color:var(--accent);">₹0</h1>
+        </div>
+        <div class="card">
+            <p style="font-size: 12px; opacity: 0.7;">Lifetime Earnings</p>
+            <h1 id="lifetime-earnings" style="color:#22c55e;">₹0</h1>
+        </div>
     </div>
 
     <div class="card">
@@ -52,7 +60,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, getDocs, setDoc, query, where, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, getDocs, setDoc, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -64,7 +72,16 @@
 
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // Referral Listener - Yahan se tier calculation aur balance update ho raha hai
+        // Lifetime Earnings Listener
+        onSnapshot(doc(db, "students", student), (d) => {
+            if(d.exists()) {
+                const data = d.data();
+                document.getElementById('wallet-balance').innerText = `₹${data.wallet || 0}`;
+                document.getElementById('lifetime-earnings').innerText = `₹${data.total_lifetime_earnings || 0}`;
+            }
+        });
+
+        // Referral Listener
         onSnapshot(query(collection(db, "students"), where("referred_by", "==", student)), (snap) => {
             const listDiv = document.getElementById("referral-list");
             listDiv.innerHTML = "";
@@ -79,14 +96,10 @@
                 </div>`;
             });
 
-            // Tier Calculation Logic
             let tier = Math.floor(verifiedCount / 10);
             let rewardPerRef = (tier === 0) ? 100 : (tier === 1) ? 200 : 300;
-            let totalWallet = verifiedCount * rewardPerRef;
             let progress = verifiedCount % 10;
 
-            // UI Update
-            document.getElementById('wallet-balance').innerText = `₹${totalWallet}`;
             document.getElementById("milestone-text").innerText = `${verifiedCount} Total Verified Referrals`;
             document.getElementById("reward-info").innerText = `Reward: ₹${rewardPerRef} per referral`;
             
