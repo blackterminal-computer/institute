@@ -9,13 +9,28 @@
         body { background: var(--bg); color: #f8fafc; font-family: 'Inter', sans-serif; padding: 20px; }
         
         .section-wrapper { margin-bottom: 40px; }
-        .referrer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
-        .wallet-badge { background: #06b6d4; color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        .referrer-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .badge { background: var(--accent); padding: 4px 10px; border-radius: 6px; font-size: 10px; text-transform: uppercase; }
         
+        /* Premium Horizontal Scroll */
         .scroll-container { display: flex; gap: 16px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
-        .ref-card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); min-width: 140px; padding: 16px; border-radius: 20px; }
+        .scroll-container::-webkit-scrollbar { display: none; }
+        
+        /* Glassmorphism Cards */
+        .ref-card { 
+            background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); 
+            min-width: 140px; padding: 16px; border-radius: 20px; transition: 0.3s;
+        }
+        .ref-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        
+        .student-name { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
         .status-pill { font-size: 10px; padding: 4px 8px; border-radius: 20px; background: rgba(0,0,0,0.3); margin-bottom: 10px; display: inline-block;}
-        button { width: 100%; padding: 8px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; background: #334155; color: white; }
+        
+        button { 
+            width: 100%; padding: 8px; border: none; border-radius: 8px; cursor: pointer; 
+            font-size: 11px; font-weight: 600; background: #334155; color: white; transition: 0.2s;
+        }
+        button:hover { background: var(--accent); }
     </style>
 </head>
 <body>
@@ -25,7 +40,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -39,25 +54,21 @@
             const container = document.getElementById("admin-container");
             container.innerHTML = "";
             const groups = {};
-            const walletData = {}; // Referrer ke wallet tracking ke liye
-
             snap.forEach(d => {
                 const data = d.data();
                 if (data.referred_by) {
                     if (!groups[data.referred_by]) groups[data.referred_by] = [];
                     groups[data.referred_by].push({ id: d.id, ...data });
-                    walletData[data.referred_by] = data.wallet || 0;
                 }
             });
 
             for (const referrer in groups) {
                 const section = document.createElement("div");
                 section.className = "section-wrapper";
-                // Yahan Live Wallet dikh raha hai
                 section.innerHTML = `
                     <div class="referrer-header">
                         <span style="font-weight:800; font-size:20px;">${referrer}</span>
-                        <span class="wallet-badge">₹${walletData[referrer]}</span>
+                        <span class="badge">${groups[referrer].length} Referrals</span>
                     </div>
                     <div class="scroll-container" id="row-${referrer}"></div>
                 `;
@@ -69,9 +80,9 @@
                     card.className = "ref-card";
                     const isVerified = ref.status === 'verified';
                     card.innerHTML = `
-                        <div style="font-weight:700; font-size:14px; margin-bottom:8px;">${ref.id}</div>
+                        <div class="student-name">${ref.id}</div>
                         <div class="status-pill" style="color:${isVerified ? '#22c55e' : '#facc15'}">${ref.status || 'pending'}</div>
-                        <button onclick="toggleStatus('${ref.id}', '${ref.status}', '${referrer}')">
+                        <button onclick="toggleStatus('${ref.id}', '${ref.status}')">
                             ${isVerified ? 'UNVERIFY' : 'VERIFY'}
                         </button>
                     `;
@@ -80,14 +91,8 @@
             }
         });
 
-        window.toggleStatus = async (sid, currentStatus, refName) => {
-            const newStatus = (currentStatus === 'verified') ? 'pending' : 'verified';
-            // Amount calculation logic
-            const amount = 100; // Default amount
-            await updateDoc(doc(db, "students", sid), { status: newStatus });
-            await updateDoc(doc(db, "students", refName), { 
-                wallet: increment(currentStatus === 'verified' ? -amount : amount) 
-            });
+        window.toggleStatus = async (sid, status) => {
+            await updateDoc(doc(db, "students", sid), { status: status === 'verified' ? 'pending' : 'verified' });
         };
     </script>
 </body>
