@@ -2,70 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Lounge v12</title>
-    </head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Student Lounge</title>
+    <style>
+        :root { --bg: #121212; --accent: #0a84ff; --bubble: #1c1c1e; }
+        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Header & Online Bar */
+        .top-section { background: #1c1c1e; padding: 15px; border-bottom: 1px solid #333; }
+        #onlineBar { display: flex; gap: 12px; padding: 10px 0; overflow-x: auto; }
+        .u-item { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 55px; }
+        .u-item img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); }
+        .u-item span { font-size: 9px; }
+
+        /* Chat Window */
+        #chatBox { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { background: var(--bubble); padding: 12px 16px; border-radius: 18px; max-width: 75%; align-self: flex-start; }
+        .bubble.mine { background: var(--accent); align-self: flex-end; }
+
+        /* Footer Input */
+        .footer { background: #1c1c1e; padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #333; }
+        input { flex: 1; background: #000; border: none; color: white; padding: 12px; border-radius: 20px; }
+        button { background: var(--accent); border: none; color: white; padding: 10px 15px; border-radius: 20px; font-weight: bold; }
+    </style>
+</head>
 <body>
-    <div id="header">
-        <span>Total Online: <b id="totalOnline">0</b></span>
+
+    <div class="top-section">
+        <div style="font-size: 12px; opacity: 0.7;">TOTAL ONLINE: <b id="totalOnline">0</b></div>
+        <div id="onlineBar"></div>
     </div>
-    <div id="onlineBar"></div>
+
     <div id="chatBox"></div>
+
     <div class="footer">
-        <input id="mIn" placeholder="Type...">
-        <input type="file" id="fileInput" hidden>
         <button onclick="document.getElementById('fileInput').click()">📁</button>
+        <input type="file" id="fileInput" hidden>
+        <input id="mIn" placeholder="Type a message...">
         <button onclick="send()">Send</button>
     </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limitToLast, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-    const firebaseConfig = { /* Apna Config */ };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    
-    // User Info (Fetched from Firestore based on ID in localStorage)
-    const studentId = localStorage.getItem("studentName"); 
-    let userData = { name: "Guest", photo: "" };
-
-    // 1. Fetch User Data from 'students' collection
-    onSnapshot(doc(db, "students", studentId), (snap) => {
-        if(snap.exists()) userData = snap.data();
-    });
-
-    // 2. Update Total Online & Render Bar
-    onSnapshot(query(collection(db, "students"), where("isOnline", "==", true)), (snap) => {
-        document.getElementById("totalOnline").innerText = snap.size;
-        const bar = document.getElementById("onlineBar");
-        bar.innerHTML = "";
-        snap.forEach(d => {
-            const data = d.data();
-            bar.innerHTML += `
-                <div class="user-item">
-                    <img src="${data.photo}" class="avatar">
-                    <span>${data.displayName}</span>
-                </div>`;
-        });
-    });
-
-    // 3. File Upload Logic
-    document.getElementById('fileInput').onchange = async (e) => {
-        const file = e.target.files[0];
-        const storageRef = ref(storage, 'uploads/' + Date.now() + file.name);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        await addDoc(collection(db, "global_chat"), { name: userData.displayName, msg: `<img src="${url}" width="100">`, time: Date.now() });
-    };
-
-    window.send = async () => {
-        const input = document.getElementById("mIn");
-        await addDoc(collection(db, "global_chat"), { name: userData.displayName, msg: input.value, time: Date.now() });
-        input.value = "";
-    };
+    // Yahan apna Firebase code (imports, config, aur logic) paste karein.
+    // Ensure karein ki chatBox aur onlineBar elements ID se target ho rahe hain.
 </script>
 </body>
 </html>
