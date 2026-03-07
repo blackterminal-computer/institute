@@ -53,7 +53,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -64,34 +64,15 @@
         }));
 
         const student = localStorage.getItem("studentName") || "Guest";
-        let currentReferralCount = 0;
-
-        // Auto-refresh logic
-        setInterval(() => { loadReferralHistory(); }, 2000);
-
-        // Wallet Balance & Auto-Reset Logic
-        onSnapshot(doc(db, "students", student), (d) => {
-            if(d.exists()) {
-                let data = d.data();
-                let balance = data.wallet || 0;
-                
-                // Agar referral count 0 hai to wallet automatically 0 ho jaye
-                if (currentReferralCount === 0 && balance !== 0) {
-                    updateDoc(doc(db, "students", student), { wallet: 0 });
-                    balance = 0;
-                }
-                document.getElementById('wallet-balance').innerText = `₹${balance}`;
-            }
-        });
 
         async function updateMilestone(count) {
-            currentReferralCount = count;
             let progress = count % 10;
             let tier = Math.floor(count / 10);
             
             for(let i = 1; i <= 10; i++) {
                 document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
             }
+            
             document.getElementById("milestone-text").innerText = `${progress} / 10 Referrals`;
             document.getElementById("reward-info").innerText = `Current Reward: ₹${(tier + 1) * 100} per referral`;
         }
@@ -122,6 +103,10 @@
 
         loadStudents();
         loadReferralHistory();
+
+        onSnapshot(doc(db, "students", student), (d) => {
+            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
+        });
 
         window.processReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
