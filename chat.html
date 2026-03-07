@@ -7,39 +7,75 @@
     <style>
         :root { --bg: #000; --accent: #007aff; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; }
-        .header { padding: 20px; text-align: center; font-weight: bold; }
-        .online-bar { display: flex; gap: 15px; padding: 15px; overflow-x: auto; border-bottom: 1px solid #333; }
-        .online-user { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); }
-        .u-label { font-size: 10px; text-transform: uppercase; }
+        #onlineBar { display: flex; gap: 10px; padding: 10px; overflow-x: auto; border-bottom: 1px solid #333; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); }
+        #chatBox { height: 70vh; overflow-y: auto; padding: 20px; }
+        .bubble { background: #1c1c1e; padding: 10px; border-radius: 15px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div class="header">Student Lounge v12</div>
-    <div id="onlineBar" class="online-bar"></div>
-    
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, where, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        
-        // ... Firebase Config (Wahi purana) ...
-        const db = getFirestore(initializeApp({/*...config...*/}));
-        const student = localStorage.getItem("studentName");
 
-        // Online List Renderer
-        onSnapshot(query(collection(db, "students"), where("isOnline", "==", true)), (snap) => {
-            const bar = document.getElementById("onlineBar");
-            bar.innerHTML = "";
-            snap.forEach(d => {
-                if(d.id !== student) {
-                    bar.innerHTML += `
-                        <div class="online-user" onclick="localStorage.setItem('chatWith', '${d.id}'); window.location.href='chat.html'">
-                            <img src="${d.data().photo || 'https://api.dicebear.com/7.x/bottts/svg?seed='+d.id}" class="avatar">
-                            <span class="u-label">${d.id}</span>
-                        </div>`;
-                }
-            });
+<div id="onlineBar"></div>
+<div id="chatBox"></div>
+<input id="mIn" placeholder="Type...">
+<button onclick="send()">Send</button>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limitToLast, doc, updateDoc, where } 
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.appspot.com",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const student = localStorage.getItem("studentName") || "Student_" + Math.floor(Math.random()*999);
+    localStorage.setItem("studentName", student);
+
+    // 1. Online Logic
+    try {
+        const userRef = doc(db, "students", student);
+        await updateDoc(userRef, { isOnline: true });
+        window.addEventListener("beforeunload", async () => await updateDoc(userRef, { isOnline: false }));
+    } catch(e) { console.error("Update Error:", e); }
+
+    // 2. Render Online Users
+    onSnapshot(query(collection(db, "students"), where("isOnline", "==", true)), (snap) => {
+        const bar = document.getElementById("onlineBar");
+        bar.innerHTML = "";
+        snap.forEach(d => {
+            bar.innerHTML += `<img src="${d.data().photo || 'https://api.dicebear.com/7.x/bottts/svg?seed='+d.id}" class="avatar">`;
         });
-    </script>
+    });
+
+    // 3. Render Chat (Fix for Empty Screen)
+    // IMPORTANT: Check collection name. Is it 'global_chat'?
+    onSnapshot(query(collection(db, "global_chat"), orderBy("time"), limitToLast(50)), (snap) => {
+        const chatBox = document.getElementById("chatBox");
+        chatBox.innerHTML = "";
+        snap.forEach(d => {
+            const data = d.data();
+            chatBox.innerHTML += `<div class="bubble"><b>${data.name}:</b> ${data.msg}</div>`;
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }, (error) => {
+        console.error("Firestore Read Error: ", error);
+        alert("Permission Error! Check Firebase Rules.");
+    });
+
+    window.send = async () => {
+        const text = document.getElementById("mIn").value;
+        if(!text) return;
+        await addDoc(collection(db, "global_chat"), { name: student, msg: text, time: Date.now() });
+        document.getElementById("mIn").value = "";
+    };
+</script>
 </body>
 </html>
