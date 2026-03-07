@@ -21,26 +21,6 @@
     </div>
 
     <div class="card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span style="font-size:12px; font-weight:bold;">Milestone Progress</span>
-            <span id="milestone-text" style="font-size:12px; color:var(--accent);">0 / 10 Referrals</span>
-        </div>
-        <div style="height:8px; background:#000; border-radius:10px; display:flex; gap:2px; margin-bottom:15px;">
-            <div id="m1" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m2" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m3" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m4" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m5" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m6" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m7" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m8" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m9" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m10" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-        </div>
-        <p id="reward-info" style="font-size:10px; text-align:center; opacity:0.7;">Next Reward: ₹100 per referral</p>
-    </div>
-
-    <div class="card">
         <h3>Manual Refer</h3>
         <select id="student-dropdown" class="input-ui"><option>Fetching...</option></select>
         <button onclick="processReferral()" class="btn-ui">SUBMIT FOR REVIEW</button>
@@ -64,38 +44,40 @@
         }));
 
         const student = localStorage.getItem("studentName") || "Guest";
-        let currentCount = 0;
 
-        setInterval(loadReferralHistory, 3000);
-
-        onSnapshot(doc(db, "students", student), (d) => {
-            if(d.exists()) {
-                let data = d.data();
-                let balance = data.wallet || 0;
-                if(currentCount === 0 && balance > 0) {
-                    updateDoc(doc(db, "students", student), { wallet: 0 });
-                    balance = 0;
-                }
-                document.getElementById('wallet-balance').innerText = `₹${balance}`;
+        // Dropdown fix: Debugging ke saath
+        async function loadStudents() {
+            const dropdown = document.getElementById("student-dropdown");
+            try {
+                const snap = await getDocs(collection(db, "students"));
+                console.log("Students found:", snap.size);
+                
+                dropdown.innerHTML = '<option value="">Select Student</option>';
+                
+                snap.forEach(d => {
+                    if(d.id !== student) {
+                        const opt = document.createElement("option");
+                        opt.value = d.id;
+                        opt.textContent = d.id;
+                        dropdown.appendChild(opt);
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase Error:", err);
+                dropdown.innerHTML = '<option value="">Error (Check Console)</option>';
             }
+        }
+
+        // Wallet & History Logic
+        onSnapshot(doc(db, "students", student), (d) => {
+            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
         });
 
         async function loadReferralHistory() {
             const listDiv = document.getElementById("referral-list");
             const q = query(collection(db, "students"), where("referred_by", "==", student));
             const snap = await getDocs(q);
-            currentCount = snap.size;
             
-            // Progress Update
-            let progress = currentCount % 10;
-            let tier = Math.floor(currentCount / 10);
-            for(let i = 1; i <= 10; i++) {
-                document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
-            }
-            document.getElementById("milestone-text").innerText = `${progress} / 10 Referrals`;
-            document.getElementById("reward-info").innerText = `Current Reward: ₹${(tier + 1) * 100} per referral`;
-            
-            // List Rendering
             listDiv.innerHTML = snap.empty ? '<p style="font-size:12px; opacity:0.5;">No referrals yet.</p>' : "";
             snap.forEach(d => {
                 const data = d.data();
@@ -106,13 +88,6 @@
             });
         }
 
-        async function loadStudents() {
-            const dropdown = document.getElementById("student-dropdown");
-            const snap = await getDocs(collection(db, "students"));
-            dropdown.innerHTML = '<option value="">Select Student</option>';
-            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
-        }
-
         loadStudents();
         loadReferralHistory();
 
@@ -121,6 +96,7 @@
             if(!refName) return alert("Select student!");
             await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
             alert("Referral Submitted!");
+            loadReferralHistory();
         };
     </script>
 </body>
