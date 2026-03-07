@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BT | Refer & Earn</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
@@ -24,8 +25,18 @@
             <span id="milestone-text" style="font-size:12px; font-weight:bold;">0 / 10 Referrals</span>
             <span id="reward-info" style="font-size:12px; color:var(--accent);">Reward: ₹100</span>
         </div>
-        <div id="progress-bar" style="height:8px; background:#000; border-radius:10px; display:flex; gap:2px;">
-            </div>
+        <div style="height:8px; background:#000; border-radius:10px; display:flex; gap:2px; margin-bottom:15px;">
+            <div id="m1" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m2" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m3" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m4" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m5" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m6" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m7" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m8" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m9" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m10" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+        </div>
     </div>
 
     <div class="card">
@@ -40,8 +51,67 @@
     </div>
 
     <script type="module">
-        // Yahan wo purana JavaScript code paste karein jo humne milkar banaya tha
-        // Main logic wahi rahegi jo data sync rakhti hai.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.firebasestorage.app",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        }));
+
+        const student = localStorage.getItem("studentName") || "Guest";
+
+        // UI Real-time Listener
+        onSnapshot(doc(db, "students", student), (d) => {
+            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
+        });
+
+        // Referral Data Listener (Jab Admin Verify karega, ye auto update hoga)
+        onSnapshot(query(collection(db, "students"), where("referred_by", "==", student)), (snap) => {
+            const listDiv = document.getElementById("referral-list");
+            listDiv.innerHTML = "";
+            let verifiedCount = 0;
+
+            snap.forEach(d => {
+                const data = d.data();
+                if(data.status === 'verified') verifiedCount++;
+                listDiv.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between;">
+                    <span>${d.id}</span>
+                    <span style="color:${data.status === 'verified' ? '#22c55e' : '#facc15'}">${data.status || 'pending'}</span>
+                </div>`;
+            });
+
+            // Tier Calculation
+            let tier = Math.floor(verifiedCount / 10);
+            let rewardPerRef = (tier === 0) ? 100 : (tier === 1) ? 200 : 300;
+            let progress = verifiedCount % 10;
+
+            document.getElementById("milestone-text").innerText = `${verifiedCount} Total Verified Referrals`;
+            document.getElementById("reward-info").innerText = `Reward: ₹${rewardPerRef} per referral`;
+            
+            for(let i = 1; i <= 10; i++) {
+                document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+            }
+        });
+
+        async function loadStudents() {
+            const dropdown = document.getElementById("student-dropdown");
+            const snap = await getDocs(collection(db, "students"));
+            dropdown.innerHTML = '<option value="">Select Student</option>';
+            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
+        }
+
+        window.processReferral = async () => {
+            const refName = document.getElementById("student-dropdown").value;
+            if(!refName) return alert("Select student!");
+            await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
+            alert("Referral Submitted!");
+        };
+
+        loadStudents();
     </script>
 </body>
 </html>
