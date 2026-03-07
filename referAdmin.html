@@ -5,32 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BT | Admin Terminal</title>
     <style>
-        :root { --bg: #020617; --card: #0f172a; --accent: #6366f1; --danger: #ef4444; --success: #22c55e; --text: #f3f4f6; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 20px; }
+        :root { --bg: #020617; --card: rgba(17, 24, 39, 0.7); --accent: #6366f1; --danger: #ef4444; --success: #22c55e; --text: #f3f4f6; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; padding: 20px; }
         .container { max-width: 1000px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        
-        .table-card { background: var(--card); border-radius: 24px; padding: 25px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+        .table-card { background: var(--card); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
         table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
-        th { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; padding: 10px; text-align: left; }
-        td { padding: 18px; background: rgba(30, 41, 59, 0.4); border-top: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; }
-        
-        tr td:first-child { border-left: 1px solid rgba(255,255,255,0.03); border-radius: 16px 0 0 16px; font-weight: bold; color: var(--accent); }
-        tr td:last-child { border-right: 1px solid rgba(255,255,255,0.03); border-radius: 0 16px 16px 0; }
-
-        .btn { padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer; font-size: 11px; font-weight: 700; transition: all 0.2s; margin-left: 5px; }
-        .btn:hover { transform: translateY(-1px); filter: brightness(1.2); }
-        .btn-verify { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-secondary { background: #334155; color: white; }
+        th { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; padding: 10px 16px; text-align: left; }
+        td { padding: 16px; background: rgba(30, 41, 59, 0.3); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        tr td:first-child { border-radius: 16px 0 0 16px; border-left: 1px solid rgba(255,255,255,0.05); font-weight: bold; color: var(--accent); }
+        tr td:last-child { border-radius: 0 16px 16px 0; border-right: 1px solid rgba(255,255,255,0.05); text-align: right; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .status-verified { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .status-pending { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .btn { padding: 8px 14px; border-radius: 10px; border: none; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; margin: 2px; }
+        .btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="header">
-            <h2>Referral Terminal</h2>
-        </div>
+        <h2>Referral Terminal</h2>
         <div class="table-card">
             <table>
                 <thead><tr><th>Referrer</th><th>Student</th><th>Wallet</th><th>Status</th><th>Actions</th></tr></thead>
@@ -59,17 +53,19 @@
                 if (data.referred_by) {
                     const refDoc = await getDoc(doc(db, "students", data.referred_by));
                     const wallet = refDoc.exists() ? (refDoc.data().wallet || 0) : 0;
+                    const statusClass = data.status === 'verified' ? 'status-verified' : 'status-pending';
+                    
                     tbody.innerHTML += `<tr>
                         <td>${data.referred_by}</td>
                         <td>${d.id}</td>
-                        <td>₹${wallet} <button onclick="editWallet('${data.referred_by}', ${wallet})" class="btn btn-secondary">Edit</button></td>
-                        <td>${data.status || 'pending'}</td>
+                        <td><span style="font-weight:bold;">₹${wallet}</span> <button onclick="editWallet('${data.referred_by}', ${wallet})" class="btn" style="background:#475569; color:white;">Edit</button></td>
+                        <td><span class="status-badge ${statusClass}">${data.status || 'pending'}</span></td>
                         <td>
                             ${data.status !== 'verified' 
-                                ? `<button onclick="verify('${d.id}', '${data.referred_by}')" class="btn btn-verify">Verify</button>` 
-                                : `<button onclick="updateReferralStatus('${d.id}', 'pending')" class="btn btn-danger">Unverify</button>`}
-                            <button onclick="clearHistory('${d.id}')" class="btn btn-secondary">Clear</button>
-                            <button onclick="resetMilestone('${data.referred_by}')" class="btn btn-danger">Reset</button>
+                                ? `<button onclick="verify('${d.id}', '${data.referred_by}')" class="btn" style="background:var(--success); color:white;">Verify</button>` 
+                                : `<button onclick="updateReferralStatus('${d.id}', 'pending')" class="btn" style="background:var(--danger); color:white;">Unverify</button>`}
+                            <button onclick="clearHistory('${d.id}')" class="btn" style="background:#475569; color:white;">Clear</button>
+                            <button onclick="resetMilestone('${data.referred_by}')" class="btn" style="background:var(--danger); color:white;">Reset</button>
                         </td>
                     </tr>`;
                 }
@@ -85,7 +81,6 @@
             const snap = await getDocs(q);
             const count = snap.size;
             let amount = (count >= 20) ? 300 : (count >= 10) ? 200 : 100;
-            
             await updateDoc(doc(db, "students", sid), { status: 'verified' });
             await updateDoc(doc(db, "students", ref), { wallet: increment(amount) });
         };
