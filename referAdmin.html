@@ -2,29 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BT | Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root { --bg: #020617; --card: #0f172a; --accent: #6366f1; --danger: #ef4444; }
-        body { background: var(--bg); color: white; font-family: sans-serif; padding: 20px; }
-        .table-card { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid #1e293b; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 15px; border-bottom: 1px solid #1e293b; }
-        .btn { padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; }
-        .pending { background: #facc15; color: #000; }
-        .verified { background: #22c55e; color: #fff; }
-        .delete-btn { background: var(--danger); color: white; }
-        tr:hover { background: rgba(255,255,255,0.02); }
+        :root { --bg: #020617; --card: #0f172a; --accent: #6366f1; --danger: #ef4444; --warning: #facc15; --success: #22c55e; }
+        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding: 10px; margin: 0; }
+        .container { max-width: 900px; margin: auto; }
+        .table-card { background: var(--card); border-radius: 16px; padding: 15px; border: 1px solid #1e293b; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 12px; border-bottom: 1px solid #1e293b; font-size: 14px; }
+        .btn { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; margin: 2px; }
+        .pending { background: var(--warning); color: #000; }
+        .verified { background: var(--success); color: white; }
+        .rejected { background: var(--danger); color: white; }
+        .action-group { display: flex; gap: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="container" style="max-width: 900px; margin: auto;">
-        <h2>Referral Management <small style="font-size:12px; opacity:0.5;">(Live Updates)</small></h2>
+    <div class="container">
+        <h2>Referral Dashboard</h2>
         <div class="table-card">
             <table>
-                <thead><tr><th>Referrer</th><th>Student Referred</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody id="admin-tbody"><tr><td colspan="4">Connecting...</td></tr></tbody>
+                <thead><tr><th>Referrer</th><th>Student</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="admin-tbody"><tr><td colspan="4">Loading...</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -41,11 +43,9 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        // LIVE DATA FETCHING
         onSnapshot(collection(db, "students"), (snap) => {
             const tbody = document.getElementById("admin-tbody");
             tbody.innerHTML = "";
-            
             snap.forEach(d => {
                 const data = d.data();
                 if (data.referred_by) {
@@ -53,10 +53,11 @@
                     row.innerHTML = `
                         <td>${data.referred_by}</td>
                         <td>${d.id}</td>
-                        <td><span class="btn ${data.status === 'verified' ? 'verified' : 'pending'}">${data.status || 'pending'}</span></td>
-                        <td>
-                            ${data.status !== 'verified' ? `<button onclick="verify('${d.id}', '${data.referred_by}')" class="btn pending">Verify</button>` : '✅'}
-                            <button onclick="deleteRef('${d.id}')" class="btn delete-btn"><i class="ri-delete-bin-line"></i></button>
+                        <td><span class="btn ${data.status}">${data.status || 'pending'}</span></td>
+                        <td class="action-group">
+                            ${data.status !== 'verified' ? `<button onclick="updateStatus('${d.id}', '${data.referred_by}', 'verified')" class="btn verified">Verify</button>` : '✅'}
+                            ${data.status !== 'rejected' ? `<button onclick="updateStatus('${d.id}', '${data.referred_by}', 'rejected')" class="btn rejected">Reject</button>` : ''}
+                            <button onclick="deleteRef('${d.id}')" class="btn" style="background:#444">🗑️</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -64,16 +65,13 @@
             });
         });
 
-        // Verify Function
-        window.verify = async (sid, ref) => {
-            await updateDoc(doc(db, "students", sid), { status: "verified" });
-            await updateDoc(doc(db, "students", ref), { wallet: increment(100) });
+        window.updateStatus = async (sid, ref, status) => {
+            await updateDoc(doc(db, "students", sid), { status: status });
+            if(status === 'verified') await updateDoc(doc(db, "students", ref), { wallet: increment(100) });
+            else if(status === 'rejected') await updateDoc(doc(db, "students", ref), { wallet: increment(-100) }); // Optional: Revert
         };
 
-        // Delete Function
-        window.deleteRef = async (sid) => {
-            if(confirm("Delete this record?")) await deleteDoc(doc(db, "students", sid));
-        };
+        window.deleteRef = async (sid) => { if(confirm("Delete record?")) await deleteDoc(doc(db, "students", sid)); };
     </script>
 </body>
 </html>
