@@ -25,15 +25,15 @@
         <h2>Referral Dashboard</h2>
         <div class="table-card">
             <table>
-                <thead><tr><th>Referrer</th><th>Student</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody id="admin-tbody"><tr><td colspan="4">Loading...</td></tr></tbody>
+                <thead><tr><th>Referrer</th><th>Student</th><th>Wallet</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="admin-tbody"><tr><td colspan="5">Loading...</td></tr></tbody>
             </table>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -43,35 +43,38 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        onSnapshot(collection(db, "students"), (snap) => {
+        onSnapshot(collection(db, "students"), async (snap) => {
             const tbody = document.getElementById("admin-tbody");
             tbody.innerHTML = "";
-            snap.forEach(d => {
+            
+            for (const d of snap.docs) {
                 const data = d.data();
                 if (data.referred_by) {
+                    // Referrer ka current wallet balance fetch kar rahe hain
+                    const refDoc = await getDoc(doc(db, "students", data.referred_by));
+                    const wallet = refDoc.exists() ? (refDoc.data().wallet || 0) : 0;
+
                     const row = document.createElement("tr");
                     row.innerHTML = `
                         <td>${data.referred_by}</td>
                         <td>${d.id}</td>
+                        <td>₹${wallet}</td>
                         <td><span class="btn ${data.status}">${data.status || 'pending'}</span></td>
                         <td class="action-group">
                             ${data.status !== 'verified' ? `<button onclick="updateStatus('${d.id}', '${data.referred_by}', 'verified')" class="btn verified">Verify</button>` : '✅'}
                             ${data.status !== 'rejected' ? `<button onclick="updateStatus('${d.id}', '${data.referred_by}', 'rejected')" class="btn rejected">Reject</button>` : ''}
-                            <button onclick="deleteRef('${d.id}')" class="btn" style="background:#444">🗑️</button>
                         </td>
                     `;
                     tbody.appendChild(row);
                 }
-            });
+            }
         });
 
         window.updateStatus = async (sid, ref, status) => {
             await updateDoc(doc(db, "students", sid), { status: status });
             if(status === 'verified') await updateDoc(doc(db, "students", ref), { wallet: increment(100) });
-            else if(status === 'rejected') await updateDoc(doc(db, "students", ref), { wallet: increment(-100) }); // Optional: Revert
+            else if(status === 'rejected') await updateDoc(doc(db, "students", ref), { wallet: increment(-100) });
         };
-
-        window.deleteRef = async (sid) => { if(confirm("Delete record?")) await deleteDoc(doc(db, "students", sid)); };
     </script>
 </body>
 </html>
