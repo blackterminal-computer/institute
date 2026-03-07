@@ -4,81 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Lounge v12</title>
-    <style>
-        :root { --bg: #000; --accent: #007aff; --other: #1c1c1e; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; }
-        
-        /* Online Users Bar */
-        #onlineBar { display: flex; gap: 10px; padding: 15px; border-bottom: 1px solid #333; overflow-x: auto; background: #050505; }
-        .u-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); }
-        
-        /* Chat Area */
-        #chatBox { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { background: var(--other); padding: 10px 15px; border-radius: 18px; width: fit-content; max-width: 80%; }
-        .mine { background: var(--accent); align-self: flex-end; }
-        
-        /* Input */
-        .footer { padding: 15px; background: #000; border-top: 1px solid #333; display: flex; gap: 10px; }
-        #mIn { flex: 1; background: #1c1c1e; border: none; color: white; padding: 10px; border-radius: 20px; }
-    </style>
-</head>
+    </head>
 <body>
-
-<div id="onlineBar"></div>
-<div id="chatBox"></div>
-<div class="footer">
-    <input id="mIn" placeholder="Message..." autocomplete="off">
-    <button onclick="send()">Send</button>
-</div>
+    <div id="header">
+        <span>Total Online: <b id="totalOnline">0</b></span>
+    </div>
+    <div id="onlineBar"></div>
+    <div id="chatBox"></div>
+    <div class="footer">
+        <input id="mIn" placeholder="Type...">
+        <input type="file" id="fileInput" hidden>
+        <button onclick="document.getElementById('fileInput').click()">📁</button>
+        <button onclick="send()">Send</button>
+    </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limitToLast, doc, updateDoc, where } 
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limitToLast, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.appspot.com",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
-    };
-
+    const firebaseConfig = { /* Apna Config */ };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const student = localStorage.getItem("studentName") || "Student_" + Math.floor(Math.random()*999);
-    localStorage.setItem("studentName", student);
+    const storage = getStorage(app);
+    
+    // User Info (Fetched from Firestore based on ID in localStorage)
+    const studentId = localStorage.getItem("studentName"); 
+    let userData = { name: "Guest", photo: "" };
 
-    // Online Status
-    const userRef = doc(db, "students", student);
-    await updateDoc(userRef, { isOnline: true });
-    window.addEventListener("beforeunload", async () => await updateDoc(userRef, { isOnline: false }));
+    // 1. Fetch User Data from 'students' collection
+    onSnapshot(doc(db, "students", studentId), (snap) => {
+        if(snap.exists()) userData = snap.data();
+    });
 
-    // Online Bar (Last Active Users)
+    // 2. Update Total Online & Render Bar
     onSnapshot(query(collection(db, "students"), where("isOnline", "==", true)), (snap) => {
+        document.getElementById("totalOnline").innerText = snap.size;
         const bar = document.getElementById("onlineBar");
         bar.innerHTML = "";
         snap.forEach(d => {
-            bar.innerHTML += `<img src="${d.data().photo || 'https://api.dicebear.com/7.x/bottts/svg?seed='+d.id}" class="u-avatar">`;
+            const data = d.data();
+            bar.innerHTML += `
+                <div class="user-item">
+                    <img src="${data.photo}" class="avatar">
+                    <span>${data.displayName}</span>
+                </div>`;
         });
     });
 
-    // Chat Logic (Last 12 Only)
-    onSnapshot(query(collection(db, "global_chat"), orderBy("time"), limitToLast(12)), (snap) => {
-        const box = document.getElementById("chatBox");
-        box.innerHTML = "";
-        snap.forEach(d => {
-            const data = d.data();
-            box.innerHTML += `<div class="bubble ${data.name === student ? 'mine' : ''}">${data.msg}</div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-    });
+    // 3. File Upload Logic
+    document.getElementById('fileInput').onchange = async (e) => {
+        const file = e.target.files[0];
+        const storageRef = ref(storage, 'uploads/' + Date.now() + file.name);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        await addDoc(collection(db, "global_chat"), { name: userData.displayName, msg: `<img src="${url}" width="100">`, time: Date.now() });
+    };
 
     window.send = async () => {
         const input = document.getElementById("mIn");
-        if(!input.value.trim()) return;
-        await addDoc(collection(db, "global_chat"), { name: student, msg: input.value, time: Date.now() });
+        await addDoc(collection(db, "global_chat"), { name: userData.displayName, msg: input.value, time: Date.now() });
         input.value = "";
     };
 </script>
