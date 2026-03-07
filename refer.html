@@ -2,47 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BT | Refer & Earn</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --glass: rgba(255, 255, 255, 0.05); }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 20px; }
-        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
-        .input-ui { width: 100%; padding: 15px; background: #000; border: 1px solid var(--accent); border-radius: 12px; color: white; margin: 10px 0; }
-        .btn-ui { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; }
+        body { background: #020617; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-
-    <div class="card" style="text-align:center;">
-        <p>Wallet Balance</p>
-        <h1 id="wallet-balance" style="color:var(--accent);">₹0</h1>
-    </div>
-
     <div class="card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span id="milestone-text" style="font-size:12px; font-weight:bold;">0 / 10 Referrals</span>
-            <span id="reward-info" style="font-size:12px; color:var(--accent);">Reward: ₹100</span>
-        </div>
-        <div style="height:8px; background:#000; border-radius:10px; display:flex; gap:2px; margin-bottom:15px;">
-            <div id="m1" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m2" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m3" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m4" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m5" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m6" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m7" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m8" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m9" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m10" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>Manual Refer</h3>
-        <select id="student-dropdown" class="input-ui"><option>Fetching...</option></select>
-        <button onclick="processReferral()" class="btn-ui">SUBMIT FOR REVIEW</button>
+        <h3>Wallet Balance</h3>
+        <h1 id="wallet-balance">₹0</h1>
     </div>
 
     <div class="card">
@@ -52,7 +21,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -64,54 +33,19 @@
 
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // UI Real-time Listener
+        // Wallet Balance Real-time update
         onSnapshot(doc(db, "students", student), (d) => {
             if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
         });
 
-        // Referral Data Listener (Jab Admin Verify karega, ye auto update hoga)
+        // Referral List Real-time update
         onSnapshot(query(collection(db, "students"), where("referred_by", "==", student)), (snap) => {
             const listDiv = document.getElementById("referral-list");
             listDiv.innerHTML = "";
-            let verifiedCount = 0;
-
             snap.forEach(d => {
-                const data = d.data();
-                if(data.status === 'verified') verifiedCount++;
-                listDiv.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between;">
-                    <span>${d.id}</span>
-                    <span style="color:${data.status === 'verified' ? '#22c55e' : '#facc15'}">${data.status || 'pending'}</span>
-                </div>`;
+                listDiv.innerHTML += `<div>${d.id} - ${d.data().status}</div>`;
             });
-
-            // Tier Calculation
-            let tier = Math.floor(verifiedCount / 10);
-            let rewardPerRef = (tier === 0) ? 100 : (tier === 1) ? 200 : 300;
-            let progress = verifiedCount % 10;
-
-            document.getElementById("milestone-text").innerText = `${verifiedCount} Total Verified Referrals`;
-            document.getElementById("reward-info").innerText = `Reward: ₹${rewardPerRef} per referral`;
-            
-            for(let i = 1; i <= 10; i++) {
-                document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
-            }
         });
-
-        async function loadStudents() {
-            const dropdown = document.getElementById("student-dropdown");
-            const snap = await getDocs(collection(db, "students"));
-            dropdown.innerHTML = '<option value="">Select Student</option>';
-            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
-        }
-
-        window.processReferral = async () => {
-            const refName = document.getElementById("student-dropdown").value;
-            if(!refName) return alert("Select student!");
-            await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
-            alert("Referral Submitted!");
-        };
-
-        loadStudents();
     </script>
 </body>
 </html>
