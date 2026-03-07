@@ -22,9 +22,7 @@
 
     <div class="card">
         <h3>Manual Refer</h3>
-        <select id="student-dropdown" class="input-ui">
-            <option value="">Fetching...</option>
-        </select>
+        <select id="student-dropdown" class="input-ui"><option>Fetching...</option></select>
         <button onclick="processReferral()" class="btn-ui">SUBMIT FOR REVIEW</button>
     </div>
 
@@ -35,45 +33,56 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = {
+        const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-            authDomain: "black-terminal-f2c91.firebaseapp.com",
             projectId: "black-terminal-f2c91",
             storageBucket: "black-terminal-f2c91.firebasestorage.app",
             messagingSenderId: "552489994197",
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
-        const db = getFirestore(initializeApp(firebaseConfig));
+        }));
+
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // Load Dropdown
+        // 1. Load Dropdown
         async function loadStudents() {
             const dropdown = document.getElementById("student-dropdown");
             const snap = await getDocs(collection(db, "students"));
             dropdown.innerHTML = '<option value="">Select Student</option>';
+            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
+        }
+
+        // 2. Load History (NEW)
+        async function loadReferralHistory() {
+            const listDiv = document.getElementById("referral-list");
+            const q = query(collection(db, "students"), where("referred_by", "==", student));
+            const snap = await getDocs(q);
+            listDiv.innerHTML = snap.empty ? '<p style="font-size:12px; opacity:0.5;">No referrals yet.</p>' : "";
             snap.forEach(d => {
-                if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`;
+                const data = d.data();
+                listDiv.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-between;">
+                    <span>${d.id}</span>
+                    <span style="color:${data.status === 'verified' ? '#22c55e' : '#facc15'}">${data.status || 'pending'}</span>
+                </div>`;
             });
         }
-        loadStudents();
 
-        // Update Wallet & History
+        loadStudents();
+        loadReferralHistory();
+
+        // 3. Real-time Wallet
         onSnapshot(doc(db, "students", student), (d) => {
-            if(d.exists()) {
-                document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
-            }
+            if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
         });
 
+        // 4. Submit Referral
         window.processReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
             if(!refName) return alert("Select student!");
-            try {
-                await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
-                await updateDoc(doc(db, "students", student), { wallet: increment(100), total_referrals: increment(1) });
-                alert("Referral Submitted!");
-            } catch (e) { alert("Error: " + e.message); }
+            await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
+            alert("Referral Submitted!");
+            loadReferralHistory(); // Update list after submit
         };
     </script>
 </body>
