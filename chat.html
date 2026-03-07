@@ -6,20 +6,18 @@
     <title>Elite Student Lounge</title>
     <style>
         :root { --bg: #050505; --accent: #007aff; --card: #1c1c1e; }
-        body { background: var(--bg); color: white; font-family: -apple-system, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; }
+        body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Online Bar */
         #onlineBar { display: flex; gap: 12px; padding: 15px; border-bottom: 1px solid #333; overflow-x: auto; background: #0a0a0a; }
         .u-item { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 55px; }
+        /* Professional Avatar Styling */
         .u-item img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; }
-        .u-item span { font-size: 9px; white-space: nowrap; }
+        .u-item span { font-size: 9px; color: #aaa; }
 
-        /* Chat */
         #chatBox { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         .bubble { background: var(--card); padding: 12px 16px; border-radius: 18px; max-width: 80%; align-self: flex-start; }
         .mine { background: var(--accent); align-self: flex-end; }
         
-        /* Footer */
         .footer { padding: 15px; background: #1c1c1e; display: flex; gap: 10px; align-items: center; }
         input { flex: 1; background: #000; border: none; color: white; padding: 12px; border-radius: 20px; }
         button { background: var(--accent); border: none; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; }
@@ -27,7 +25,7 @@
 </head>
 <body>
 
-    <div style="padding:10px; text-align:center; font-size: 12px;">Total Online: <b id="totalOnline">0</b></div>
+    <div style="padding:10px; text-align:center; font-size: 11px;">TOTAL ONLINE: <b id="totalOnline">0</b></div>
     <div id="onlineBar"></div>
     <div id="chatBox"></div>
     
@@ -53,7 +51,7 @@
     const db = getFirestore(app);
     const student = localStorage.getItem("studentName") || "User_" + Math.floor(Math.random()*999);
 
-    // Online Users + Image Fallback Logic
+    // Final Presence & Profile Logic
     onSnapshot(query(collection(db, "students"), where("isOnline", "==", true)), (snap) => {
         const bar = document.getElementById("onlineBar");
         document.getElementById("totalOnline").innerText = snap.size;
@@ -61,20 +59,19 @@
         
         snap.forEach(d => {
             const data = d.data();
-            // FALLBACK LOGIC: Agar 'photo' field valid hai toh use karo, warna robot avatar
+            // Fallback logic: database photo missing? use DiceBear robot!
             const pic = (data.photo && data.photo.startsWith('http')) 
                         ? data.photo 
                         : `https://api.dicebear.com/7.x/bottts/svg?seed=${d.id}`;
             
             bar.innerHTML += `
                 <div class="u-item">
-                    <img src="${pic}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=default'">
+                    <img src="${pic}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=fallback'">
                     <span>${data.displayName || d.id}</span>
                 </div>`;
         });
     });
 
-    // Chat Fetching
     onSnapshot(query(collection(db, "global_chat"), orderBy("time"), limitToLast(12)), (snap) => {
         const box = document.getElementById("chatBox");
         box.innerHTML = "";
