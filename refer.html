@@ -21,6 +21,26 @@
     </div>
 
     <div class="card">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span style="font-size:12px; font-weight:bold;">Milestone Progress</span>
+            <span id="milestone-text" style="font-size:12px; color:var(--accent);">0 / 10 Referrals</span>
+        </div>
+        <div style="height:8px; background:#000; border-radius:10px; display:flex; gap:2px; margin-bottom:15px;">
+            <div id="m1" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m2" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m3" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m4" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m5" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m6" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m7" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m8" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m9" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div id="m10" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+        </div>
+        <p id="reward-info" style="font-size:10px; text-align:center; opacity:0.7;">Next Reward: ₹100 per referral</p>
+    </div>
+
+    <div class="card">
         <h3>Manual Refer</h3>
         <select id="student-dropdown" class="input-ui"><option>Fetching...</option></select>
         <button onclick="processReferral()" class="btn-ui">SUBMIT FOR REVIEW</button>
@@ -33,7 +53,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, updateDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -45,7 +65,18 @@
 
         const student = localStorage.getItem("studentName") || "Guest";
 
-        // 1. Load Dropdown
+        async function updateMilestone(count) {
+            let progress = count % 10;
+            let tier = Math.floor(count / 10);
+            
+            for(let i = 1; i <= 10; i++) {
+                document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+            }
+            
+            document.getElementById("milestone-text").innerText = `${progress} / 10 Referrals`;
+            document.getElementById("reward-info").innerText = `Current Reward: ₹${(tier + 1) * 100} per referral`;
+        }
+
         async function loadStudents() {
             const dropdown = document.getElementById("student-dropdown");
             const snap = await getDocs(collection(db, "students"));
@@ -53,11 +84,13 @@
             snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
         }
 
-        // 2. Load History (NEW)
         async function loadReferralHistory() {
             const listDiv = document.getElementById("referral-list");
             const q = query(collection(db, "students"), where("referred_by", "==", student));
             const snap = await getDocs(q);
+            
+            updateMilestone(snap.size); 
+            
             listDiv.innerHTML = snap.empty ? '<p style="font-size:12px; opacity:0.5;">No referrals yet.</p>' : "";
             snap.forEach(d => {
                 const data = d.data();
@@ -71,18 +104,16 @@
         loadStudents();
         loadReferralHistory();
 
-        // 3. Real-time Wallet
         onSnapshot(doc(db, "students", student), (d) => {
             if(d.exists()) document.getElementById('wallet-balance').innerText = `₹${d.data().wallet || 0}`;
         });
 
-        // 4. Submit Referral
         window.processReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
             if(!refName) return alert("Select student!");
             await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
             alert("Referral Submitted!");
-            loadReferralHistory(); // Update list after submit
+            loadReferralHistory();
         };
     </script>
 </body>
