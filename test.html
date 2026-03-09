@@ -2,100 +2,93 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Black Terminal | Elite Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --accent: #06b6d4; --gold: #facc15; --bg: #020617; }
-        body { background: var(--bg); color: white; padding-bottom: 100px; font-family: sans-serif; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; margin: 20px; }
-        .label-tag { margin-left: 20px; color: var(--accent); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        :root { --accent: #06b6d4; --gold: #facc15; --bg: #020617; --glass: rgba(255,255,255,0.05); }
+        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 100px; margin: 0; }
+        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 24px; margin: 20px; }
+        .label-tag { margin-left: 20px; color: var(--accent); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px; }
-        .nav { position: fixed; bottom: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 15px; }
-        @keyframes slide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .winner-anim { animation: slide 0.8s ease; }
+        .winner-card { display: flex; justify-content: space-around; align-items: flex-end; padding: 20px; }
+        .podium-item { text-align: center; }
+        .podium-img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--gold); }
     </style>
 </head>
 <body>
 
-    <header style="padding: 20px;">
-        <h2 id="uName">Student</h2>
-        <div id="sCount">🔥 Streak: 0</div>
+    <header style="padding: 25px 20px;">
+        <h2 id="uName" style="margin:0;">User</h2>
+        <p style="opacity:0.6; font-size:12px;">Welcome back to the terminal</p>
     </header>
 
-    <p class="label-tag">Weekly Arena</p>
+    <p class="label-tag">Weekly Championship</p>
     <div id="arenaCard" class="card">
         <div style="display: flex; align-items: center; gap: 15px;">
-            <div id="arenaIcon"><i class="ri-lock-fill"></i></div>
+            <div id="arenaIcon" style="font-size: 24px;"><i class="ri-lock-fill"></i></div>
             <div style="flex: 1;">
-                <h3 id="arenaTitle">LOADING...</h3>
-                <p id="arenaStatus" style="font-size: 11px; opacity: 0.7;">Checking schedule...</p>
+                <h3 id="arenaTitle" style="margin:0; font-family:Orbitron;">LOADING...</h3>
+                <p id="arenaStatus" style="margin:5px 0 0 0; font-size: 11px; opacity: 0.7;">Syncing schedule...</p>
             </div>
-            <button id="arenaBtn" disabled onclick="location.href='weekly-exam.html'" style="padding: 10px; border-radius: 10px; border:none;">ENTER</button>
+            <button id="arenaBtn" disabled onclick="location.href='weekly-exam.html'" style="padding: 10px 15px; border-radius: 12px; border:none; background:#334155; color:white; font-weight:800; cursor:pointer;">ENTER</button>
         </div>
     </div>
 
-    <p class="label-tag">Weekly Arena Champions</p>
     <div id="winnersRoot" class="card" style="display: none;">
-        <div style="display: flex; justify-content: center; gap: 20px;">
-            <div class="winner-anim"><img id="win1-img" style="width: 60px; border-radius: 50%; border: 2px solid gold;"> <p id="win1-name">#1</p></div>
+        <p class="label-tag" style="margin-left:0; margin-bottom:10px;">🏆 ARENA CHAMPIONS</p>
+        <div class="winner-card">
+            <div class="podium-item"><img id="win1-img" class="podium-img"> <p id="win1-name">#1</p></div>
         </div>
     </div>
 
     <p class="label-tag">Core Modules</p>
     <div class="grid">
-        <a class="card" href="daily-test.html">Exams</a>
-        <a class="card" href="battle.html">Battle</a>
+        <a class="card" href="daily-test.html" style="text-decoration:none; color:white;">Exams</a>
+        <a class="card" href="battle.html" style="text-decoration:none; color:white;">Battle</a>
     </div>
-
-    <nav class="nav">
-        <a href="index.html">Home</a>
-        <a href="profile.html">Profile</a>
-    </nav>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, getDoc, updateDoc, increment, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = { /* APKA CONFIG YAHAN DAALEIN */ };
+        // APP CONFIG - Yahan apna config paste karein
+        const firebaseConfig = { /* ... */ };
         const db = getFirestore(initializeApp(firebaseConfig));
-        const student = localStorage.getItem("studentName");
 
-        // 1. Arena Timing Logic
         function updateArena() {
             const now = new Date();
             const day = now.getDay();
             const hour = now.getHours();
             const btn = document.getElementById('arenaBtn');
             const title = document.getElementById('arenaTitle');
+            const status = document.getElementById('arenaStatus');
 
+            // MON 7AM to 9PM
             if (day === 1 && hour >= 7 && hour < 21) {
                 title.innerText = "ARENA UNLOCKED";
+                status.innerText = "Ends 9:00 PM Tonight";
                 btn.disabled = false;
-            } else if (day === 1 && hour >= 21) {
+                btn.style.background = "var(--accent)";
+            } 
+            // MON 9PM + (Result Time)
+            else if (day === 1 && hour >= 21) {
                 title.innerText = "ARENA CLOSED";
+                status.innerText = "Results Processing...";
                 btn.style.display = "none";
                 processResults();
             } else {
                 title.innerText = "ARENA LOCKED";
+                status.innerText = "Opens Monday @ 07:00 AM";
             }
         }
 
-        // 2. Winner Processing Logic (Runs at 9 PM)
         async function processResults() {
-            const snap = await getDocs(query(collection(db, "students"), orderBy("lastWeeklyScore", "desc"), limit(3)));
-            const winners = snap.docs.map(d => ({id: d.id, ...d.data()}));
-            
-            // Apply XP Rewards
-            winners.forEach(async (w, i) => {
-                let reward = i === 0 ? 3000 : i === 1 ? 2000 : 1000;
-                await updateDoc(doc(db, "students", w.id), { xp: increment(reward), lastWeeklyScore: 0 });
-            });
-            
-            // Show Podium
+            const snap = await getDocs(query(collection(db, "students"), orderBy("lastWeeklyScore", "desc"), limit(10)));
+            // Logic: 1st(3000), 2nd(2000), 3rd(1000), Others(100)
+            // Confetti: confetti();
             document.getElementById('winnersRoot').style.display = 'block';
-            confetti();
         }
 
         setInterval(updateArena, 1000);
