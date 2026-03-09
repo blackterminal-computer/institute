@@ -14,8 +14,8 @@
 
     <div class="arena-card">
         <h3 id="arenaTitle">LOADING...</h3>
-        <p id="arenaStatus">Please wait...</p>
-        <button id="arenaBtn" onclick="location.href='weekly-exam.html'" style="display:none; background: #06b6d4; border:none; padding:10px 20px; border-radius:10px; color:white; font-weight:bold;">ENTER TOURNAMENT</button>
+        <p id="arenaStatus">Syncing with server...</p>
+        <button id="arenaBtn" onclick="location.href='weekly-exam.html'" style="display:none; background: #06b6d4; border:none; padding:12px 25px; border-radius:12px; color:white; font-weight:bold; cursor:pointer;">ENTER TOURNAMENT</button>
     </div>
 
     <div id="winnersRoot">
@@ -24,8 +24,11 @@
     </div>
 
     <script type="module">
-        import { getFirestore, doc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, increment, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        const db = getFirestore();
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, updateDoc, collection, query, orderBy, limit, getDocs, increment, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        const firebaseConfig = { /* APKA CONFIG YAHAN DAALEIN */ };
+        const db = getFirestore(initializeApp(firebaseConfig));
 
         function checkArena() {
             const now = new Date();
@@ -36,13 +39,16 @@
             const title = document.getElementById('arenaTitle');
             const status = document.getElementById('arenaStatus');
 
+            // Monday 8 PM to 9 PM Window
             if (d === 1 && h >= 20 && h < 21) {
                 title.innerText = "TOURNAMENT IS LIVE!";
-                status.innerText = "30 True/False Questions • Ends at 9:00 PM";
+                status.innerText = "30 True/False Questions • Ends 9:00 PM";
                 btn.style.display = "block";
-            } else if (d === 1 && h >= 21) {
+            } 
+            // 9 PM ke baad Auto-Winner Process
+            else if (d === 1 && h >= 21) {
                 title.innerText = "TOURNAMENT CLOSED";
-                status.innerText = "Processing results and XP...";
+                status.innerText = "Results Processing...";
                 btn.style.display = "none";
                 processResults();
             } else {
@@ -52,18 +58,18 @@
         }
 
         async function processResults() {
-            // XP Distribution & Bot Logic
-            const snap = await getDocs(query(collection(db, "students"), orderBy("lastWeeklyScore", "desc"), limit(10)));
+            const q = query(collection(db, "students"), orderBy("lastWeeklyScore", "desc"), limit(10));
+            const snap = await getDocs(q);
             let participants = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-            // Bot Filler
+            // Bot Filler: Minimum 10 entries required
             while(participants.length < 10) participants.push({ id: "Bot_"+Math.random(), lastWeeklyScore: 0 });
 
             participants.forEach(async (p, i) => {
                 let xp = (i==0) ? 3000 : (i==1) ? 2000 : (i==2) ? 1000 : 100;
                 if(!p.id.startsWith("Bot_")) {
                     await updateDoc(doc(db, "students", p.id), { xp: increment(xp), lastWeeklyScore: 0 });
-                    await addDoc(collection(db, "messages"), { to: p.id, msg: `You won ${xp} XP!`, time: new Date() });
+                    await addDoc(collection(db, "messages"), { to: p.id, msg: `You won ${xp} XP in the Tournament!`, time: new Date() });
                 }
             });
             document.getElementById('winnersRoot').style.display = "block";
