@@ -7,6 +7,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
@@ -50,7 +51,6 @@
         .log-user { font-size: 10px; font-weight: 900; color: var(--accent); text-transform: uppercase; }
         .log-msg { font-size: 13px; color: #cbd5e1; margin-top: 3px; font-weight: 600; }
         
-        .react-btn { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent); padding: 5px 12px; border-radius: 10px; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .shout-trigger { position: fixed; bottom: 100px; left: 20px; z-index: 9998; background: var(--accent); color: #000; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-glow); cursor: pointer; }
 
         .slider-section { width: 100%; margin: 10px 0 15px 0; overflow: hidden; }
@@ -164,13 +164,6 @@
         </div>
     </div>
 
-    <div class="xp-card" style="margin-bottom: 15px; padding: 12px; background: rgba(6,182,212,0.05); border-color: rgba(6,182,212,0.2);">
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="shoutInput" placeholder="Broadcast a signal... (50 XP)" style="background:transparent; border:none; color:white; font-size:12px; flex:1; outline:none;" maxlength="45">
-            <button onclick="sendSignal()" style="background:var(--accent); border:none; color:black; font-weight:900; font-size:9px; padding:6px 12px; border-radius:8px; text-transform:uppercase;">Send</button>
-        </div>
-    </div>
-
     <div class="slider-section" id="sliderRoot" style="display: none;">
         <p class="label-tag">Elite Spotlight</p>
         <div class="carousel-container">
@@ -188,11 +181,6 @@
             <span id="xpVal" style="color:var(--accent); font-weight:800;">0 XP</span>
         </div>
         <div class="progress-track"><div class="progress-fill" id="xpBar"></div></div>
-    </div>
-
-    <div class="rank-section">
-        <div class="rank-data"><p>GLOBAL RANK</p><h2 id="instRank">#--</h2></div>
-        <i class="ri-medal-fill" style="font-size:32px; color:var(--gold);"></i>
     </div>
 
     <p class="label-tag">Terminal War Zone</p>
@@ -276,23 +264,29 @@
         const student = localStorage.getItem("studentName");
         if (!student) { window.location.href = "login.html"; }
 
-        // Initial UI Cache Load
-        document.getElementById("uName").innerText = student;
-        document.getElementById("uNameXP").innerText = student;
+        // Confetti Function
+        function fireConfetti() {
+            const count = 200;
+            const defaults = { origin: { y: 0.7 } };
 
-        window.togglePanel = () => {
-            const panel = document.getElementById('activityPanel');
-            panel.classList.toggle('open');
-            document.getElementById('overlay-blur').style.display = panel.classList.contains('open') ? 'block' : 'none';
-        };
+            function fire(particleRatio, opts) {
+                confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) });
+            }
+
+            fire(0.25, { spread: 26, startVelocity: 55 });
+            fire(0.2, { spread: 60 });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+        }
 
         async function syncData() {
-            // Online Status
             const userRef = doc(db, "students", student);
             updateDoc(userRef, { isOnline: true });
             window.addEventListener("beforeunload", () => updateDoc(userRef, { isOnline: false }));
 
-            // 1. Weekly Winners Sync (Automatic 7 Day Expiry)
+            // Weekly Winners Sync with Confetti
+            let confettiTriggered = false;
             onSnapshot(doc(db, "quiz", "weekly_winners"), (snap) => {
                 const root = document.getElementById('winnersRoot');
                 if (snap.exists()) {
@@ -302,54 +296,51 @@
 
                     if (now < expiry) {
                         root.style.display = 'block';
-                        document.getElementById('win1-name').innerText = d.win1_name || "Winner 1";
+                        document.getElementById('win1-name').innerText = d.win1_name || "Champ";
                         document.getElementById('win1-img').src = d.win1_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${d.win1_name}`;
-                        document.getElementById('win2-name').innerText = d.win2_name || "Winner 2";
+                        document.getElementById('win2-name').innerText = d.win2_name || "Elite";
                         document.getElementById('win2-img').src = d.win2_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${d.win2_name}`;
-                        document.getElementById('win3-name').innerText = d.win3_name || "Winner 3";
+                        document.getElementById('win3-name').innerText = d.win3_name || "Warrior";
                         document.getElementById('win3-img').src = d.win3_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${d.win3_name}`;
+                        
+                        // Fire confetti only once per session when winners load
+                        if(!confettiTriggered) {
+                            setTimeout(fireConfetti, 1000);
+                            confettiTriggered = true;
+                        }
                     } else { root.style.display = 'none'; }
                 }
             });
 
-            // 2. Student Data & XP
+            // Student Data & XP
             onSnapshot(userRef, (snap) => {
                 if(snap.exists()){
                     const d = snap.data();
                     document.getElementById("uAvatar").src = d.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
                     document.getElementById("xpVal").innerText = (d.xp || 0) + " XP";
-                    document.getElementById("xpBar").style.width = ((d.xp % 1000) / 10).toFixed(0) + "%";
+                    document.getElementById("uName").innerText = student;
+                    document.getElementById("uNameXP").innerText = student;
                     document.getElementById("uLevelBadge").innerText = "Level " + (Math.floor((d.xp || 0) / 1000) + 1);
                     document.getElementById("sCount").innerText = "🔥 " + (d.streak || 0) + " Days";
-                    
-                    const badge = document.getElementById("rankBadge");
-                    if (d.xp >= 5000) { badge.innerText = "Gold Elite"; badge.className = "rank-badge badge-gold"; }
+                    document.getElementById("xpBar").style.width = ((d.xp % 1000) / 10).toFixed(0) + "%";
                 }
             });
 
-            // 3. Online Counter
+            // Online Users Count
             onSnapshot(collection(db, "students"), (snap) => {
                 let count = 0;
                 snap.forEach(doc => { if(doc.data().isOnline) count++; });
                 document.getElementById("onlineCount").innerText = count;
             });
 
-            // 4. Marquee & Signals
-            onSnapshot(doc(db, "settings", "marquee"), (s) => { if(s.exists()) document.getElementById("marqueeMsg").innerText = s.data().msg; });
-            
-            onSnapshot(doc(db, "interactions", "shoutout"), (snap) => {
-                if(snap.exists()){
-                    const d = snap.data();
-                    const b = document.getElementById("shoutoutBubble");
-                    document.getElementById("bUser").innerText = d.user;
-                    document.getElementById("bMsg").innerText = d.text;
-                    document.getElementById("bAvatar").src = d.avatar;
-                    b.classList.add("active");
-                    setTimeout(() => b.classList.remove("active"), 6000);
-                }
-            });
+            // Global Rank Calculation
+            const qAll = query(collection(db, "students"), orderBy("xp", "desc"));
+            const allSnap = await getDocs(qAll);
+            let rank = 1;
+            allSnap.forEach(doc => { if(doc.id === student) document.getElementById("instRank").innerText = "#" + rank; rank++; });
 
-            // 5. Daily Word
+            // Marquee & Daily Word
+            onSnapshot(doc(db, "settings", "marquee"), (s) => { if(s.exists()) document.getElementById("marqueeMsg").innerText = s.data().msg; });
             onSnapshot(doc(db, "content", "dailyWord"), (s) => {
                 if(s.exists()){
                     document.getElementById("wordDisplaySection").style.display = "block";
@@ -359,18 +350,10 @@
             });
         }
 
-        // Global functions for War Zone
-        window.sendSignal = async () => {
-            const input = document.getElementById("shoutInput");
-            if(!input.value.trim()) return;
-            const snap = await getDoc(doc(db, "students", student));
-            if(snap.data().xp >= 50){
-                await updateDoc(doc(db, "students", student), { xp: increment(-50) });
-                await setDoc(doc(db, "interactions", "shoutout"), {
-                    user: student, text: input.value, avatar: snap.data().photo || "", time: Date.now()
-                });
-                input.value = "";
-            } else { alert("Need 50 XP!"); }
+        window.togglePanel = () => {
+            const panel = document.getElementById('activityPanel');
+            panel.classList.toggle('open');
+            document.getElementById('overlay-blur').style.display = panel.classList.contains('open') ? 'block' : 'none';
         };
 
         syncData();
