@@ -2,73 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Live Arena Battleground</title>
+    <title>Battle Royale Quiz</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
         body { background: #020617; color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .hero { text-align: center; margin-bottom: 20px; }
-        .list-container, .chat-container { width: 100%; max-width: 400px; background: rgba(30, 41, 59, 0.5); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
-        .player-card { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #334155; }
-        .xp-badge { color: #fbbf24; font-weight: 900; margin-left: auto; }
-        #chat-box { height: 150px; overflow-y: scroll; margin-bottom: 10px; font-size: 0.9rem; }
+        .card { background: #1e293b; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; }
+        .btn { background: #06b6d4; border: none; padding: 15px; color: white; border-radius: 30px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .eliminated { color: #ef4444; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="hero">
+    <div class="card" id="game-ui">
         <h1>BATTLE ARENA</h1>
-        <button onclick="joinArena()" style="padding: 15px 30px; border-radius: 30px; border:none; background:#06b6d4; color:white; font-weight:900;">JOIN BATTLE</button>
-    </div>
-
-    <div class="list-container">
-        <h3>Leaderboard</h3>
-        <div id="participant-list"></div>
-    </div>
-
-    <div class="chat-container">
-        <h3>Live Arena Chat</h3>
-        <div id="chat-box"></div>
-        <input type="text" id="chat-input" placeholder="Say something..." style="width: 70%; padding: 8px;">
-        <button onclick="sendMessage()">Send</button>
+        <div id="quiz-box" style="display:none;">
+            <p id="question"></p>
+            <div id="options"></div>
+        </div>
+        <button id="start-btn" class="btn" onclick="startBattle()">JOIN & START BATTLE</button>
+        <p id="status"></p>
     </div>
 
     
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    <script>
+        let strikes = 0;
+        let qCount = 0;
+        const totalQuestions = 20;
 
-        const firebaseConfig = { /* APKA FIREBASE CONFIG YAHAN DALEIN */ };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const rtdb = getDatabase(app);
+        const questions = [
+            { q: "Binary 10 is decimal 2?", type: "TF", a: "true" },
+            { q: "Convert 101 to decimal", a: "5" },
+            // Add 18 more questions here...
+        ];
 
-        // Join Logic
-        window.joinArena = async () => {
-            const name = prompt("Enter your Warrior Name:");
-            if (!name) return;
-            localStorage.setItem('warriorName', name);
-            await addDoc(collection(db, "participants"), { name, xp: 0, timestamp: Date.now() });
-        };
+        function startBattle() {
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('quiz-box').style.display = 'block';
+            nextQuestion();
+        }
 
-        // Chat Logic
-        window.sendMessage = () => {
-            const msg = document.getElementById('chat-input').value;
-            const name = localStorage.getItem('warriorName') || "Guest";
-            push(ref(rtdb, 'chats'), { name, msg });
-            document.getElementById('chat-input').value = "";
-        };
+        function nextQuestion() {
+            if (qCount >= totalQuestions || strikes >= 2) {
+                endGame();
+                return;
+            }
+            let current = questions[qCount];
+            document.getElementById('question').innerText = current.q;
+            document.getElementById('options').innerHTML = `<input id="ans" type="text"><button onclick="check()">Submit</button>`;
+        }
 
-        // Sync Chat
-        onValue(ref(rtdb, 'chats'), (snapshot) => {
-            const box = document.getElementById('chat-box');
-            box.innerHTML = "";
-            snapshot.forEach(child => {
-                const data = child.val();
-                box.innerHTML += `<p><b>${data.name}:</b> ${data.msg}</p>`;
-            });
-        });
+        function check() {
+            let userAns = document.getElementById('ans').value.toLowerCase();
+            if (userAns !== questions[qCount].a) {
+                strikes++;
+                alert("Wrong! Strikes: " + strikes + "/2");
+            }
+            qCount++;
+            nextQuestion();
+        }
+
+        function endGame() {
+            document.getElementById('quiz-box').innerHTML = "<h3>Battle Ended</h3>";
+            if (strikes < 2) {
+                document.getElementById('status').innerHTML = "You survived! Prize Tier: 1st (3000 XP)";
+            } else {
+                document.getElementById('status').innerHTML = "<span class='eliminated'>ELIMINATED!</span>";
+            }
+        }
     </script>
 </body>
 </html>
