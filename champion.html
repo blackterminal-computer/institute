@@ -2,66 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Arena Battleground</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
         body { background: #020617; color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        h1 { color: #06b6d4; letter-spacing: 2px; }
-        .participate-btn { background: linear-gradient(to right, #06b6d4, #3b82f6); color: white; border: none; padding: 18px 40px; border-radius: 50px; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: 0.3s; }
-        .list-container { width: 100%; max-width: 400px; margin-top: 30px; }
-        .player-card { display: flex; align-items: center; background: rgba(30, 41, 59, 0.5); padding: 12px 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #334155; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; border: 2px solid #06b6d4; }
+        .hero { text-align: center; margin-bottom: 20px; }
+        .list-container, .chat-container { width: 100%; max-width: 400px; background: rgba(30, 41, 59, 0.5); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+        .player-card { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #334155; }
+        .xp-badge { color: #fbbf24; font-weight: 900; margin-left: auto; }
+        #chat-box { height: 150px; overflow-y: scroll; margin-bottom: 10px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <h1>BATTLE ARENA</h1>
-    <button class="participate-btn" onclick="joinArena()">JOIN THE BATTLE</button>
+    <div class="hero">
+        <h1>BATTLE ARENA</h1>
+        <button onclick="joinArena()" style="padding: 15px 30px; border-radius: 30px; border:none; background:#06b6d4; color:white; font-weight:900;">JOIN BATTLE</button>
+    </div>
 
-    <div class="list-container" id="participant-list">
-        </div>
+    <div class="list-container">
+        <h3>Leaderboard</h3>
+        <div id="participant-list"></div>
+    </div>
+
+    <div class="chat-container">
+        <h3>Live Arena Chat</h3>
+        <div id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="Say something..." style="width: 70%; padding: 8px;">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        // --- REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIG ---
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
-        };
-
+        const firebaseConfig = { /* APKA FIREBASE CONFIG YAHAN DALEIN */ };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const rtdb = getDatabase(app);
 
-        // Add user to database
+        // Join Logic
         window.joinArena = async () => {
             const name = prompt("Enter your Warrior Name:");
             if (!name) return;
-            await addDoc(collection(db, "participants"), {
-                name: name,
-                timestamp: new Date()
-            });
+            localStorage.setItem('warriorName', name);
+            await addDoc(collection(db, "participants"), { name, xp: 0, timestamp: Date.now() });
         };
 
-        // Real-time synchronization
-        onSnapshot(query(collection(db, "participants"), orderBy("timestamp", "asc")), (snapshot) => {
-            const list = document.getElementById('participant-list');
-            list.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const card = document.createElement('div');
-                card.className = 'player-card';
-                card.innerHTML = `
-                    <img src="https://ui-avatars.com/api/?name=${data.name}&background=06b6d4&color=fff" class="avatar">
-                    <span>${data.name}</span>
-                `;
-                list.appendChild(card);
+        // Chat Logic
+        window.sendMessage = () => {
+            const msg = document.getElementById('chat-input').value;
+            const name = localStorage.getItem('warriorName') || "Guest";
+            push(ref(rtdb, 'chats'), { name, msg });
+            document.getElementById('chat-input').value = "";
+        };
+
+        // Sync Chat
+        onValue(ref(rtdb, 'chats'), (snapshot) => {
+            const box = document.getElementById('chat-box');
+            box.innerHTML = "";
+            snapshot.forEach(child => {
+                const data = child.val();
+                box.innerHTML += `<p><b>${data.name}:</b> ${data.msg}</p>`;
             });
         });
     </script>
