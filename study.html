@@ -4,49 +4,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-        #timer { font-size: 80px; color: #06b6d4; font-family: monospace; margin: 20px 0; }
-        .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 18px; }
+        #timer { font-size: 80px; color: #06b6d4; font-family: monospace; margin: 20px 0; text-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
+        .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.3s; color: #020617; }
+        .btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
     <div id="timer">00:00</div>
     <button id="btn" class="btn">START FOCUS</button>
-    <p><a href="index.html" style="color: gray;">Back to Terminal</a></p>
+    <p><a href="index.html" style="color: gray; text-decoration: none; font-size: 14px;">← Back to Terminal</a></p>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
-        const db = getFirestore(initializeApp({ /* APKA FIREBASE CONFIG */ }));
+        // --- STEP 1: Firebase Config ---
+        // Yahan apni details zaroor bharein warna sync nahi hoga!
+        const firebaseConfig = {
+            apiKey: "AIza...", 
+            authDomain: "your-app.firebaseapp.com",
+            projectId: "your-app-id",
+            storageBucket: "your-app.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (e) {
+            console.error("Firebase not initialized. Timer will still work but won't sync.");
+        }
+
+        // --- STEP 2: Timer Logic ---
         let seconds = 0, running = false, interval;
         const display = document.getElementById('timer');
         const btn = document.getElementById('btn');
 
         btn.addEventListener('click', () => {
             if (!running) {
-                running = true; btn.innerText = "STOP FOCUS";
+                running = true; 
+                btn.innerText = "STOP FOCUS";
+                btn.style.background = "#ef4444"; // Red color on stop
                 interval = setInterval(() => {
                     seconds++;
                     let m = Math.floor(seconds/60), s = seconds%60;
                     display.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
                 }, 1000);
             } else {
-                running = false; btn.innerText = "START FOCUS"; clearInterval(interval);
+                running = false; 
+                btn.innerText = "START FOCUS"; 
+                btn.style.background = "#06b6d4";
+                clearInterval(interval);
+                
                 let mins = Math.floor(seconds/60);
-                if (mins > 0) syncXP(mins);
-                seconds = 0; display.innerText = "00:00";
+                if (mins > 0) {
+                    syncXP(mins);
+                } else {
+                    alert("Session too short! Study at least 1 minute to earn XP.");
+                }
+                
+                seconds = 0; 
+                display.innerText = "00:00";
             }
         });
 
+        // Anti-Cheat
         document.addEventListener("visibilitychange", () => {
-            if (document.hidden && running) { btn.click(); alert("Focus Lost!"); }
+            if (document.hidden && running) {
+                running = false;
+                clearInterval(interval);
+                btn.innerText = "START FOCUS";
+                btn.style.background = "#06b6d4";
+                alert("Focus Lost! Session cancelled.");
+                seconds = 0;
+                display.innerText = "00:00";
+            }
         });
 
         async function syncXP(mins) {
             const user = localStorage.getItem("studentName");
-            if(user) {
-                await updateDoc(doc(db, "students", user), { xp: increment(mins * 10) });
-                alert("Session Synced! XP Earned: " + (mins * 10));
+            if(user && db) {
+                try {
+                    await updateDoc(doc(db, "students", user), { 
+                        xp: increment(mins * 10) 
+                    });
+                    alert(`🔥 Great Job! +${mins * 10} XP Synced.`);
+                } catch (err) {
+                    console.error("Sync failed:", err);
+                    alert("Sync failed. Check internet/config.");
+                }
+            } else {
+                alert("User not found in localStorage or Firebase error.");
             }
         }
     </script>
