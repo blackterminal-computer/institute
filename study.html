@@ -8,8 +8,7 @@
         body { background: #020617; color: #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: 'Courier New', monospace; }
         #timer { font-size: 70px; color: #06b6d4; margin: 20px 0; text-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
         .btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 6px; font-weight: bold; cursor: pointer; color: #020617; transition: 0.3s; }
-        /* Ye class red color ke liye hai */
-        .btn.active { background: #ef4444; color: white; }
+        .btn.active { background: #ef4444; color: #ffffff; }
     </style>
 </head>
 <body>
@@ -18,8 +17,15 @@
     <button id="btn" class="btn">START FOCUS</button>
 
     <script type="module">
-        // ... (Firebase initialization code waisa hi rahega) ...
-        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // 1. Firebase Config (Apni details yahan daalein)
+        const firebaseConfig = { apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 2. Timer & UI Logic
         let seconds = 0, running = false, interval;
         const display = document.getElementById('timer'), btn = document.getElementById('btn');
         
@@ -27,7 +33,7 @@
             if (!running) { 
                 running = true; 
                 btn.innerText = "STOP FOCUS";
-                btn.classList.add("active"); // Red color apply karega
+                btn.classList.add("active"); // Button Red ho jayega
                 interval = setInterval(() => { 
                     seconds++; 
                     let m = Math.floor(seconds/60), s = seconds%60; 
@@ -36,11 +42,23 @@
             } else { 
                 running = false; 
                 btn.innerText = "START FOCUS";
-                btn.classList.remove("active"); // Red color hata dega
+                btn.classList.remove("active"); // Button Blue ho jayega
                 clearInterval(interval); 
-                // ... (sync logic) ...
+                if(seconds > 60) syncXP(Math.floor(seconds/60)); 
+                seconds = 0; 
+                display.innerText = "00:00"; 
             }
         });
+
+        // 3. Firebase XP Sync
+        async function syncXP(mins) {
+            const user = localStorage.getItem("studentName");
+            if(user) {
+                try {
+                    await updateDoc(doc(db, "students", user), { xp: increment(mins * 10) });
+                } catch(e) { console.error("Sync Error"); }
+            }
+        }
     </script>
 </body>
 </html>
