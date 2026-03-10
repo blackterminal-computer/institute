@@ -99,6 +99,70 @@
                 alert("User not found in localStorage or Firebase error.");
             }
         }
+        
+        <script type="module">
+    // --- AI CONFIGURATION ---
+    const API_KEY = "AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs"; 
+    const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+    const aiInput = document.getElementById('aiInput');
+    const aiResponse = document.getElementById('aiResponse');
+
+    aiInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            const query = aiInput.value.trim();
+            
+            if (query.startsWith('/ask ')) {
+                const question = query.replace('/ask ', '');
+                aiResponse.innerText = ">> [SYSTEM]: ACCESSING NEURAL NETWORK...";
+                aiInput.value = "";
+
+                try {
+                    const response = await fetch(URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: `You are 'ELITE-AI', a strict and slightly savage study assistant in a terminal-themed educational app. 
+                                Rule 1: Answer study questions briefly and intellectually. 
+                                Rule 2: If the user asks something non-academic or wastes time, roast them and tell them to focus on their timer. 
+                                Rule 3: Keep the tone robotic and 'Cyberpunk'.
+                                Question: ${question}` }]
+                            }]
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.candidates && data.candidates[0].content.parts[0].text) {
+                        const aiText = data.candidates[0].content.parts[0].text;
+                        typeWriterEffect(aiText);
+                    } else {
+                        throw new Error("Invalid Response");
+                    }
+                    
+                } catch (err) {
+                    aiResponse.innerText = ">> [CRITICAL ERROR]: AI_CORE_OFFLINE. Check your internet or API limits.";
+                    console.error(err);
+                }
+            }
+        }
+    });
+
+    function typeWriterEffect(text) {
+        let i = 0;
+        aiResponse.innerText = "";
+        function type() {
+            if (i < text.length) {
+                aiResponse.innerText += text.charAt(i);
+                i++;
+                setTimeout(type, 15); // Fast typing
+            }
+        }
+        type();
+    }
+</script>
+
     </script>
 </body>
 </html>
