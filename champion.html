@@ -8,28 +8,31 @@
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
         :root { --neon: #06b6d4; --bg: #020617; --glass: rgba(30, 41, 59, 0.7); }
         body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 20px; width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 25px; width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center; }
+        .battle-btn { background: linear-gradient(90deg, #06b6d4, #3b82f6); border: none; padding: 15px 30px; border-radius: 50px; color: white; font-weight: 900; cursor: pointer; width: 100%; margin-top: 10px; }
         .player-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--neon); }
-        .battle-btn { background: linear-gradient(90deg, #06b6d4, #3b82f6); border: none; padding: 15px; width: 100%; border-radius: 50px; color: white; font-weight: 900; cursor: pointer; }
+        .eliminated { color: #f43f5e; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="glass-card" style="text-align: center;">
-        <h1 style="color: var(--neon);">BATTLE ARENA</h1>
+    <div class="glass-card">
+        <h1 style="color: var(--neon); margin: 0;">BATTLE ARENA</h1>
         <button id="start-btn" class="battle-btn" onclick="startBattle()">JOIN & START</button>
         <div id="quiz-ui" style="display:none;">
-            <p id="q-text"></p>
-            <input type="text" id="ans-input" placeholder="Answer...">
+            <p id="q-text" style="font-size: 1.1rem; font-weight: 600;"></p>
+            <input type="text" id="ans-input" style="padding: 12px; width: 80%; border-radius: 10px; border: 1px solid var(--neon); background: #000; color: white;" placeholder="Your Answer...">
             <button class="battle-btn" onclick="checkAnswer()">SUBMIT</button>
         </div>
+        <p id="status" style="margin-top:15px;"></p>
     </div>
 
     <div class="glass-card">
         <h3 style="color: var(--neon);">LIVE WARRIORS</h3>
         <div id="participants-list"></div>
     </div>
+
+    
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -51,12 +54,23 @@
         let qIndex = 0;
         let userId = "";
 
-        // Quiz Data
-        const questions = [{q: "Binary 10 is decimal 2?", a: "true"}, {q: "Decimal 15 in binary?", a: "1111"} /* Add 18 more */];
+        const questions = [
+            { q: "What is 1011 (binary) in decimal?", a: "11" }, { q: "Is 10 (decimal) equal to 1010 (binary)?", a: "true" },
+            { q: "Convert 16 (decimal) to binary.", a: "10000" }, { q: "Is hex 'F' equal to 15 in decimal?", a: "true" },
+            { q: "What is 111 (binary) in decimal?", a: "7" }, { q: "Convert decimal 9 to binary.", a: "1001" },
+            { q: "Is 10101 (binary) equal to 21 (decimal)?", a: "true" }, { q: "What is hex 'A' in decimal?", a: "10" },
+            { q: "Is binary 1100 equal to 14 (decimal)?", a: "false" }, { q: "Convert decimal 3 to binary.", a: "11" },
+            { q: "What is 1000 (binary) in decimal?", a: "8" }, { q: "Is hex '10' equal to 16 (decimal)?", a: "true" },
+            { q: "Convert decimal 20 to binary.", a: "10100" }, { q: "What is 1101 (binary) in decimal?", a: "13" },
+            { q: "Is 100 (binary) equal to 4 (decimal)?", a: "true" }, { q: "Convert decimal 7 to binary.", a: "111" },
+            { q: "What is hex 'B' in decimal?", a: "11" }, { q: "Is binary 101 equal to 5 (decimal)?", a: "true" },
+            { q: "Convert decimal 12 to binary.", a: "1100" }, { q: "Is 11111 (binary) equal to 31 (decimal)?", a: "true" }
+        ];
 
         window.startBattle = async () => {
-            const name = prompt("Warrior Name?");
-            const docRef = await addDoc(collection(db, "participants"), { name, xp: 0, status: "Active" });
+            const name = prompt("Enter your Warrior Name:");
+            if(!name) return;
+            const docRef = await addDoc(collection(db, "participants"), { name, status: "Active" });
             userId = docRef.id;
             document.getElementById('start-btn').style.display = 'none';
             document.getElementById('quiz-ui').style.display = 'block';
@@ -65,26 +79,32 @@
 
         function nextQ() {
             if (strikes >= 2) { 
-                updateDoc(doc(db, "participants", userId), { status: "Eliminated" });
-                alert("Eliminated!"); return; 
+                updateDoc(doc(db, "participants", userId), { status: "ELIMINATED" });
+                document.getElementById('quiz-ui').innerHTML = "<h2 class='eliminated'>YOU ARE ELIMINATED!</h2>";
+                return; 
+            }
+            if (qIndex >= questions.length) {
+                document.getElementById('quiz-ui').innerHTML = "<h2>VICTORY! Prize: 3000 XP</h2>";
+                return;
             }
             document.getElementById('q-text').innerText = questions[qIndex].q;
         }
 
         window.checkAnswer = () => {
-            const val = document.getElementById('ans-input').value.toLowerCase();
+            const val = document.getElementById('ans-input').value.toLowerCase().trim();
             if (val !== questions[qIndex].a) strikes++;
+            document.getElementById('status').innerText = `Strikes: ${strikes}/2`;
             qIndex++;
+            document.getElementById('ans-input').value = "";
             nextQ();
         };
 
-        // Live List Sync
-        onSnapshot(query(collection(db, "participants"), orderBy("xp", "desc")), (snapshot) => {
+        onSnapshot(query(collection(db, "participants")), (snapshot) => {
             const list = document.getElementById('participants-list');
             list.innerHTML = "";
             snapshot.forEach(d => {
                 const p = d.data();
-                list.innerHTML += `<div class="player-item"><span>${p.name}</span><span>${p.status}</span></div>`;
+                list.innerHTML += `<div class="player-item"><span>${p.name}</span><span class="${p.status === 'ELIMINATED' ? 'eliminated' : ''}">${p.status}</span></div>`;
             });
         });
     </script>
