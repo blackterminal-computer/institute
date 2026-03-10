@@ -3,166 +3,82 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-        #timer { font-size: 80px; color: #06b6d4; font-family: monospace; margin: 20px 0; text-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
+        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: monospace; }
+        #timer { font-size: 80px; color: #06b6d4; margin: 20px 0; text-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
         .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.3s; color: #020617; }
-        .btn:active { transform: scale(0.95); }
+        
+        /* AI Terminal Styles */
+        .ai-box { width: 80%; max-width: 400px; margin-top: 30px; border: 1px solid #06b6d4; padding: 15px; border-radius: 10px; background: #050a1f; }
+        #aiResponse { font-size: 12px; color: #cbd5e1; margin-bottom: 10px; height: 60px; overflow-y: auto; }
+        #aiInput { width: 100%; background: transparent; border: none; color: #06b6d4; outline: none; }
     </style>
 </head>
 <body>
     <div id="timer">00:00</div>
     <button id="btn" class="btn">START FOCUS</button>
-    <p><a href="index.html" style="color: gray; text-decoration: none; font-size: 14px;">← Back to Terminal</a></p>
+    
+    <div class="ai-box">
+        <div id="aiResponse">>> AI Ready. Type /ask [question]</div>
+        <input type="text" id="aiInput" placeholder="/ask...">
+    </div>
+
+    <p><a href="index.html" style="color: gray; text-decoration: none; font-size: 14px; margin-top: 20px;">← Back to Terminal</a></p>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
-        // --- STEP 1: Firebase Config ---
-        // Yahan apni details zaroor bharein warna sync nahi hoga!
-        const firebaseConfig = {
-            apiKey: "AIza...", 
-            authDomain: "your-app.firebaseapp.com",
-            projectId: "your-app-id",
-            storageBucket: "your-app.appspot.com",
-            messagingSenderId: "...",
-            appId: "..."
-        };
+        // Firebase Config
+        const firebaseConfig = { /* APKA CONFIG YAHAN DALEIN */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        let db;
-        try {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-        } catch (e) {
-            console.error("Firebase not initialized. Timer will still work but won't sync.");
-        }
-
-        // --- STEP 2: Timer Logic ---
+        // Timer Logic
         let seconds = 0, running = false, interval;
         const display = document.getElementById('timer');
         const btn = document.getElementById('btn');
 
         btn.addEventListener('click', () => {
             if (!running) {
-                running = true; 
-                btn.innerText = "STOP FOCUS";
-                btn.style.background = "#ef4444"; // Red color on stop
+                running = true; btn.innerText = "STOP FOCUS"; btn.style.background = "#ef4444";
                 interval = setInterval(() => {
                     seconds++;
                     let m = Math.floor(seconds/60), s = seconds%60;
                     display.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
                 }, 1000);
             } else {
-                running = false; 
-                btn.innerText = "START FOCUS"; 
-                btn.style.background = "#06b6d4";
+                running = false; btn.innerText = "START FOCUS"; btn.style.background = "#06b6d4";
                 clearInterval(interval);
-                
-                let mins = Math.floor(seconds/60);
-                if (mins > 0) {
-                    syncXP(mins);
-                } else {
-                    alert("Session too short! Study at least 1 minute to earn XP.");
-                }
-                
-                seconds = 0; 
-                display.innerText = "00:00";
-            }
-        });
-
-        // Anti-Cheat
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden && running) {
-                running = false;
-                clearInterval(interval);
-                btn.innerText = "START FOCUS";
-                btn.style.background = "#06b6d4";
-                alert("Focus Lost! Session cancelled.");
-                seconds = 0;
-                display.innerText = "00:00";
+                if (seconds > 60) syncXP(Math.floor(seconds/60));
+                seconds = 0; display.innerText = "00:00";
             }
         });
 
         async function syncXP(mins) {
             const user = localStorage.getItem("studentName");
-            if(user && db) {
-                try {
-                    await updateDoc(doc(db, "students", user), { 
-                        xp: increment(mins * 10) 
-                    });
-                    alert(`🔥 Great Job! +${mins * 10} XP Synced.`);
-                } catch (err) {
-                    console.error("Sync failed:", err);
-                    alert("Sync failed. Check internet/config.");
-                }
-            } else {
-                alert("User not found in localStorage or Firebase error.");
-            }
+            if(user) await updateDoc(doc(db, "students", user), { xp: increment(mins * 10) });
         }
-        
-        <script type="module">
-    // --- AI CONFIGURATION ---
-    const API_KEY = "AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs"; 
-    const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-    const aiInput = document.getElementById('aiInput');
-    const aiResponse = document.getElementById('aiResponse');
+        // AI Logic
+        const API_KEY = "AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs"; 
+        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        const aiInput = document.getElementById('aiInput');
+        const aiResponse = document.getElementById('aiResponse');
 
-    aiInput.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            const query = aiInput.value.trim();
-            
-            if (query.startsWith('/ask ')) {
-                const question = query.replace('/ask ', '');
-                aiResponse.innerText = ">> [SYSTEM]: ACCESSING NEURAL NETWORK...";
+        aiInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const query = aiInput.value.replace('/ask ', '');
                 aiInput.value = "";
-
-                try {
-                    const response = await fetch(URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{ text: `You are 'ELITE-AI', a strict and slightly savage study assistant in a terminal-themed educational app. 
-                                Rule 1: Answer study questions briefly and intellectually. 
-                                Rule 2: If the user asks something non-academic or wastes time, roast them and tell them to focus on their timer. 
-                                Rule 3: Keep the tone robotic and 'Cyberpunk'.
-                                Question: ${question}` }]
-                            }]
-                        })
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.candidates && data.candidates[0].content.parts[0].text) {
-                        const aiText = data.candidates[0].content.parts[0].text;
-                        typeWriterEffect(aiText);
-                    } else {
-                        throw new Error("Invalid Response");
-                    }
-                    
-                } catch (err) {
-                    aiResponse.innerText = ">> [CRITICAL ERROR]: AI_CORE_OFFLINE. Check your internet or API limits.";
-                    console.error(err);
-                }
+                aiResponse.innerText = ">> Thinking...";
+                const res = await fetch(URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Answer briefly: ${query}` }] }] })
+                });
+                const data = await res.json();
+                aiResponse.innerText = data.candidates[0].content.parts[0].text;
             }
-        }
-    });
-
-    function typeWriterEffect(text) {
-        let i = 0;
-        aiResponse.innerText = "";
-        function type() {
-            if (i < text.length) {
-                aiResponse.innerText += text.charAt(i);
-                i++;
-                setTimeout(type, 15); // Fast typing
-            }
-        }
-        type();
-    }
-</script>
-
+        });
     </script>
 </body>
 </html>
