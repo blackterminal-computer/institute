@@ -3,40 +3,52 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #timer { font-size: 60px; color: #06b6d4; margin: 20px 0; }
-        .btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 15px; font-weight: 800; cursor: pointer; }
+        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
+        #timer { font-size: 80px; color: #06b6d4; font-family: monospace; margin: 20px 0; }
+        .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 18px; }
     </style>
 </head>
 <body>
     <div id="timer">00:00</div>
     <button id="btn" class="btn">START FOCUS</button>
+    <p><a href="index.html" style="color: gray;">Back to Terminal</a></p>
 
-    <script>
-        // Module hata diya hai taaki koi scope error na ho
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        const db = getFirestore(initializeApp({ /* APKA FIREBASE CONFIG */ }));
         let seconds = 0, running = false, interval;
         const display = document.getElementById('timer');
         const btn = document.getElementById('btn');
 
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', () => {
             if (!running) {
-                running = true;
-                btn.innerText = "STOP FOCUS";
+                running = true; btn.innerText = "STOP FOCUS";
                 interval = setInterval(() => {
                     seconds++;
-                    let m = Math.floor(seconds / 60);
-                    let s = seconds % 60;
-                    display.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                    let m = Math.floor(seconds/60), s = seconds%60;
+                    display.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
                 }, 1000);
             } else {
-                running = false;
-                btn.innerText = "START FOCUS";
-                clearInterval(interval);
-                alert("Session Stopped at " + Math.floor(seconds / 60) + " minutes.");
-                seconds = 0;
-                display.innerText = "00:00";
+                running = false; btn.innerText = "START FOCUS"; clearInterval(interval);
+                let mins = Math.floor(seconds/60);
+                if (mins > 0) syncXP(mins);
+                seconds = 0; display.innerText = "00:00";
             }
         });
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && running) { btn.click(); alert("Focus Lost!"); }
+        });
+
+        async function syncXP(mins) {
+            const user = localStorage.getItem("studentName");
+            if(user) {
+                await updateDoc(doc(db, "students", user), { xp: increment(mins * 10) });
+                alert("Session Synced! XP Earned: " + (mins * 10));
+            }
+        }
     </script>
 </body>
 </html>
