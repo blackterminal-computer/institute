@@ -1,34 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlackTerminal AI</title>
     <style>
-        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: monospace; }
+        body { background: #020617; color: #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: 'Courier New', monospace; }
         #timer { font-size: 80px; color: #06b6d4; margin: 20px 0; text-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
-        .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 15px; font-weight: bold; cursor: pointer; color: #020617; }
-        .ai-box { width: 80%; max-width: 400px; margin-top: 30px; border: 1px solid #06b6d4; padding: 15px; border-radius: 10px; background: #050a1f; }
+        .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 8px; font-weight: bold; cursor: pointer; color: #020617; transition: 0.3s; }
+        .btn:hover { background: #0891b2; }
+        
+        .ai-box { width: 90%; max-width: 500px; margin-top: 30px; border: 1px solid #1e293b; padding: 20px; border-radius: 10px; background: #050a1f; }
+        .ai-header { color: #06b6d4; font-size: 11px; margin-bottom: 10px; font-weight: bold; }
+        #aiResponse { font-size: 14px; color: #94a3b8; height: 120px; overflow-y: auto; margin-bottom: 15px; border-top: 1px solid #1e293b; padding-top: 10px; }
+        #aiInput { width: 100%; background: transparent; border: none; color: #06b6d4; outline: none; font-family: monospace; }
     </style>
 </head>
 <body>
+
     <div id="timer">00:00</div>
     <button id="btn" class="btn">START FOCUS</button>
-    
+
     <div class="ai-box">
-        <div id="aiResponse" style="font-size: 12px; color: #cbd5e1;">>> AI Ready. Type /ask [question]</div>
-        <input type="text" id="aiInput" placeholder="/ask..." style="width: 100%; background: transparent; border: none; color: #06b6d4; outline: none;">
+        <div class="ai-header">> BLACKTERMINAL_AI // SYSTEM_READY</div>
+        <div id="aiResponse">>> Awaiting command... Type /ask [question]</div>
+        <input type="text" id="aiInput" placeholder="/ask...">
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Firebase Setup (Try-Catch block lagaya hai taki crash na ho)
-        let db;
-        try {
-            const firebaseConfig = { /* APNA CONFIG YAHAN DALEIN */ };
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-        } catch (e) { console.warn("Firebase not loaded, running in Offline Mode."); }
+        // Firebase Setup
+        const firebaseConfig = { 
+            apiKey: "YOUR_API_KEY", 
+            authDomain: "YOUR_APP.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_APP.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
         // Timer Logic
         let seconds = 0, running = false, interval;
@@ -37,37 +50,42 @@
 
         btn.addEventListener('click', () => {
             if (!running) {
-                running = true;
-                btn.innerText = "STOP FOCUS";
+                running = true; btn.innerText = "STOP FOCUS";
                 interval = setInterval(() => {
                     seconds++;
                     let m = Math.floor(seconds/60), s = seconds%60;
                     display.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
                 }, 1000);
             } else {
-                running = false;
-                btn.innerText = "START FOCUS";
-                clearInterval(interval);
-                alert("Session finished: " + Math.floor(seconds/60) + " mins");
+                running = false; btn.innerText = "START FOCUS"; clearInterval(interval);
+                if (seconds > 0) syncXP(Math.floor(seconds/60));
                 seconds = 0; display.innerText = "00:00";
             }
         });
 
-        // AI Logic
+        async function syncXP(mins) {
+            const user = localStorage.getItem("studentName");
+            if(user) await updateDoc(doc(db, "students", user), { xp: increment(mins * 10) });
+        }
+
+        // BlackTerminal AI Logic
+        const GEMINI_KEY = "AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs";
         const aiInput = document.getElementById('aiInput');
+        const aiResponse = document.getElementById('aiResponse');
+
         aiInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
                 const query = aiInput.value.replace('/ask ', '');
                 aiInput.value = "";
-                document.getElementById('aiResponse').innerText = ">> Thinking...";
+                aiResponse.innerText = ">> BLACKTERMINAL_AI processing...";
                 
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: query }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `You are BlackTerminal AI. Be strict, savage, and cyberpunk. Answer this: ${query}` }] }] })
                 });
                 const data = await res.json();
-                document.getElementById('aiResponse').innerText = data.candidates[0].content.parts[0].text;
+                aiResponse.innerText = ">> " + data.candidates[0].content.parts[0].text;
             }
         });
     </script>
