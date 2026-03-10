@@ -3,58 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Battle Royale Arena</title>
+    <title>Battle Arena Royale</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
-        :root { --neon: #06b6d4; --glass: rgba(30, 41, 59, 0.6); }
-        body { background: #020617; color: white; font-family: 'Outfit', sans-serif; padding: 20px; }
-        
-        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 20px; margin-bottom: 20px; }
-        
-        /* List Style */
+        :root { --neon: #06b6d4; --bg: #020617; --glass: rgba(30, 41, 59, 0.7); }
+        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 20px; width: 100%; max-width: 400px; margin-bottom: 20px; }
         .player-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--neon); }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; }
+        .battle-btn { background: linear-gradient(90deg, #06b6d4, #3b82f6); border: none; padding: 15px; width: 100%; border-radius: 50px; color: white; font-weight: 900; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="glass-card">
-        <h3 style="color: var(--neon);">LIVE WARRIORS</h3>
-        <div id="participants-list">
-            </div>
+    <div class="glass-card" style="text-align: center;">
+        <h1 style="color: var(--neon);">BATTLE ARENA</h1>
+        <button id="start-btn" class="battle-btn" onclick="startBattle()">JOIN & START</button>
+        <div id="quiz-ui" style="display:none;">
+            <p id="q-text"></p>
+            <input type="text" id="ans-input" placeholder="Answer...">
+            <button class="battle-btn" onclick="checkAnswer()">SUBMIT</button>
+        </div>
     </div>
 
-    
+    <div class="glass-card">
+        <h3 style="color: var(--neon);">LIVE WARRIORS</h3>
+        <div id="participants-list"></div>
+    </div>
 
     <script type="module">
-        // Firebase Imports (Firestore)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        // Firebase Config
-        const firebaseConfig = { /* APKA CONFIG */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.firebasestorage.app",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        
+        let strikes = 0;
+        let qIndex = 0;
+        let userId = "";
 
-        // Fetching and Rendering Live Users
+        // Quiz Data
+        const questions = [{q: "Binary 10 is decimal 2?", a: "true"}, {q: "Decimal 15 in binary?", a: "1111"} /* Add 18 more */];
+
+        window.startBattle = async () => {
+            const name = prompt("Warrior Name?");
+            const docRef = await addDoc(collection(db, "participants"), { name, xp: 0, status: "Active" });
+            userId = docRef.id;
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('quiz-ui').style.display = 'block';
+            nextQ();
+        };
+
+        function nextQ() {
+            if (strikes >= 2) { 
+                updateDoc(doc(db, "participants", userId), { status: "Eliminated" });
+                alert("Eliminated!"); return; 
+            }
+            document.getElementById('q-text').innerText = questions[qIndex].q;
+        }
+
+        window.checkAnswer = () => {
+            const val = document.getElementById('ans-input').value.toLowerCase();
+            if (val !== questions[qIndex].a) strikes++;
+            qIndex++;
+            nextQ();
+        };
+
+        // Live List Sync
         onSnapshot(query(collection(db, "participants"), orderBy("xp", "desc")), (snapshot) => {
             const list = document.getElementById('participants-list');
             list.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const p = doc.data();
-                list.innerHTML += `
-                    <div class="player-item">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <img src="https://ui-avatars.com/api/?name=${p.name}" class="avatar">
-                            <span>${p.name}</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <div class="status-dot"></div>
-                            <small>${p.xp} XP</small>
-                        </div>
-                    </div>
-                `;
+            snapshot.forEach(d => {
+                const p = d.data();
+                list.innerHTML += `<div class="player-item"><span>${p.name}</span><span>${p.status}</span></div>`;
             });
         });
     </script>
