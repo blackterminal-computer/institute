@@ -5,12 +5,8 @@
     <style>
         body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: monospace; }
         #timer { font-size: 80px; color: #06b6d4; margin: 20px 0; text-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
-        .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.3s; color: #020617; }
-        
-        /* AI Terminal Styles */
+        .btn { background: #06b6d4; border: none; padding: 20px 50px; border-radius: 15px; font-weight: bold; cursor: pointer; color: #020617; }
         .ai-box { width: 80%; max-width: 400px; margin-top: 30px; border: 1px solid #06b6d4; padding: 15px; border-radius: 10px; background: #050a1f; }
-        #aiResponse { font-size: 12px; color: #cbd5e1; margin-bottom: 10px; height: 60px; overflow-y: auto; }
-        #aiInput { width: 100%; background: transparent; border: none; color: #06b6d4; outline: none; }
     </style>
 </head>
 <body>
@@ -18,20 +14,21 @@
     <button id="btn" class="btn">START FOCUS</button>
     
     <div class="ai-box">
-        <div id="aiResponse">>> AI Ready. Type /ask [question]</div>
-        <input type="text" id="aiInput" placeholder="/ask...">
+        <div id="aiResponse" style="font-size: 12px; color: #cbd5e1;">>> AI Ready. Type /ask [question]</div>
+        <input type="text" id="aiInput" placeholder="/ask..." style="width: 100%; background: transparent; border: none; color: #06b6d4; outline: none;">
     </div>
-
-    <p><a href="index.html" style="color: gray; text-decoration: none; font-size: 14px; margin-top: 20px;">← Back to Terminal</a></p>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        
-        // Firebase Config
-        const firebaseConfig = { /* APKA CONFIG YAHAN DALEIN */ };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+
+        // Firebase Setup (Try-Catch block lagaya hai taki crash na ho)
+        let db;
+        try {
+            const firebaseConfig = { /* APNA CONFIG YAHAN DALEIN */ };
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (e) { console.warn("Firebase not loaded, running in Offline Mode."); }
 
         // Timer Logic
         let seconds = 0, running = false, interval;
@@ -40,43 +37,37 @@
 
         btn.addEventListener('click', () => {
             if (!running) {
-                running = true; btn.innerText = "STOP FOCUS"; btn.style.background = "#ef4444";
+                running = true;
+                btn.innerText = "STOP FOCUS";
                 interval = setInterval(() => {
                     seconds++;
                     let m = Math.floor(seconds/60), s = seconds%60;
                     display.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
                 }, 1000);
             } else {
-                running = false; btn.innerText = "START FOCUS"; btn.style.background = "#06b6d4";
+                running = false;
+                btn.innerText = "START FOCUS";
                 clearInterval(interval);
-                if (seconds > 60) syncXP(Math.floor(seconds/60));
+                alert("Session finished: " + Math.floor(seconds/60) + " mins");
                 seconds = 0; display.innerText = "00:00";
             }
         });
 
-        async function syncXP(mins) {
-            const user = localStorage.getItem("studentName");
-            if(user) await updateDoc(doc(db, "students", user), { xp: increment(mins * 10) });
-        }
-
         // AI Logic
-        const API_KEY = "AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs"; 
-        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         const aiInput = document.getElementById('aiInput');
-        const aiResponse = document.getElementById('aiResponse');
-
         aiInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
                 const query = aiInput.value.replace('/ask ', '');
                 aiInput.value = "";
-                aiResponse.innerText = ">> Thinking...";
-                const res = await fetch(URL, {
+                document.getElementById('aiResponse').innerText = ">> Thinking...";
+                
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `Answer briefly: ${query}` }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: query }] }] })
                 });
                 const data = await res.json();
-                aiResponse.innerText = data.candidates[0].content.parts[0].text;
+                document.getElementById('aiResponse').innerText = data.candidates[0].content.parts[0].text;
             }
         });
     </script>
