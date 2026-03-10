@@ -2,23 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Battle Royale Quiz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Arena Royale</title>
     <style>
-        body { background: #020617; color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: #1e293b; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; }
-        .btn { background: #06b6d4; border: none; padding: 15px; color: white; border-radius: 30px; cursor: pointer; width: 100%; margin-top: 10px; }
-        .eliminated { color: #ef4444; font-weight: bold; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
+        
+        :root { --neon: #06b6d4; --bg: #020617; --glass: rgba(30, 41, 59, 0.7); }
+        
+        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+
+        /* Stylish Card Design */
+        .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
+
+        .battle-btn { background: linear-gradient(90deg, #06b6d4, #3b82f6); border: none; padding: 15px; width: 100%; border-radius: 50px; color: white; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; }
+        .battle-btn:active { transform: scale(0.95); }
+
+        .elimination-msg { color: #f43f5e; font-weight: 900; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        input { background: rgba(0,0,0,0.3); border: 1px solid var(--neon); padding: 12px; width: 85%; border-radius: 10px; color: white; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="card" id="game-ui">
-        <h1>BATTLE ARENA</h1>
-        <div id="quiz-box" style="display:none;">
-            <p id="question"></p>
-            <div id="options"></div>
+    <div class="glass-card" style="text-align: center;">
+        <h1 style="color: var(--neon); margin: 0;">BATTLE ARENA</h1>
+        <button id="start-btn" class="battle-btn" onclick="startBattle()">JOIN & START BATTLE</button>
+        
+        <div id="quiz-ui" style="display:none;">
+            <p id="q-text" style="font-size: 1.2rem;"></p>
+            <input type="text" id="ans-input" placeholder="Enter answer...">
+            <button class="battle-btn" style="padding: 10px;" onclick="checkAnswer()">SUBMIT</button>
         </div>
-        <button id="start-btn" class="btn" onclick="startBattle()">JOIN & START BATTLE</button>
         <p id="status"></p>
     </div>
 
@@ -26,48 +41,37 @@
 
     <script>
         let strikes = 0;
-        let qCount = 0;
-        const totalQuestions = 20;
-
+        let qIndex = 0;
         const questions = [
-            { q: "Binary 10 is decimal 2?", type: "TF", a: "true" },
-            { q: "Convert 101 to decimal", a: "5" },
-            // Add 18 more questions here...
+            { q: "Binary 10 is decimal 2?", a: "true" },
+            { q: "15 in binary is?", a: "1111" },
+            /* Add remaining 18 here */
         ];
 
         function startBattle() {
             document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('quiz-box').style.display = 'block';
-            nextQuestion();
+            document.getElementById('quiz-ui').style.display = 'block';
+            nextQ();
         }
 
-        function nextQuestion() {
-            if (qCount >= totalQuestions || strikes >= 2) {
-                endGame();
+        function nextQ() {
+            if (strikes >= 2) {
+                document.getElementById('quiz-ui').innerHTML = "<h2 class='elimination-msg'>ELIMINATED!</h2>";
                 return;
             }
-            let current = questions[qCount];
-            document.getElementById('question').innerText = current.q;
-            document.getElementById('options').innerHTML = `<input id="ans" type="text"><button onclick="check()">Submit</button>`;
+            if (qIndex >= questions.length) {
+                document.getElementById('quiz-ui').innerHTML = "<h2>VICTORY! Prize: 3000 XP</h2>";
+                return;
+            }
+            document.getElementById('q-text').innerText = questions[qIndex].q;
         }
 
-        function check() {
-            let userAns = document.getElementById('ans').value.toLowerCase();
-            if (userAns !== questions[qCount].a) {
-                strikes++;
-                alert("Wrong! Strikes: " + strikes + "/2");
-            }
-            qCount++;
-            nextQuestion();
-        }
-
-        function endGame() {
-            document.getElementById('quiz-box').innerHTML = "<h3>Battle Ended</h3>";
-            if (strikes < 2) {
-                document.getElementById('status').innerHTML = "You survived! Prize Tier: 1st (3000 XP)";
-            } else {
-                document.getElementById('status').innerHTML = "<span class='eliminated'>ELIMINATED!</span>";
-            }
+        function checkAnswer() {
+            const val = document.getElementById('ans-input').value.toLowerCase();
+            if (val !== questions[qIndex].a) strikes++;
+            qIndex++;
+            document.getElementById('status').innerText = `Strikes: ${strikes}/2`;
+            nextQ();
         }
     </script>
 </body>
