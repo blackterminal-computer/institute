@@ -3,49 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Terminal</title>
+    <title>Deep Focus Portal</title>
     <style>
         body { background: #020617; color: white; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
         #timerDisplay { font-family: 'Orbitron'; font-size: 64px; color: #06b6d4; margin: 20px 0; }
-        button { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 20px; font-weight: 900; cursor: pointer; }
+        .focus-btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 20px; font-weight: 900; cursor: pointer; color: #000; }
+        #quizOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
+
     <div style="text-align: center;">
-        <h3 style="opacity: 0.5;">FOCUS SESSION</h3>
+        <h3 style="opacity: 0.5;">DEEP STUDY SESSION</h3>
         <div id="timerDisplay">00:00</div>
-        <button id="toggleBtn" onclick="toggleTimer()">START FOCUS</button>
-        <p style="margin-top: 20px;"><a href="index.html" style="color:white; opacity:0.5;">Back to Terminal</a></p>
+        <button id="toggleBtn" class="focus-btn" onclick="toggleTimer()">START FOCUS</button>
+        <p style="margin-top: 20px;"><a href="index.html" style="color:white; opacity:0.5;">Exit to Terminal</a></p>
+    </div>
+
+    <div id="quizOverlay">
+        <h3 id="quizQuestion">Focus Check: Are you still studying?</h3>
+        <button onclick="hideQuiz()" class="focus-btn">YES, I AM FOCUSING!</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
-        // Firebase config yahan daalein...
+        // Firebase initialization
+        const app = initializeApp({ /* Aapka Firebase Config */ });
+        const db = getFirestore(app);
+
         let isRunning = false, seconds = 0, timerInterval;
 
-        window.toggleTimer = async () => {
+        window.toggleTimer = () => {
             const btn = document.getElementById('toggleBtn');
             if (!isRunning) {
-                isRunning = true; btn.innerText = "STOP & SYNC";
+                isRunning = true; btn.innerText = "STOP SESSION";
                 timerInterval = setInterval(() => {
                     seconds++;
                     let m = Math.floor(seconds/60), s = seconds%60;
                     document.getElementById('timerDisplay').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                    
+                    // Har 10 minute (600s) mein random Focus Check
+                    if (seconds > 0 && seconds % 600 === 0) showQuiz();
                 }, 1000);
             } else {
                 clearInterval(timerInterval);
                 const mins = Math.floor(seconds/60);
-                const student = localStorage.getItem("studentName");
-                if(student && mins > 0) {
-                    await updateDoc(doc(getFirestore(), "students", student), { "quests.studyMinutes": increment(mins) });
-                    alert(`+${mins} Minutes synced!`);
-                }
+                if(mins >= 1) syncToFirebase(mins);
                 location.reload();
             }
         };
+
+        // Anti-Cheat: Tab Switch Detection
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && isRunning) {
+                alert("Focus Lost! Session paused.");
+                toggleTimer(); // Stop and Sync
+            }
+        });
+
+        function showQuiz() { document.getElementById('quizOverlay').style.display = 'flex'; }
+        window.hideQuiz = () => { document.getElementById('quizOverlay').style.display = 'none'; }
+
+        async function syncToFirebase(mins) {
+            const student = localStorage.getItem("studentName");
+            if(student) {
+                await updateDoc(doc(db, "students", student), { "quests.studyMinutes": increment(mins) });
+                alert(`Session Synced! +${mins} XP added.`);
+            }
+        }
     </script>
 </body>
 </html>
-
