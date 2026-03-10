@@ -1,1 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Terminal</title>
+    <style>
+        body { background: #020617; color: white; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #timerDisplay { font-family: 'Orbitron'; font-size: 64px; color: #06b6d4; margin: 20px 0; }
+        button { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 20px; font-weight: 900; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div style="text-align: center;">
+        <h3 style="opacity: 0.5;">FOCUS SESSION</h3>
+        <div id="timerDisplay">00:00</div>
+        <button id="toggleBtn" onclick="toggleTimer()">START FOCUS</button>
+        <p style="margin-top: 20px;"><a href="index.html" style="color:white; opacity:0.5;">Back to Terminal</a></p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        // Firebase config yahan daalein...
+        let isRunning = false, seconds = 0, timerInterval;
+
+        window.toggleTimer = async () => {
+            const btn = document.getElementById('toggleBtn');
+            if (!isRunning) {
+                isRunning = true; btn.innerText = "STOP & SYNC";
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    let m = Math.floor(seconds/60), s = seconds%60;
+                    document.getElementById('timerDisplay').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                }, 1000);
+            } else {
+                clearInterval(timerInterval);
+                const mins = Math.floor(seconds/60);
+                const student = localStorage.getItem("studentName");
+                if(student && mins > 0) {
+                    await updateDoc(doc(getFirestore(), "students", student), { "quests.studyMinutes": increment(mins) });
+                    alert(`+${mins} Minutes synced!`);
+                }
+                location.reload();
+            }
+        };
+    </script>
+</body>
+</html>
 
