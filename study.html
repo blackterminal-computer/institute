@@ -1,35 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep Study Session</title>
     <style>
-        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
-        #timer { font-size: 60px; margin: 20px 0; color: #06b6d4; font-family: 'Orbitron'; }
-        .btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 15px; font-weight: 800; cursor: pointer; color: #000; text-transform: uppercase; }
+        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #timer { font-size: 60px; color: #06b6d4; margin: 20px 0; }
+        .btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 15px; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h3>DEEP STUDY SESSION</h3>
     <div id="timer">00:00</div>
     <button id="btn" class="btn">START FOCUS</button>
-    <p style="margin-top: 20px;"><a href="index.html" style="color: gray; text-decoration: none;">Exit to Terminal</a></p>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Firebase Config (Yahan apna config fill karein)
-        const firebaseConfig = { /* ... */ };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
+    <script>
+        // Module hata diya hai taaki koi scope error na ho
         let seconds = 0, running = false, interval;
         const display = document.getElementById('timer');
         const btn = document.getElementById('btn');
 
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', function() {
             if (!running) {
                 running = true;
                 btn.innerText = "STOP FOCUS";
@@ -37,36 +26,17 @@
                     seconds++;
                     let m = Math.floor(seconds / 60);
                     let s = seconds % 60;
-                    display.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    display.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
                 }, 1000);
             } else {
                 running = false;
                 btn.innerText = "START FOCUS";
                 clearInterval(interval);
-                let mins = Math.floor(seconds / 60);
-                if (mins > 0) syncXP(mins);
+                alert("Session Stopped at " + Math.floor(seconds / 60) + " minutes.");
                 seconds = 0;
                 display.innerText = "00:00";
             }
         });
-
-        // Anti-Cheat: Tab Switch Detection
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden && running) {
-                alert("Focus Lost! Session paused.");
-                btn.click(); 
-            }
-        });
-
-        async function syncXP(mins) {
-            const studentId = localStorage.getItem("studentName"); // Jo username login ke time save kiya
-            if (studentId) {
-                await updateDoc(doc(db, "students", studentId), {
-                    xp: increment(mins * 10) // 1 minute = 10 XP
-                });
-                alert("Session Synced! XP Earned: " + (mins * 10));
-            }
-        }
     </script>
 </body>
 </html>
