@@ -3,49 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena Battleground</title>
+    <title>Live Arena Battleground</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
-        body { background: #0f172a; color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        
-        .hero { text-align: center; margin: 40px 0; }
-        .participate-btn { background: #06b6d4; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: 0.3s; }
-        .participate-btn:hover { background: #0891b2; transform: scale(1.05); }
-
+        body { background: #020617; color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        h1 { color: #06b6d4; letter-spacing: 2px; }
+        .participate-btn { background: linear-gradient(to right, #06b6d4, #3b82f6); color: white; border: none; padding: 18px 40px; border-radius: 50px; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: 0.3s; }
         .list-container { width: 100%; max-width: 400px; margin-top: 30px; }
-        .player-card { display: flex; align-items: center; background: #1e293b; padding: 10px 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #334155; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 15px; }
+        .player-card { display: flex; align-items: center; background: rgba(30, 41, 59, 0.5); padding: 12px 20px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #334155; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; border: 2px solid #06b6d4; }
     </style>
 </head>
 <body>
 
-    <div class="hero">
-        <h1>BATTLE ARENA</h1>
-        <button class="participate-btn" onclick="joinArena()">I WANT TO PARTICIPATE</button>
-    </div>
+    <h1>BATTLE ARENA</h1>
+    <button class="participate-btn" onclick="joinArena()">JOIN THE BATTLE</button>
 
     <div class="list-container" id="participant-list">
         </div>
 
-    <script>
-        function joinArena() {
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        // --- REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Add user to database
+        window.joinArena = async () => {
             const name = prompt("Enter your Warrior Name:");
             if (!name) return;
+            await addDoc(collection(db, "participants"), {
+                name: name,
+                timestamp: new Date()
+            });
+        };
 
-            // Create new participant HTML elements
+        // Real-time synchronization
+        onSnapshot(query(collection(db, "participants"), orderBy("timestamp", "asc")), (snapshot) => {
             const list = document.getElementById('participant-list');
-            const card = document.createElement('div');
-            card.className = 'player-card';
-
-            const imgUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=06b6d4&color=fff`;
-            
-            card.innerHTML = `
-                <img src="${imgUrl}" class="avatar">
-                <span>${name}</span>
-            `;
-
-            list.appendChild(card);
-        }
+            list.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.innerHTML = `
+                    <img src="https://ui-avatars.com/api/?name=${data.name}&background=06b6d4&color=fff" class="avatar">
+                    <span>${data.name}</span>
+                `;
+                list.appendChild(card);
+            });
+        });
     </script>
 </body>
 </html>
