@@ -2,14 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlackTerminal AI</title>
     <style>
         body { background: #020617; color: #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: 'Courier New', monospace; }
         #timer { font-size: 70px; color: #06b6d4; margin: 20px 0; text-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
-        .btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 6px; font-weight: bold; cursor: pointer; color: #020617; transition: 0.3s; }
+        .btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 6px; font-weight: bold; cursor: pointer; color: #020617; }
         .ai-box { width: 90%; max-width: 450px; border: 1px solid #1e293b; padding: 15px; border-radius: 8px; background: #050a1f; }
-        .ai-header { color: #06b6d4; font-size: 10px; margin-bottom: 8px; }
         #aiResponse { font-size: 13px; color: #94a3b8; height: 100px; overflow-y: auto; margin-bottom: 10px; }
         #aiInput { width: 100%; background: transparent; border: none; color: #06b6d4; outline: none; font-family: monospace; }
     </style>
@@ -21,54 +19,40 @@
 
     <div class="ai-box">
         <div class="ai-header">> BLACKTERMINAL_AI // SYSTEM_READY</div>
-        <div id="aiResponse">>> Enter /ask [question] to initiate analysis.</div>
+        <div id="aiResponse">>> Enter /ask [question]</div>
         <input type="text" id="aiInput" placeholder="/ask...">
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // 1. Firebase Config
-        const firebaseConfig = { apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." };
-        let db;
-        try { const app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e) {}
-
-        // 2. Timer Logic
-        let seconds = 0, running = false, interval;
-        const display = document.getElementById('timer'), btn = document.getElementById('btn');
-        btn.addEventListener('click', () => {
-            if (!running) { running = true; btn.innerText = "STOP FOCUS"; interval = setInterval(() => { seconds++; let m = Math.floor(seconds/60), s = seconds%60; display.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }, 1000); }
-            else { running = false; btn.innerText = "START FOCUS"; clearInterval(interval); if(seconds > 60) syncXP(Math.floor(seconds/60)); seconds = 0; display.innerText = "00:00"; }
-        });
-
-        async function syncXP(mins) {
-            const user = localStorage.getItem("studentName");
-            if(user && db) await updateDoc(doc(db, "students", user), { xp: increment(mins * 10) });
-        }
-
-        // 3. BlackTerminal AI Logic
-        const GEMINI_KEY = "AIzaSyAWxW568KTSCG-BYSH_hLL2WflkyW9aFZs";
-        const aiInput = document.getElementById('aiInput'), aiResponse = document.getElementById('aiResponse');
+    <script>
+        // 1. API Key Delete karke nayi generate karo
+        const API_KEY = "YAHAN_APNI_NAYI_API_KEY_PASTE_KARO";
+        const aiInput = document.getElementById('aiInput');
+        const aiResponse = document.getElementById('aiResponse');
         
         aiInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
                 const query = aiInput.value.replace('/ask ', '');
                 aiInput.value = "";
-                aiResponse.innerText = ">> BLACKTERMINAL_AI processing...";
+                aiResponse.innerText = ">> Processing...";
+                
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: `Strict, cyberpunk, savage study assistant. Briefly answer: ${query}` }] }] })
+                    // Ye fetch request ab sahi format mein hai
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: "Strict cyberpunk study assistant: " + query }] }]
+                        })
                     });
                     const data = await res.json();
-                    aiResponse.innerText = ">> " + (data.candidates?.[0]?.content?.parts?.[0]?.text || "System Error.");
-                } catch(e) { aiResponse.innerText = ">> Connection Failed."; }
+                    const text = data.candidates[0].content.parts[0].text;
+                    aiResponse.innerText = ">> " + text;
+                } catch(err) { 
+                    aiResponse.innerText = ">> Error: Check API Key or Network."; 
+                    console.log(err);
+                }
             }
         });
     </script>
 </body>
 </html>
-
-
-System error aaya
