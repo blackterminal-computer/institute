@@ -8,90 +8,109 @@
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
         :root { --neon: #06b6d4; --bg: #020617; --glass: rgba(30, 41, 59, 0.7); }
         body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        
-        /* High-End Glass Cards */
-        .card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 20px; width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center; }
-        .btn { background: linear-gradient(90deg, #06b6d4, #3b82f6); border: none; padding: 15px 30px; border-radius: 50px; color: white; font-weight: 900; cursor: pointer; width: 100%; }
-        
-        /* Participant List Style */
-        .player-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #334155; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 25px; width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center; }
+        .battle-btn { background: linear-gradient(90deg, #06b6d4, #3b82f6); border: none; padding: 15px 30px; border-radius: 50px; color: white; font-weight: 900; cursor: pointer; width: 100%; margin-top: 10px; }
+        .player-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; }
         .avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--neon); }
-        .status-tag { font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; background: rgba(6, 182, 212, 0.2); }
-        .eliminated { color: #f43f5e; background: rgba(244, 63, 94, 0.2); }
+        .eliminated { color: #f43f5e; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1 style="color: var(--neon);">BATTLE ARENA</h1>
-        <button id="start-btn" class="btn" onclick="startBattle()">JOIN BATTLE</button>
-        <div id="game-box" style="display:none;">
-            <p id="q-box" style="font-size: 1.1rem;"></p>
-            <input type="text" id="ans-box" style="width: 80%; padding: 10px; border-radius: 8px; border: none; margin-bottom: 10px;">
-            <button class="btn" onclick="checkAnswer()">SUBMIT</button>
+    <div class="glass-card">
+        <h1 style="color: var(--neon); margin: 0;">BATTLE ARENA</h1>
+        <button id="start-btn" class="battle-btn" onclick="startBattle()">JOIN & START</button>
+        <div id="quiz-ui" style="display:none;">
+            <p id="q-text" style="font-size: 1.1rem; font-weight: 600;"></p>
+            <input type="text" id="ans-input" style="padding: 12px; width: 80%; border-radius: 10px; border: 1px solid var(--neon); background: #000; color: white; margin-bottom: 10px;" placeholder="Answer...">
+            <button class="battle-btn" onclick="checkAnswer()">SUBMIT</button>
         </div>
+        <p id="status" style="margin-top:15px;"></p>
     </div>
 
-    <div class="card">
-        <h3 style="color: var(--neon);">WARRIOR LEADERBOARD</h3>
-        <div id="list-box"></div>
+    <div class="glass-card">
+        <h3 style="color: var(--neon);">LIVE WARRIORS</h3>
+        <div id="participants-list"></div>
     </div>
 
     
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
             projectId: "black-terminal-f2c91",
-            // ... (baki config same rahegi)
+            storageBucket: "black-terminal-f2c91.firebasestorage.app",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
         };
 
-        const db = getFirestore(initializeApp(firebaseConfig));
-        let strikes = 0, qIndex = 0, userId = "";
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let strikes = 0; let qIndex = 0; let userId = "";
 
         const questions = [
-            {q: "Binary 10 is decimal 2?", a: "true"}, {q: "Convert 16 (decimal) to binary.", a: "10000"},
-            // ... Add baki 18 questions
+            {q: "What is 1011 (binary) in decimal?", a: "11"}, {q: "Is 10 (decimal) equal to 1010 (binary)?", a: "true"},
+            {q: "Convert 16 (decimal) to binary.", a: "10000"}, {q: "Is hex 'F' equal to 15 in decimal?", a: "true"},
+            {q: "What is 111 (binary) in decimal?", a: "7"}, {q: "Convert decimal 9 to binary.", a: "1001"},
+            {q: "Is 10101 (binary) equal to 21 (decimal)?", a: "true"}, {q: "What is hex 'A' in decimal?", a: "10"},
+            {q: "Is binary 1100 equal to 14 (decimal)?", a: "false"}, {q: "Convert decimal 3 to binary.", a: "11"},
+            {q: "What is 1000 (binary) in decimal?", a: "8"}, {q: "Is hex '10' equal to 16 (decimal)?", a: "true"},
+            {q: "Convert decimal 20 to binary.", a: "10100"}, {q: "What is 1101 (binary) in decimal?", a: "13"},
+            {q: "Is 100 (binary) equal to 4 (decimal)?", a: "true"}, {q: "Convert decimal 7 to binary.", a: "111"},
+            {q: "What is hex 'B' in decimal?", a: "11"}, {q: "Is binary 101 equal to 5 (decimal)?", a: "true"},
+            {q: "Convert decimal 12 to binary.", a: "1100"}, {q: "Is 11111 (binary) equal to 31 (decimal)?", a: "true"}
         ];
 
         window.startBattle = async () => {
-            const name = prompt("Enter your name:");
-            const d = await addDoc(collection(db, "participants"), { name, status: "Active" });
-            userId = d.id;
+            const name = prompt("Enter your Warrior Name:");
+            if(!name) return;
+            const docRef = await addDoc(collection(db, "participants"), { name, status: "Active" });
+            userId = docRef.id;
             document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('game-box').style.display = 'block';
+            document.getElementById('quiz-ui').style.display = 'block';
             nextQ();
         };
 
         function nextQ() {
-            if(strikes >= 2) { 
+            if (strikes >= 2) { 
                 updateDoc(doc(db, "participants", userId), { status: "ELIMINATED" });
-                alert("Game Over!"); location.reload(); 
+                document.getElementById('quiz-ui').innerHTML = "<h2 class='eliminated'>YOU ARE ELIMINATED!</h2>";
+                return; 
             }
-            document.getElementById('q-box').innerText = questions[qIndex].q;
+            if (qIndex >= questions.length) {
+                document.getElementById('quiz-ui').innerHTML = "<h2>VICTORY! Prize: 3000 XP</h2>";
+                return;
+            }
+            document.getElementById('q-text').innerText = questions[qIndex].q;
         }
 
         window.checkAnswer = () => {
-            if(document.getElementById('ans-box').value !== questions[qIndex].a) strikes++;
+            const val = document.getElementById('ans-input').value.toLowerCase().trim();
+            if (val !== questions[qIndex].a) strikes++;
+            document.getElementById('status').innerText = `Strikes: ${strikes}/2`;
             qIndex++;
+            document.getElementById('ans-input').value = "";
             nextQ();
         };
 
-        onSnapshot(collection(db, "participants"), (snap) => {
-            const list = document.getElementById('list-box');
+        onSnapshot(query(collection(db, "participants")), (snapshot) => {
+            const list = document.getElementById('participants-list');
             list.innerHTML = "";
-            snap.forEach(d => {
+            snapshot.forEach(d => {
                 const p = d.data();
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=06b6d4&color=fff`;
                 list.innerHTML += `
                     <div class="player-item">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <img src="https://ui-avatars.com/api/?name=${p.name}" class="avatar">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <img src="${avatarUrl}" class="avatar">
                             <span>${p.name}</span>
                         </div>
-                        <span class="status-tag ${p.status === 'ELIMINATED' ? 'eliminated' : ''}">${p.status}</span>
+                        <span class="${p.status === 'ELIMINATED' ? 'eliminated' : ''}">${p.status}</span>
                     </div>`;
             });
         });
