@@ -2,67 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Deep Focus Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Study</title>
     <style>
-        body { background: #020617; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #timerDisplay { font-size: 64px; color: #06b6d4; margin: 20px 0; font-family: monospace; }
-        .focus-btn { background: #06b6d4; border: none; padding: 15px 40px; border-radius: 20px; font-weight: 900; cursor: pointer; color: #000; }
+        body { background: #020617; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+        #timer { font-size: 60px; margin: 20px 0; color: #06b6d4; }
+        button { background: #06b6d4; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div style="text-align: center;">
-        <h3 style="opacity: 0.5;">DEEP STUDY SESSION</h3>
-        <div id="timerDisplay">00:00</div>
-        <button id="toggleBtn" class="focus-btn">START FOCUS</button>
-        <p style="margin-top: 20px;"><a href="index.html" style="color:white; opacity:0.5;">Exit to Terminal</a></p>
-    </div>
+    <h3>DEEP STUDY SESSION</h3>
+    <div id="timer">00:00</div>
+    <button id="btn">START FOCUS</button>
+    <p style="margin-top: 20px;"><a href="index.html" style="color: gray;">Back to Terminal</a></p>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Firebase Config (Yahan apna config daalein)
-        const app = initializeApp({ /* ... */ });
-        const db = getFirestore(app);
-
-        let isRunning = false;
+    <script>
         let seconds = 0;
-        let timerInterval;
+        let running = false;
+        let interval;
+        const display = document.getElementById('timer');
+        const btn = document.getElementById('btn');
 
-        const btn = document.getElementById('toggleBtn');
-        const display = document.getElementById('timerDisplay');
-
-        // Click Event ko script ke andar hi listen karein (ye best practice hai)
         btn.addEventListener('click', () => {
-            if (!isRunning) {
-                isRunning = true;
-                btn.innerText = "STOP SESSION";
-                timerInterval = setInterval(() => {
+            if (!running) {
+                // Start
+                running = true;
+                btn.innerText = "STOP FOCUS";
+                interval = setInterval(() => {
                     seconds++;
                     let m = Math.floor(seconds / 60);
                     let s = seconds % 60;
                     display.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
                 }, 1000);
             } else {
-                clearInterval(timerInterval);
-                isRunning = false;
+                // Stop
+                running = false;
                 btn.innerText = "START FOCUS";
-                const mins = Math.floor(seconds / 60);
-                if (mins >= 1) syncToFirebase(mins);
+                clearInterval(interval);
+                alert("Session Finished! You studied for " + Math.floor(seconds / 60) + " minutes.");
                 seconds = 0;
                 display.innerText = "00:00";
             }
         });
-
-        async function syncToFirebase(mins) {
-            const student = localStorage.getItem("studentName");
-            if (student) {
-                const userRef = doc(db, "students", student);
-                await updateDoc(userRef, { "quests.studyMinutes": increment(mins) });
-                alert(`Session Synced! ${mins} minutes added to your quest.`);
-            }
-        }
     </script>
 </body>
 </html>
