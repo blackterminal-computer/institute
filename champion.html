@@ -4,37 +4,29 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
         :root { --neon: #06b6d4; --bg: #020617; --card: #0f172a; }
-        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; padding: 15px; }
-        .game-card { background: var(--card); border: 1px solid #1e293b; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .q-text { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; color: #f8fafc; }
-        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .btn { background: #1e293b; border: 1px solid var(--neon); color: white; padding: 15px; border-radius: 12px; cursor: pointer; transition: 0.2s; text-align: left; }
-        .btn:hover { background: var(--neon); color: #000; }
-        .sidebar { margin-top: 20px; background: var(--card); padding: 15px; border-radius: 20px; border: 1px solid #1e293b; }
-        .prog-bar { width: 100%; background: #334155; height: 8px; border-radius: 10px; margin-top: 20px; overflow: hidden; }
+        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; padding: 20px; }
+        .game-card { background: var(--card); border: 1px solid #1e293b; border-radius: 20px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        .q-text { font-size: 1.4rem; font-weight: 600; margin-bottom: 25px; min-height: 60px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { background: #1e293b; border: 1px solid var(--neon); color: white; padding: 16px; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; text-align: center; }
+        .btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+        .prog-bar { width: 100%; background: #1e293b; height: 8px; border-radius: 10px; margin-top: 30px; overflow: hidden; }
         #fill { width: 0%; height: 100%; background: var(--neon); transition: 0.4s; }
     </style>
 </head>
 <body>
 
-    <h2 style="color:var(--neon); text-align:center;">ARENA LEGEND</h2>
-
     <div class="game-card">
-        <div class="q-text" id="q-box">Question loading...</div>
+        <div class="q-text" id="q-box">Waking up the Arena...</div>
         <div id="opt-box" class="options-grid"></div>
         <div class="prog-bar"><div id="fill"></div></div>
     </div>
 
-    <div class="sidebar">
-        <h3 style="margin:0 0 10px 0;">Live Players</h3>
-        <div id="user-list">Waiting for connection...</div>
-    </div>
-
     <script type="module">
-        // 1. Firebase direct link (No external file needed)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.x/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.x/firebase-firestore.js";
 
+        // IMPORTANT: Apni Firebase Keys yahan dalein
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             projectId: "YOUR_PROJECT_ID",
@@ -44,51 +36,47 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 2. Questions Array
         const questions = [
             { q: "Computer ka brain kise kaha jata hai?", opts: ["Monitor", "CPU", "Keyboard", "RAM"], a: "CPU" },
             { q: "RAM ek temporary memory hai?", opts: ["True", "False"], a: "True" },
-            { q: "HTML ka upyog web page banane ke liye hota hai?", opts: ["True", "False"], a: "True" }
-            // Aap yahan apne baaki questions add kar sakte hain
+            { q: "HTML web page banane ke liye hota hai?", opts: ["True", "False"], a: "True" }
+            // Baki questions yahan add karein
         ];
 
         let level = 0;
 
-        // 3. Render Function
-        function renderArena() {
+        // Question Render karne ka function
+        function displayQuestion() {
             const data = questions[level];
             document.getElementById('q-box').innerText = data.q;
             document.getElementById('fill').style.width = `${((level + 1) / questions.length) * 100}%`;
             
             const optBox = document.getElementById('opt-box');
-            optBox.innerHTML = "";
-            data.opts.forEach(o => {
-                const b = document.createElement('button');
-                b.className = "btn";
-                b.innerText = o;
-                b.onclick = () => {
-                    if(o === data.a) {
+            optBox.innerHTML = ""; // Purane buttons clear karein
+
+            data.opts.forEach(opt => {
+                const button = document.createElement('button');
+                button.innerText = opt;
+                button.className = 'btn';
+                button.onclick = () => {
+                    if(opt === data.a) {
                         level++;
-                        if(level < questions.length) renderArena();
-                        else alert("VICTORY!");
-                    } else { alert("Wrong!"); }
+                        if(level < questions.length) displayQuestion();
+                        else alert("ARENA CONQUERED!");
+                    } else {
+                        alert("WRONG ANSWER!");
+                    }
                 };
-                optBox.appendChild(b);
+                optBox.appendChild(button);
             });
         }
 
-        // 4. Execution
-        renderArena();
+        // Sabse pehle questions load karein
+        displayQuestion();
 
+        // Firebase Listener
         onSnapshot(doc(db, "tournaments", "active_arena"), (snap) => {
-            if(snap.exists()){
-                const players = snap.data().participants || [];
-                document.getElementById('user-list').innerHTML = players.map(p => `
-                    <div style="padding:5px 0; border-bottom:1px solid #1e293b;">
-                        ${p.name} - <span style="color:#ef4444">${p.errors}/3 Err</span>
-                    </div>
-                `).join('');
-            }
+            console.log("Firebase Connected");
         });
     </script>
 </body>
