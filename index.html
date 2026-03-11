@@ -691,23 +691,17 @@ window.addEventListener("beforeunload", async () => {
             all.sort((a,b)=>b.xp-a.xp);
             const r = all.findIndex(s=>s.id === student) + 1;
             if(r > 0) document.getElementById("instRank").innerText = "#" + r;
+// --- Yahan se replace karein ---
+const todayISO = new Date().toISOString().split('T')[0];
 
-            // --- Real-time Attendance & XP Sync Logic (OPTIMIZED TRIGGER) ---
-            const todayISO = new Date().toISOString().split('T')[0];
-            // --- Yahan se replace karein ---
-onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
+onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), (attSnap) => {
     const pill = document.getElementById("att-pill");
-    
     if (attSnap.exists()) {
-        // UI Update: Sirf UI change karein, XP update nahi
         pill.classList.remove("pulse"); 
         pill.classList.add("done");
         document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
         document.getElementById("att-pill-text").innerText = "Present";
         pill.href = "javascript:void(0)"; 
-        
-        // XP update ka logic yahan se HATA diya gaya hai
-        // Kyunki onSnapshot baar-baar trigger ho sakta hai
     } else {
         pill.classList.add("pulse"); 
         pill.classList.remove("done");
@@ -717,23 +711,19 @@ onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
     }
 });
 
+// --- Yahan par Online Status ka logic rakhein ---
+const qStudents = query(collection(db, "students"));
+onSnapshot(qStudents, (snapshot) => {
+    let onlineCount = 0;
+    snapshot.forEach((doc) => {
+        if (doc.data().isOnline === true) {
+            onlineCount++;
+        }
+    });
+    document.getElementById("onlineCount").innerText = onlineCount;
+});
+// --- SyncData function ka closing brace (}) yahan aayega ---
 
-                        await setDoc(doc(db, "interactions", "shoutout"), {
-                            user: "SUCCESS",
-                            text: `✨ ${student} marked attendance & earned 100 XP!`,
-                            avatar: userPhoto,
-                            time: Date.now()
-                        });
-
-                        localStorage.setItem(`att_reward_${todayISO}`, "true");
-                    }
-                } else {
-                    pill.classList.add("pulse"); pill.classList.remove("done");
-                    document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
-                    document.getElementById("att-pill-text").innerText = "Attendance";
-                    pill.href = "attendence.html";
-                }
-            });
             // Live Online Users Counter
 onSnapshot(query(collection(db, "students")), (snapshot) => {
     let onlineCount = 0;
