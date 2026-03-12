@@ -29,7 +29,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -44,45 +44,57 @@
     const db = getFirestore(app);
     const student = localStorage.getItem("studentName") || "Elite User";
 
-    // 1. Post Logic (With Fallback Avatar)
+    // 1. Post Logic (Fetch Real Profile Pic)
     window.publishPost = async () => {
         const input = document.getElementById("postInput");
         if(!input.value.trim()) return;
         
+        let userPhoto = "https://api.dicebear.com/7.x/adventurer/svg?seed=" + student;
+        try {
+            const userDoc = await getDoc(doc(db, "students", student));
+            if(userDoc.exists() && userDoc.data().photo) userPhoto = userDoc.data().photo;
+        } catch(e) { console.log("Default pic used"); }
+
         await addDoc(collection(db, "posts"), {
             user: student,
             content: input.value,
-            userPhoto: "https://api.dicebear.com/7.x/adventurer/svg?seed=" + student,
+            userPhoto: userPhoto,
             likes: 0,
             timestamp: serverTimestamp()
         });
         input.value = "";
     };
 
-    // 2. Like Logic
-    window.toggleLike = async (postId) => {
-        await updateDoc(doc(db, "posts", postId), { likes: increment(1) });
+    // 2. Interaction Logic
+    window.toggleLike = async (id) => await updateDoc(doc(db, "posts", id), { likes: increment(1) });
+
+    window.addComment = async (id) => {
+        const text = prompt("Comment likhein:");
+        if(!text) return;
+        await addDoc(collection(db, "posts", id, "comments"), {
+            user: student,
+            text: text,
+            timestamp: serverTimestamp()
+        });
     };
 
     // 3. Render Logic
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snapshot) => {
+    onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), (snap) => {
         const feed = document.getElementById("liveFeedContainer");
         feed.innerHTML = "";
-        snapshot.forEach((doc) => {
+        snap.forEach((doc) => {
             const p = doc.data();
-            const time = p.timestamp ? "Just now" : "Pending...";
             if ((Date.now() - p.timestamp?.toMillis()) < 172800000) {
                 feed.innerHTML += `
                     <div class="feed-card">
                         <div class="feed-header">
                             <img src="${p.userPhoto}" class="feed-avatar">
-                            <div><div style="font-weight:800;">${p.user}</div><div style="font-size:9px; opacity:0.6;">${time}</div></div>
+                            <div><div style="font-weight:800;">${p.user}</div></div>
                         </div>
                         <div style="font-size:14px; margin-bottom:10px;">${p.content}</div>
                         <div class="action-bar">
-                            <div class="action-btn" onclick="toggleLike('${doc.id}')"><i class="ri-heart-line"></i> Like (${p.likes || 0})</div>
-                            <div class="action-btn" onclick="alert('Comment section coming!')"><i class="ri-chat-3-line"></i> Comment</div>
+                            <div class="action-btn" onclick="toggleLike('${doc.id}')"><i class="ri-heart-line"></i> ${p.likes || 0}</div>
+                            <div class="action-btn" onclick="addComment('${doc.id}')"><i class="ri-chat-3-line"></i> Comment</div>
                         </div>
                     </div>`;
             }
