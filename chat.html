@@ -1,87 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Terminal | Elite Feed</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        :root { --bg: #020617; --accent: #06b6d4; --glass: rgba(255, 255, 255, 0.05); }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding-bottom: 80px; }
-        
-        /* Post Box */
-        .post-box { margin: 20px; background: var(--glass); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        #postInput { width: 100%; background: transparent; border: none; color: white; height: 60px; outline: none; resize: none; }
-        
-        /* Feed Cards - Mobile Responsive */
-        .feed-card { background: var(--glass); border-radius: 20px; padding: 16px; margin: 15px 20px; border: 1px solid rgba(255,255,255,0.05); }
-        .feed-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .feed-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
-        .action-bar { display: flex; gap: 20px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
-        .action-btn { color: #94a3b8; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        body { background: #020617; color: white; font-family: sans-serif; }
+        .post-box { margin: 20px; padding: 15px; border: 1px solid #334155; border-radius: 15px; }
+        textarea { width: 100%; background: transparent; color: white; border: none; height: 50px; outline: none; }
+        button { width: 100%; padding: 10px; background: #06b6d4; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .card { border: 1px solid #1e293b; padding: 15px; border-radius: 15px; margin: 15px 20px; }
+        .actions { display: flex; gap: 20px; margin-top: 10px; font-size: 12px; color: #94a3b8; }
     </style>
 </head>
 <body>
 
-    <div class="post-box">
-        <textarea id="postInput" placeholder="What's on your mind, Elite?"></textarea>
-        <button onclick="publishPost()" style="width: 100%; background: var(--accent); border: none; padding: 10px; border-radius: 12px; font-weight: 800; cursor: pointer;">POST TO FEED</button>
-    </div>
+<div class="post-box">
+    <textarea id="postInput" placeholder="What's on your mind?"></textarea>
+    <button onclick="publishPost()">POST TO FEED</button>
+</div>
+<div id="feed"></div>
 
-    <div id="liveFeedContainer"></div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const firebaseConfig = { 
+        /* APNA CONFIG YAHAN DALEIN */
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        const firebaseConfig = { /* Apna config yahan rahega */ };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const student = localStorage.getItem("studentName") || "Elite User";
-
-        // Post with Profile Picture
-        window.publishPost = async () => {
-            const input = document.getElementById("postInput");
-            if(!input.value.trim()) return;
-
-            // User ki real photo fetch karein
-            const userSnap = await getDoc(doc(db, "students", student));
-            const photo = userSnap.exists() ? userSnap.data().photo : "https://api.dicebear.com/7.x/bottts/svg?seed="+student;
-
-            await addDoc(collection(db, "posts"), {
-                user: student,
-                content: input.value,
-                userPhoto: photo,
-                timestamp: serverTimestamp(),
-                likes: 0
-            });
-            input.value = "";
-        };
-
-        // Real-time Feed Rendering
-        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(20));
-        onSnapshot(q, (snapshot) => {
-            const feed = document.getElementById("liveFeedContainer");
-            feed.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const p = doc.data();
-                if ((Date.now() - p.timestamp?.toMillis()) < 172800000) { // 48 Hours Filter
-                    feed.innerHTML += `
-                        <div class="feed-card">
-                            <div class="feed-header">
-                                <img src="${p.userPhoto}" class="feed-avatar">
-                                <div><div style="font-weight:800;">${p.user}</div><div style="font-size:9px; opacity:0.6;">Just now</div></div>
-                            </div>
-                            <div style="font-size:14px; margin-bottom:10px;">${p.content}</div>
-                            <div class="action-bar">
-                                <div class="action-btn" onclick="alert('Liked!')"><i class="ri-heart-line"></i> Like</div>
-                                <div class="action-btn" onclick="alert('Comment box coming soon!')"><i class="ri-chat-3-line"></i> Comment</div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
+    // POSTING LOGIC
+    window.publishPost = async () => {
+        const text = document.getElementById("postInput").value;
+        if(!text.trim()) return alert("Khali post mat karo!");
+        
+        await addDoc(collection(db, "posts"), {
+            text: text,
+            timestamp: serverTimestamp(),
+            user: "Elite User"
         });
-    </script>
+        document.getElementById("postInput").value = "";
+    };
+
+    // LIVE FEED LOGIC
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const feed = document.getElementById("feed");
+        feed.innerHTML = "";
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            // 48 Ghante ka check
+            if ((Date.now() - data.timestamp?.toMillis()) < 172800000) {
+                feed.innerHTML += `
+                    <div class="card">
+                        <div style="font-weight:bold">${data.user}</div>
+                        <div style="margin:10px 0">${data.text}</div>
+                        <div class="actions">
+                            <span onclick="alert('Liked!')">LIKE</span>
+                            <span onclick="alert('Comment!')">COMMENT</span>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    });
+</script>
 </body>
 </html>
