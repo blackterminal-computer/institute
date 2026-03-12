@@ -749,42 +749,33 @@ onSnapshot(query(collection(db, "students")), (snapshot) => {
         }
 
         loadCache();
+                // Yahan paste karein (syncData se upar)
         async function loadStudentAvatars() {
-    const scrollContainer = document.getElementById("studentScroll");
-    
-    onSnapshot(collection(db, "students"), (snapshot) => {
-        scrollContainer.innerHTML = ""; 
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const name = docSnap.id;
-            const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
-            const isOnline = data.isOnline === true;
+            const scrollContainer = document.getElementById("studentScroll");
+            onSnapshot(collection(db, "students"), (snapshot) => {
+                scrollContainer.innerHTML = ""; 
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const name = docSnap.id;
+                    const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+                    const isOnline = data.isOnline === true;
 
-            const card = document.createElement("div");
-            card.className = "student-avatar-card";
-            card.innerHTML = `
-                <img src="${photo}" class="scroll-img ${isOnline ? 'online' : ''}" alt="${name}">
-                <p class="scroll-name" style="color: ${isOnline ? 'var(--success)' : 'white'}">${name}</p>
-            `;
-            scrollContainer.appendChild(card);
-        });
-    });
-
-    // --- Auto Scroll Logic ---
-    let scrollAmount = 0;
-    setInterval(() => {
-        if (scrollContainer) {
-            scrollAmount += 1; // Speed adjust karne ke liye number badal sakte hain
-            scrollContainer.scrollLeft += 1;
-
-            // Agar end tak pahunch jaye toh wapas 0 par
-            if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth - scrollContainer.clientWidth)) {
-                scrollContainer.scrollLeft = 0;
-                scrollAmount = 0;
-            }
+                    const card = document.createElement("div");
+                    card.className = "student-avatar-card";
+                    card.innerHTML = `
+                        <img src="${photo}" class="scroll-img ${isOnline ? 'online' : ''}" alt="${name}">
+                        <p class="scroll-name" style="color: ${isOnline ? 'var(--success)' : 'white'}">${name}</p>
+                    `;
+                    scrollContainer.appendChild(card);
+                });
+            });
         }
-    }, 30); // 30ms mein 1px move hoga (smooth motion)
-}
+
+        loadCache();
+        loadStudentAvatars(); // Isko yahan call karna zaroori hai
+        syncData();
+    </script>
+
 
 
         syncData();
