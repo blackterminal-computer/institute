@@ -5,26 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Black Terminal | Elite Dashboard</title>
     
-    <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08); --gold: #facc15; --success: #22c55e; --danger: #ef4444; --neon-glow: 0 0 15px rgba(6, 182, 212, 0.4); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #f8fafc; padding-bottom: 110px; overflow-x: hidden; background-image: radial-gradient(circle at top right, #1e1b4b, transparent); }
+        
+        /* UI Components */
+        #shoutoutBubble { position: fixed; top: 20px; right: 20px; z-index: 11000; max-width: 260px; background: rgba(15, 23, 42, 0.95); border: 1.5px solid var(--accent); border-radius: 18px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: var(--neon-glow); backdrop-filter: blur(15px); transform: translateX(150%); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #shoutoutBubble.active { transform: translateX(0); }
+        .b-av { width: 35px; height: 35px; border-radius: 10px; border: 1px solid var(--accent); object-fit: cover; }
+        
+        #activityPanel { position: fixed; bottom: -100%; left: 0; right: 0; height: 75vh; background: #0b0f1a; border-top: 3px solid var(--accent); border-radius: 30px 30px 0 0; z-index: 20000; transition: 0.5s ease; padding: 25px 20px; overflow-y: auto; }
+        #activityPanel.open { bottom: 0; }
+        #overlay-blur { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; z-index: 15000; backdrop-filter: blur(4px); }
+
+        .grid { display: flex; gap: 12px; padding: 0 20px 20px 20px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .grid::-webkit-scrollbar { display: none; }
+        .card { min-width: 140px; scroll-snap-align: start; background: var(--glass); border: 1px solid var(--glass-border); padding: 22px; border-radius: 24px; text-decoration: none; color: white; transition: 0.3s; position: relative; }
+        
+        .student-avatar-card { flex: 0 0 auto; width: 105px; text-align: center; padding: 15px 5px; }
+        .scroll-img { width: 90px; height: 90px; border-radius: 50%; border: 3.5px solid rgba(255, 255, 255, 0.1); padding: 4px; object-fit: cover; background: linear-gradient(45deg, #0f172a, #1e293b); transition: all 0.4s; }
+        .scroll-img.online { border-color: var(--success); box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+        .scroll-name { font-size: 11px; font-weight: 800; margin-top: 10px; color: #f8fafc; text-transform: uppercase; }
+
+        .premium-header { padding: 25px 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+        .avatar-box { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); overflow: hidden; }
+        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); border-radius: 22px; display: flex; justify-content: space-around; padding: 12px; border: 1px solid var(--glass-border); z-index: 10000; }
+        .nav-link { color: #64748b; text-decoration: none; text-align: center; font-size: 10px; font-weight: 700; }
+        .nav-link.active { color: var(--accent); }
+    </style>
 </head>
 <body>
 
-    <div id="shoutoutBubble">
-        <img src="" id="bAvatar" class="b-av">
-        <div>
-            <span style="font-size:8px; color:var(--accent); font-weight:900;" id="bUser">SYSTEM</span>
-            <p style="font-size:11px; font-weight:600;" id="bMsg">Waiting for signals...</p>
-        </div>
-    </div>
-
+    <div id="shoutoutBubble"><img src="" id="bAvatar" class="b-av"><div><span style="font-size:8px; color:var(--accent);" id="bUser">SYSTEM</span><p style="font-size:11px;" id="bMsg">Waiting...</p></div></div>
     <div id="overlay-blur" onclick="togglePanel()"></div>
     <div id="activityPanel">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; position:sticky; top:0; background:#0b0f1a; padding-bottom:10px; z-index:10;">
-            <h3 style="font-family:'Orbitron', sans-serif; font-size:14px; color:var(--accent);">SIGNAL ARCHIVE</h3>
-            <i class="ri-close-line" onclick="togglePanel()" style="font-size:24px; color:var(--danger);"></i>
-        </div>
+        <h3 style="color:var(--accent);">SIGNAL ARCHIVE</h3>
         <div id="logList"></div>
     </div>
 
@@ -32,29 +50,58 @@
         <div class="user-meta">
             <div class="avatar-box"><img id="uAvatar" src="" alt="Avatar"></div>
             <div>
-                <div id="rankBadge" class="rank-badge">Syncing...</div>
-                <p id="greetText" style="font-size: 10px; opacity: 0.5; font-weight: 800; text-transform: uppercase;">Welcome</p>
-                <h2 id="uName" style="font-size: 18px; font-weight: 800;">Student</h2>
+                <div id="rankBadge" class="rank-badge">Elite Rank</div>
+                <h2 id="uName">Student</h2>
+                <div id="onlineStatus" style="font-size:9px; color:var(--success);">● <span id="onlineCount">0</span> Online</div>
             </div>
         </div>
-        <div id="sCount" style="background:rgba(255,100,0,0.1); color:#ff6400; padding:8px 15px; border-radius:15px; font-weight:800; font-size:12px;">🔥 0 Days</div>
     </header>
+
+    <div id="studentScroll" style="display:flex; overflow-x:auto;"></div>
 
     <nav class="bottom-nav">
         <a href="index.html" class="nav-link active"><i class="ri-home-5-fill"></i><span>Home</span></a>
         <a href="daily-test.html" class="nav-link"><i class="ri-edit-line"></i><span>Exams</span></a>
         <a href="battle.html" class="nav-link"><i class="ri-sword-line"></i><span>Battle</span></a>
-        <a href="chat.html" class="nav-link"><i class="ri-chat-3-line"></i><span>Chat</span></a>
-        <a href="profile.html" class="nav-link"><i class="ri-user-line"></i><span>Profile</span></a>
     </nav>
 
+    <div id="imageModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;" onclick="this.style.display='none'">
+        <img id="modalImg" src="" style="max-width:90%; border-radius:20px;">
+    </div>
+
     <script type="module">
-        import { initApp } from './app.js';
-        
-        // App Load hote hi start karein
-        window.addEventListener('DOMContentLoaded', () => {
-            initApp();
-        });
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = { /* Aapki Config Yahan Rahegi */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const student = localStorage.getItem("studentName");
+
+        window.togglePanel = () => {
+            const panel = document.getElementById('activityPanel');
+            panel.classList.toggle('open');
+            document.getElementById('overlay-blur').style.display = panel.classList.contains('open') ? 'block' : 'none';
+        };
+
+        async function loadStudentAvatars() {
+            const scrollContainer = document.getElementById("studentScroll");
+            onSnapshot(collection(db, "students"), (snapshot) => {
+                scrollContainer.innerHTML = ""; 
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const name = docSnap.id;
+                    const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+                    const isOnline = data.isOnline === true;
+                    const card = document.createElement("div");
+                    card.className = "student-avatar-card";
+                    card.innerHTML = `<img src="${photo}" class="scroll-img ${isOnline ? 'online' : ''}"><p class="scroll-name">${name}</p>`;
+                    card.onclick = () => { document.getElementById('modalImg').src = photo; document.getElementById('imageModal').style.display = 'flex'; };
+                    scrollContainer.appendChild(card);
+                });
+            });
+        }
+        loadStudentAvatars();
     </script>
 </body>
 </html>
