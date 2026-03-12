@@ -15,44 +15,64 @@
         .status-box { background: var(--glass); padding: 15px; border-radius: 18px; margin-bottom: 25px; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
         #checkin-btn { width: 100%; padding: 18px; border: none; border-radius: 18px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 800; cursor: pointer; transition: 0.3s; }
         #checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .back-home { margin-top: 20px; display: inline-block; font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 700; }
     </style>
 </head>
 <body>
     <div class="att-container">
         <div class="loc-icon"><i class="ri-map-pin-user-fill"></i></div>
         <h2>Smart Attendance</h2>
-        <div id="status" class="status-box"><i class="ri-loader-4-line ri-spin"></i> Verifying Location...</div>
+        <p style="font-size: 13px; opacity: 0.6; margin-bottom: 25px;">Verified location check within premises.</p>
+        <div id="status" class="status-box"><i class="ri-loader-4-line ri-spin"></i> Checking Location...</div>
         <button id="checkin-btn" onclick="markAttendance()" disabled>MARK ATTENDANCE <i class="ri-fingerprint-line"></i></button>
+        <a href="index.html" class="back-home"><i class="ri-arrow-left-line"></i> Back to Dashboard</a>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         const firebaseConfig = { apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI", authDomain: "black-terminal-f2c91.firebaseapp.com", projectId: "black-terminal-f2c91", storageBucket: "black-terminal-f2c91.appspot.com", messagingSenderId: "552489994197", appId: "1:552489994197:web:7662331264c334ffbadf5c" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+        const INST_LAT = 21.940550; const INST_LON = 86.737409; const ALLOWED_RANGE = 0.05;
+        const statusBox = document.getElementById('status'); const btn = document.getElementById('checkin-btn');
         const student = localStorage.getItem('studentName');
-        const btn = document.getElementById('checkin-btn');
-        const statusBox = document.getElementById('status');
+
+        function initLocation() {
+            if (!student || student === "Guest") { statusBox.innerHTML = "⚠️ Update Name in Profile"; return; }
+            navigator.geolocation.getCurrentPosition(pos => {
+                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, INST_LAT, INST_LON);
+                if(dist <= ALLOWED_RANGE) { statusBox.style.color = "#22c55e"; statusBox.innerHTML = 'Verified: At Center'; btn.disabled = false; }
+                else { statusBox.style.color = "#ef4444"; statusBox.innerHTML = `Out of Range (${(dist*1000).toFixed(0)}m)`; }
+            }, e => statusBox.innerHTML = "⚠️ Enable GPS", { enableHighAccuracy: true });
+        }
+        function calculateDistance(la1, lo1, la2, lo2) { const R = 6371; const dLa = (la2-la1)*Math.PI/180; const dLo = (lo2-lo1)*Math.PI/180; const a = Math.sin(dLa/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2; return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 
         window.markAttendance = async () => {
             btn.disabled = true; btn.innerHTML = 'Processing...';
-            const tStr = new Date().toISOString().split('T')[0];
+            const t = new Date(); const tStr = t.toISOString().split('T')[0];
             try {
-                const sRef = doc(db, "students", student);
-                const attRef = doc(db, "attendance", `${student}_${tStr}`);
-                
-                // Attendance Record + XP + Streak
-                await setDoc(attRef, { studentName: student, date: tStr, timestamp: serverTimestamp() });
-                await updateDoc(sRef, { xp: increment(100), lastAttendanceDate: tStr });
-                await addDoc(collection(db, "shoutouts"), {
-                    user: "SYSTEM", text: `✨ ${student} marked attendance & earned 100 XP!`,
-                    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=system", time: Date.now()
+                const sRef = doc(db, "students", student); const sSnap = await getDoc(sRef);
+                let newStreak = 1;
+                if(sSnap.exists()){
+                    const d = sSnap.data(); const last = d.lastAttendanceDate;
+                    if(last){
+                        const lDate = new Date(last); const yest = new Date(); yest.setDate(t.getDate()-1);
+                        if(lDate.toDateString() === yest.toDateString()) newStreak = (d.streak || 0) + 1;
+                        else if(lDate.toDateString() === t.toDateString()) newStreak = d.streak;
+                    }
+                }
+                // Updated setDoc with userName for profile sync
+                await setDoc(doc(db, "attendance", `${student}_${tStr}`), { 
+                    studentName: student, 
+                    userName: student, 
+                    date: tStr, 
+                    timestamp: serverTimestamp() 
                 });
-                location.href = "index.html";
-            } catch(e) { alert("Error!"); btn.disabled = false; }
+                await updateDoc(sRef, { streak: newStreak, lastAttendanceDate: tStr });
+                statusBox.innerHTML = "✅ Success!"; setTimeout(() => location.href="index.html", 1500);
+            } catch (e) { alert("Error!"); btn.disabled = false; }
         };
-        // (Add location logic here as before)
+        window.onload = initLocation;
     </script>
 </body>
 </html>
