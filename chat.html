@@ -54,9 +54,15 @@
     window.publishPost = async () => {
         const input = document.getElementById("postInput");
         if(!input.value.trim()) return;
+        
+        let photo = "https://api.dicebear.com/7.x/adventurer/svg?seed=" + student;
+        try {
+            const userDoc = await getDoc(doc(db, "students", student));
+            if(userDoc.exists() && userDoc.data().photo) photo = userDoc.data().photo;
+        } catch(e) {}
+
         await addDoc(collection(db, "posts"), {
-            user: student, userPhoto: "https://api.dicebear.com/7.x/adventurer/svg?seed=" + student, 
-            content: input.value, timestamp: serverTimestamp()
+            user: student, userPhoto: photo, content: input.value, timestamp: serverTimestamp()
         });
         input.value = "";
     };
@@ -90,11 +96,6 @@
             const postId = postDoc.id;
             const postDate = p.timestamp?.toDate();
 
-            if (postDate && (new Date() - postDate) / 3600000 > 48) {
-                deleteDoc(doc(db, "posts", postId));
-                return;
-            }
-
             const card = document.createElement('div');
             card.className = 'feed-card';
             card.innerHTML = `
@@ -102,7 +103,7 @@
                     <img src="${p.userPhoto}" class="feed-avatar">
                     <div style="display:flex; flex-direction:column;">
                         <div style="font-weight:800; font-size:14px;">${p.user}</div>
-                        <div class="ts">${postDate ? Math.floor((new Date()-postDate)/60000) + "m ago" : "Just now"}</div>
+                        <div class="ts">Just now</div>
                     </div>
                 </div>
                 <div style="font-size:14px; margin-bottom:10px;">${p.content}</div>
