@@ -1,25 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Elite Feed</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        body { background: #020617; color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
-        .post-box { background: #0f172a; padding: 20px; border-radius: 20px; border: 1px solid #1e293b; margin-bottom: 20px; }
-        textarea { width: 100%; background: transparent; color: white; border: none; height: 60px; outline: none; font-size: 14px; }
-        button { width: 100%; padding: 12px; background: #06b6d4; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; color: white; margin-top: 10px; }
-        .feed-card { background: #1e293b; padding: 16px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #334155; }
-        .feed-user { font-weight: 800; color: #06b6d4; font-size: 12px; }
-        .feed-text { margin: 8px 0; font-size: 14px; }
+        :root { --bg: #020617; --accent: #06b6d4; --glass: rgba(255, 255, 255, 0.05); }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
+        
+        .post-box { margin: 20px; background: var(--glass); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        textarea { width: 100%; background: transparent; border: none; color: white; height: 60px; outline: none; resize: none; }
+        .post-btn { width: 100%; background: var(--accent); border: none; padding: 10px; border-radius: 12px; font-weight: 800; cursor: pointer; color: white; }
+        
+        .feed-card { background: var(--glass); border-radius: 20px; padding: 16px; margin: 15px 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .feed-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .feed-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
+        .action-bar { display: flex; gap: 20px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
+        .action-btn { color: #94a3b8; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     </style>
 </head>
 <body>
 
 <div class="post-box">
     <textarea id="postInput" placeholder="What's on your mind, Elite?"></textarea>
-    <button onclick="publishPost()">POST TO FEED</button>
+    <button class="post-btn" onclick="publishPost()">POST TO FEED</button>
 </div>
 
 <div id="liveFeedContainer"></div>
+
+
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -36,38 +45,50 @@
     
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const student = localStorage.getItem("studentName") || "Elite User";
 
-    // 1. Post Logic
     window.publishPost = async () => {
         const input = document.getElementById("postInput");
-        if(!input.value.trim()) return alert("Kuch toh likho!");
-        
-        try {
-            await addDoc(collection(db, "posts"), {
-                text: input.value,
-                user: "Elite User",
-                timestamp: serverTimestamp()
-            });
-            input.value = "";
-        } catch (e) {
-            console.error("Error:", e);
-            alert("Database Error! Console check karein.");
-        }
+        if(!input.value.trim()) return;
+
+        // Dynamic profile pic (DiceBear avatar with unique seed)
+        const photo = "https://api.dicebear.com/7.x/avataaars/svg?seed=" + student;
+
+        await addDoc(collection(db, "posts"), {
+            user: student,
+            content: input.value,
+            userPhoto: photo,
+            timestamp: serverTimestamp()
+        });
+        input.value = "";
     };
 
-    // 2. Feed Logic
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         const feed = document.getElementById("liveFeedContainer");
         feed.innerHTML = "";
+        const now = Date.now();
+        
         snapshot.forEach((doc) => {
             const p = doc.data();
-            feed.innerHTML += `
-                <div class="feed-card">
-                    <div class="feed-user">${p.user}</div>
-                    <div class="feed-text">${p.text}</div>
-                </div>
-            `;
+            const postTime = p.timestamp?.toMillis() || Date.now();
+            
+            // 48-Hour Auto-Filter Logic
+            if ((now - postTime) < 172800000) {
+                feed.innerHTML += `
+                    <div class="feed-card">
+                        <div class="feed-header">
+                            <img src="${p.userPhoto}" class="feed-avatar">
+                            <div><div style="font-weight:800;">${p.user}</div><div style="font-size:9px; opacity:0.6;">Just now</div></div>
+                        </div>
+                        <div style="font-size:14px; margin-bottom:10px;">${p.content}</div>
+                        <div class="action-bar">
+                            <div class="action-btn" onclick="alert('Liked!')"><i class="ri-heart-line"></i> Like</div>
+                            <div class="action-btn" onclick="alert('Comment!')"><i class="ri-chat-3-line"></i> Comment</div>
+                        </div>
+                    </div>
+                `;
+            }
         });
     });
 </script>
