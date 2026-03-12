@@ -1,184 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Student Chat</title>
-
-<style>
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-margin:0;
-padding:0;
-overflow:hidden;
-}
-
-/* TOP BAR */
-.top{
-background:#0f172a;
-padding:16px;
-text-align:center;
-font-size:18px;
-font-weight:bold;
-position:fixed;
-top:0;
-width:100%;
-z-index:10;
-}
-
-/* CHAT AREA */
-#chatBox{
-position:fixed;
-top:60px;
-bottom:70px;
-left:0;
-right:0;
-overflow-y:auto;
-padding:12px;
-}
-
-/* MESSAGE */
-.msg{
-background:#111827;
-padding:12px;
-margin:8px 4px;
-border-radius:14px;
-text-align:left;
-max-width:85%;
-}
-
-.name{
-color:#22c55e;
-font-weight:bold;
-font-size:14px;
-}
-
-/* SEND BOX */
-.sendBox{
-position:fixed;
-bottom:0;
-left:0;
-width:100%;
-background:#0f172a;
-padding:10px;
-display:flex;
-gap:8px;
-box-shadow:0 -4px 20px rgba(0,0,0,0.6);
-}
-
-.sendBox input{
-flex:1;
-padding:14px;
-border:none;
-border-radius:12px;
-font-size:16px;
-outline:none;
-}
-
-.sendBox button{
-padding:14px 18px;
-border:none;
-border-radius:12px;
-background:linear-gradient(45deg,#6366f1,#06b6d4);
-color:white;
-font-size:16px;
-font-weight:bold;
-}
-
-/* iPhone safe bottom */
-@supports (padding: max(0px)) {
-.sendBox{
-padding-bottom: max(10px, env(safe-area-inset-bottom));
-}
-}
-</style>
+    <meta charset="UTF-8">
+    <title>Elite Dashboard</title>
+    <style>
+        body { background: #020617; color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 50px; }
+        .label-tag { font-size: 10px; font-weight: 800; color: #06b6d4; text-transform: uppercase; margin: 20px; }
+        .post-box { margin: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); }
+        textarea { width: 100%; background: transparent; border: none; color: white; height: 60px; outline: none; resize: none; font-size: 13px; }
+        button { width: 100%; background: #06b6d4; border: none; padding: 10px; border-radius: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+        .feed-container { padding: 0 20px; display: flex; flex-direction: column; gap: 15px; }
+        .feed-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 16px; backdrop-filter: blur(10px); }
+        .feed-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #06b6d4; }
+    </style>
 </head>
-
 <body>
 
-<div class="top">💬 Student Lounge</div>
+    <p class="label-tag">Elite News Feed</p>
+    
+    <div class="post-box">
+        <textarea id="postInput" placeholder="What's on your mind, Elite?"></textarea>
+        <button onclick="publishPost()">Post to Feed</button>
+    </div>
 
-<div id="chatBox"></div>
+    <div id="liveFeedContainer" class="feed-container"></div>
 
-<div class="sendBox">
-<input id="msg" placeholder="Type message...">
-<button onclick="send()">➤</button>
-</div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script type="module">
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, getDocs, deleteDoc, doc } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const student = localStorage.getItem("studentName") || "Elite User";
 
-const firebaseConfig={
-apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-authDomain:"black-terminal-f2c91.firebaseapp.com",
-projectId:"black-terminal-f2c91",
-storageBucket:"black-terminal-f2c91.appspot.com",
-messagingSenderId:"552489994197",
-appId:"1:552489994197:web:7662331264c334ffbadf5c"
-};
+        // Post Publish Logic
+        window.publishPost = async () => {
+            const input = document.getElementById("postInput");
+            if(!input.value.trim()) return;
+            await addDoc(collection(db, "posts"), {
+                user: student,
+                content: input.value,
+                avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${student}`,
+                timestamp: serverTimestamp()
+            });
+            input.value = "";
+        };
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+        // Real-time Feed with 48-Hour Filter
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(20));
+        onSnapshot(q, (snapshot) => {
+            const feed = document.getElementById("liveFeedContainer");
+            feed.innerHTML = "";
+            const twoDaysInMs = 48 * 60 * 60 * 1000;
+            const now = Date.now();
 
-let student=localStorage.getItem("studentName")||"Student";
-let today=new Date().toDateString();
+            snapshot.forEach((doc) => {
+                const p = doc.data();
+                if (!p.timestamp) return;
 
-/* 🔥 DELETE OLD MSG DAILY */
-async function clearOld(){
-let snap=await getDocs(collection(db,"global_chat"));
-snap.forEach(async(d)=>{
-let data=d.data();
-if(data.date!=today){
-await deleteDoc(doc(db,"global_chat",d.id));
-}
-});
-}
-clearOld();
-
-/* SEND */
-window.send=async function(){
-let text=document.getElementById("msg").value.trim();
-if(!text) return;
-
-await addDoc(collection(db,"global_chat"),{
-name:student,
-msg:text,
-time:Date.now(),
-date:today
-});
-
-document.getElementById("msg").value="";
-};
-
-/* LIVE CHAT */
-const q=query(collection(db,"global_chat"),orderBy("time"));
-
-onSnapshot(q,(snap)=>{
-let html="";
-
-snap.forEach(d=>{
-let data=d.data();
-if(data.date!=today) return;
-
-html+=`
-<div class="msg">
-<span class="name">${data.name}</span><br>
-${data.msg}
-</div>`;
-});
-
-document.getElementById("chatBox").innerHTML=html;
-
-/* auto scroll smooth */
-setTimeout(()=>{
-document.getElementById("chatBox").scrollTop=999999;
-},100);
-});
-
-</script>
+                const postTime = p.timestamp.toDate().getTime();
+                // Check: Agar post 48 ghante se nayi hai, tabhi dikhayein
+                if (now - postTime < twoDaysInMs) {
+                    feed.innerHTML += `
+                        <div class="feed-card">
+                            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                                <img src="${p.avatar}" class="feed-avatar">
+                                <div>
+                                    <div style="font-size:12px; font-weight:800; color:#06b6d4;">${p.user}</div>
+                                    <div style="font-size:9px; opacity:0.5;">${p.timestamp.toDate().toLocaleTimeString()}</div>
+                                </div>
+                            </div>
+                            <div style="font-size:13px; color:#e2e8f0;">${p.content}</div>
+                        </div>
+                    `;
+                }
+            });
+        });
+    </script>
 </body>
 </html>
