@@ -4,28 +4,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root { --bg: #020617; --accent: #06b6d4; }
+        :root { --bg: #020617; --accent: #06b6d4; --card-bg: rgba(255, 255, 255, 0.05); }
         body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
-        .post-box { margin: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        textarea { width: 100%; background: transparent; color: white; border: none; height: 60px; outline: none; resize: none; }
-        button { width: 100%; background: var(--accent); border: none; padding: 12px; border-radius: 12px; font-weight: 800; color: white; cursor: pointer; }
-        .feed-card { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 16px; margin: 15px 20px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .post-box { margin: 20px; background: var(--card-bg); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        textarea { width: 100%; background: transparent; color: white; border: none; height: 50px; outline: none; resize: none; }
+        .post-btn { width: 100%; background: var(--accent); border: none; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; }
+        
+        .feed-card { background: var(--card-bg); border-radius: 20px; padding: 16px; margin: 15px 20px; border: 1px solid rgba(255,255,255,0.1); position: relative; }
         .feed-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .feed-avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; }
-        .action-bar { display: flex; gap: 20px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
-        .action-btn { color: #94a3b8; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; }
+        .feed-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); }
+        
+        .action-bar { display: flex; gap: 20px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; position: relative; }
+        .action-btn { color: #94a3b8; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 5px; }
+
+        /* FB REACTION PANEL */
+        .reaction-panel {
+            position: absolute; bottom: 40px; left: 0;
+            background: #1e293b; border-radius: 30px;
+            padding: 5px 15px; display: none;
+            gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 100; animation: popUp 0.3s ease;
+        }
+        @keyframes popUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .reaction-panel span { font-size: 22px; cursor: pointer; transition: transform 0.2s; }
+        .reaction-panel span:hover { transform: scale(1.4); }
+        .like-container:hover .reaction-panel { display: flex; }
+
+        /* Comments Styling */
+        .comment-section { margin-top: 15px; display: none; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 10px; }
+        .comment-input-area { display: flex; gap: 8px; margin-bottom: 10px; }
+        .comment-input-area input { flex: 1; background: rgba(255,255,255,0.1); border: none; border-radius: 20px; padding: 8px 15px; color: white; outline: none; }
+        .single-comment { background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 15px; margin-bottom: 5px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="post-box">
-    <textarea id="postInput" placeholder="What's on your mind, Elite?"></textarea>
-    <button onclick="publishPost()">POST TO FEED</button>
+    <textarea id="postInput" placeholder="What's on your mind?"></textarea>
+    <button class="post-btn" onclick="publishPost()">POST TO FEED</button>
 </div>
 
 <div id="liveFeedContainer"></div>
-
-
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -44,60 +64,91 @@
     const db = getFirestore(app);
     const student = localStorage.getItem("studentName") || "Elite User";
 
-    // 1. Post Logic (Fetch Real Profile Pic)
     window.publishPost = async () => {
         const input = document.getElementById("postInput");
         if(!input.value.trim()) return;
-        
-        let userPhoto = "https://api.dicebear.com/7.x/adventurer/svg?seed=" + student;
+        let photo = "https://api.dicebear.com/7.x/adventurer/svg?seed=" + student;
         try {
             const userDoc = await getDoc(doc(db, "students", student));
-            if(userDoc.exists() && userDoc.data().photo) userPhoto = userDoc.data().photo;
-        } catch(e) { console.log("Default pic used"); }
-
+            if(userDoc.exists() && userDoc.data().photo) photo = userDoc.data().photo;
+        } catch(e) {}
         await addDoc(collection(db, "posts"), {
-            user: student,
-            content: input.value,
-            userPhoto: userPhoto,
-            likes: 0,
-            timestamp: serverTimestamp()
+            user: student, userPhoto: photo, content: input.value, 
+            likes: 0, lastReaction: "👍", timestamp: serverTimestamp()
         });
         input.value = "";
     };
 
-    // 2. Interaction Logic
-    window.toggleLike = async (id) => await updateDoc(doc(db, "posts", id), { likes: increment(1) });
-
-    window.addComment = async (id) => {
-        const text = prompt("Comment likhein:");
-        if(!text) return;
-        await addDoc(collection(db, "posts", id, "comments"), {
-            user: student,
-            text: text,
-            timestamp: serverTimestamp()
+    window.addReaction = async (id, emoji) => {
+        await updateDoc(doc(db, "posts", id), { 
+            likes: increment(1),
+            lastReaction: emoji 
         });
     };
 
-    // 3. Render Logic
+    window.toggleCommentBox = (id) => {
+        const box = document.getElementById(`comment-box-${id}`);
+        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    };
+
+    window.submitComment = async (id) => {
+        const input = document.getElementById(`input-${id}`);
+        if(!input.value.trim()) return;
+        await addDoc(collection(db, "posts", id, "comments"), {
+            user: student, text: input.value, timestamp: serverTimestamp()
+        });
+        input.value = "";
+    };
+
     onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), (snap) => {
         const feed = document.getElementById("liveFeedContainer");
         feed.innerHTML = "";
-        snap.forEach((doc) => {
-            const p = doc.data();
-            if ((Date.now() - p.timestamp?.toMillis()) < 172800000) {
-                feed.innerHTML += `
-                    <div class="feed-card">
-                        <div class="feed-header">
-                            <img src="${p.userPhoto}" class="feed-avatar">
-                            <div><div style="font-weight:800;">${p.user}</div></div>
+        snap.forEach((postDoc) => {
+            const p = postDoc.data();
+            const postId = postDoc.id;
+            const card = document.createElement('div');
+            card.className = 'feed-card';
+            card.innerHTML = `
+                <div class="feed-header">
+                    <img src="${p.userPhoto}" class="feed-avatar">
+                    <div style="font-weight:800;">${p.user}</div>
+                </div>
+                <div style="font-size:14px;">${p.content}</div>
+                
+                <div class="action-bar">
+                    <div class="like-container">
+                        <div class="reaction-panel">
+                            <span onclick="addReaction('${postId}', '👍')">👍</span>
+                            <span onclick="addReaction('${postId}', '❤️')">❤️</span>
+                            <span onclick="addReaction('${postId}', '😂')">😂</span>
+                            <span onclick="addReaction('${postId}', '😮')">😮</span>
+                            <span onclick="addReaction('${postId}', '😢')">😢</span>
+                            <span onclick="addReaction('${postId}', '😡')">😡</span>
                         </div>
-                        <div style="font-size:14px; margin-bottom:10px;">${p.content}</div>
-                        <div class="action-bar">
-                            <div class="action-btn" onclick="toggleLike('${doc.id}')"><i class="ri-heart-line"></i> ${p.likes || 0}</div>
-                            <div class="action-btn" onclick="addComment('${doc.id}')"><i class="ri-chat-3-line"></i> Comment</div>
-                        </div>
-                    </div>`;
-            }
+                        <div class="action-btn"><i class="ri-thumb-up-line"></i> ${p.lastReaction || 'Like'} (${p.likes || 0})</div>
+                    </div>
+                    <div class="action-btn" onclick="toggleCommentBox('${postId}')"><i class="ri-chat-3-line"></i> Comment</div>
+                </div>
+
+                <div class="comment-section" id="comment-box-${postId}">
+                    <div class="comment-input-area">
+                        <input type="text" id="input-${postId}" placeholder="Write a comment...">
+                        <button onclick="submitComment('${postId}')" style="background:none; border:none; color:var(--accent); font-weight:bold;">Send</button>
+                    </div>
+                    <div id="list-${postId}"></div>
+                </div>`;
+            feed.appendChild(card);
+
+            onSnapshot(query(collection(db, "posts", postId, "comments"), orderBy("timestamp", "asc")), (cSnap) => {
+                const list = document.getElementById(`list-${postId}`);
+                if(list) {
+                    list.innerHTML = "";
+                    cSnap.forEach(cDoc => {
+                        const c = cDoc.data();
+                        list.innerHTML += `<div class="single-comment"><b>${c.user}</b>: ${c.text}</div>`;
+                    });
+                }
+            });
         });
     });
 </script>
