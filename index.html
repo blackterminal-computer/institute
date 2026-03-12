@@ -692,43 +692,51 @@ window.addEventListener("beforeunload", async () => {
             const r = all.findIndex(s=>s.id === student) + 1;
             if(r > 0) document.getElementById("instRank").innerText = "#" + r;
 
-            // --- Real-time Attendance & XP Sync Logic (OPTIMIZED TRIGGER) ---
-            const todayISO = new Date().toISOString().split('T')[0];
-            onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
-                const pill = document.getElementById("att-pill");
-                if (attSnap.exists()) {
-                    pill.classList.remove("pulse"); pill.classList.add("done");
-                    document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
-                    document.getElementById("att-pill-text").innerText = "Present";
-                    pill.href = "javascript:void(0)"; 
+            // --- Fixed Attendance & XP Sync Logic ---
+const todayISO = new Date().toISOString().split('T')[0];
 
-                    const hasRewarded = localStorage.getItem(`att_reward_${todayISO}`);
-                    if (!hasRewarded && student !== "Guest") {
-                        const userRef = doc(db, "students", student);
-                        const userSnap = await getDoc(userRef);
-                        const userPhoto = userSnap.exists() ? userSnap.data().photo : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`;
+onSnapshot(doc(db, "attendance", `${student}_${todayISO}`), async (attSnap) => {
+    const pill = document.getElementById("att-pill");
+    
+    if (attSnap.exists()) {
+        // UI Update
+        pill.classList.remove("pulse"); pill.classList.add("done");
+        document.getElementById("att-pill-icon").className = "ri-checkbox-circle-fill";
+        document.getElementById("att-pill-text").innerText = "Present";
+        pill.href = "javascript:void(0)"; 
 
-                        await updateDoc(userRef, {
-                            xp: increment(100),
-                            attendanceCount: increment(1)
-                        });
+        // SERVER-SIDE CHECK (Sabse important part)
+        const userRef = doc(db, "students", student);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
 
-                        await setDoc(doc(db, "interactions", "shoutout"), {
-                            user: "SUCCESS",
-                            text: `✨ ${student} marked attendance & earned 100 XP!`,
-                            avatar: userPhoto,
-                            time: Date.now()
-                        });
-
-                        localStorage.setItem(`att_reward_${todayISO}`, "true");
-                    }
-                } else {
-                    pill.classList.add("pulse"); pill.classList.remove("done");
-                    document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
-                    document.getElementById("att-pill-text").innerText = "Attendance";
-                    pill.href = "attendence.html";
-                }
+        // Check karein ki kya Firestore mein lastRewardDate aaj ki hai?
+        if (userData.lastRewardDate !== todayISO && student !== "Guest") {
+            
+            // Ek saath XP update karein aur aaj ki date save kar dein
+            await updateDoc(userRef, {
+                xp: increment(100),
+                attendanceCount: increment(1),
+                lastRewardDate: todayISO // Ye refresh par dobara XP milne se rokega
             });
+
+            // Global signal bhejien
+            await setDoc(doc(db, "interactions", "shoutout"), {
+                user: "SUCCESS",
+                text: `✨ ${student} marked attendance & earned 100 XP!`,
+                avatar: userData.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student}`,
+                time: Date.now()
+            });
+        }
+    } else {
+        // Attendance nahi lagi hai toh normal UI dikhayein
+        pill.classList.add("pulse"); pill.classList.remove("done");
+        document.getElementById("att-pill-icon").className = "ri-fingerprint-fill";
+        document.getElementById("att-pill-text").innerText = "Attendance";
+        pill.href = "attendence.html";
+    }
+});
+
             // Live Online Users Counter
 onSnapshot(query(collection(db, "students")), (snapshot) => {
     let onlineCount = 0;
