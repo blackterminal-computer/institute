@@ -752,13 +752,11 @@ onSnapshot(query(collection(db, "students")), (snapshot) => {
         async function loadStudentAvatars() {
     const scrollContainer = document.getElementById("studentScroll");
     
-    // Real-time listener sabhi students ki photos ke liye
     onSnapshot(collection(db, "students"), (snapshot) => {
-        scrollContainer.innerHTML = ""; // Clear purana data
-        
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const name = doc.id;
+        scrollContainer.innerHTML = ""; 
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const name = docSnap.id;
             const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
             const isOnline = data.isOnline === true;
 
@@ -771,10 +769,23 @@ onSnapshot(query(collection(db, "students")), (snapshot) => {
             scrollContainer.appendChild(card);
         });
     });
+
+    // --- Auto Scroll Logic ---
+    let scrollAmount = 0;
+    setInterval(() => {
+        if (scrollContainer) {
+            scrollAmount += 1; // Speed adjust karne ke liye number badal sakte hain
+            scrollContainer.scrollLeft += 1;
+
+            // Agar end tak pahunch jaye toh wapas 0 par
+            if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth - scrollContainer.clientWidth)) {
+                scrollContainer.scrollLeft = 0;
+                scrollAmount = 0;
+            }
+        }
+    }, 30); // 30ms mein 1px move hoga (smooth motion)
 }
 
-// Is function ko call karna mat bhuliyega
-loadStudentAvatars();
 
         syncData();
     </script>
