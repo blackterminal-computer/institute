@@ -3,71 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Admin Control Center</title>
+    <title>BT | Admin Elite Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .admin-card { width: 100%; max-width: 500px; background: rgba(255,255,255,0.03); padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
-        h2 { font-size: 18px; color: var(--accent); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
-        input, textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box; }
-        button { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.3s; }
-        button:active { transform: scale(0.98); }
+        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
+        .wrapper { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .admin-card { background: rgba(255,255,255,0.03); padding: 25px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); }
+        h2 { font-size: 14px; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        
+        input, textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box; }
+        button { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; }
+        
+        /* Preview Styling */
+        .preview-box { border: 2px dashed rgba(255,255,255,0.1); padding: 15px; border-radius: 24px; position: sticky; top: 20px; }
+        .demo-card { background: #0f172a; padding: 20px; border-radius: 20px; border-left: 4px solid var(--accent); }
+        .demo-vid { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; margin-top: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #444; }
+
+        @media (max-width: 768px) { .wrapper { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
+<div class="wrapper">
     <div class="admin-card">
-        <h2><i class="ri-terminal-window-line"></i> Update Daily Log</h2>
+        <h2><i class="ri-settings-4-fill"></i> Terminal Control</h2>
+        <input type="text" id="wordInput" placeholder="Topic Title..." oninput="updatePreview()">
+        <textarea id="descInput" placeholder="Explain the concept..." rows="5" oninput="updatePreview()"></textarea>
+        <input type="url" id="videoInput" placeholder="YouTube URL (Shorts/Video)" oninput="updatePreview()">
         
-        <input type="text" id="wordInput" placeholder="Enter Topic / Word">
-        <textarea id="descInput" placeholder="Enter detailed explanation..." rows="5"></textarea>
-        <input type="url" id="videoInput" placeholder="Enter YouTube Video URL (Optional)">
-        
-        <button id="updateBtn">DEPLOY TO TERMINAL</button>
+        <button id="updateBtn"><i class="ri-rocket-2-fill"></i> DEPLOY TO TERMINAL</button>
+        <p id="status" style="font-size: 10px; margin-top: 10px; text-align: center; opacity: 0.5;">Status: Idle</p>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <div class="preview-box">
+        <h2 style="color: #64748b;"><i class="ri-eye-fill"></i> Live Preview</h2>
+        <div class="demo-card">
+            <h3 id="preTitle" style="margin:0; font-size: 16px;">Topic Title</h3>
+            <div style="height:1px; background:rgba(255,255,255,0.1); margin:10px 0;"></div>
+            <p id="preDesc" style="font-size: 12px; opacity:0.7;">Description will appear here...</p>
+            <div id="preVid" class="demo-vid">Video Preview Area</div>
+        </div>
+    </div>
+</div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-            authDomain: "black-terminal-f2c91.firebaseapp.com",
-            projectId: "black-terminal-f2c91",
-            storageBucket: "black-terminal-f2c91.appspot.com",
-            messagingSenderId: "552489994197",
-            appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.appspot.com",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
 
-        document.getElementById('updateBtn').onclick = async () => {
-            const word = document.getElementById('wordInput').value.trim();
-            const desc = document.getElementById('descInput').value.trim();
-            const video = document.getElementById('videoInput').value.trim();
-            const btn = document.getElementById('updateBtn');
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-            if(!word || !desc) return alert("Word aur Description fill karein!");
+    // Global updatePreview function
+    window.updatePreview = () => {
+        const title = document.getElementById('wordInput').value || "Topic Title";
+        const desc = document.getElementById('descInput').value || "Description will appear here...";
+        const vid = document.getElementById('videoInput').value;
 
-            btn.innerText = "DEPLOYING...";
-            try {
-                // Firestore mein data save ho raha hai
-                await setDoc(doc(db, "content", "dailyWord"), {
-                    word: word,
-                    description: desc,
-                    video: video, // Video URL yahan save hoga
-                    updatedAt: Date.now()
-                });
-                alert("Terminal Successfully Updated!");
-                // Inputs clear kar dein
-                document.getElementById('wordInput').value = "";
-                document.getElementById('descInput').value = "";
-                document.getElementById('videoInput').value = "";
-            } catch (e) { alert("Error: " + e.message); }
-            btn.innerText = "DEPLOY TO TERMINAL";
-        };
-    </script>
+        document.getElementById('preTitle').innerText = title;
+        document.getElementById('preDesc').innerText = desc;
+
+        const vidBox = document.getElementById('preVid');
+        if(vid) {
+            vidBox.innerHTML = `<i class="ri-video-on-fill"></i> Video Link Detected`;
+            vidBox.style.color = "var(--accent)";
+        } else {
+            vidBox.innerHTML = "Video Preview Area";
+            vidBox.style.color = "#444";
+        }
+    };
+
+    document.getElementById('updateBtn').onclick = async () => {
+        const word = document.getElementById('wordInput').value.trim();
+        const desc = document.getElementById('descInput').value.trim();
+        const video = document.getElementById('videoInput').value.trim();
+        const status = document.getElementById('status');
+
+        if(!word || !desc) return alert("Fill mandatory fields!");
+
+        status.innerText = "Status: Deploying...";
+        try {
+            await setDoc(doc(db, "content", "dailyWord"), {
+                word, description: desc, video, updatedAt: Date.now()
+            });
+            status.innerText = "Status: Successfully Synced!";
+            alert("Terminal Updated!");
+        } catch (e) {
+            status.innerText = "Status: Sync Failed!";
+            alert(e.message);
+        }
+    };
+</script>
 </body>
 </html>
