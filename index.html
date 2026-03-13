@@ -218,11 +218,24 @@
         <div class="marquee-content" id="marqueeMsg">Syncing with terminal...</div>
     </div>
 
-    <div id="wordDisplaySection" style="margin: 20px; display: none; animation: slideUp 0.8s ease;">
-        <p class="label-tag" style="margin-left: 0;">
-            <i class="ri-terminal-box-line" style="display: inline; font-size: 12px; color: var(--accent);"></i> 
-            DAILY_LEARNING_LOG
-        </p>
+  <p class="label-tag" style="margin-left: 20px; margin-top: 20px;">
+    <i class="ri-terminal-box-line"></i> DAILY_LEARNING_LOG
+</p>
+
+<div class="word-scroll-container" id="wordDisplaySection" style="display: none; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 0 20px 20px 20px; gap: 15px;">
+    <div class="word-slide" style="min-width: 90%; scroll-snap-align: start;">
+        <div class="card" style="background: var(--glass); border: 1px solid var(--glass-border); border-left: 4px solid var(--accent); border-radius: 20px; padding: 20px; backdrop-filter: blur(10px);">
+            <h2 id="wordText" style="font-family: 'Orbitron'; font-size: 18px; color: #fff; margin: 0; text-transform: uppercase;">---</h2>
+            <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 12px 0;"></div>
+            <p id="wordDesc" style="font-size: 13px; opacity: 0.8; line-height: 1.6; color: #cbd5e1; font-weight: 500;"></p>
+            
+            <div id="videoContainer" style="display:none; margin-top: 15px;">
+                <iframe id="videoPlayer" class="vid-frame" src="" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 12px; border: none; background: #000;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
         
         <div class="card" style="
             background: var(--glass); 
@@ -389,6 +402,9 @@
 .student-avatar-card:active .scroll-img {
     transform: scale(0.9);
 }
+/* Scrollbar hide for webkit */
+.word-scroll-container::-webkit-scrollbar { display: none; }
+.vid-frame { width: 100%; aspect-ratio: 16/9; border-radius: 12px; border: none; background: #000; }
 
 
 </style>
@@ -594,6 +610,30 @@ window.addEventListener("beforeunload", async () => {
                 }
             });
         }
+        
+        
+        // Daily Word + Video Sync
+onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
+    if (snap.exists()) {
+        const data = snap.data();
+        document.getElementById('wordDisplaySection').style.display = 'flex';
+        document.getElementById('wordText').innerText = data.word;
+        document.getElementById('wordDesc').innerText = data.description;
+        
+        const vidContainer = document.getElementById('videoContainer');
+        if(data.video && data.video.trim() !== "") {
+            vidContainer.style.display = 'block';
+            let vidUrl = data.video;
+            // YouTube link converter
+            if(vidUrl.includes("youtu.be/")) vidUrl = vidUrl.replace("youtu.be/", "youtube.com/embed/");
+            if(vidUrl.includes("watch?v=")) vidUrl = vidUrl.replace("watch?v=", "embed/");
+            document.getElementById('videoPlayer').src = vidUrl;
+        } else {
+            vidContainer.style.display = 'none';
+        }
+    }
+});
+
 
         setInterval(() => {
             if(totalSlides > 1) {
