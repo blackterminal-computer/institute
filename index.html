@@ -24,27 +24,6 @@
             overflow-x: hidden;
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
         }
-        
-        
-    .word-scroll-container {
-        display: flex; gap: 15px; padding: 0 20px;
-        overflow-x: auto; scroll-snap-type: x mandatory;
-        scrollbar-width: none; margin-bottom: 20px;
-    }
-    .word-scroll-container::-webkit-scrollbar { display: none; }
-    .word-slide { min-width: 90%; scroll-snap-align: start; }
-    
-    .card { 
-        background: var(--glass); border: 1px solid var(--glass-border); 
-        padding: 20px; border-radius: 24px; color: white;
-    }
-    .vid-frame { 
-        width: 100%; aspect-ratio: 16/9; border-radius: 12px; 
-        border: none; margin-top: 15px; background: #000;
-    }
-    .label-tag { padding-left: 20px; font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1.2px; margin-bottom: 10px; text-transform: uppercase; }
-
-
 
         /* --- Interaction UI Styles --- */
         #shoutoutBubble {
@@ -244,22 +223,22 @@
             <i class="ri-terminal-box-line" style="display: inline; font-size: 12px; color: var(--accent);"></i> 
             DAILY_LEARNING_LOG
         </p>
-         <div class="word-scroll-container" id="wordDisplaySection" style="display: none;">
-    <div class="word-slide">
-        <div class="card" style="border-left: 4px solid var(--accent);">
-            <h2 id="wordText" style="font-family:'Orbitron'; font-size: 16px; color: var(--accent);">---</h2>
+        
+        <div class="card" style="
+            background: var(--glass); 
+            border: 1px solid var(--glass-border); 
+            border-left: 4px solid var(--accent); 
+            border-radius: 20px; 
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        ">
+            <h2 id="wordText" style="font-family: 'Orbitron'; font-size: 18px; color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 1px;">LOADING...</h2>
             <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 12px 0;"></div>
-            <p id="wordDesc" style="font-size: 13px; opacity: 0.8; line-height: 1.6;"></p>
-            
-            <div id="videoContainer" style="display:none;">
-                <iframe id="videoPlayer" class="vid-frame" src="" allowfullscreen></iframe>
-            </div>
+            <p id="wordDesc" style="font-size: 13px; opacity: 0.8; line-height: 1.6; color: #cbd5e1; font-weight: 500; margin: 0;">
+                Fetching definition from terminal...
+            </p>
         </div>
     </div>
-</div>
-
-        
-       
 
     <div class="xp-card" style="margin-bottom: 15px; padding: 12px; background: rgba(6,182,212,0.05); border-color: rgba(6,182,212,0.2);">
         <div style="display:flex; gap:10px;">
@@ -495,27 +474,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        // Daily Word + Video Sync
-        onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                document.getElementById('wordDisplaySection').style.display = 'flex';
-                document.getElementById('wordText').innerText = data.word;
-                document.getElementById('wordDesc').innerText = data.description;
-                
-                const vidContainer = document.getElementById('videoContainer');
-                if(data.video && data.video.trim() !== "") {
-                    vidContainer.style.display = 'block';
-                    let vidUrl = data.video;
-                    // Auto-convert YouTube links
-                    if(vidUrl.includes("youtu.be/")) vidUrl = vidUrl.replace("youtu.be/", "youtube.com/embed/");
-                    if(vidUrl.includes("watch?v=")) vidUrl = vidUrl.replace("watch?v=", "embed/");
-                    document.getElementById('videoPlayer').src = vidUrl;
-                } else {
-                    vidContainer.style.display = 'none';
-                }
-            }
-        });
+        
         const student = localStorage.getItem("studentName");
         // User online status update
 const userRef = doc(db, "students", student);
