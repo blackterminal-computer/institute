@@ -3,90 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Admin Dashboard</title>
+    <title>BT | Admin Word Control</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; }
-        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
-        .admin-card { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        input, textarea, select { width: 100%; background: #0b0f1a; border: 1px solid #334155; padding: 12px; border-radius: 10px; color: white; margin-bottom: 10px; box-sizing: border-box; }
-        button { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 800; cursor: pointer; }
-        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #1e293b; }
+        body { 
+            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; 
+            margin: 0; padding: 20px; display: flex; justify-content: center; 
+        }
+        .admin-card {
+            width: 100%; max-width: 500px; background: rgba(255,255,255,0.03); 
+            padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        h2 { font-size: 18px; color: var(--accent); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
+        input, textarea {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box;
+        }
+        button {
+            width: 100%; background: var(--primary); color: white; border: none;
+            padding: 15px; border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.3s;
+        }
+        button:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
 
     <div class="admin-card">
-        <h2><i class="ri-add-circle-line"></i> New Learning Log</h2>
-        <select id="typeSelect"><option value="text">Text Log</option><option value="video">Video Log</option></select>
-        <input type="text" id="titleInput" placeholder="Topic Title">
-        <textarea id="contentInput" placeholder="Content text OR Video URL" rows="3"></textarea>
-        <button id="deployBtn">DEPLOY TO TERMINAL</button>
-    </div>
-
-    <div class="admin-card">
-        <h2><i class="ri-delete-bin-line"></i> Active Logs</h2>
-        <div id="logsContainer"></div>
+        <h2><i class="ri-terminal-window-line"></i> Update Daily Log</h2>
+        <input type="text" id="wordInput" placeholder="Enter Topic / Word">
+        <textarea id="descInput" placeholder="Enter detailed explanation..." rows="5"></textarea>
+        <button id="updateBtn">DEPLOY TO TERMINAL</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- PASTE YOUR CONFIG HERE ---
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Deploy Log
-        document.getElementById('deployBtn').onclick = async () => {
-            const btn = document.getElementById('deployBtn');
-            const type = document.getElementById('typeSelect').value;
-            const title = document.getElementById('titleInput').value.trim();
-            const content = document.getElementById('contentInput').value.trim();
-            
-            if(!title || !content) return alert("Fields empty hain!");
+        document.getElementById('updateBtn').onclick = async () => {
+            const word = document.getElementById('wordInput').value.trim();
+            const desc = document.getElementById('descInput').value.trim();
+            const btn = document.getElementById('updateBtn');
 
-            btn.innerText = "DEPLOYING...";
+            if(!word || !desc) return alert("Fields are empty!");
+
+            btn.innerText = "SYNCING...";
             try {
-                await addDoc(collection(db, "daily_learning"), { 
-                    type, title, content, createdAt: serverTimestamp() 
+                await setDoc(doc(db, "content", "dailyWord"), {
+                    word: word,
+                    description: desc,
+                    updatedAt: Date.now()
                 });
-                alert("Deployed Successfully!");
-                document.getElementById('titleInput').value = "";
-                document.getElementById('contentInput').value = "";
-            } catch (e) {
-                alert("Error: " + e.message);
-                console.error(e);
-            }
+                alert("Homepage Updated!");
+                document.getElementById('wordInput').value = "";
+                document.getElementById('descInput').value = "";
+            } catch (e) { alert("Error: " + e.message); }
             btn.innerText = "DEPLOY TO TERMINAL";
-        };
-
-        // Load and Delete
-        onSnapshot(collection(db, "daily_learning"), (snap) => {
-            const container = document.getElementById('logsContainer');
-            container.innerHTML = "";
-            snap.forEach((docSnap) => {
-                const div = document.createElement('div');
-                div.className = 'log-item';
-                div.innerHTML = `<span>${docSnap.data().title}</span> 
-                                 <button style="width:auto; background:red" onclick="deleteLog('${docSnap.id}')">Delete</button>`;
-                container.appendChild(div);
-            });
-        });
-
-        window.deleteLog = async (id) => { 
-            if(confirm("Delete karna hai?")) {
-                await deleteDoc(doc(db, "daily_learning", id)); 
-            }
         };
     </script>
 </body>
