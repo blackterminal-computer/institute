@@ -676,9 +676,39 @@ window.addEventListener("beforeunload", async () => {
                 if(uc) { uc.classList.remove("locked"); document.getElementById("unitIcon").className = "ri-shield-flash-line"; document.getElementById("unitMsg").innerText = "Unlocked"; }
             }
         }
+// --- Yahan Paste Karein (syncData ke upar) ---
+function loadLearningLogs() {
+    const q = query(collection(db, "daily_learning"), orderBy("createdAt", "desc"));
+    
+    onSnapshot(q, (snapshot) => {
+        const container = document.getElementById('learningCarousel');
+        if (!container) return;
+        container.innerHTML = ""; 
+        
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const card = document.createElement('div');
+            card.className = 'dynamic-card';
+            
+            if(data.type === 'video') {
+                card.innerHTML = `
+                    <video src="${data.content}" controls playsinline style="width:100%; border-radius:12px;"></video>
+                    <h4 style="margin-top:12px; color:var(--accent); font-size: 14px;">${data.title}</h4>
+                `;
+            } else {
+                card.innerHTML = `
+                    <h2 style="font-size: 16px; color: #fff;">${data.title}</h2>
+                    <p style="font-size: 13px; opacity: 0.7; margin-top:8px;">${data.content}</p>
+                `;
+            }
+            container.appendChild(card);
+        });
+    });
+}
 
         async function syncData() {
             syncSlider();
+            loadLearningLogs();
 
             // Word of the Day Listener (New Added)
             onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
