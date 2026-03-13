@@ -474,7 +474,27 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
+        // Daily Word + Video Sync
+        onSnapshot(doc(db, "content", "dailyWord"), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                document.getElementById('wordDisplaySection').style.display = 'flex';
+                document.getElementById('wordText').innerText = data.word;
+                document.getElementById('wordDesc').innerText = data.description;
+                
+                const vidContainer = document.getElementById('videoContainer');
+                if(data.video && data.video.trim() !== "") {
+                    vidContainer.style.display = 'block';
+                    let vidUrl = data.video;
+                    // Auto-convert YouTube links
+                    if(vidUrl.includes("youtu.be/")) vidUrl = vidUrl.replace("youtu.be/", "youtube.com/embed/");
+                    if(vidUrl.includes("watch?v=")) vidUrl = vidUrl.replace("watch?v=", "embed/");
+                    document.getElementById('videoPlayer').src = vidUrl;
+                } else {
+                    vidContainer.style.display = 'none';
+                }
+            }
+        });
         const student = localStorage.getItem("studentName");
         // User online status update
 const userRef = doc(db, "students", student);
