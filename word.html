@@ -31,22 +31,46 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = { /* Apna Config Yahan Rakhein */ };
-        const db = getFirestore(initializeApp(firebaseConfig));
-
-        // Deploy New Log
-        document.getElementById('deployBtn').onclick = async () => {
-            const type = document.getElementById('typeSelect').value;
-            const title = document.getElementById('titleInput').value;
-            const content = document.getElementById('contentInput').value;
-            
-            await addDoc(collection(db, "daily_learning"), { type, title, content, createdAt: Date.now() });
-            alert("Deployed!");
+        // --- PASTE YOUR CONFIG HERE ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
         };
 
-        // Load and Delete Logs
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Deploy Log
+        document.getElementById('deployBtn').onclick = async () => {
+            const btn = document.getElementById('deployBtn');
+            const type = document.getElementById('typeSelect').value;
+            const title = document.getElementById('titleInput').value.trim();
+            const content = document.getElementById('contentInput').value.trim();
+            
+            if(!title || !content) return alert("Fields empty hain!");
+
+            btn.innerText = "DEPLOYING...";
+            try {
+                await addDoc(collection(db, "daily_learning"), { 
+                    type, title, content, createdAt: serverTimestamp() 
+                });
+                alert("Deployed Successfully!");
+                document.getElementById('titleInput').value = "";
+                document.getElementById('contentInput').value = "";
+            } catch (e) {
+                alert("Error: " + e.message);
+                console.error(e);
+            }
+            btn.innerText = "DEPLOY TO TERMINAL";
+        };
+
+        // Load and Delete
         onSnapshot(collection(db, "daily_learning"), (snap) => {
             const container = document.getElementById('logsContainer');
             container.innerHTML = "";
@@ -59,7 +83,11 @@
             });
         });
 
-        window.deleteLog = async (id) => { await deleteDoc(doc(db, "daily_learning", id)); };
+        window.deleteLog = async (id) => { 
+            if(confirm("Delete karna hai?")) {
+                await deleteDoc(doc(db, "daily_learning", id)); 
+            }
+        };
     </script>
 </body>
 </html>
