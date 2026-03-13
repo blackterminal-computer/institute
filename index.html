@@ -838,27 +838,39 @@ onSnapshot(query(collection(db, "students")), (snapshot) => {
         loadCache();
                 // Yahan paste karein (syncData se upar)
         async function loadStudentAvatars() {
-            const scrollContainer = document.getElementById("studentScroll");
-            onSnapshot(collection(db, "students"), (snapshot) => {
-                scrollContainer.innerHTML = ""; 
-                snapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const name = docSnap.id;
-                    const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
-                    const isOnline = data.isOnline === true;
+    const scrollContainer = document.getElementById("studentScroll");
+    
+    onSnapshot(collection(db, "students"), (snapshot) => {
+        scrollContainer.innerHTML = ""; 
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const name = docSnap.id;
+            const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+            const isOnline = data.isOnline === true;
 
-                    const card = document.createElement("div");
-                    card.className = "student-avatar-card";
-                    card.innerHTML = `
-                        <img src="${photo}" class="scroll-img ${isOnline ? 'online' : ''}" alt="${name}">
-                        <p class="scroll-name" style="color: ${isOnline ? 'var(--success)' : 'white'}">${name}</p>
-                    `;
-                    // Click event attach karein
-card.onclick = () => {
-    document.getElementById('modalImg').src = photo;
-    document.getElementById('modalName').innerText = name;
-    document.getElementById('imageModal').style.display = 'flex';
-};
+            const card = document.createElement("div");
+            card.className = "student-avatar-card";
+            // Data attributes add kiye taaki click pe pehchan sakein
+            card.innerHTML = `
+                <img src="${photo}" class="scroll-img ${isOnline ? 'online' : ''}" 
+                     data-src="${photo}" data-name="${name}" alt="${name}">
+                <p class="scroll-name">${name}</p>
+            `;
+            scrollContainer.appendChild(card);
+        });
+    });
+}
+
+// Event Delegation (Ise script ke main part mein daalein)
+document.getElementById("studentScroll").addEventListener("click", function(e) {
+    const imgElement = e.target.closest(".scroll-img");
+    if (imgElement) {
+        document.getElementById('modalImg').src = imgElement.getAttribute("data-src");
+        document.getElementById('modalName').innerText = imgElement.getAttribute("data-name");
+        document.getElementById('imageModal').style.display = 'flex';
+    }
+});
+
 
                     scrollContainer.appendChild(card);
                 });
