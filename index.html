@@ -308,19 +308,19 @@
 
 
 
-<div class="card" onclick="showLockerModal()" id="lockerCard" style="cursor:pointer; padding:20px; border:1px solid #334155; border-radius:18px; background:linear-gradient(145deg, #1e293b, #0f172a); transition: 0.3s; margin-bottom: 20px;">
-    <i id="lockIcon" class="ri-lock-password-line" style="font-size:28px; color:#fbbf24;"></i>
-    <h3 style="margin:10px 0 0 0; color:white;">Private Vault</h3>
-    <p id="vaultStatus" style="font-size:13px; color:#94a3b8;">Request Admin Access</p>
+<div class="card" onclick="showLockerModal()" id="lockerCard" style="cursor:pointer; padding:18px; border:1px solid #334155; border-radius:15px; background:linear-gradient(145deg, #1e293b, #0f172a); transition: 0.3s; width: 220px; margin-bottom: 20px;">
+    <i id="lockIcon" class="ri-lock-password-line" style="font-size:24px; color:#fbbf24;"></i>
+    <h3 style="margin:10px 0 0 0; color:white; font-size: 16px;">Private Vault</h3>
+    <p id="vaultStatus" style="font-size:11px; color:#94a3b8;">Click to Request</p>
 </div>
 
-<div id="lockerModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px); align-items:center; justify-content:center; padding: 20px;">
-    <div style="background:#1e293b; padding:30px; border-radius:24px; width:100%; max-width:320px; border:1px solid #334155;">
-        <h3 style="color:white; margin-top:0;">Request Access</h3>
-        <input id="reqName" placeholder="Full Name" style="width:100%; padding:12px; margin-bottom:12px; border-radius:10px; border:none; background:#0f172a; color:white;">
-        <input id="reqCourse" placeholder="Course Name" style="width:100%; padding:12px; margin-bottom:20px; border-radius:10px; border:none; background:#0f172a; color:white;">
-        <button id="submitBtn" style="width:100%; padding:12px; background:#6366f1; border:none; color:white; border-radius:10px; cursor:pointer; font-weight:bold;">SUBMIT REQUEST</button>
-        <button onclick="document.getElementById('lockerModal').style.display='none'" style="width:100%; padding:10px; background:transparent; color:#64748b; border:none; margin-top:10px; cursor:pointer;">Cancel</button>
+<div id="lockerModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px); align-items:center; justify-content:center; padding: 15px;">
+    <div style="background:#1e293b; padding:25px; border-radius:20px; width:100%; max-width:280px; border:1px solid #334155;">
+        <h3 style="color:white; margin-top:0; font-size: 18px;">Unlock Vault</h3>
+        <input id="reqName" placeholder="Full Name" style="width:100%; box-sizing:border-box; padding:10px; margin-bottom:10px; border-radius:8px; border:none; background:#0f172a; color:white;">
+        <input id="reqCourse" placeholder="Course" style="width:100%; box-sizing:border-box; padding:10px; margin-bottom:20px; border-radius:8px; border:none; background:#0f172a; color:white;">
+        <button id="submitBtn" style="width:100%; padding:10px; background:#6366f1; border:none; color:white; border-radius:8px; cursor:pointer; font-weight:bold;">SEND REQUEST</button>
+        <button onclick="document.getElementById('lockerModal').style.display='none'" style="width:100%; padding:8px; background:transparent; color:#64748b; border:none; margin-top:5px; cursor:pointer; font-size: 12px;">Cancel</button>
     </div>
 </div>
 
@@ -343,42 +343,30 @@
     document.getElementById("submitBtn").addEventListener("click", () => {
         const name = document.getElementById("reqName").value;
         const course = document.getElementById("reqCourse").value;
-        if(!name || !course) return alert("All fields are required!");
+        if(!name || !course) return alert("Fill all fields!");
 
         const newReq = push(ref(db, 'requests/'), { name, course, status: "pending" });
         localStorage.setItem("my_request_id", newReq.key);
-        localStorage.setItem("request_status", "pending"); // Naya state store
+        localStorage.removeItem("has_redirected"); // Reset redirect flag
         alert("Request Sent!");
         document.getElementById('lockerModal').style.display = 'none';
-        updateUI("pending");
     });
 
-    function updateUI(status) {
-        const icon = document.getElementById('lockIcon');
-        const text = document.getElementById('vaultStatus');
-        if (status === "approved") {
-            icon.className = "ri-lock-unlock-line";
-            icon.style.color = "#10b981";
-            text.innerHTML = "Access Granted! Redirecting...";
-        } else if (status === "pending") {
-            text.innerHTML = "Status: Pending Approval...";
-        }
-    }
-
-    // Refresh pe state maintain karna
+    // Smart Listener: Redirect sirf tabhi hoga jab approve hoga (ek baar)
     const myId = localStorage.getItem("my_request_id");
     if (myId) {
         onValue(ref(db, 'requests/' + myId), (snap) => {
             const data = snap.val();
-            if (data?.status === "approved") {
-                updateUI("approved");
-                setTimeout(() => window.location.href = "private-content.html", 3000);
-            } else {
-                updateUI("pending");
+            if (data?.status === "approved" && !localStorage.getItem("has_redirected")) {
+                document.getElementById('lockIcon').className = "ri-lock-unlock-line";
+                document.getElementById('vaultStatus').innerHTML = "Access Granted!";
+                localStorage.setItem("has_redirected", "true");
+                setTimeout(() => window.location.href = "private-content.html", 2000);
             }
         });
     }
 </script>
+
 
 
 
