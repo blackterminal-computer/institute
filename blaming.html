@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blog Admin</title>
+    <style>
+        body { background: #020617; color: white; padding: 20px; font-family: sans-serif; }
+        .container { max-width: 500px; margin: auto; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #6366f1; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Post New Blog</h2>
+        <input id="title" placeholder="Blog Title">
+        <div id="paraContainer">
+            <textarea class="para" placeholder="Paragraph 1"></textarea>
+        </div>
+        <button onclick="addPara()" style="background:#334155;">+ Add Another Paragraph</button>
+        <button onclick="publish()">PUBLISH TO DASHBOARD</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        }));
+
+        window.addPara = () => {
+            const div = document.getElementById('paraContainer');
+            const ta = document.createElement('textarea');
+            ta.className = 'para';
+            ta.placeholder = "Next Paragraph...";
+            div.appendChild(ta);
+        };
+
+        window.publish = async () => {
+            const title = document.getElementById("title").value;
+            const paras = Array.from(document.querySelectorAll('.para')).map(t => t.value).filter(v => v !== "");
+            
+            await addDoc(collection(db, "blogs"), { title, content: paras, createdAt: serverTimestamp() });
+            alert("Published!");
+        };
+    </script>
+</body>
+</html>
