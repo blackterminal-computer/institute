@@ -2,26 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Terminal | Mobile</title>
     <style>
-        body { background: #020617; color: #f8fafc; font-family: sans-serif; padding: 20px; }
-        .box { max-width: 500px; margin: auto; background: #0f172a; padding: 20px; border-radius: 20px; border: 1px solid #334155; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #020617; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #6366f1; border: none; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 5px; }
-        .blog-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-top: 15px; }
-        .del-btn { background: #ef4444; margin-top: 10px; }
+        :root { --primary: #6366f1; --danger: #ef4444; --bg: #020617; }
+        body { background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 15px; }
+        .container { max-width: 600px; margin: auto; }
+        input, textarea { width: 100%; padding: 15px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
+        button { width: 100%; padding: 18px; background: var(--primary); border: none; color: white; border-radius: 12px; font-weight: 800; font-size: 14px; margin-top: 10px; cursor: pointer; }
+        .blog-item { background: #1e293b; padding: 15px; border-radius: 16px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .del-btn { background: var(--danger); width: auto; padding: 10px 15px; font-size: 12px; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>Blog Admin</h2>
+    <div class="container">
+        <h2 style="font-size: 20px;">Admin Panel</h2>
         <input id="title" placeholder="Blog Title">
-        <div id="paraContainer"><textarea class="para" placeholder="Paragraph 1"></textarea></div>
+        <div id="paraContainer"><textarea class="para" rows="3" placeholder="Paragraph 1"></textarea></div>
         <button onclick="addPara()" style="background:#334155;">+ Add Paragraph</button>
         <button onclick="publish()">PUBLISH POST</button>
         
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #334155;">
-        <h3>Existing Blogs:</h3>
+        <h3 style="margin-top: 30px;">Manage Logs</h3>
         <div id="adminBlogList"></div>
     </div>
 
@@ -29,6 +30,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // Firebase Init
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -38,31 +40,24 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        // Add paragraph function
         window.addPara = () => {
             const ta = document.createElement('textarea');
-            ta.className = 'para';
-            ta.placeholder = "Next Paragraph...";
+            ta.className = 'para'; ta.rows = 3; ta.placeholder = "Next Paragraph...";
             document.getElementById('paraContainer').appendChild(ta);
         };
 
-        // Publish function
         window.publish = async () => {
             const title = document.getElementById("title").value;
             const content = Array.from(document.querySelectorAll('.para')).map(t => t.value).filter(v => v !== "");
+            if(!title) return alert("Title daalo!");
             await addDoc(collection(db, "blogs"), { title, content, createdAt: serverTimestamp() });
-            alert("Blog Published!");
-            location.reload();
+            alert("Published!"); location.reload();
         };
 
-        // Delete function
         window.deleteBlog = async (id) => {
-            if(confirm("Kya aap yakin hain ki ise delete karna chahte hain?")) {
-                await deleteDoc(doc(db, "blogs", id));
-            }
+            if(confirm("Delete karna hai?")) await deleteDoc(doc(db, "blogs", id));
         };
 
-        // List existing blogs for deletion
         const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
         onSnapshot(q, (snap) => {
             const list = document.getElementById("adminBlogList");
@@ -70,7 +65,7 @@
             snap.forEach(doc => {
                 const b = doc.data();
                 list.innerHTML += `<div class="blog-item">
-                    <strong>${b.title}</strong>
+                    <span style="font-size:14px; font-weight:600;">${b.title}</span>
                     <button class="del-btn" onclick="deleteBlog('${doc.id}')">DELETE</button>
                 </div>`;
             });
