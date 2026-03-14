@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Vault | Control Center</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: #1e293b; padding: 25px; border-radius: 20px; border: 1px solid #334155; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; padding: 15px; color: #94a3b8; border-bottom: 2px solid #334155; }
+        td { padding: 15px; border-bottom: 1px solid #334155; }
+        .url-input { padding: 8px; border-radius: 6px; border: none; width: 140px; margin-right: 10px; background: #0f172a; color: white; }
+        .btn-approve { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-approve:hover { background: #059669; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Vault Access Management</h2>
+    <table>
+        <thead>
+            <tr><th>Student</th><th>Course</th><th>URL Redirection</th><th>Action</th></tr>
+        </thead>
+        <tbody id="request-list"></tbody>
+    </table>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const db = getDatabase(initializeApp({
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.firebasestorage.app",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    }));
+
+    onValue(ref(db, 'requests/'), (snapshot) => {
+        const list = document.getElementById('request-list');
+        list.innerHTML = "";
+        const data = snapshot.val();
+        
+        for (let id in data) {
+            if (data[id].status === "pending") {
+                list.innerHTML += `
+                    <tr>
+                        <td>${data[id].name}</td>
+                        <td>${data[id].course}</td>
+                        <td><input type="text" id="url-${id}" class="url-input" placeholder="e.g. lesson1.html"></td>
+                        <td><button class="btn-approve" onclick="approveRequest('${id}')">Approve</button></td>
+                    </tr>
+                `;
+            }
+        }
+    });
+
+    window.approveRequest = (id) => {
+        const url = document.getElementById(`url-${id}`).value || "private-content.html";
+        update(ref(db, 'requests/' + id), { 
+            status: "approved",
+            redirectUrl: url 
+        }).then(() => alert("Access granted to: " + url));
+    };
+</script>
+</body>
+</html>
