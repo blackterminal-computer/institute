@@ -330,23 +330,50 @@
 </div>
 
 <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-    
-    // Function to show modal
-    window.showLockerModal = () => {
-        document.getElementById('lockerModal').style.display = 'flex';
+
+    // Aapka Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.firebasestorage.app",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
 
-    // Function to send request
+    // Firebase Initialize karna
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Request submit karne ka function
     window.submitAccessRequest = () => {
         const name = document.getElementById('reqName').value;
         const course = document.getElementById('reqCourse').value;
-        // Firebase database referance (Aapke database URL se)
-        // Yahan db variable define karein ya window global use karein
-        alert("Request sent for " + name);
+
+        if (!name || !course) {
+            alert("Name aur Course bharna zaroori hai!");
+            return;
+        }
+
+        // Firebase mein data push karna
+        const newRequest = push(ref(db, 'requests/'), {
+            name: name,
+            course: course,
+            status: "pending"
+        });
+
+        // Request ki unique ID save karna taaki baad mein access check ho sake
+        localStorage.setItem("my_request_id", newRequest.key);
+        
+        alert("Request sent successfully! Admin approval ka wait karein.");
         document.getElementById('lockerModal').style.display = 'none';
     };
 </script>
+
+
 
 
 <p class="label-tag">Core Modules</p>
