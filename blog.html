@@ -2,30 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archive | Black Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #020617; --accent: #06b6d4; --glass: rgba(255, 255, 255, 0.04); }
-        body { background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px 20px; max-width: 700px; margin: auto; }
+        :root { --bg: #020617; --accent: #06b6d4; }
+        body { background: var(--bg); color: #f8fafc; font-family: sans-serif; padding: 20px; margin: 0; }
         
-        /* Modern Card Design */
-        .blog-post { background: var(--glass); padding: 25px; border-radius: 24px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.08); transition: transform 0.2s; }
-        .blog-post:hover { border-color: var(--accent); transform: translateY(-5px); }
+        /* Container Setup for Responsiveness */
+        .wrapper { max-width: 800px; margin: auto; }
+        .post { background: #0f172a; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #1e293b; }
+        .title { color: var(--accent); font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+        .date { font-size: 12px; opacity: 0.5; margin-bottom: 10px; display: block; }
         
-        /* Typography */
-        .blog-title { color: white; font-size: 22px; font-weight: 800; margin-bottom: 8px; }
-        .meta { font-size: 11px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
-        .blog-para { opacity: 0.7; line-height: 1.7; font-size: 15px; margin-bottom: 15px; }
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .title { font-size: 18px; }
+        }
     </style>
 </head>
 <body>
-
-    <h2 style="margin-bottom: 30px;">Archive</h2>
-    <div id="container">Loading archive...</div>
+    <div class="wrapper">
+        <h2 style="text-align: center;">Archive</h2>
+        <div id="container">Loading archive...</div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -36,21 +40,25 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        const container = document.getElementById("container");
-
-        // Fetching and Displaying
-        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snapshot) => {
+        onSnapshot(collection(db, "blogs"), (snapshot) => {
+            const container = document.getElementById("container");
             container.innerHTML = "";
+            
+            if (snapshot.empty) {
+                container.innerHTML = "<p style='text-align:center;'>Database empty hai.</p>";
+                return;
+            }
+
             snapshot.forEach((doc) => {
                 const b = doc.data();
-                // Timestamp conversion
-                const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A";
+                // Timestamp handling
+                const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleString() : "Date unknown";
                 
                 container.innerHTML += `
-                    <div class="blog-post">
-                        <div class="meta">${date} • POSTED</div>
-                        <div class="blog-title">${b.title || "Untitled"}</div>
-                        <p class="blog-para">${Array.isArray(b.content) ? b.content[0].substring(0, 120) : "..."}...</p>
+                    <div class="post">
+                        <span class="date">${date}</span>
+                        <div class="title">${b.title || "Untitled"}</div>
+                        <p>${b.content ? b.content[0] : ""}</p>
                     </div>
                 `;
             });
