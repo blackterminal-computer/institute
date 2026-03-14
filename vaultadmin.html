@@ -6,11 +6,12 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
         .container { max-width: 1000px; margin: auto; background: #1e293b; padding: 25px; border-radius: 20px; border: 1px solid #334155; }
+        h2 { color: #6366f1; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { text-align: left; padding: 15px; color: #94a3b8; border-bottom: 2px solid #334155; }
         td { padding: 15px; border-bottom: 1px solid #334155; }
-        .url-input { padding: 8px; border-radius: 6px; border: none; width: 140px; margin-right: 10px; background: #0f172a; color: white; }
-        .btn-approve { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .url-input { padding: 8px; border-radius: 6px; border: none; width: 140px; margin-right: 10px; background: #0f172a; color: white; border: 1px solid #475569; }
+        .btn-approve { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-approve:hover { background: #059669; }
     </style>
 </head>
@@ -22,7 +23,8 @@
         <thead>
             <tr><th>Student</th><th>Course</th><th>URL Redirection</th><th>Action</th></tr>
         </thead>
-        <tbody id="request-list"></tbody>
+        <tbody id="request-list">
+            </tbody>
     </table>
 </div>
 
@@ -40,6 +42,7 @@
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     }));
 
+    // Real-time listener for incoming requests
     onValue(ref(db, 'requests/'), (snapshot) => {
         const list = document.getElementById('request-list');
         list.innerHTML = "";
@@ -51,7 +54,7 @@
                     <tr>
                         <td>${data[id].name}</td>
                         <td>${data[id].course}</td>
-                        <td><input type="text" id="url-${id}" class="url-input" placeholder="e.g. lesson1.html"></td>
+                        <td><input type="text" id="url-${id}" class="url-input" placeholder="private-content.html"></td>
                         <td><button class="btn-approve" onclick="approveRequest('${id}')">Approve</button></td>
                     </tr>
                 `;
@@ -59,12 +62,20 @@
         }
     });
 
+    // Updated Approval Logic
     window.approveRequest = (id) => {
         const url = document.getElementById(`url-${id}`).value || "private-content.html";
+        
+        // Update call to Firebase
         update(ref(db, 'requests/' + id), { 
             status: "approved",
             redirectUrl: url 
-        }).then(() => alert("Access granted to: " + url));
+        }).then(() => {
+            // Instant visual feedback for admin
+            alert("Approved! User will be redirected instantly.");
+        }).catch((error) => {
+            alert("Error updating request: " + error.message);
+        });
     };
 </script>
 </body>
