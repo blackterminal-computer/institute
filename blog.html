@@ -8,17 +8,13 @@
         :root { --bg: #020617; --accent: #06b6d4; }
         body { background: var(--bg); color: #f8fafc; font-family: sans-serif; padding: 20px; margin: 0; }
         
-        /* Container Setup for Responsiveness */
         .wrapper { max-width: 800px; margin: auto; }
-        .post { background: #0f172a; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #1e293b; }
-        .title { color: var(--accent); font-size: 22px; font-weight: bold; margin-bottom: 5px; }
-        .date { font-size: 12px; opacity: 0.5; margin-bottom: 10px; display: block; }
-        
-        /* Responsive Design */
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .title { font-size: 18px; }
-        }
+        .post { background: #0f172a; padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #1e293b; }
+        .title { color: var(--accent); font-size: 24px; font-weight: 800; margin-bottom: 5px; }
+        .date { font-size: 11px; opacity: 0.5; margin-bottom: 10px; display: block; text-transform: uppercase; }
+        .tag { font-size: 10px; background: #1e293b; padding: 2px 8px; border-radius: 4px; color: #94a3b8; margin-right: 5px; }
+        .para { line-height: 1.7; opacity: 0.8; margin-top: 10px; }
+        @media (max-width: 600px) { body { padding: 10px; } }
     </style>
 </head>
 <body>
@@ -29,7 +25,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -40,28 +36,39 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        onSnapshot(collection(db, "blogs"), (snapshot) => {
+        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snapshot) => {
             const container = document.getElementById("container");
             container.innerHTML = "";
             
-            if (snapshot.empty) {
-                container.innerHTML = "<p style='text-align:center;'>Database empty hai.</p>";
-                return;
-            }
-
+            let found = false;
             snapshot.forEach((doc) => {
                 const b = doc.data();
-                // Timestamp handling
-                const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleString() : "Date unknown";
                 
-                container.innerHTML += `
-                    <div class="post">
-                        <span class="date">${date}</span>
-                        <div class="title">${b.title || "Untitled"}</div>
-                        <p>${b.content ? b.content[0] : ""}</p>
-                    </div>
-                `;
+                // Only show posts with 'published' status
+                if (b.status === 'published') {
+                    found = true;
+                    const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleString() : "";
+                    
+                    const contentHtml = Array.isArray(b.content) 
+                        ? b.content.map(p => `<p class="para">${p}</p>`).join("") 
+                        : `<p class="para">${b.content}</p>`;
+
+                    const tagsHtml = (b.tags && Array.isArray(b.tags)) 
+                        ? b.tags.map(t => `<span class="tag">#${t}</span>`).join("") 
+                        : "";
+
+                    container.innerHTML += `
+                        <div class="post">
+                            <span class="date">${date}</span>
+                            <div class="title">${b.title || "Untitled"}</div>
+                            <div>${tagsHtml}</div>
+                            ${contentHtml}
+                        </div>
+                    `;
+                }
             });
+
+            if (!found) container.innerHTML = "<p style='text-align:center;'>No published posts found.</p>";
         });
     </script>
 </body>
