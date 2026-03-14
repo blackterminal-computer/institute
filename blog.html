@@ -3,45 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Black Terminal | Archive</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>Archive | Black Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --bg: #020617; 
-            --neon-blue: #38bdf8; 
-            --glass: rgba(30, 41, 59, 0.4); 
-        }
-        body { 
-            background: var(--bg); 
-            color: #e2e8f0; 
-            font-family: 'Space Grotesk', sans-serif; 
-            padding: 80px 20px; 
-            margin: 0; 
-        }
-        .wrapper { max-width: 600px; margin: auto; }
+        :root { --bg: #020617; --accent: #6366f1; --glass: rgba(15, 23, 42, 0.7); --border: rgba(255, 255, 255, 0.08); }
         
-        h2 { font-size: 2.5rem; text-align: center; margin-bottom: 60px; letter-spacing: -2px; color: #fff; }
+        body { background: var(--bg); color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 40px 20px; margin: 0; scroll-behavior: smooth; }
+        .wrapper { max-width: 750px; margin: auto; }
         
+        /* Progress Bar */
+        #progress { position: fixed; top: 0; left: 0; height: 4px; background: var(--accent); width: 0%; z-index: 1000; box-shadow: 0 0 10px var(--accent); }
+
+        /* Search Bar */
+        .search-container { position: sticky; top: 20px; z-index: 100; margin-bottom: 50px; }
+        #searchBar { 
+            width: 100%; padding: 18px 25px; border-radius: 16px; background: rgba(15, 23, 42, 0.9); 
+            border: 1px solid var(--border); color: #fff; font-size: 16px; backdrop-filter: blur(15px);
+            outline: none; transition: 0.3s; box-sizing: border-box;
+        }
+        #searchBar:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+
+        /* Post Card */
         .post { 
-            background: var(--glass); 
-            padding: 40px; 
-            border-radius: 20px; 
-            margin-bottom: 30px; 
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: 0.5s ease;
+            background: var(--glass); backdrop-filter: blur(10px); padding: 40px; border-radius: 28px; 
+            margin-bottom: 30px; border: 1px solid var(--border); position: relative;
+            animation: fadeInUp 0.6s ease backwards; transition: 0.3s;
         }
-        .post:hover { border-color: var(--neon-blue); box-shadow: 0 0 20px rgba(56, 189, 248, 0.1); }
+        .post:hover { border-color: rgba(99, 102, 241, 0.4); transform: translateY(-3px); }
+
+        /* Bookmark & Actions */
+        .bookmark-btn { position: absolute; top: 35px; right: 35px; cursor: pointer; font-size: 20px; filter: grayscale(1); transition: 0.3s; }
+        .bookmark-btn.saved { filter: grayscale(0); transform: scale(1.2); }
+
+        .title { color: #ffffff; font-size: 30px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.8px; }
+        .date-meta { font-size: 12px; color: var(--accent); margin-bottom: 15px; display: block; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
         
-        .title { font-size: 22px; font-weight: 700; margin-bottom: 15px; color: #fff; }
-        .date { font-size: 10px; color: var(--neon-blue); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        .tag { font-size: 10px; color: #94a3b8; background: #0f172a; padding: 4px 8px; border-radius: 4px; margin-right: 5px; border: 1px solid #334155; }
-        .para { font-size: 16px; opacity: 0.8; line-height: 1.8; margin-top: 15px; }
+        .tag { font-size: 11px; background: rgba(99, 102, 241, 0.1); color: var(--accent); padding: 6px 14px; border-radius: 10px; margin-right: 8px; font-weight: 600; }
+        
+        /* Expandable Content */
+        .content-body { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .content-body.expanded { max-height: 5000px; opacity: 1; margin-top: 25px; }
+        .para { line-height: 1.8; color: #94a3b8; margin-bottom: 20px; font-size: 17px; }
+
+        .btn-group { display: flex; gap: 12px; margin-top: 25px; }
+        .btn-action { 
+            cursor: pointer; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700;
+            border: 1px solid var(--accent); background: transparent; color: var(--accent); transition: 0.2s;
+        }
+        .btn-action:hover { background: var(--accent); color: white; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        #scrollTop { position: fixed; bottom: 30px; right: 30px; background: var(--accent); border: none; padding: 15px; border-radius: 50%; color: white; cursor: pointer; display: none; z-index: 100; }
     </style>
 </head>
 <body>
+    <div id="progress"></div>
+    <button id="scrollTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
     <div class="wrapper">
-        <h2>Black Terminal</h2>
-        <div id="container">Loading content...</div>
+        <h2 style="text-align: left; font-weight: 800; letter-spacing: -1px;">Archive Console</h2>
+        
+        <div class="search-container">
+            <input type="text" id="searchBar" placeholder="Search archives or tags..." oninput="filterPosts()">
+        </div>
+
+        <div id="container">Loading logs...</div>
     </div>
 
     <script type="module">
@@ -57,31 +84,79 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snap) => {
-            const container = document.getElementById("container");
-            container.innerHTML = "";
-            let found = false;
-            
-            snap.forEach((doc) => {
-                const b = doc.data();
-                if (b.status === 'published') {
-                    found = true;
-                    const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toDateString() : "";
-                    const contentHtml = Array.isArray(b.content) ? b.content.map(p => `<p class="para">${p}</p>`).join("") : `<p class="para">${b.content}</p>`;
-                    const tagsHtml = (b.tags && Array.isArray(b.tags)) ? b.tags.map(t => `<span class="tag">#${t}</span>`).join("") : "";
+        let allPosts = [];
+        let bookmarks = JSON.parse(localStorage.getItem('terminal_bookmarks')) || [];
 
-                    container.innerHTML += `
-                        <div class="post">
-                            <span class="date">${date}</span>
-                            <div class="title">${b.title}</div>
-                            <div style="margin-bottom:15px;">${tagsHtml}</div>
-                            ${contentHtml}
-                        </div>
-                    `;
-                }
-            });
-            if (!found) container.innerHTML = "<p style='text-align:center; opacity:0.5;'>No content available.</p>";
+        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snapshot) => {
+            allPosts = [];
+            snapshot.forEach(doc => { if(doc.data().status === 'published') allPosts.push({id: doc.id, ...doc.data()}); });
+            render(allPosts);
         });
+
+        function render(data) {
+            const container = document.getElementById("container");
+            container.innerHTML = data.length ? "" : "<p style='text-align:center; opacity:0.5;'>No logs found.</p>";
+            
+            data.forEach((b, index) => {
+                const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toDateString() : "";
+                const isBookmarked = bookmarks.includes(b.id) ? 'saved' : '';
+                const readTime = Math.ceil((Array.isArray(b.content) ? b.content.join(" ") : b.content).split(" ").length / 200);
+                
+                const card = document.createElement('div');
+                card.className = 'post';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.innerHTML = `
+                    <div class="bookmark-btn ${isBookmarked}" onclick="toggleBookmark('${b.id}', this)">🔖</div>
+                    <span class="date-meta">${date} • ${readTime} MIN READ</span>
+                    <div class="title">${b.title}</div>
+                    <div>${(b.tags || []).map(t => `<span class="tag">#${t}</span>`).join("")}</div>
+                    
+                    <div class="content-body" id="body-${b.id}">
+                        ${Array.isArray(b.content) ? b.content.map(p => `<p class="para">${p}</p>`).join("") : `<p class="para">${b.content}</p>`}
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn-action" onclick="toggleExpand('${b.id}', this)">READ LOG</button>
+                        <button class="btn-action" onclick="copyLog('${b.id}')">COPY</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.toggleExpand = (id, btn) => {
+            const el = document.getElementById(`body-${id}`);
+            const isExpanded = el.classList.toggle('expanded');
+            btn.innerText = isExpanded ? "CLOSE LOG" : "READ LOG";
+        };
+
+        window.filterPosts = () => {
+            const query = document.getElementById("searchBar").value.toLowerCase();
+            const filtered = allPosts.filter(p => 
+                p.title.toLowerCase().includes(query) || 
+                (p.tags && p.tags.some(t => t.toLowerCase().includes(query)))
+            );
+            render(filtered);
+        };
+
+        window.toggleBookmark = (id, btn) => {
+            if(bookmarks.includes(id)) bookmarks = bookmarks.filter(i => i !== id);
+            else bookmarks.push(id);
+            btn.classList.toggle('saved');
+            localStorage.setItem('terminal_bookmarks', JSON.stringify(bookmarks));
+        };
+
+        window.copyLog = (id) => {
+            const text = document.getElementById(`body-${id}`).innerText;
+            navigator.clipboard.writeText(text).then(() => alert("Log copied to clipboard!"));
+        };
+
+        window.onscroll = () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            document.getElementById("progress").style.width = (winScroll / height) * 100 + "%";
+            document.getElementById("scrollTop").style.display = winScroll > 400 ? "block" : "none";
+        };
     </script>
 </body>
 </html>
