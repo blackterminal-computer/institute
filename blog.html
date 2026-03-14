@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive | Black Terminal</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root { --bg: #020617; --accent: #06b6d4; --glass: rgba(255, 255, 255, 0.03); }
+        body { background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
+        .back-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 25px; }
+        .back-nav a { color: var(--accent); text-decoration: none; font-weight: 800; font-size: 12px; }
+        .blog-post { background: var(--glass); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 24px; margin-bottom: 20px; }
+        .blog-title { color: var(--accent); font-size: 18px; margin-bottom: 12px; font-weight: 800; }
+        .blog-para { font-size: 14px; line-height: 1.6; opacity: 0.8; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="back-nav">
+        <i class="ri-arrow-left-line"></i>
+        <a href="index.html">BACK TO TERMINAL</a>
+    </div>
+
+    <div id="blogArchiveContainer">
+        <p style="text-align:center; opacity:0.5;">Loading Archives...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        }));
+
+        const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            const container = document.getElementById("blogArchiveContainer");
+            container.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const b = doc.data();
+                const paragraphs = b.content.map(p => `<p class="blog-para">${p}</p>`).join("");
+                
+                container.innerHTML += `
+                    <div class="blog-post">
+                        <div class="blog-title">${b.title}</div>
+                        ${paragraphs}
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
