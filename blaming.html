@@ -2,35 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Admin Terminal | Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin V2.0 | Black Terminal</title>
     <style>
-        :root { --primary: #6366f1; --danger: #ef4444; --bg: #020617; }
-        body { background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 15px; }
-        .container { max-width: 600px; margin: auto; }
-        input, textarea { width: 100%; padding: 15px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 18px; background: var(--primary); border: none; color: white; border-radius: 12px; font-weight: 800; font-size: 14px; margin-top: 10px; cursor: pointer; }
-        .blog-item { background: #1e293b; padding: 15px; border-radius: 16px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .del-btn { background: var(--danger); width: auto; padding: 10px 15px; font-size: 12px; }
+        :root { --bg: #020617; --accent: #6366f1; --glass: #0f172a; --danger: #ef4444; }
+        body { background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
+        .box { max-width: 500px; margin: auto; background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid #334155; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #020617; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
+        button { padding: 12px; border: none; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        .blog-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 style="font-size: 20px;">Admin Panel</h2>
+    <div class="box">
+        <h2>Admin V2.0</h2>
         <input id="title" placeholder="Blog Title">
+        <input id="tags" placeholder="Tags (e.g. Coding, Firebase)">
         <div id="paraContainer"><textarea class="para" rows="3" placeholder="Paragraph 1"></textarea></div>
         <button onclick="addPara()" style="background:#334155;">+ Add Paragraph</button>
-        <button onclick="publish()">PUBLISH POST</button>
-        
-        <h3 style="margin-top: 30px;">Manage Logs</h3>
+        <input type="datetime-local" id="scheduleDate">
+        <button onclick="publish('published')" style="background:var(--accent);">PUBLISH LIVE</button>
+        <button onclick="publish('draft')" style="background:#475569;">SAVE DRAFT</button>
         <div id="adminBlogList"></div>
     </div>
-
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Firebase Init
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -40,33 +39,48 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
+        // --- Auto-Save V2.0 ---
+        const titleInput = document.getElementById('title');
+        titleInput.addEventListener('input', () => localStorage.setItem('tempTitle', titleInput.value));
+        window.onload = () => { if(localStorage.getItem('tempTitle')) titleInput.value = localStorage.getItem('tempTitle'); };
+
         window.addPara = () => {
-            const ta = document.createElement('textarea');
-            ta.className = 'para'; ta.rows = 3; ta.placeholder = "Next Paragraph...";
+            const ta = document.createElement('textarea'); ta.className = 'para'; ta.rows = 3; ta.placeholder = "Next Paragraph..."; 
             document.getElementById('paraContainer').appendChild(ta);
         };
 
-        window.publish = async () => {
-            const title = document.getElementById("title").value;
+        window.publish = async (status) => {
+            const title = titleInput.value;
             const content = Array.from(document.querySelectorAll('.para')).map(t => t.value).filter(v => v !== "");
-            if(!title) return alert("Title daalo!");
-            await addDoc(collection(db, "blogs"), { title, content, createdAt: serverTimestamp() });
-            alert("Published!"); location.reload();
+            const tags = document.getElementById("tags").value.split(',').map(t => t.trim()).filter(t => t !== "");
+            const schedule = document.getElementById("scheduleDate").value;
+            
+            await addDoc(collection(db, "blogs"), { 
+                title, content, tags, status, 
+                views: 0, // V2.0 Performance Tracker
+                publishAt: new Date(schedule || new Date()), 
+                createdAt: new Date() 
+            });
+            localStorage.removeItem('tempTitle');
+            alert("Blog status: " + status); location.reload();
         };
 
-        window.deleteBlog = async (id) => {
-            if(confirm("Delete karna hai?")) await deleteDoc(doc(db, "blogs", id));
+        window.toggleVisibility = async (id, currentStatus) => {
+            await updateDoc(doc(db, "blogs", id), { status: (currentStatus === 'published' ? 'draft' : 'published') });
         };
 
-        const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
-        onSnapshot(q, (snap) => {
-            const list = document.getElementById("adminBlogList");
-            list.innerHTML = "";
+        window.deleteBlog = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "blogs", id)); };
+
+        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snap) => {
+            const list = document.getElementById("adminBlogList"); list.innerHTML = "";
             snap.forEach(doc => {
                 const b = doc.data();
                 list.innerHTML += `<div class="blog-item">
-                    <span style="font-size:14px; font-weight:600;">${b.title}</span>
-                    <button class="del-btn" onclick="deleteBlog('${doc.id}')">DELETE</button>
+                    <span>${b.title} <b>(${b.status})</b></span>
+                    <div>
+                        <button onclick="toggleVisibility('${doc.id}', '${b.status}')" style="background:${b.status==='published'?'#22c55e':'#64748b'}; font-size:10px;">${b.status==='published'?'HIDE':'SHOW'}</button>
+                        <button onclick="deleteBlog('${doc.id}')" style="background:#ef4444; font-size:10px;">DEL</button>
+                    </div>
                 </div>`;
             });
         });
