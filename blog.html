@@ -3,24 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archive | Black Terminal</title>
+    <title>Black Terminal | Archive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #020617; --accent: #06b6d4; }
-        body { background: var(--bg); color: #f8fafc; font-family: sans-serif; padding: 20px; margin: 0; }
+        :root { 
+            --bg: #020617; 
+            --neon-blue: #38bdf8; 
+            --glass: rgba(30, 41, 59, 0.4); 
+        }
+        body { 
+            background: var(--bg); 
+            color: #e2e8f0; 
+            font-family: 'Space Grotesk', sans-serif; 
+            padding: 80px 20px; 
+            margin: 0; 
+        }
+        .wrapper { max-width: 600px; margin: auto; }
         
-        .wrapper { max-width: 800px; margin: auto; }
-        .post { background: #0f172a; padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #1e293b; }
-        .title { color: var(--accent); font-size: 24px; font-weight: 800; margin-bottom: 5px; }
-        .date { font-size: 11px; opacity: 0.5; margin-bottom: 10px; display: block; text-transform: uppercase; }
-        .tag { font-size: 10px; background: #1e293b; padding: 2px 8px; border-radius: 4px; color: #94a3b8; margin-right: 5px; }
-        .para { line-height: 1.7; opacity: 0.8; margin-top: 10px; }
-        @media (max-width: 600px) { body { padding: 10px; } }
+        h2 { font-size: 2.5rem; text-align: center; margin-bottom: 60px; letter-spacing: -2px; color: #fff; }
+        
+        .post { 
+            background: var(--glass); 
+            padding: 40px; 
+            border-radius: 20px; 
+            margin-bottom: 30px; 
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.5s ease;
+        }
+        .post:hover { border-color: var(--neon-blue); box-shadow: 0 0 20px rgba(56, 189, 248, 0.1); }
+        
+        .title { font-size: 22px; font-weight: 700; margin-bottom: 15px; color: #fff; }
+        .date { font-size: 10px; color: var(--neon-blue); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .tag { font-size: 10px; color: #94a3b8; background: #0f172a; padding: 4px 8px; border-radius: 4px; margin-right: 5px; border: 1px solid #334155; }
+        .para { font-size: 16px; opacity: 0.8; line-height: 1.8; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="wrapper">
-        <h2 style="text-align: center;">Archive</h2>
-        <div id="container">Loading archive...</div>
+        <h2>Black Terminal</h2>
+        <div id="container">Loading content...</div>
     </div>
 
     <script type="module">
@@ -36,39 +57,30 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snapshot) => {
+        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snap) => {
             const container = document.getElementById("container");
             container.innerHTML = "";
-            
             let found = false;
-            snapshot.forEach((doc) => {
+            
+            snap.forEach((doc) => {
                 const b = doc.data();
-                
-                // Only show posts with 'published' status
                 if (b.status === 'published') {
                     found = true;
-                    const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleString() : "";
-                    
-                    const contentHtml = Array.isArray(b.content) 
-                        ? b.content.map(p => `<p class="para">${p}</p>`).join("") 
-                        : `<p class="para">${b.content}</p>`;
-
-                    const tagsHtml = (b.tags && Array.isArray(b.tags)) 
-                        ? b.tags.map(t => `<span class="tag">#${t}</span>`).join("") 
-                        : "";
+                    const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toDateString() : "";
+                    const contentHtml = Array.isArray(b.content) ? b.content.map(p => `<p class="para">${p}</p>`).join("") : `<p class="para">${b.content}</p>`;
+                    const tagsHtml = (b.tags && Array.isArray(b.tags)) ? b.tags.map(t => `<span class="tag">#${t}</span>`).join("") : "";
 
                     container.innerHTML += `
                         <div class="post">
                             <span class="date">${date}</span>
-                            <div class="title">${b.title || "Untitled"}</div>
-                            <div>${tagsHtml}</div>
+                            <div class="title">${b.title}</div>
+                            <div style="margin-bottom:15px;">${tagsHtml}</div>
                             ${contentHtml}
                         </div>
                     `;
                 }
             });
-
-            if (!found) container.innerHTML = "<p style='text-align:center;'>No published posts found.</p>";
+            if (!found) container.innerHTML = "<p style='text-align:center; opacity:0.5;'>No content available.</p>";
         });
     </script>
 </body>
