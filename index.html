@@ -344,7 +344,6 @@
 
     window.showLockerModal = () => document.getElementById('lockerModal').style.display = 'flex';
 
-    // Submit Logic
     document.getElementById("submitBtn").addEventListener("click", () => {
         const name = document.getElementById("reqName").value;
         const course = document.getElementById("reqCourse").value;
@@ -352,27 +351,33 @@
 
         const newReq = push(ref(db, 'requests/'), { name, course, status: "pending" });
         localStorage.setItem("my_request_id", newReq.key);
-        localStorage.removeItem("has_redirected"); // Reset redirect protection
+        localStorage.removeItem("has_redirected");
         alert("Request Sent!");
         document.getElementById('lockerModal').style.display = 'none';
         document.getElementById('vaultStatus').innerHTML = "Status: Pending Approval...";
     });
 
-    // Real-time Sync & Redirect
+    // Naya optimized listener
     const myId = localStorage.getItem("my_request_id");
     if (myId) {
-        onValue(ref(db, 'requests/' + myId), (snap) => {
+        const requestRef = ref(db, 'requests/' + myId);
+        onValue(requestRef, (snap) => {
             const data = snap.val();
             if (data?.status === "approved" && !localStorage.getItem("has_redirected")) {
                 document.getElementById('lockIcon').className = "ri-lock-unlock-line";
                 document.getElementById('lockIcon').style.color = "#10b981";
                 document.getElementById('vaultStatus').innerHTML = "Access Granted! Redirecting...";
+                
                 localStorage.setItem("has_redirected", "true");
-                setTimeout(() => window.location.href = data.redirectUrl || "private-content.html", 2000);
+                
+                setTimeout(() => {
+                    window.location.href = data.redirectUrl || "private-content.html";
+                }, 500); 
             }
         });
     }
 </script>
+
 
 
 
