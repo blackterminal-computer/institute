@@ -2,28 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Blog Admin</title>
+    <title>Admin Dashboard</title>
     <style>
-        body { background: #020617; color: white; padding: 20px; font-family: sans-serif; }
-        .container { max-width: 500px; margin: auto; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: #6366f1; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        body { background: #020617; color: #f8fafc; font-family: sans-serif; padding: 20px; }
+        .box { max-width: 500px; margin: auto; background: #0f172a; padding: 20px; border-radius: 20px; border: 1px solid #334155; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #020617; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #6366f1; border: none; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        .blog-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-top: 15px; }
+        .del-btn { background: #ef4444; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Post New Blog</h2>
+    <div class="box">
+        <h2>Blog Admin</h2>
         <input id="title" placeholder="Blog Title">
-        <div id="paraContainer">
-            <textarea class="para" placeholder="Paragraph 1"></textarea>
-        </div>
-        <button onclick="addPara()" style="background:#334155;">+ Add Another Paragraph</button>
-        <button onclick="publish()">PUBLISH TO DASHBOARD</button>
+        <div id="paraContainer"><textarea class="para" placeholder="Paragraph 1"></textarea></div>
+        <button onclick="addPara()" style="background:#334155;">+ Add Paragraph</button>
+        <button onclick="publish()">PUBLISH POST</button>
+        
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #334155;">
+        <h3>Existing Blogs:</h3>
+        <div id="adminBlogList"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -34,21 +38,43 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
+        // Add paragraph function
         window.addPara = () => {
-            const div = document.getElementById('paraContainer');
             const ta = document.createElement('textarea');
             ta.className = 'para';
             ta.placeholder = "Next Paragraph...";
-            div.appendChild(ta);
+            document.getElementById('paraContainer').appendChild(ta);
         };
 
+        // Publish function
         window.publish = async () => {
             const title = document.getElementById("title").value;
-            const paras = Array.from(document.querySelectorAll('.para')).map(t => t.value).filter(v => v !== "");
-            
-            await addDoc(collection(db, "blogs"), { title, content: paras, createdAt: serverTimestamp() });
-            alert("Published!");
+            const content = Array.from(document.querySelectorAll('.para')).map(t => t.value).filter(v => v !== "");
+            await addDoc(collection(db, "blogs"), { title, content, createdAt: serverTimestamp() });
+            alert("Blog Published!");
+            location.reload();
         };
+
+        // Delete function
+        window.deleteBlog = async (id) => {
+            if(confirm("Kya aap yakin hain ki ise delete karna chahte hain?")) {
+                await deleteDoc(doc(db, "blogs", id));
+            }
+        };
+
+        // List existing blogs for deletion
+        const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById("adminBlogList");
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const b = doc.data();
+                list.innerHTML += `<div class="blog-item">
+                    <strong>${b.title}</strong>
+                    <button class="del-btn" onclick="deleteBlog('${doc.id}')">DELETE</button>
+                </div>`;
+            });
+        });
     </script>
 </body>
 </html>
