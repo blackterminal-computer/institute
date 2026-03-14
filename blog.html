@@ -3,60 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <title>Archive | Black Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #020617; --accent: #06b6d4; --glass: rgba(255, 255, 255, 0.03); }
-        body { background: var(--bg); color: #f8fafc; font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-        .blog-post { background: var(--glass); padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #334155; }
-        .blog-title { color: var(--accent); font-size: 20px; font-weight: 800; }
+        :root { --bg: #020617; --accent: #06b6d4; --glass: rgba(255, 255, 255, 0.04); }
+        body { background: var(--bg); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px 20px; max-width: 700px; margin: auto; }
+        .blog-post { background: var(--glass); padding: 25px; border-radius: 24px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.08); transition: 0.3s; }
+        .blog-post:hover { border-color: var(--accent); }
+        .blog-title { color: white; font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+        .meta { font-size: 12px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .blog-para { opacity: 0.7; line-height: 1.7; font-size: 15px; }
     </style>
 </head>
 <body>
+
+    <h2 style="margin-bottom: 30px;">BLACKTERMINAL</h2>
     <div id="container">Loading archive...</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const firebaseConfig = {
+        const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
             projectId: "black-terminal-f2c91",
             storageBucket: "black-terminal-f2c91.appspot.com",
             messagingSenderId: "552489994197",
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        }));
 
         const container = document.getElementById("container");
 
-        // Real-time listener
-        const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
-        
-        onSnapshot(q, (snapshot) => {
-            container.innerHTML = ""; // Clear existing
-            
-            if (snapshot.empty) {
-                container.innerHTML = "No posts found in database.";
-                return;
-            }
-
+        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snapshot) => {
+            container.innerHTML = "";
             snapshot.forEach((doc) => {
                 const b = doc.data();
-                // Safe mapping of content
-                const contentText = Array.isArray(b.content) ? b.content.join(" ") : "No content";
+                // Timestamp conversion logic
+                const date = b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A";
                 
                 container.innerHTML += `
                     <div class="blog-post">
-                        <div class="blog-title">${b.title || "Untitled"}</div>
-                        <p style="opacity:0.7;">${contentText.substring(0, 100)}...</p>
+                        <div class="meta">${date} • POSTED</div>
+                        <div class="blog-title">${b.title}</div>
+                        <p class="blog-para">${b.content[0].substring(0, 120)}...</p>
                     </div>
                 `;
             });
-        }, (err) => {
-            console.error("Critical Firebase Error:", err);
-            container.innerHTML = "Connection Error: Check Console (F12).";
         });
     </script>
 </body>
