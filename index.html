@@ -308,7 +308,7 @@
 
 
 
-<div id="vaultCard" onclick="showLockerModal()" style="cursor:pointer; padding:20px; border:2px solid transparent; border-radius:20px; background:linear-gradient(145deg, #1e293b, #0f172a); margin-bottom:20px; position:relative; overflow:hidden; border-image: linear-gradient(to right, #6366f1, #a855f7) 1;">
+<div id="vaultCard" onclick="showLockerModal()" style="cursor:pointer; padding:20px; border-radius:20px; background:linear-gradient(145deg, #1e293b, #0f172a); margin-bottom:20px; position:relative; overflow:hidden; border: 1px solid #334155; transition: 0.3s;">
     <div style="display:flex; align-items:center; justify-content:space-between;">
         <div>
             <h3 id="vaultTitle" style="margin:0; color:white; font-size:18px;">Private Vault</h3>
@@ -344,6 +344,7 @@
 
     window.showLockerModal = () => document.getElementById('lockerModal').style.display = 'flex';
 
+    // Submit Logic
     document.getElementById("submitBtn").addEventListener("click", () => {
         const name = document.getElementById("reqName").value;
         const course = document.getElementById("reqCourse").value;
@@ -351,11 +352,13 @@
 
         const newReq = push(ref(db, 'requests/'), { name, course, status: "pending" });
         localStorage.setItem("my_request_id", newReq.key);
-        localStorage.removeItem("has_redirected");
+        localStorage.removeItem("has_redirected"); // Reset redirect protection
         alert("Request Sent!");
         document.getElementById('lockerModal').style.display = 'none';
+        document.getElementById('vaultStatus').innerHTML = "Status: Pending Approval...";
     });
 
+    // Real-time Sync & Redirect
     const myId = localStorage.getItem("my_request_id");
     if (myId) {
         onValue(ref(db, 'requests/' + myId), (snap) => {
@@ -370,6 +373,7 @@
         });
     }
 </script>
+
 
 
 
