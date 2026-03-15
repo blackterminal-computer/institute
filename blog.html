@@ -2,25 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archive | Black Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background: #020617; color: #f1f5f9; font-family: sans-serif; padding: 40px 20px; }
-        .post { background: #0f172a; padding: 30px; border-radius: 20px; margin-bottom: 30px; border: 1px solid #1e293b; }
+        :root { --bg: #020617; --accent: #6366f1; --border: rgba(255, 255, 255, 0.08); }
+        body { background: var(--bg); color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 40px 20px; margin: 0; }
+        .wrapper { max-width: 650px; margin: auto; }
         
-        /* OLD CSS SAME HAI, BAS YE EK LINE ADD KI HAI */
-        .para { line-height: 1.6; margin-bottom: 15px; white-space: pre-wrap; } 
+        .post { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.5); padding: 30px; border-radius: 24px; margin-bottom: 30px; border: 1px solid var(--border); }
+        h3 { font-size: 22px; margin-top: 0; }
         
-        pre { background: #000; padding: 20px; border-radius: 12px; border: 1px solid #333; overflow-x: auto; white-space: pre; font-family: 'Courier New', monospace; color: #a5b4fc; }
-        .btn { cursor: pointer; padding: 10px 20px; border-radius: 10px; background: #6366f1; border: none; color: white; }
+        .para { line-height: 1.7; color: #cbd5e1; margin-bottom: 20px; white-space: pre-wrap; font-size: 16px; }
+        
+        .code-block { position: relative; margin: 20px 0; }
+        pre { background: #000; padding: 20px; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; white-space: pre; font-family: 'Courier New', monospace; color: #a5b4fc; font-size: 14px; }
+        
+        .copy-btn { position: absolute; top: 10px; right: 10px; background: #1e293b; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
+        
+        .btn { cursor: pointer; padding: 12px 25px; border-radius: 12px; font-weight: 600; border: 1px solid var(--accent); background: transparent; color: var(--accent); transition: 0.3s; width: 100%; }
+        .btn:hover { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
-    <div id="container"></div>
+    <div class="wrapper" id="container"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
-        const db = getFirestore(initializeApp({ /* CONFIG DATA SAME */ }));
+        const db = getFirestore(initializeApp({
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        }));
 
         onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snap) => {
             const container = document.getElementById("container"); container.innerHTML = "";
@@ -37,8 +55,15 @@
                     const isCode = typeof item === 'object' && item.isCode;
                     const text = typeof item === 'object' ? item.text : item;
                     if(isCode) {
-                        const pre = document.createElement('pre'); pre.textContent = text;
-                        bodyDiv.appendChild(pre);
+                        const wrapper = document.createElement('div'); wrapper.className = 'code-block';
+                        wrapper.innerHTML = `<button class="copy-btn">COPY</button><pre></pre>`;
+                        wrapper.querySelector('pre').textContent = text;
+                        wrapper.querySelector('.copy-btn').onclick = (e) => {
+                            navigator.clipboard.writeText(text);
+                            e.target.innerText = "COPIED";
+                            setTimeout(() => e.target.innerText = "COPY", 2000);
+                        };
+                        bodyDiv.appendChild(wrapper);
                     } else {
                         const p = document.createElement('p'); p.className = 'para'; p.textContent = text;
                         bodyDiv.appendChild(p);
@@ -46,10 +71,12 @@
                 });
             });
         });
+
         window.toggle = (id, btn) => {
             const el = document.getElementById(`body-${id}`);
-            el.style.display = el.style.display === 'none' ? 'block' : 'none';
-            btn.innerText = el.style.display === 'none' ? "READ LOG" : "CLOSE LOG";
+            const isHidden = el.style.display === 'none';
+            el.style.display = isHidden ? 'block' : 'none';
+            btn.innerText = isHidden ? "CLOSE LOG" : "READ LOG";
         };
     </script>
 </body>
