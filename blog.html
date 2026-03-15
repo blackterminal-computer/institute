@@ -4,33 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archive | Black Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #020617; --accent: #6366f1; --border: rgba(255, 255, 255, 0.08); }
-        body { background: var(--bg); color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 40px 20px; margin: 0; }
+        body { background: var(--bg); color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 40px 20px; margin: 0; scroll-behavior: smooth; }
         .wrapper { max-width: 650px; margin: auto; }
         
-        .post { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.5); padding: 30px; border-radius: 24px; margin-bottom: 30px; border: 1px solid var(--border); }
-        h3 { font-size: 22px; margin-top: 0; }
+        #progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0%; z-index: 1000; }
         
+        /* Search Bar */
+        .search-container { position: sticky; top: 20px; z-index: 100; margin-bottom: 40px; }
+        #searchBar { width: 100%; padding: 16px 20px; border-radius: 16px; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border); color: #fff; backdrop-filter: blur(15px); outline: none; box-sizing: border-box; }
+        
+        /* Post Styling */
+        .post { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.5); padding: 30px; border-radius: 24px; margin-bottom: 30px; border: 1px solid var(--border); position: relative; animation: fadeInUp 0.6s ease backwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .title { color: #ffffff; font-size: 26px; font-weight: 800; margin-bottom: 12px; }
+        .date-meta { font-size: 11px; color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700; text-transform: uppercase; }
+        .tag { font-size: 10px; background: rgba(0,0,0,0.3); color: #fff; padding: 4px 10px; border-radius: 6px; margin-right: 6px; }
+        
+        /* Content & Code */
+        .content-body { max-height: 0; overflow: hidden; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .content-body.expanded { max-height: 5000px; margin-top: 25px; }
         .para { line-height: 1.7; color: #cbd5e1; margin-bottom: 20px; white-space: pre-wrap; font-size: 16px; }
         
         .code-block { position: relative; margin: 20px 0; }
-        pre { background: #000; padding: 20px; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; white-space: pre; font-family: 'Courier New', monospace; color: #a5b4fc; font-size: 14px; }
+        pre { background: #000; padding: 20px; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; white-space: pre; font-family: 'JetBrains Mono', monospace; color: #a5b4fc; font-size: 13px; }
+        .copy-btn { position: absolute; top: 10px; right: 10px; background: #1e293b; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
         
-        .copy-btn { position: absolute; top: 10px; right: 10px; background: #1e293b; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
-        
-        .btn { cursor: pointer; padding: 12px 25px; border-radius: 12px; font-weight: 600; border: 1px solid var(--accent); background: transparent; color: var(--accent); transition: 0.3s; width: 100%; }
-        .btn:hover { background: var(--accent); color: white; }
+        .btn-action { cursor: pointer; padding: 12px 25px; border-radius: 12px; font-weight: 600; border: 1px solid var(--accent); background: transparent; color: var(--accent); width: 100%; transition: 0.3s; }
+        .btn-action:hover { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
-    <div class="wrapper" id="container"></div>
+    <div id="progress"></div>
+    <div class="wrapper">
+        <h2 style="font-weight: 800; margin-bottom: 30px;">Archive Console</h2>
+        <div class="search-container">
+            <input type="text" id="searchBar" placeholder="Search logs or tags..." oninput="filterPosts()">
+        </div>
+        <div id="container">Loading...</div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        
+
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -40,43 +60,65 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
+        let allPosts = [];
         onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snap) => {
-            const container = document.getElementById("container"); container.innerHTML = "";
-            snap.forEach(doc => {
-                const b = doc.data();
-                if(b.status !== 'published') return;
-                
+            allPosts = [];
+            snap.forEach(doc => { if(doc.data().status === 'published') allPosts.push({id: doc.id, ...doc.data()}); });
+            render(allPosts);
+        });
+
+        function render(data) {
+            const container = document.getElementById("container");
+            container.innerHTML = data.length ? "" : "<p style='text-align:center;'>No logs found.</p>";
+            data.forEach(b => {
                 const card = document.createElement('div'); card.className = 'post';
-                card.innerHTML = `<h3>${b.title}</h3><div id="body-${doc.id}" style="display:none;"></div><button class="btn" onclick="toggle('${doc.id}', this)">READ LOG</button>`;
-                container.appendChild(card);
                 
-                const bodyDiv = document.getElementById(`body-${doc.id}`);
+                let contentHtml = "";
                 b.content.forEach(item => {
-                    const isCode = typeof item === 'object' && item.isCode;
                     const text = typeof item === 'object' ? item.text : item;
-                    if(isCode) {
-                        const wrapper = document.createElement('div'); wrapper.className = 'code-block';
-                        wrapper.innerHTML = `<button class="copy-btn">COPY</button><pre></pre>`;
-                        wrapper.querySelector('pre').textContent = text;
-                        wrapper.querySelector('.copy-btn').onclick = (e) => {
-                            navigator.clipboard.writeText(text);
-                            e.target.innerText = "COPIED";
-                            setTimeout(() => e.target.innerText = "COPY", 2000);
-                        };
-                        bodyDiv.appendChild(wrapper);
+                    if(typeof item === 'object' && item.isCode) {
+                        contentHtml += `<div class="code-block"><button class="copy-btn">COPY</button><pre>${text}</pre></div>`;
                     } else {
-                        const p = document.createElement('p'); p.className = 'para'; p.textContent = text;
-                        bodyDiv.appendChild(p);
+                        contentHtml += `<p class="para">${text}</p>`;
                     }
                 });
+
+                card.innerHTML = `
+                    <span class="date-meta">${new Date(b.createdAt.seconds * 1000).toDateString()}</span>
+                    <div class="title">${b.title}</div>
+                    <div>${(b.tags || []).map(t => `<span class="tag">#${t}</span>`).join("")}</div>
+                    <div class="content-body" id="body-${b.id}">${contentHtml}</div>
+                    <button class="btn-action" style="margin-top:20px" onclick="toggle('${b.id}', this)">READ LOG</button>
+                `;
+                
+                // Copy Event Delegation
+                card.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.onclick = (e) => {
+                        const code = e.target.nextElementSibling.textContent;
+                        navigator.clipboard.writeText(code);
+                        e.target.innerText = "COPIED";
+                        setTimeout(() => e.target.innerText = "COPY", 2000);
+                    };
+                });
+                container.appendChild(card);
             });
-        });
+        }
 
         window.toggle = (id, btn) => {
             const el = document.getElementById(`body-${id}`);
-            const isHidden = el.style.display === 'none';
-            el.style.display = isHidden ? 'block' : 'none';
-            btn.innerText = isHidden ? "CLOSE LOG" : "READ LOG";
+            const isExpanded = el.classList.toggle('expanded');
+            btn.innerText = isExpanded ? "CLOSE LOG" : "READ LOG";
+        };
+
+        window.filterPosts = () => {
+            const q = document.getElementById("searchBar").value.toLowerCase();
+            render(allPosts.filter(p => p.title.toLowerCase().includes(q) || (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))));
+        };
+
+        window.onscroll = () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            document.getElementById("progress").style.width = (winScroll / height) * 100 + "%";
         };
     </script>
 </body>
