@@ -12,11 +12,9 @@
         
         #progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0%; z-index: 1000; }
         
-        /* Search Bar */
         .search-container { position: sticky; top: 20px; z-index: 100; margin-bottom: 40px; }
         #searchBar { width: 100%; padding: 16px 20px; border-radius: 16px; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border); color: #fff; backdrop-filter: blur(15px); outline: none; box-sizing: border-box; }
         
-        /* Post Styling */
         .post { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.5); padding: 30px; border-radius: 24px; margin-bottom: 30px; border: 1px solid var(--border); position: relative; animation: fadeInUp 0.6s ease backwards; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -24,7 +22,6 @@
         .date-meta { font-size: 11px; color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700; text-transform: uppercase; }
         .tag { font-size: 10px; background: rgba(0,0,0,0.3); color: #fff; padding: 4px 10px; border-radius: 6px; margin-right: 6px; }
         
-        /* Content & Code */
         .content-body { max-height: 0; overflow: hidden; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .content-body.expanded { max-height: 5000px; margin-top: 25px; }
         .para { line-height: 1.7; color: #cbd5e1; margin-bottom: 20px; white-space: pre-wrap; font-size: 16px; }
@@ -84,14 +81,14 @@
                 });
 
                 card.innerHTML = `
-                    <span class="date-meta">${new Date(b.createdAt.seconds * 1000).toDateString()}</span>
+                    <span class="date-meta">${b.createdAt ? new Date(b.createdAt.seconds * 1000).toDateString() : ""}</span>
                     <div class="title">${b.title}</div>
                     <div>${(b.tags || []).map(t => `<span class="tag">#${t}</span>`).join("")}</div>
                     <div class="content-body" id="body-${b.id}">${contentHtml}</div>
-                    <button class="btn-action" style="margin-top:20px" onclick="toggle('${b.id}', this)">READ LOG</button>
+                    <button class="btn-action" style="margin-top:20px" 
+                        onclick="handleRead('${b.id}', this, '${b.password || ''}')">READ LOG</button>
                 `;
                 
-                // Copy Event Delegation
                 card.querySelectorAll('.copy-btn').forEach(btn => {
                     btn.onclick = (e) => {
                         const code = e.target.nextElementSibling.textContent;
@@ -104,7 +101,11 @@
             });
         }
 
-        window.toggle = (id, btn) => {
+        window.handleRead = (id, btn, savedPassword) => {
+            if (savedPassword && savedPassword !== "null" && savedPassword !== "") {
+                const userPass = prompt("Enter Password to read this log:");
+                if (userPass !== savedPassword) return alert("Incorrect Password!");
+            }
             const el = document.getElementById(`body-${id}`);
             const isExpanded = el.classList.toggle('expanded');
             btn.innerText = isExpanded ? "CLOSE LOG" : "READ LOG";
