@@ -2,54 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archive | Black Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #020617; --accent: #6366f1; --glass: rgba(15, 23, 42, 0.7); --border: rgba(255, 255, 255, 0.08); }
-        body { background: var(--bg); color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 40px 20px; margin: 0; scroll-behavior: smooth; }
-        .wrapper { max-width: 750px; margin: auto; }
-        
-        #progress { position: fixed; top: 0; left: 0; height: 4px; background: var(--accent); width: 0%; z-index: 1000; box-shadow: 0 0 10px var(--accent); }
-        .search-container { position: sticky; top: 20px; z-index: 100; margin-bottom: 50px; }
-        #searchBar { width: 100%; padding: 18px 25px; border-radius: 16px; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border); color: #fff; font-size: 16px; backdrop-filter: blur(15px); outline: none; transition: 0.3s; box-sizing: border-box; }
-        #searchBar:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
-        
-        .post { backdrop-filter: blur(10px); padding: 40px; border-radius: 28px; margin-bottom: 30px; border: 1px solid var(--border); position: relative; animation: fadeInUp 0.6s ease backwards; transition: 0.3s; }
-        .post:hover { border-color: rgba(99, 102, 241, 0.4); transform: translateY(-3px); }
-        
-        .bookmark-btn { position: absolute; top: 35px; right: 35px; cursor: pointer; font-size: 20px; filter: grayscale(1); transition: 0.3s; }
-        .bookmark-btn.saved { filter: grayscale(0); transform: scale(1.2); }
-        .title { color: #ffffff; font-size: 30px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.8px; }
-        .date-meta { font-size: 12px; color: var(--accent); margin-bottom: 15px; display: block; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .tag { font-size: 11px; background: rgba(0, 0, 0, 0.2); color: #fff; padding: 6px 14px; border-radius: 10px; margin-right: 8px; font-weight: 600; }
-        
-        .content-body { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .content-body.expanded { max-height: 5000px; opacity: 1; margin-top: 25px; }
-        .para { line-height: 1.8; color: #cbd5e1; margin-bottom: 20px; font-size: 17px; }
-        
-        .btn-group { display: flex; gap: 12px; margin-top: 25px; }
-        .btn-action { cursor: pointer; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; border: 1px solid var(--accent); background: transparent; color: var(--accent); transition: 0.2s; }
-        .btn-action:hover { background: var(--accent); color: white; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        body { background: #020617; color: #f1f5f9; font-family: sans-serif; padding: 40px 20px; }
+        .post { background: #0f172a; padding: 30px; border-radius: 20px; margin-bottom: 30px; border: 1px solid #1e293b; }
+        .para { line-height: 1.6; margin-bottom: 15px; white-space: pre-wrap; }
+        pre { background: #000; padding: 20px; border-radius: 12px; border: 1px solid #333; overflow-x: auto; white-space: pre; font-family: 'Courier New', monospace; color: #a5b4fc; }
+        .btn { cursor: pointer; padding: 10px 20px; border-radius: 10px; background: #6366f1; border: none; color: white; }
     </style>
 </head>
 <body>
-    <div id="progress"></div>
-    <div class="wrapper">
-        <h2 style="font-weight: 800; letter-spacing: -1px;">Archive Console</h2>
-        <div class="search-container">
-            <input type="text" id="searchBar" placeholder="Search archives or tags..." oninput="filterPosts()">
-        </div>
-        <div id="container">Loading logs...</div>
-    </div>
-
-    
-
+    <div id="container"></div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+        
         const db = getFirestore(initializeApp({
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -59,61 +26,34 @@
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
         }));
 
-        let allPosts = [];
-        let bookmarks = JSON.parse(localStorage.getItem('terminal_bookmarks')) || [];
-
-        function getTagColor(tags) {
-            if (!tags || tags.length === 0) return 'rgba(15, 23, 42, 0.7)';
-            let hash = 0;
-            for (let i = 0; i < tags[0].length; i++) hash = tags[0].charCodeAt(i) + ((hash << 5) - hash);
-            return `hsla(${hash % 360}, 60%, 20%, 0.8)`;
-        }
-
-        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snapshot) => {
-            allPosts = [];
-            snapshot.forEach(doc => { if(doc.data().status === 'published') allPosts.push({id: doc.id, ...doc.data()}); });
-            render(allPosts);
-        });
-
-        function render(data) {
-            const container = document.getElementById("container");
-            container.innerHTML = data.length ? "" : "<p style='text-align:center; opacity:0.5;'>No logs found.</p>";
-            data.forEach((b, index) => {
-                const card = document.createElement('div');
-                card.className = 'post';
-                // Force background color application
-                card.style.setProperty('background-color', getTagColor(b.tags), 'important');
-                card.innerHTML = `
-                    <div class="bookmark-btn ${bookmarks.includes(b.id) ? 'saved' : ''}" onclick="toggleBookmark('${b.id}', this)">🔖</div>
-                    <span class="date-meta">${b.createdAt ? new Date(b.createdAt.seconds * 1000).toDateString() : ""}</span>
-                    <div class="title">${b.title}</div>
-                    <div>${(b.tags || []).map(t => `<span class="tag">#${t}</span>`).join("")}</div>
-                    <div class="content-body" id="body-${b.id}">
-                        ${Array.isArray(b.content) ? b.content.map(p => `<p class="para">${p}</p>`).join("") : `<p class="para">${b.content}</p>`}
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn-action" onclick="toggleExpand('${b.id}', this)">READ LOG</button>
-                    </div>
-                `;
+        onSnapshot(query(collection(db, "blogs"), orderBy("createdAt", "desc")), (snap) => {
+            const container = document.getElementById("container"); container.innerHTML = "";
+            snap.forEach(doc => {
+                const b = doc.data();
+                if(b.status !== 'published') return;
+                
+                const card = document.createElement('div'); card.className = 'post';
+                card.innerHTML = `<h3>${b.title}</h3><div id="body-${doc.id}" style="display:none;"></div><button class="btn" onclick="toggle('${doc.id}', this)">READ LOG</button>`;
                 container.appendChild(card);
+                
+                const bodyDiv = document.getElementById(`body-${doc.id}`);
+                b.content.forEach(item => {
+                    const isCode = typeof item === 'object' && item.isCode;
+                    const text = typeof item === 'object' ? item.text : item;
+                    if(isCode) {
+                        const pre = document.createElement('pre'); pre.textContent = text;
+                        bodyDiv.appendChild(pre);
+                    } else {
+                        const p = document.createElement('p'); p.className = 'para'; p.textContent = text;
+                        bodyDiv.appendChild(p);
+                    }
+                });
             });
-        }
-
-        window.toggleExpand = (id, btn) => {
+        });
+        window.toggle = (id, btn) => {
             const el = document.getElementById(`body-${id}`);
-            const isExpanded = el.classList.toggle('expanded');
-            btn.innerText = isExpanded ? "CLOSE LOG" : "READ LOG";
-        };
-
-        window.filterPosts = () => {
-            const q = document.getElementById("searchBar").value.toLowerCase();
-            render(allPosts.filter(p => p.title.toLowerCase().includes(q) || (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))));
-        };
-
-        window.toggleBookmark = (id, btn) => {
-            bookmarks = bookmarks.includes(id) ? bookmarks.filter(i => i !== id) : [...bookmarks, id];
-            btn.classList.toggle('saved');
-            localStorage.setItem('terminal_bookmarks', JSON.stringify(bookmarks));
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            btn.innerText = el.style.display === 'none' ? "READ LOG" : "CLOSE LOG";
         };
     </script>
 </body>
