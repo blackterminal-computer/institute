@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | Roadmap Master v3.5</title>
+    <title>Admin Terminal | Easy Access</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root {
@@ -16,115 +16,113 @@
         }
 
         body {
-            background: var(--bg);
-            color: white;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            margin: 0; padding: 20px;
+            background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0; padding: 15px; background-attachment: fixed;
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
-            padding-bottom: 100px;
         }
 
-        .admin-container { max-width: 750px; margin: auto; }
+        .admin-container { max-width: 800px; margin: auto; padding-bottom: 100px; }
 
-        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        .action-card { 
-            background: var(--card-bg); border: 1px solid var(--border); 
-            border-radius: 20px; padding: 20px; backdrop-filter: blur(15px);
-        }
-        .action-card h3 { margin: 0 0 15px 0; font-size: 13px; color: var(--accent-blue); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        /* TAB SYSTEM */
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 12px; border: 1px solid var(--border); }
+        .tab-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .tab-btn.active { background: var(--card-bg); color: var(--accent-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* CARDS */
+        .glass-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 20px; backdrop-filter: blur(15px); margin-bottom: 20px; }
         
-        input, textarea, select { 
-            width: 100%; background: #0f172a; border: 1px solid var(--border); 
-            color: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; outline: none; font-family: inherit; font-size: 13px;
-        }
+        /* SEARCH & LISTS */
+        .search-box { position: relative; margin-bottom: 15px; }
+        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
+        .search-box input { padding-left: 40px !important; margin-bottom: 0 !important; }
+
+        .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 250px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--border); }
+        .s-chk { font-size: 11px; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; display: flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid transparent; }
+        .s-chk:hover { border-color: var(--accent-blue); }
         
-        .mini-btn { 
-            width: 100%; padding: 12px; border-radius: 10px; border: none; 
-            font-weight: 800; cursor: pointer; transition: 0.3s; font-size: 11px; text-transform: uppercase;
-        }
-        .btn-purple { background: #6366f1; color: white; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
-        .btn-outline { background: transparent; border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+        input, textarea, select { width: 100%; background: #0f172a; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 10px; margin-bottom: 12px; outline: none; font-size: 13px; box-sizing: border-box; }
+        
+        .main-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-blue { background: linear-gradient(90deg, #00d2ff, #3a7bd5); color: white; }
 
-        /* Module Management List Styles */
-        .manage-list { margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px; max-height: 150px; overflow-y: auto; }
-        .m-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; font-size: 12px; border: 1px solid var(--border); }
-        .m-actions { display: flex; gap: 8px; }
-        .m-actions i { cursor: pointer; transition: 0.2s; }
-        .i-edit { color: var(--accent-blue); }
-        .i-del { color: var(--accent-red); }
-
-        .student-grid-select { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; 
-            max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); 
-            padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid var(--border);
-        }
-        .s-chk { font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer; opacity: 0.8; }
-        .s-chk input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent-blue); }
-
-        .selector-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-bottom: 30px; }
-
-        /* Timeline Design */
-        .module-list { position: relative; padding-left: 45px; }
+        /* INDIVIDUAL TIMELINE (100% OLD STYLE) */
+        .module-list { position: relative; padding-left: 45px; margin-top: 20px; }
         .module-list::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--accent-blue), #1e293b); }
         .module-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px; padding: 25px; margin-bottom: 25px; position: relative; }
         .status-marker { position: absolute; left: -48px; top: 25px; width: 32px; height: 32px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; z-index: 2; }
-        .module-card.active-mod { border-color: var(--accent-blue); box-shadow: 0 0 20px rgba(0, 210, 255, 0.1); }
-        .module-card.done-mod .status-marker { border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); }
-        .module-card.prog-mod .status-marker { border-color: var(--accent-blue); color: var(--accent-blue); box-shadow: 0 0 10px var(--accent-blue); }
-        .m-tag { color: var(--accent-blue); font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .module-card.done-mod .status-marker { border-color: var(--accent-green); color: var(--accent-green); }
+        .module-card.prog-mod .status-marker { border-color: var(--accent-blue); color: var(--accent-blue); }
         .m-title { font-size: 18px; font-weight: 700; margin-bottom: 15px; }
-        .controls { display: flex; gap: 10px; margin-top: 15px; }
+        .controls { display: flex; gap: 8px; }
         .st-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.2); color: #64748b; font-size: 10px; font-weight: 800; cursor: pointer; text-align: center; }
         .st-btn.active[data-val="completed"] { background: rgba(34, 197, 94, 0.1); color: var(--accent-green); border-color: var(--accent-green); }
         .st-btn.active[data-val="progress"] { background: rgba(0, 210, 255, 0.1); color: var(--accent-blue); border-color: var(--accent-blue); }
-        .st-btn.active[data-val="locked"] { color: white; border-color: white; opacity: 1; }
+        .st-btn.active[data-val="locked"] { color: white; border-color: white; }
 
-        .save-btn { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, #00d2ff, #3a7bd5); color: white; padding: 16px 50px; border-radius: 50px; border: none; font-weight: 800; box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3); cursor: pointer; z-index: 100; text-transform: uppercase; letter-spacing: 1px; }
-
-        @media (max-width: 600px) { .admin-grid { grid-template-columns: 1fr; } }
+        .floating-save { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent-blue); color: black; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,210,255,0.4); border: none; z-index: 1000; }
     </style>
 </head>
 <body>
 
 <div class="admin-container">
-    <div class="admin-grid">
-        <div class="action-card">
-            <h3><i class="ri-add-circle-line"></i> Global Modules</h3>
-            <input type="text" id="newMTitle" placeholder="Module Title">
-            <textarea id="newMDesc" placeholder="Description..." rows="2"></textarea>
-            <button class="mini-btn btn-purple" id="addBtn" onclick="createNewModule()">Publish Module</button>
-            
-            <div class="manage-list" id="mManageList">
-                <p style="font-size:10px; opacity:0.5; text-align:center;">Loading Modules...</p>
+    <h2 style="text-align:center; font-size:18px; letter-spacing:2px; margin-bottom:20px;">MASTER TERMINAL</h2>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="openTab('individual')"><i class="ri-user-settings-line"></i> Individual</button>
+        <button class="tab-btn" onclick="openTab('bulk')"><i class="ri-group-line"></i> Bulk Sync</button>
+        <button class="tab-btn" onclick="openTab('modules')"><i class="ri-folder-add-line"></i> Modules</button>
+    </div>
+
+    <div id="individual" class="tab-content active">
+        <div class="glass-card">
+            <select id="studentSelect" onchange="loadIndividualRoadmap()"><option value="">-- Choose Student --</option></select>
+            <div id="dynamicList" class="module-list">
+                <p style="text-align:center; opacity:0.5;">Select a student to manage roadmap</p>
             </div>
         </div>
+    </div>
 
-        <div class="action-card">
-            <h3><i class="ri-group-line"></i> Bulk Status Update</h3>
-            <div class="student-grid-select" id="bulkStudentList"></div>
+    <div id="bulk" class="tab-content">
+        <div class="glass-card">
+            <h3>Bulk Update</h3>
+            <div class="search-box">
+                <i class="ri-search-line"></i>
+                <input type="text" id="studentSearch" placeholder="Search students..." onkeyup="filterStudents()">
+            </div>
+            <div class="student-grid" id="bulkStudentList"></div>
+            <p style="font-size:11px; margin: 10px 0; color:var(--accent-blue);">Set status for selected:</p>
             <select id="bulkModuleId"><option value="">-- Select Module --</option></select>
             <select id="bulkStatusVal">
                 <option value="locked">Locked 🔒</option>
                 <option value="progress">In Progress ⚡</option>
                 <option value="completed">Completed ✅</option>
             </select>
-            <button class="mini-btn btn-outline" onclick="saveBulkStatus()">Sync Selected</button>
+            <button class="main-btn btn-blue" onclick="saveBulkStatus()">Apply to Selected</button>
         </div>
     </div>
 
-    <div class="selector-card">
-        <h3 style="margin-top:0; font-size:12px; opacity:0.6;">INDIVIDUAL STUDENT COMMAND</h3>
-        <select id="studentSelect"><option value="">-- Choose Student --</option></select>
+    <div id="modules" class="tab-content">
+        <div class="glass-card">
+            <h3 id="modActionTitle">Add Global Module</h3>
+            <input type="text" id="newMTitle" placeholder="Module Title">
+            <textarea id="newMDesc" placeholder="Description..." rows="3"></textarea>
+            <button class="main-btn btn-blue" id="addBtn" onclick="createNewModule()">Publish Globally</button>
+            
+            <div id="mManageList" style="margin-top:20px;">
+                </div>
+        </div>
     </div>
-
-    <div class="module-list" id="dynamicList"></div>
 </div>
 
-<button class="save-btn" onclick="saveAll()">Final Sync Terminal</button>
+<button class="floating-save" onclick="saveAllIndividual()" title="Save Current Changes"><i class="ri-save-3-line"></i></button>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, setDoc, arrayUnion, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const db = getFirestore(initializeApp({
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -137,77 +135,121 @@
 
     let editId = null;
 
+    // TAB LOGIC
+    window.openTab = (name) => {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(name).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // LOAD DATA
     async function init() {
+        const sSnap = await getDocs(collection(db, "students"));
         const sSelect = document.getElementById('studentSelect');
         const bulkList = document.getElementById('bulkStudentList');
-        const bulkModSelect = document.getElementById('bulkModuleId');
-        const mManageList = document.getElementById('mManageList');
         
-        const sSnap = await getDocs(collection(db, "students"));
         sSelect.innerHTML = '<option value="">-- Choose Student --</option>';
         bulkList.innerHTML = "";
         sSnap.forEach(d => {
             sSelect.innerHTML += `<option value="${d.id}">${d.id}</option>`;
-            bulkList.innerHTML += `<label class="s-chk"><input type="checkbox" class="bulk-chk" value="${d.id}"> ${d.id}</label>`;
+            bulkList.innerHTML += `<label class="s-chk student-row"><input type="checkbox" class="bulk-chk" value="${d.id}"> <span>${d.id}</span></label>`;
         });
 
         const mSnap = await getDoc(doc(db, "settings", "roadmapConfig"));
         if(mSnap.exists()){
             const modules = mSnap.data().modules || [];
-            bulkModSelect.innerHTML = '<option value="">-- Select Module --</option>';
-            mManageList.innerHTML = "";
-            modules.forEach(m => {
-                bulkModSelect.innerHTML += `<option value="${m.id}">${m.title}</option>`;
-                mManageList.innerHTML += `
-                    <div class="m-item">
-                        <span>${m.title}</span>
-                        <div class="m-actions">
-                            <i class="ri-edit-line i-edit" onclick="prepEdit('${m.id}', '${m.title}', '${m.desc}')"></i>
-                            <i class="ri-delete-bin-line i-del" onclick="deleteModule('${m.id}')"></i>
-                        </div>
-                    </div>`;
-            });
+            document.getElementById('bulkModuleId').innerHTML = '<option value="">-- Select Module --</option>' + modules.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
+            document.getElementById('mManageList').innerHTML = modules.map(m => `
+                <div class="glass-card" style="padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b style="font-size:14px;">${m.title}</b></div>
+                    <div style="display:flex; gap:15px; font-size:18px;">
+                        <i class="ri-edit-line" style="color:var(--accent-blue); cursor:pointer;" onclick="prepEdit('${m.id}','${m.title}','${m.desc}')"></i>
+                        <i class="ri-delete-bin-line" style="color:var(--accent-red); cursor:pointer;" onclick="deleteModule('${m.id}')"></i>
+                    </div>
+                </div>
+            `).join('');
         }
     }
     init();
 
+    // INDIVIDUAL MANAGEMENT (100% SAME AS PREVIOUS)
+    window.loadIndividualRoadmap = async () => {
+        const sId = document.getElementById('studentSelect').value;
+        if(!sId) return;
+        const configSnap = await getDoc(doc(db, "settings", "roadmapConfig"));
+        const studentSnap = await getDoc(doc(db, "students", sId));
+        const modules = configSnap.data().modules || [];
+        const statusData = studentSnap.data().roadmapStatus || {};
+        const list = document.getElementById('dynamicList');
+        list.innerHTML = modules.map((m, i) => `
+            <div class="module-card ${statusData[m.id] === 'completed' ? 'done-mod' : statusData[m.id] === 'progress' ? 'prog-mod' : ''}">
+                <div class="status-marker"><i class="${statusData[m.id] === 'completed' ? 'ri-check-line' : statusData[m.id] === 'progress' ? 'ri-play-fill' : 'ri-lock-2-line'}"></i></div>
+                <span style="color:var(--accent-blue); font-size:10px; font-weight:800;">MODULE 0${i+1}</span>
+                <div class="m-title">${m.title}</div>
+                <div class="controls" data-mid="${m.id}">
+                    <div class="st-btn ${statusData[m.id] === 'locked' || !statusData[m.id] ? 'active' : ''}" data-val="locked">LOCKED</div>
+                    <div class="st-btn ${statusData[m.id] === 'progress' ? 'active' : ''}" data-val="progress">PROGRESS</div>
+                    <div class="st-btn ${statusData[m.id] === 'completed' ? 'active' : ''}" data-val="completed">DONE</div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.st-btn').forEach(btn => btn.onclick = function() {
+            this.parentElement.querySelectorAll('.st-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    };
+
+    window.saveAllIndividual = async () => {
+        const sId = document.getElementById('studentSelect').value;
+        if(!sId) return alert("Select individual student!");
+        const roadmapStatus = {};
+        document.querySelectorAll('.controls').forEach(ctrl => roadmapStatus[ctrl.dataset.mid] = ctrl.querySelector('.active').dataset.val);
+        await updateDoc(doc(db, "students", sId), { roadmapStatus });
+        alert("Synced for " + sId);
+    };
+
+    // SEARCH FILTER
+    window.filterStudents = () => {
+        const q = document.getElementById('studentSearch').value.toLowerCase();
+        document.querySelectorAll('.student-row').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
+        });
+    }
+
+    // MODULE ACTIONS
     window.createNewModule = async () => {
         const title = document.getElementById('newMTitle').value;
         const desc = document.getElementById('newMDesc').value;
-        if(!title) return alert("Title bhariye!");
-
-        const configRef = doc(db, "settings", "roadmapConfig");
-        const snap = await getDoc(configRef);
+        if(!title) return;
+        const ref = doc(db, "settings", "roadmapConfig");
+        const snap = await getDoc(ref);
         let modules = snap.exists() ? snap.data().modules : [];
-
         if(editId) {
             modules = modules.map(m => m.id === editId ? { ...m, title, desc } : m);
-            editId = null;
-            document.getElementById('addBtn').innerText = "Publish Module";
         } else {
             modules.push({ id: "mod_" + Date.now(), title, desc });
         }
-
-        await setDoc(configRef, { modules });
-        alert("Success!");
+        await setDoc(ref, { modules });
         location.reload();
     };
 
-    window.prepEdit = (id, title, desc) => {
+    window.prepEdit = (id, t, d) => {
+        openTab('modules');
         editId = id;
-        document.getElementById('newMTitle').value = title;
-        document.getElementById('newMDesc').value = desc;
+        document.getElementById('newMTitle').value = t;
+        document.getElementById('newMDesc').value = d;
         document.getElementById('addBtn').innerText = "Update Module";
-        document.getElementById('newMTitle').focus();
+        document.getElementById('modActionTitle').innerText = "Edit Module";
     };
 
     window.deleteModule = async (id) => {
-        if(!confirm("Are you sure? Isse sabhi students ka progress data bhi chala jayega!")) return;
-        const configRef = doc(db, "settings", "roadmapConfig");
-        const snap = await getDoc(configRef);
+        if(!confirm("Delete this module globally?")) return;
+        const ref = doc(db, "settings", "roadmapConfig");
+        const snap = await getDoc(ref);
         const modules = snap.data().modules.filter(m => m.id !== id);
-        await setDoc(configRef, { modules });
-        alert("Deleted!");
+        await setDoc(ref, { modules });
         location.reload();
     };
 
@@ -215,52 +257,12 @@
         const selected = Array.from(document.querySelectorAll('.bulk-chk:checked')).map(c => c.value);
         const mId = document.getElementById('bulkModuleId').value;
         const status = document.getElementById('bulkStatusVal').value;
-        if(selected.length === 0 || !mId) return alert("Select students and module!");
+        if(selected.length === 0 || !mId) return alert("Select data!");
         const batch = writeBatch(db);
-        selected.forEach(sId => batch.update(doc(db, "students", sId), { [`roadmapStatus.${mId}`]: status }));
+        selected.forEach(id => batch.update(doc(db, "students", id), { [`roadmapStatus.${mId}`]: status }));
         await batch.commit();
-        alert(`Updated ${selected.length} students!`);
+        alert("Bulk Sync Complete!");
         location.reload();
-    };
-
-    sSelect.onchange = async () => {
-        const sId = sSelect.value;
-        if(!sId) return;
-        const configSnap = await getDoc(doc(db, "settings", "roadmapConfig"));
-        const studentSnap = await getDoc(doc(db, "students", sId));
-        const modules = configSnap.data().modules || [];
-        const statusData = studentSnap.data().roadmapStatus || {};
-        const list = document.getElementById('dynamicList');
-        list.innerHTML = "";
-        modules.forEach((m, index) => {
-            const current = statusData[m.id] || 'locked';
-            const card = document.createElement('div');
-            card.className = `module-card ${current === 'completed' ? 'done-mod' : current === 'progress' ? 'prog-mod active-mod' : ''}`;
-            let icon = current === 'completed' ? 'ri-check-line' : current === 'progress' ? 'ri-play-fill' : 'ri-lock-2-line';
-            card.innerHTML = `
-                <div class="status-marker"><i class="${icon}"></i></div>
-                <span class="m-tag">Module 0${index + 1}</span>
-                <div class="m-title">${m.title}</div>
-                <div class="controls" data-mid="${m.id}">
-                    <div class="st-btn ${current === 'locked' ? 'active' : ''}" data-val="locked">LOCKED</div>
-                    <div class="st-btn ${current === 'progress' ? 'active' : ''}" data-val="progress">PROGRESS</div>
-                    <div class="st-btn ${current === 'completed' ? 'active' : ''}" data-val="completed">DONE</div>
-                </div>`;
-            list.appendChild(card);
-        });
-        document.querySelectorAll('.st-btn').forEach(btn => btn.onclick = function() {
-            this.parentElement.querySelectorAll('.st-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-        });
-    };
-
-    window.saveAll = async () => {
-        const sId = sSelect.value;
-        if(!sId) return alert("Select individual student!");
-        const roadmapStatus = {};
-        document.querySelectorAll('.controls').forEach(ctrl => roadmapStatus[ctrl.dataset.mid] = ctrl.querySelector('.active').dataset.val);
-        await updateDoc(doc(db, "students", sId), { roadmapStatus });
-        alert("✅ Synced!");
     };
 </script>
 </body>
