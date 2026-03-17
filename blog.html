@@ -15,7 +15,22 @@
         .search-container { position: sticky; top: 20px; z-index: 100; margin-bottom: 40px; }
         #searchBar { width: 100%; padding: 16px 20px; border-radius: 16px; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border); color: #fff; backdrop-filter: blur(15px); outline: none; box-sizing: border-box; }
         
-        .post { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.5); padding: 30px; border-radius: 24px; margin-bottom: 30px; border: 1px solid var(--border); position: relative; animation: fadeInUp 0.6s ease backwards; }
+        /* NEW LEVEL CSS */
+        .post { backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.5); padding: 30px; border-radius: 24px; margin-bottom: 30px; border: 1px solid var(--border); position: relative; animation: fadeInUp 0.6s ease backwards; transition: 0.3s; }
+        .post.is-new { border: 1px solid var(--accent); box-shadow: 0 0 20px rgba(99, 102, 241, 0.15); }
+        
+        .new-badge { 
+            position: absolute; top: 20px; right: 20px; background: var(--accent); 
+            color: white; font-size: 9px; font-weight: 900; padding: 4px 10px; 
+            border-radius: 50px; letter-spacing: 1px; animation: pulse-new 2s infinite; 
+        }
+
+        @keyframes pulse-new {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
         .title { color: #ffffff; font-size: 26px; font-weight: 800; margin-bottom: 12px; }
@@ -41,7 +56,7 @@
         <div class="search-container">
             <input type="text" id="searchBar" placeholder="Search logs or tags..." oninput="filterPosts()">
         </div>
-        <div id="container">Loading...</div>
+        <div id="container">Loading terminal logs...</div>
     </div>
 
     <script type="module">
@@ -67,9 +82,17 @@
         function render(data) {
             const container = document.getElementById("container");
             container.innerHTML = data.length ? "" : "<p style='text-align:center;'>No logs found.</p>";
+            
             data.forEach(b => {
-                const card = document.createElement('div'); card.className = 'post';
+                const card = document.createElement('div');
                 
+                // NEW LEVEL LOGIC: Check if post is less than 24 hours old
+                const postDate = b.createdAt ? b.createdAt.seconds * 1000 : 0;
+                const isNew = (Date.now() - postDate) < (24 * 60 * 60 * 1000);
+                
+                card.className = `post ${isNew ? 'is-new' : ''}`;
+                const newBadge = isNew ? `<span class="new-badge">NEW LOG</span>` : "";
+
                 let contentHtml = "";
                 b.content.forEach(item => {
                     const text = typeof item === 'object' ? item.text : item;
@@ -81,6 +104,7 @@
                 });
 
                 card.innerHTML = `
+                    ${newBadge}
                     <span class="date-meta">${b.createdAt ? new Date(b.createdAt.seconds * 1000).toDateString() : ""}</span>
                     <div class="title">${b.title}</div>
                     <div>${(b.tags || []).map(t => `<span class="tag">#${t}</span>`).join("")}</div>
@@ -89,6 +113,7 @@
                         onclick="handleRead('${b.id}', this, '${b.password || ''}')">READ LOG</button>
                 `;
                 
+                // Copy logic remains 100% same
                 card.querySelectorAll('.copy-btn').forEach(btn => {
                     btn.onclick = (e) => {
                         const code = e.target.nextElementSibling.textContent;
