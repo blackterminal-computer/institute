@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BT | Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        :root { --primary: #6366f1; --bg: #030712; --card-bg: rgba(255, 255, 255, 0.03); --border: rgba(255, 255, 255, 0.08); --success: #10b981; --danger: #f43f5e; --warning: #f59e0b; }
+        body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 15px; }
+        .admin-container { max-width: 500px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .search-box { width: 100%; background: var(--card-bg); border: 1px solid var(--border); padding: 14px; border-radius: 12px; color: white; margin-bottom: 20px; outline: none; box-sizing: border-box; }
+        .student-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 18px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
+        .prog-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin: 12px 0; overflow: hidden; }
+        .prog-fill { height: 100%; transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .btn { border: none; padding: 10px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; color: #fff; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn:active { transform: scale(0.92); }
+        .btn-add { background: var(--success); }
+        .btn-rem { background: var(--danger); }
+        .btn-xp { background: var(--primary); }
+        .btn-pay { grid-column: span 3; background: #fff; color: #000; margin-top: 5px; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <div class="header">
+        <h2 style="margin:0; font-size:18px;">Admin Terminal</h2>
+        <span id="totalCount" style="font-size: 10px; opacity: 0.5;">SYNCING...</span>
+    </div>
+
+    <input type="text" id="search" class="search-box" placeholder="Search student name..." oninput="window.filterStudents()">
+
+    <div id="studentList"><p style="text-align:center; opacity:0.5;">Loading Agents...</p></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, getDocs, query, where, deleteDoc, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.appspot.com",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let cache = [];
+
+    // --- LIVE SYNC ENGINE ---
+    function initSync() {
+        onSnapshot(collection(db, "students"), async (snap) => {
+            cache = [];
+            const listEl = document.getElementById("studentList");
+            listEl.innerHTML = "";
+
+            for (const sDoc of snap.docs) {
+                const data = sDoc.data();
+                const id = sDoc.id;
+
+                // Getting live attendance count
+                const attSnap = await getDocs(query(collection(db, "attendance"), where("userName", "==", id)));
+                const count = attSnap.size;
+
+                cache.push({ id, ...data, attCount: count });
+                renderCard(id, data, count);
+            }
+            document.getElementById("totalCount").innerText = `${snap.size} AGENTS ONLINE`;
+        });
+    }
+
+    function renderCard(id, data, count) {
+        const target = (parseInt(data.courseDuration) || 1) * 30;
+        const perc = Math.min(Math.round((count / target) * 100), 100);
+        const color = perc < 70 ? 'var(--danger)' : 'var(--success)';
+
+        const card = document.createElement("div");
+        card.className = "student-card";
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between;">
+                <div>
+                    <p style="margin:0; font-weight:800; font-size:16px;">${id}</p>
+                    <p style="margin:2px 0; font-size:10px; opacity:0.4;">${data.currentCourse || 'N/A'}</p>
+                </div>
+                <div style="text-align:right"><b style="color:${color}">${perc}%</b></div>
+            </div>
+
+            <div class="prog-bg"><div class="prog-fill" style="width:${perc}%; background:${color}"></div></div>
+
+            <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.7; font-weight:700;">
+                <span>DAYS: ${count} / ${target}</span>
+                <span>XP: ${data.xp || 0}</span>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-add" onclick="window.updateAtt('${id}', 'add')"><i class="ri-add-circle-fill"></i> + Add</button>
+                <button class="btn btn-rem" onclick="window.updateAtt('${id}', 'rem')"><i class="ri-indeterminate-circle-fill"></i> - Rem</button>
+                <button class="btn btn-xp" onclick="window.modXP('${id}')"><i class="ri-flashlight-fill"></i> XP</button>
+                <button class="btn btn-pay" onclick="window.modPay('${id}', '${data.paymentStatus}')">Update Payment Status</button>
+            </div>
+        `;
+        document.getElementById("studentList").appendChild(card);
+    }
+
+    // --- ACTIONS EXPOSED TO WINDOW ---
+    window.updateAtt = async (name, mode) => {
+        try {
+            if (mode === 'add') {
+                await addDoc(collection(db, "attendance"), { 
+                    userName: name, 
+                    timestamp: Date.now(),
+                    date: new Date().toLocaleDateString() 
+                });
+            } else {
+                const q = query(collection(db, "attendance"), where("userName", "==", name), limit(1));
+                const snap = await getDocs(q);
+                if (!snap.empty) await deleteDoc(doc(db, "attendance", snap.docs[0].id));
+            }
+            // onSnapshot automatically re-renders the UI
+        } catch (e) { console.error(e); }
+    };
+
+    window.modXP = async (id) => {
+        const val = prompt("Add/Sub XP:");
+        if (!val) return;
+        const curr = cache.find(s => s.id === id).xp || 0;
+        await updateDoc(doc(db, "students", id), { xp: parseInt(curr) + parseInt(val) });
+    };
+
+    window.modPay = async (id, status) => {
+        await updateDoc(doc(db, "students", id), { paymentStatus: status === 'Paid' ? 'Overdue' : 'Paid' });
+    };
+
+    window.filterStudents = () => {
+        const term = document.getElementById("search").value.toLowerCase();
+        document.getElementById("studentList").innerHTML = "";
+        cache.filter(s => s.id.toLowerCase().includes(term)).forEach(s => renderCard(s.id, s, s.attCount));
+    };
+
+    initSync();
+</script>
+</body>
+</html>
