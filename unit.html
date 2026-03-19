@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BT | Online Examination System</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+        :root {
+            --primary: #6366f1; --bg: #030712; --card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --danger: #f43f5e; --warn: #f59e0b;
+        }
+
+        body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 600px; }
+
+        /* Floating Animation */
+        .floating-text { position: fixed; pointer-events: none; font-weight: 800; font-size: 22px; animation: floatUp 0.8s ease-out forwards; z-index: 10000; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-70px); opacity: 0; } }
+
+        .header-card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 10px; z-index: 100; backdrop-filter: blur(10px); }
+        .timer { color: var(--danger); font-weight: 800; font-size: 18px; display: flex; align-items: center; gap: 5px; }
+
+        .q-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
+        .opt-label { display: block; background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 12px; border-radius: 12px; margin-top: 8px; cursor: pointer; transition: 0.2s; }
+        .opt-label:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
+        input[type="radio"] { margin-right: 10px; accent-color: var(--primary); }
+
+        .leaderboard { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-top: 30px; width: 100%; box-sizing: border-box; }
+        .l-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .l-table td, .l-table th { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .rank { background: var(--primary); padding: 2px 8px; border-radius: 5px; font-weight: 800; }
+
+        .btn-submit { width: 100%; padding: 18px; background: var(--primary); border: none; border-radius: 15px; color: #fff; font-weight: 800; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        #result-screen { display: none; text-align: center; padding: 40px 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="exam-screen">
+    <div class="header-card">
+        <div><h2 style="margin:0; font-size:18px;">Class Test v2</h2><p style="margin:0; font-size:10px; opacity:0.5;">20 QUESTIONS • REAL-TIME</p></div>
+        <div class="timer"><i class="ri-time-fill"></i> <span id="time-left">10:00</span></div>
+    </div>
+
+    <div id="questions-box"></div>
+    <button class="btn-submit" onclick="window.submitExam(event)">Finish & Save Score</button>
+</div>
+
+<div class="container" id="result-screen">
+    <i class="ri-medal-fill" style="font-size: 60px; color: var(--warn);"></i>
+    <h1>Test Submitted!</h1>
+    <div style="font-size: 40px; font-weight: 800; color: var(--success);" id="final-perc">0%</div>
+    <p id="score-summary"></p>
+    <button class="btn-submit" onclick="location.reload()">Restart Test</button>
+</div>
+
+<div class="container leaderboard">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0;"><i class="ri- trophy-line"></i> Top Performers</h3>
+        <span id="p-count" style="font-size:10px; color:var(--success);">SYNCING...</span>
+    </div>
+    <table class="l-table">
+        <thead><tr><th>Rank</th><th>Agent</th><th>Score</th></tr></thead>
+        <tbody id="l-body"></tbody>
+    </table>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        projectId: "black-terminal-f2c91",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const questions = [
+        { q: "HTML stands for?", a: "Hyper Text Markup Language", o: ["Hyper Text Markup Language", "High Text Machine Language", "Hyper Tech Multi Language", "None"] },
+        { q: "Tag for Largest Heading?", a: "h1", o: ["h6", "heading", "h1", "head"] },
+        { q: "Tag for Line Break?", a: "br", o: ["lb", "break", "br", "hr"] },
+        { q: "CSS stands for?", a: "Cascading Style Sheets", o: ["Creative Style System", "Cascading Style Sheets", "Color Style Sheet", "None"] },
+        { q: "JavaScript keyword for variables?", a: "var", o: ["var", "v", "variable", "int"] },
+        { q: "HTML element for JS?", a: "script", o: ["js", "script", "link", "javascript"] },
+        { q: "Symbol for ID Selector?", a: "#", o: [".", "#", "*", "@"] },
+        { q: "Unordered List tag?", a: "ul", o: ["ol", "li", "ul", "list"] },
+        { q: "Tag for Image?", a: "img", o: ["pic", "img", "src", "image"] },
+        { q: "Inline element example?", a: "span", o: ["div", "h1", "p", "span"] },
+        { q: "Correct way to write an Array?", a: "[1,2,3]", o: ["(1,2,3)", "{1,2,3}", "[1,2,3]", "<1,2,3>"] },
+        { q: "Which property adds space inside an element?", a: "padding", o: ["margin", "padding", "border", "spacing"] },
+        { q: "Which property adds space outside an element?", a: "margin", o: ["margin", "padding", "border", "spacing"] },
+        { q: "Which HTML tag is used for the footer?", a: "footer", o: ["bottom", "footer", "section", "end"] },
+        { q: "What does DOM stand for?", a: "Document Object Model", o: ["Data Object Model", "Document Object Model", "Digital Order Mode", "None"] },
+        { q: "Which company developed Java?", a: "Sun Microsystems", o: ["Microsoft", "Google", "Sun Microsystems", "Apple"] },
+        { q: "Symbol for Class Selector?", a: ".", o: [".", "#", "!", "&"] },
+        { q: "How to comment in CSS?", a: "/* comment */", o: ["// comment", "", "/* comment */", "# comment"] },
+        { q: "Default display of <div>?", a: "block", o: ["inline", "block", "inline-block", "none"] },
+        { q: "Protocol for secure web?", a: "HTTPS", o: ["HTTP", "FTP", "HTTPS", "SSH"] }
+    ];
+
+    // --- RENDER QUESTIONS ---
+    const qBox = document.getElementById('questions-box');
+    questions.forEach((item, i) => {
+        qBox.innerHTML += `
+            <div class="q-card">
+                <div style="font-weight:700; margin-bottom:10px;">${i+1}. ${item.q}</div>
+                ${item.o.map(opt => `
+                    <label class="opt-label">
+                        <input type="radio" name="q${i}" value="${opt}"> ${opt}
+                    </label>
+                `).join('')}
+            </div>
+        `;
+    });
+
+    // --- FLOATING TEXT ---
+    window.showFloat = (e, text, color) => {
+        const el = document.createElement("span");
+        el.className = "floating-text";
+        el.innerText = text;
+        el.style.left = `${e.clientX}px`; el.style.top = `${e.clientY}px`;
+        el.style.color = color;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 800);
+    };
+
+    // --- TIMER ---
+    let time = 600;
+    const timerInt = setInterval(() => {
+        let m = Math.floor(time / 60); let s = time % 60;
+        document.getElementById('time-left').innerText = `${m}:${s<10?'0':''}${s}`;
+        if (time <= 0) { clearInterval(timerInt); window.submitExam(); }
+        time--;
+    }, 1000);
+
+    // --- SUBMIT EXAM ---
+    window.submitExam = async (e) => {
+        if(e) window.showFloat(e, "SAVING...", "var(--success)");
+        const name = prompt("Enter Name for Leaderboard:");
+        if(!name) return alert("Name is required!");
+
+        let correct = 0;
+        questions.forEach((item, i) => {
+            const sel = document.querySelector(`input[name="q${i}"]:checked`);
+            if(sel && sel.value === item.a) correct++;
+        });
+
+        const score = Math.round((correct / 20) * 100);
+        await addDoc(collection(db, "exam_results"), { name, score, time: Date.now() });
+
+        document.getElementById('exam-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-perc').innerText = score + "%";
+        document.getElementById('score-summary').innerText = `You got ${correct} out of 20 correct.`;
+        clearInterval(timerInt);
+    };
+
+    // --- SYNC LEADERBOARD ---
+    const q = query(collection(db, "exam_results"), orderBy("score", "desc"), limit(10));
+    onSnapshot(q, (snap) => {
+        const body = document.getElementById('l-body');
+        body.innerHTML = "";
+        let rank = 1;
+        snap.forEach(doc => {
+            const d = doc.data();
+            body.innerHTML += `<tr><td><span class="rank">${rank++}</span></td><td>${d.name}</td><td style="color:var(--primary); font-weight:800;">${d.score}%</td></tr>`;
+        });
+        document.getElementById('p-count').innerText = `${snap.size} PARTICIPANTS`;
+    });
+
+</script>
+</body>
+</html>
