@@ -1,137 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Daily MCQ Exam</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Pro Quiz</title>
+    <style>
+        :root {
+            --bg: #0f172a; --card: #1e293b; --primary: #38bdf8;
+            --success: #22c55e; --error: #ef4444; --text: #f1f5f9;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); 
+            margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh;
+        }
+        .app-container { width: 100%; max-width: 500px; padding: 15px; }
+        .quiz-card { background: var(--card); padding: 25px; border-radius: 24px; box-shadow: 0 20px 25px rgba(0,0,0,0.3); }
+        
+        /* UI Elements */
+        .progress-bar { height: 6px; background: #334155; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+        #progress-fill { height: 100%; width: 0%; background: var(--primary); transition: 0.4s; }
+        .stats { display: flex; justify-content: space-between; font-weight: 600; font-size: 14px; margin-bottom: 10px; color: var(--primary); }
+        
+        .question-text { font-size: 20px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+        .options-grid { display: flex; flex-direction: column; gap: 10px; }
+        .option { 
+            background: #334155; padding: 15px; border-radius: 12px; cursor: pointer; 
+            border: 2px solid transparent; transition: 0.2s; font-weight: 500;
+        }
+        .locked { pointer-events: none; }
+        .correct { background: rgba(34, 197, 94, 0.15); border-color: var(--success); color: #4ade80; animation: bounce 0.4s; }
+        .wrong { background: rgba(239, 68, 68, 0.15); border-color: var(--error); color: #f87171; animation: shake 0.4s; }
 
-<style>
-body{
-font-family:Arial;
-background:#0e0f13;
-color:white;
-padding:20px;
-}
-.box{
-max-width:600px;
-margin:auto;
-background:#171821;
-padding:25px;
-border-radius:12px;
-}
-.q{
-margin-top:20px;
-font-size:18px;
-}
-.opt{
-background:#232432;
-padding:10px;
-margin-top:10px;
-border-radius:6px;
-cursor:pointer;
-}
-button{
-margin-top:20px;
-padding:12px;
-width:100%;
-background:#4f8cff;
-border:none;
-color:white;
-border-radius:6px;
-font-size:16px;
-}
-</style>
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        button { 
+            width: 100%; padding: 16px; border-radius: 12px; border: none; 
+            background: var(--primary); color: #0f172a; font-weight: 700; margin-top: 20px; cursor: pointer;
+        }
+
+        /* Review Section */
+        .review-item { background: #0f172a; padding: 15px; border-radius: 12px; margin-top: 15px; text-align: left; border-left: 4px solid #334155; }
+        .rev-q { font-weight: 600; margin-bottom: 5px; display: block; }
+        .rev-ans { font-size: 13px; margin-top: 5px; }
+        .text-success { color: var(--success); }
+        .text-error { color: var(--error); }
+    </style>
 </head>
-
 <body>
 
-<div class="box">
-<h2>Daily MCQ Exam</h2>
-<p id="qno"></p>
-<div class="q" id="question"></div>
-
-<div id="options"></div>
-
-<button onclick="next()">Next</button>
+<div class="app-container" id="main-content">
+    <div class="quiz-card">
+        <div class="stats"><span id="qno">Question 1/40</span> <span id="timer">40:00</span></div>
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <div class="question-text" id="question">Loading...</div>
+        <div class="options-grid" id="options"></div>
+        <button id="nextBtn" style="display:none;" onclick="nextQuestion()">Next Question</button>
+    </div>
 </div>
 
 <script>
-let student = localStorage.getItem("studentName");
-if(!student){window.location="login.html";}
+    let quiz = [
+        {q:"HTML stands for?", o:["Hyper Text Markup Language","High Text Machine Language","Hyper Tabular Mark Language","None"], a:0},
+        {q:"Which tag is used for the largest heading?", o:["h6","heading","h1","head"], a:2},
+        {q:"Correct way to create a line break?", o:["break","br","lb","hr"], a:1},
+        {q:"Which attribute is used for image source?", o:["link","src","href","url"], a:1},
+        {q:"Tag for a table row?", o:["td","tr","th","table"], a:1}
+    ];
 
-// QUESTIONS (edit anytime)
-let quiz = [
-{
-q:"CPU full form?",
-o:["Central Process Unit","Central Processing Unit","Computer Unit","Control Unit"],
-a:1
-},
-{
-q:"Brain of computer?",
-o:["RAM","CPU","Mouse","Keyboard"],
-a:1
-},
-{
-q:"1 KB = ?",
-o:["1000 byte","1024 byte","500 byte","2048 byte"],
-a:1
-}
-];
+    // Auto-fill to 40 questions for testing
+    while(quiz.length < 40) {
+        quiz.push({ q: "Sample HTML Question " + (quiz.length + 1), o: ["Option A", "Option B", "Correct Option", "Option D"], a: 2 });
+    }
 
-let index=0;
-let score=0;
+    let currentIndex = 0;
+    let score = 0;
+    let timeLeft = 40 * 60;
+    let userSelections = []; // To store user answers for review
 
-function load(){
-document.getElementById("qno").innerHTML="Question "+(index+1)+" / "+quiz.length;
-document.getElementById("question").innerHTML=quiz[index].q;
+    function startTimer() {
+        let timer = setInterval(() => {
+            timeLeft--;
+            let m = Math.floor(timeLeft/60), s = timeLeft%60;
+            document.getElementById("timer").innerText = `${m}:${s<10?'0'+s:s}`;
+            if(timeLeft <= 0) { clearInterval(timer); endQuiz(); }
+        }, 1000);
+    }
 
-let opt="";
-quiz[index].o.forEach((x,i)=>{
-opt+=`<div class="opt" onclick="select(${i})">${x}</div>`;
-});
-document.getElementById("options").innerHTML=opt;
-}
+    function loadQuestion() {
+        const q = quiz[currentIndex];
+        document.getElementById("qno").innerText = `Question ${currentIndex + 1}/${quiz.length}`;
+        document.getElementById("question").innerText = q.q;
+        document.getElementById("progress-fill").style.width = `${((currentIndex + 1)/quiz.length)*100}%`;
+        
+        let html = "";
+        q.o.forEach((opt, i) => {
+            html += `<div class="option" onclick="handleSelect(this, ${i})">${opt}</div>`;
+        });
+        document.getElementById("options").innerHTML = html;
+        document.getElementById("nextBtn").style.display = "none";
+    }
 
-let selected=-1;
-function select(i){
-selected=i;
-}
+    function handleSelect(el, idx) {
+        const correct = quiz[currentIndex].a;
+        userSelections.push({ question: quiz[currentIndex].q, selected: idx, correct: correct, options: quiz[currentIndex].o });
+        
+        document.querySelectorAll(".option").forEach(opt => opt.classList.add("locked"));
+        
+        if(idx === correct) {
+            el.classList.add("correct");
+            score++;
+        } else {
+            el.classList.add("wrong");
+            document.querySelectorAll(".option")[correct].classList.add("correct");
+        }
+        document.getElementById("nextBtn").style.display = "block";
+    }
 
-function next(){
-if(selected==-1){alert("Select option");return;}
+    function nextQuestion() {
+        currentIndex++;
+        if(currentIndex < quiz.length) loadQuestion();
+        else endQuiz();
+    }
 
-if(selected==quiz[index].a) score++;
+    function endQuiz() {
+        let percentage = ((score / quiz.length) * 100).toFixed(1);
+        let reviewHtml = userSelections.map(item => `
+            <div class="review-item" style="border-color: ${item.selected === item.correct ? 'var(--success)' : 'var(--error)'}">
+                <span class="rev-q">${item.question}</span>
+                <div class="rev-ans">
+                    Your Answer: <span class="${item.selected === item.correct ? 'text-success' : 'text-error'}">${item.options[item.selected]}</span><br>
+                    ${item.selected !== item.correct ? `Correct Answer: <span class="text-success">${item.options[item.correct]}</span>` : ''}
+                </div>
+            </div>
+        `).join('');
 
-selected=-1;
-index++;
+        document.getElementById("main-content").innerHTML = `
+            <div class="quiz-card" style="text-align:center">
+                <h2 style="margin:0">Exam Result</h2>
+                <div style="font-size:48px; font-weight:800; color:var(--primary); margin:15px 0;">${percentage}%</div>
+                <p>You scored <b>${score}</b> out of <b>${quiz.length}</b></p>
+                
+                <h3 style="margin-top:30px; text-align:left;">Review Answers:</h3>
+                <div style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                    ${reviewHtml}
+                </div>
+                
+                <button onclick="location.reload()">Restart Exam</button>
+            </div>
+        `;
+    }
 
-if(index<quiz.length){
-load();
-}else{
-finish();
-}
-}
-
-function finish(){
-let id=localStorage.getItem("studentId");
-let results = JSON.parse(localStorage.getItem("results"))||[];
-
-results.push({
-name:student,
-score:score,
-total:quiz.length,
-date:new Date().toLocaleDateString()
-});
-
-localStorage.setItem("results",JSON.stringify(results));
-
-document.querySelector(".box").innerHTML=
-`<h2>Exam Finished</h2>
-<h1>${score} / ${quiz.length}</h1>
-<button onclick="window.location='dashboard.html'">Back Dashboard</button>`;
-}
-
-load();
+    window.onload = () => { startTimer(); loadQuestion(); };
 </script>
-
 </body>
 </html>
