@@ -5,308 +5,290 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BT | Cyber Titan Assessment</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap');
-
         :root {
             --primary: #6366f1; --bg: #020617; --card: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --danger: #f43f5e; --xp: #fbbf24;
-            --zen: #38bdf8;
+            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --danger: #f43f5e; --zen: #38bdf8;
         }
-
-        body { 
-            background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; 
-            margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center;
-            overflow-x: hidden; -webkit-tap-highlight-color: transparent;
-            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent);
-        }
-
-        /* --- New Auth Screen Style --- */
-        #auth-screen {
-            position: fixed; inset: 0; z-index: 5000; background: var(--bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
-        }
-        .auth-card {
-            max-width: 400px; width: 100%; padding: 40px 30px; border-radius: 28px;
-            background: var(--card); border: 1px solid var(--border); text-align: center; backdrop-filter: blur(15px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .terminal-input {
-            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-            padding: 18px; border-radius: 15px; color: var(--zen); font-family: 'JetBrains Mono';
-            text-align: center; margin: 25px 0; outline: none; box-sizing: border-box; font-size: 16px;
-        }
-
-        @keyframes glitch {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 2px) }
-            40% { transform: translate(-2px, -2px) }
-            60% { transform: translate(2px, 2px) }
-            80% { transform: translate(2px, -2px) }
-            100% { transform: translate(0) }
-        }
-        .panic-mode { animation: glitch 0.2s infinite; border: 1px solid var(--danger) !important; }
-
-        .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.05); position: fixed; top: 0; left: 0; z-index: 2000; }
-        #progress-bar { width: 0%; height: 100%; background: linear-gradient(to right, var(--zen), var(--primary)); transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-        .container { width: 100%; max-width: 650px; box-sizing: border-box; }
-
-        .header-card { 
-            background: var(--card); border: 1px solid var(--border); padding: 15px 20px; 
-            border-radius: 20px; margin: 20px 0; display: flex; justify-content: space-between; 
-            align-items: center; position: sticky; top: 15px; z-index: 1000; backdrop-filter: blur(20px);
-        }
-
-        .timer-box { 
-            font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 8px; 
-            background: rgba(56, 189, 248, 0.1); color: var(--zen); padding: 8px 16px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.2);
-        }
-        .timer-warn { background: rgba(244, 63, 94, 0.2); color: var(--danger); border-color: var(--danger); animation: pulse 0.5s infinite; }
-
-        .q-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 25px; margin-bottom: 15px; transition: 0.3s; position: relative; overflow: hidden; }
+        body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
         
-        .opt-label { 
-            display: flex; align-items: center; background: rgba(255,255,255,0.02); 
-            border: 1px solid var(--border); padding: 16px; border-radius: 14px; 
-            margin-top: 10px; cursor: pointer; transition: 0.2s; font-size: 14px;
-        }
-        .opt-label.locked { cursor: not-allowed; opacity: 0.4; pointer-events: none; }
-        .opt-label.selected { border-color: var(--zen); background: rgba(56, 189, 248, 0.1); opacity: 1 !important; color: var(--zen); font-weight: 800; }
+        /* Animations */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes floatUp { 0% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, -100px); opacity: 0; } }
+        @keyframes streakPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 
-        .admin-btn { opacity: 0.1; cursor: pointer; transition: 0.3s; }
-        .admin-btn:hover { opacity: 1; color: var(--danger); }
-        .delete-icon { color: var(--danger); margin-left: 10px; cursor: pointer; display: none; }
-        .admin-active .delete-icon { display: inline-block; }
+        .shake { animation: shake 0.3s ease-in-out; }
+        .sad-emoji { position: absolute; font-size: 50px; left: 50%; top: 20%; animation: floatUp 1.2s forwards; pointer-events: none; z-index: 100; }
+        .streak-msg { position: fixed; top: 40%; font-size: 40px; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.5); z-index: 4000; animation: streakPop 1s forwards; pointer-events: none; }
 
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 12px 25px; border-radius: 50px; font-weight: 800; font-size: 11px; display: none; z-index: 3000; box-shadow: 0 0 20px var(--primary); letter-spacing: 1px; }
+        /* Intro & Overlay */
+        #intro-overlay { position: fixed; inset: 0; z-index: 6000; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
+        .intro-text { font-size: 20px; font-weight: 700; color: var(--zen); margin-bottom: 20px; display: none; }
+        #countdown-box { font-size: 120px; font-weight: 900; color: var(--primary); display: none; }
 
-        .xp-val { font-size: 70px; font-weight: 900; color: var(--xp); margin: 10px 0; }
-        .btn-submit { width: 100%; padding: 20px; background: var(--primary); border: none; border-radius: 20px; color: #fff; font-weight: 800; cursor: pointer; margin-top: 10px; font-size: 16px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); }
+        /* Milestone Tracker */
+        .milestone-wrap { width: 100%; max-width: 650px; background: rgba(255,255,255,0.05); height: 12px; border-radius: 20px; position: fixed; top: 0; z-index: 3000; display:none; }
+        #ms-correct-bar { height: 100%; width: 0%; background: linear-gradient(to right, #6366f1, #38bdf8); border-radius: 20px; transition: 0.5s; box-shadow: 0 0 15px var(--primary); }
+        #ms-time-dot { position: absolute; top: -4px; left: 0%; width: 20px; height: 20px; background: var(--danger); border: 3px solid var(--bg); border-radius: 50%; transition: 1s linear; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* UI Components */
+        #auth-screen { position: fixed; inset: 0; z-index: 5000; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .auth-card { max-width: 400px; width: 100%; padding: 40px 30px; border-radius: 28px; background: var(--card); border: 1px solid var(--border); text-align: center; }
+        .terminal-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 18px; border-radius: 15px; color: var(--zen); text-align: center; margin: 25px 0; outline: none; font-size: 16px; }
+        .container { width: 100%; max-width: 650px; margin-top: 30px; }
+        .header-card { background: var(--card); border: 1px solid var(--border); padding: 15px 20px; border-radius: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 25px; z-index: 1000; backdrop-filter: blur(20px); }
+        .q-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 25px; margin-bottom: 15px; position: relative; overflow: hidden; }
+        .opt-label { display: flex; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 16px; border-radius: 14px; margin-top: 10px; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .opt-label.locked { pointer-events: none; opacity: 0.6; }
+        .opt-label.correct-glow { border-color: var(--success) !important; background: rgba(16, 185, 129, 0.2) !important; font-weight: 700; }
+        .opt-label.wrong-glow { border-color: var(--danger) !important; background: rgba(244, 63, 94, 0.2) !important; }
+        
+        .btn-submit { width: 100%; padding: 20px; background: var(--primary); border: none; border-radius: 20px; color: #fff; font-weight: 800; cursor: pointer; font-size: 16px; margin-bottom: 10px; }
+        .rank-tag { display: inline-block; padding: 5px 15px; border-radius: 50px; background: var(--primary); font-size: 12px; font-weight: 800; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
+<div id="intro-overlay">
+    <div id="p1" class="intro-text">🚀 Welcome to the Future of Learning.</div>
+    <div id="p2" class="intro-text">🔥 Speed, Accuracy, and Focus.</div>
+    <div id="p3" class="intro-text">💻 Show them who's the real Cyber Titan!</div>
+    <div id="countdown-box">10</div>
+</div>
+
 <div id="auth-screen">
     <div class="auth-card">
-        <i class="ri-shield-keyhole-line" style="font-size: 50px; color: var(--zen);"></i>
-        <h2 style="letter-spacing:1px; margin: 15px 0 5px;">ACCESS TERMINAL</h2>
-        <p style="font-size: 10px; opacity: 0.5; font-weight: 800;">ENTER CALLSIGN TO INITIALIZE SESSION</p>
-        <input type="text" id="agent-callsign" class="terminal-input" placeholder="YOUR NAME..." maxlength="20" autocomplete="off">
-        <button class="btn-submit" onclick="initializeSession()">INITIALIZE SYSTEM</button>
+        <i class="ri-user-star-line" style="font-size: 50px; color: var(--primary);"></i>
+        <h2>IDENTITY VERIFICATION</h2>
+        <input type="text" id="agent-callsign" class="terminal-input" placeholder="AGENT NAME..." maxlength="15">
+        <button class="btn-submit" onclick="startCountdown()">I'M READY. START MISSION</button>
     </div>
 </div>
 
-<div id="toast">SYSTEM INITIALIZED</div>
-<div class="progress-container"><div id="progress-bar"></div></div>
+<div id="ms-container" class="milestone-wrap">
+    <div id="ms-correct-bar"></div>
+    <div id="ms-time-dot"></div>
+</div>
 
 <div class="container" id="exam-screen" style="display:none;">
-    <div class="header-card" id="main-header">
-        <div><h2 id="display-name" style="margin:0; font-size: 16px;">Agent</h2><p style="margin:0; font-size:9px; opacity:0.6; font-weight:800;">STATUS: ACTIVE • NO RETAKES</p></div>
-        <div id="t-box" class="timer-box"><i class="ri-pulse-line"></i> <span id="time-left">30:00</span></div>
+    <div class="header-card">
+        <div id="display-name" style="font-weight: 800; color: var(--zen);">Agent</div>
+        <div style="font-weight:800; color: var(--danger);"><i class="ri-flashlight-line"></i> <span id="time-left">30:00</span></div>
     </div>
     <div id="questions-box"></div>
-    <button class="btn-submit" onclick="window.submitExam()">UPLOAD DATA & SYNC XP</button>
+    <button class="btn-submit" id="final-btn" onclick="finishExam()">UPLOAD FINAL DATA</button>
 </div>
 
-<div class="container" id="result-screen" style="display:none; text-align:center; padding:50px 15px;">
-    <div id="final-rank" style="border:1px solid var(--xp); color:var(--xp); padding:5px 15px; border-radius:50px; font-size:10px; font-weight:800; display:inline-block;">RANK</div>
-    <div class="xp-val" id="final-xp">0</div>
-    <h2 style="margin:0; letter-spacing:1px;">MISSION DEBRIEF</h2>
-    <p id="accuracy-stat" style="opacity:0.6; font-weight:700; margin: 10px 0 30px 0;"></p>
-    <button class="btn-submit" onclick="location.reload()" style="background:rgba(255,255,255,0.05); margin-bottom:40px;">RE-INITIATE SESSION</button>
-    <div id="review-box" style="text-align:left;"></div>
-</div>
+<div class="container" id="result-screen" style="display:none; text-align:center; padding:40px 15px;">
+    <div id="rank-display" class="rank-tag">SECURITY TRAINEE</div>
+    <h1 id="final-score" style="font-size: 70px; margin: 10px 0; color: var(--primary);">0/40</h1>
+    <p id="accuracy-stat" style="font-weight: 800; color: var(--zen);"></p>
+    
+    <button class="btn-submit" style="background:#22c55e" onclick="shareScore()"><i class="ri-whatsapp-line"></i> SHARE WITH FRIENDS</button>
+    <button class="btn-submit" style="background:#334155" onclick="showReview()"><i class="ri-book-open-line"></i> REVIEW SESSION</button>
 
-<div class="container leaderboard" id="leaderboard-section">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0; font-size: 16px;"><i class="ri-fire-fill" style="color:var(--xp)"></i> Hall of Cyber Titans</h3>
-        <i class="ri-settings-4-line admin-btn" onclick="unlockAdmin()"></i>
+    <div class="leaderboard-card" style="background:rgba(255,255,255,0.03); padding:20px; border-radius:20px; margin-top:30px; text-align:left;">
+        <h3 style="margin:0 0 15px 0;"><i class="ri-medal-fill" style="color:#fbbf24"></i> TOP AGENTS</h3>
+        <div id="lb-body"></div>
     </div>
-    <table class="l-table" style="width:100%; margin-top:15px; border-collapse:collapse;"><tbody id="l-body"></tbody></table>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = { apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI", authDomain: "black-terminal-f2c91.firebaseapp.com", projectId: "black-terminal-f2c91", appId: "1:552489994197:web:7662331264c334ffbadf5c" };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
+<script>
     const questions = [
-        { q: "Convert Decimal (43) to Binary:", a: "101011", o: ["101011", "110101", "101101", "100111"], e: "43/2 gives remainders 1,1,0,1,0,1." },
-        { q: "Convert Decimal (125) to Hexadecimal:", a: "7D", o: ["7D", "8A", "7B", "FD"], e: "125/16 = 7 rem 13 (D)." },
-        { q: "Convert Decimal (98) to Octal:", a: "142", o: ["142", "122", "162", "100"], e: "98/8 = 12 rem 2; 12/8 = 1 rem 4." },
-        { q: "Convert Binary (11011) to Decimal:", a: "27", o: ["25", "27", "29", "31"], e: "16+8+0+2+1 = 27." },
-        { q: "Convert Binary (101110) to Hexadecimal:", a: "2E", o: ["2E", "3E", "2A", "2F"], e: "Binary split 10-1110 = 2E." },
-        { q: "Convert Binary (111001) to Octal:", a: "71", o: ["61", "71", "51", "77"], e: "111-001 = 71." },
-        { q: "Convert Octal (52) to Hexadecimal:", a: "2A", o: ["2A", "3B", "2B", "32"], e: "Octal 52 = Dec 42 = Hex 2A." },
-        { q: "Convert Octal (127) to Binary:", a: "001010111", o: ["001010111", "11010111", "001111000", "111000111"], e: "1=001, 2=010, 7=111." },
-        { q: "Convert Octal (64) to Decimal:", a: "52", o: ["52", "64", "48", "50"], e: "6*8 + 4 = 52." },
-        { q: "Convert Hexadecimal (3C) to Octal:", a: "74", o: ["74", "64", "312", "70"], e: "3C = 60 Dec = 74 Oct." },
-        { q: "Convert Hexadecimal (1F) to Binary:", a: "00011111", o: ["00011111", "11111000", "00010001", "11111111"], e: "1=0001, F=1111." },
-        { q: "Convert Hexadecimal (A5) to Decimal:", a: "165", o: ["165", "105", "155", "175"], e: "10*16 + 5 = 165." },
-        { q: "Convert Decimal (15) to Binary:", a: "1111", o: ["1111", "1010", "1100", "1110"], e: "All bits ON." },
-        { q: "Full Form of COMPUTER?", a: "Commonly Operated Machine Particularly Used for Technical and Educational Research", o: ["Commonly Operated Machine Particularly Used for Technical and Educational Research", "Commonly Oriented Machine Part Used for Trade and Education", "Central Operating Machine Particularly Under Technical Education", "None"], e: "Standard tech definition." },
-        { q: "Full Form of ASCII?", a: "American Standard Code for Information Interchange", o: ["American Standard Code for Information Interchange", "All Standard Code for Info Input", "American Scientific Code for Interchange", "None"], e: "Encoding standard." },
-        { q: "Full Form of CPU?", a: "Central Processing Unit", o: ["Central Processing Unit", "Computer Processing Unit", "Central Program Utility", "Control Processing Unit"], e: "The brain." },
-        { q: "CMD command to create a new directory:", a: "mkdir", o: ["mkdir", "newdir", "md-folder", "create"], e: "Make Directory." },
-        { q: "CMD command to clear screen:", a: "cls", o: ["cls", "clear", "wipe", "reset"], e: "Clear Screen." },
-        { q: "CMD command to change color:", a: "color", o: ["color", "setcolor", "paint", "theme"], e: "Color change." },
-        { q: "CMD command to shutdown:", a: "shutdown", o: ["shutdown", "stop", "exit /s", "poweroff"], e: "Power off." },
-        { q: "Decimal (16) in Hex:", a: "10", o: ["10", "A", "F", "16"], e: "16/16 = 1 rem 0." },
-        { q: "Base of Hexadecimal:", a: "16", o: ["16", "10", "8", "2"], e: "16 symbols." },
-        { q: "Binary (101010) to Decimal:", a: "42", o: ["42", "40", "44", "38"], e: "32+8+2 = 42." },
-        { q: "Octal (20) to Decimal:", a: "16", o: ["16", "20", "18", "22"], e: "2*8 = 16." },
-        { q: "Hex (10) to Binary:", a: "00010000", o: ["00010000", "1010", "1111", "00000001"], e: "1=0001, 0=0000." },
-        { q: "Convert Octal (10) to Decimal:", a: "8", o: ["8", "10", "12", "16"], e: "1*8 = 8." },
-        { q: "Binary (100) + Binary (100) Dec:", a: "8", o: ["8", "4", "200", "1000"], e: "4+4=8." },
-        { q: "Octal (77) Dec:", a: "63", o: ["63", "77", "70", "64"], e: "7*8+7=63." },
-        { q: "Convert Hex (B) to Binary:", a: "1011", o: ["1011", "1100", "1010", "1111"], e: "B=11=1011." },
-        { q: "CMD command to delete directory:", a: "rmdir", o: ["rmdir", "deldir", "remove", "erase"], e: "Remove Directory." }
+        { q: "Octal (74) to Hexadecimal:", a: "3C", o: ["3C", "4D", "3B", "4C"] },
+        { q: "Octal (127) to Hexadecimal:", a: "57", o: ["57", "67", "A7", "5F"] },
+        { q: "Hexadecimal (1A) to Octal:", a: "32", o: ["32", "26", "42", "30"] },
+        { q: "Hexadecimal (FF) to Octal:", a: "377", o: ["377", "255", "400", "366"] },
+        { q: "Decimal (45) to Binary:", a: "101101", o: ["101101", "110011", "101010", "111001"] },
+        { q: "Decimal (10) to Binary:", a: "1010", o: ["1010", "1100", "1001", "1011"] },
+        { q: "Decimal (25) to Binary:", a: "11001", o: ["11001", "10101", "11100", "11011"] },
+        { q: "Decimal (64) to Octal:", a: "100", o: ["100", "70", "110", "64"] },
+        { q: "Decimal (92) to Octal:", a: "134", o: ["134", "124", "144", "114"] },
+        { q: "Decimal (255) to Hexadecimal:", a: "FF", o: ["FF", "FE", "EF", "F0"] },
+        { q: "Decimal (165) to Hexadecimal:", a: "A5", o: ["A5", "B5", "A6", "95"] },
+        { q: "Binary (111000) to Octal:", a: "70", o: ["70", "60", "77", "50"] },
+        { q: "Binary (101011) to Octal:", a: "53", o: ["53", "43", "63", "55"] },
+        { q: "Binary (11011110) to Hexadecimal:", a: "DE", o: ["DE", "BE", "CE", "FE"] },
+        { q: "Binary (10101010) to Hexadecimal:", a: "AA", o: ["AA", "BB", "A1", "A0"] },
+        { q: "CMD: Command to change color?", a: "color", o: ["color", "setcolor", "paint", "chr"] },
+        { q: "CMD: Command to create folder?", a: "mkdir", o: ["mkdir", "newdir", "create", "folder"] },
+        { q: "CMD: Command to rename folder?", a: "ren", o: ["ren", "rename", "move", "name"] },
+        { q: "CMD: Command to delete folder?", a: "rd", o: ["rd", "del", "remove", "erase"] },
+        { q: "CMD: Command to delete file?", a: "del", o: ["del", "remove", "erase", "kill"] },
+        { q: "CMD: Command to shutdown?", a: "shutdown /s", o: ["shutdown /s", "stop", "exit", "off"] },
+        { q: "CMD: Command to copy file?", a: "copy", o: ["copy", "cp", "move", "duplicate"] },
+        { q: "CMD: Command to move file?", a: "move", o: ["move", "mv", "transfer", "shift"] },
+        { q: "CMD: Command system information?", a: "systeminfo", o: ["systeminfo", "sysconfig", "specs", "about"] },
+        { q: "CMD: Command check IP?", a: "ipconfig", o: ["ipconfig", "ifconfig", "myip", "netstat"] },
+        { q: "CMD: Command clear screen?", a: "cls", o: ["cls", "clear", "clean", "reset"] },
+        { q: "CMD: Command list files?", a: "dir", o: ["dir", "ls", "list", "show"] },
+        { q: "CMD: Command ping server?", a: "ping", o: ["ping", "connect", "trace", "link"] },
+        { q: "What is a Computer?", a: "An electronic device that processes data", o: ["An electronic device that processes data", "A mechanical machine", "A typing tool", "None"] },
+        { q: "Full Form of COMPUTER?", a: "Commonly Operated Machine Particularly Used for Technical and Educational Research", o: ["Commonly Operated Machine Particularly Used for Technical and Educational Research", "Central Operating Machine", "None"] },
+        { q: "Full Form of ASCII?", a: "American Standard Code for Information Interchange", o: ["American Standard Code for Information Interchange", "All Standard Code", "None"] },
+        { q: "Father of Computer?", a: "Charles Babbage", o: ["Charles Babbage", "Alan Turing", "Bill Gates", "Tesla"] },
+        { q: "Smallest unit of data?", a: "Bit", o: ["Bit", "Byte", "KB", "Nibble"] },
+        { q: "1 Byte is equal to?", a: "8 Bits", o: ["8 Bits", "4 Bits", "1024 Bits", "16 Bits"] },
+        { q: "Brain of Computer?", a: "CPU", o: ["CPU", "RAM", "HDD", "Monitor"] },
+        { q: "Binary system base?", a: "2", o: ["2", "10", "8", "16"] },
+        { q: "Octal system base?", a: "8", o: ["8", "10", "2", "16"] },
+        { q: "Hexadecimal system base?", a: "16", o: ["16", "8", "10", "2"] },
+        { q: "CMD exit command?", a: "exit", o: ["exit", "close", "bye", "quit"] },
+        { q: "Full form of CPU:", a: "Central Processing Unit", o: ["Central Processing Unit", "Central Power Unit", "Computer Unit", "None"] }
     ];
 
-    let currentAgent = "";
-    let time = 1800;
-    let timerInt;
+    let timer, timeLeft = 1800, correctCount = 0, currentAgent = "", answered = new Set(), streak = 0;
 
-    // --- Start Session Logic ---
-    window.initializeSession = () => {
-        const nameInput = document.getElementById('agent-callsign').value.trim();
-        if(nameInput.length < 2) {
-            alert("Identification required. Enter a valid name.");
-            return;
-        }
-        currentAgent = nameInput;
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('exam-screen').style.display = 'block';
-        document.getElementById('display-name').innerText = currentAgent.toUpperCase();
-        
-        renderQuestions();
-        startTimer();
-        showToast("Access Granted. Good Luck.");
+    window.onload = () => {
+        const pArr = ["p1", "p2", "p3"];
+        pArr.forEach((id, i) => {
+            setTimeout(() => {
+                if(i > 0) document.getElementById(pArr[i-1]).style.display = 'none';
+                document.getElementById(id).style.display = 'block';
+            }, i * 2000);
+        });
+        setTimeout(() => {
+            document.getElementById('intro-overlay').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'flex';
+        }, 6000);
     };
 
+    function startCountdown() {
+        currentAgent = document.getElementById('agent-callsign').value.trim();
+        if(!currentAgent) return alert("Enter Agent Name!");
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('intro-overlay').style.display = 'flex';
+        document.getElementById('p3').style.display = 'none';
+        let box = document.getElementById('countdown-box');
+        box.style.display = 'block';
+        let count = 10;
+        let intv = setInterval(() => {
+            count--; box.innerText = count;
+            if(count <= 0) { clearInterval(intv); initExam(); }
+        }, 1000);
+    }
+
+    function initExam() {
+        document.getElementById('intro-overlay').style.display = 'none';
+        document.getElementById('exam-screen').style.display = 'block';
+        document.getElementById('ms-container').style.display = 'block';
+        document.getElementById('display-name').innerText = "AGENT: " + currentAgent.toUpperCase();
+        renderQuestions();
+        timer = setInterval(updateProgress, 1000);
+    }
+
     function renderQuestions() {
-        const qBox = document.getElementById('questions-box');
-        questions.sort(() => Math.random() - 0.5).forEach((item, i) => {
-            qBox.innerHTML += `
-                <div class="q-card" id="card-${i}">
-                    <div style="font-weight:800; color:var(--zen); font-size:10px; margin-bottom:10px;">SECTOR ${i+1}</div>
-                    <div style="font-weight:700; font-size:15px; margin-bottom:15px;">${item.q}</div>
+        const box = document.getElementById('questions-box');
+        questions.forEach((q, i) => {
+            const shuffled = [...q.o].sort(() => Math.random() - 0.5);
+            box.innerHTML += `
+                <div class="q-card" id="qb-${i}">
+                    <p style="font-size:10px; color:var(--primary); font-weight:800;">DATA_NODE_${i+1}</p>
+                    <p style="font-weight:700; margin:10px 0;">${q.q}</p>
                     <div id="opts-${i}">
-                        ${item.o.map(opt => `
-                            <label class="opt-label" onclick="lockAndShake(this, ${i})">
-                                <input type="radio" name="q${i}" value="${opt}" style="display:none;">
-                                <span>${opt}</span>
-                            </label>`).join('')}
+                        ${shuffled.map(opt => `<label class="opt-label" onclick="handleSel(this, ${i}, '${opt}')">${opt}</label>`).join('')}
                     </div>
                 </div>`;
         });
     }
 
-    window.lockAndShake = (el, qIdx) => {
-        const parent = document.getElementById(`opts-${qIdx}`);
-        if(parent.classList.contains('locked')) return;
-
-        parent.classList.add('locked');
-        parent.querySelectorAll('.opt-label').forEach(l => l.classList.add('locked'));
-        el.classList.remove('locked');
-        el.classList.add('selected');
-        el.querySelector('input').checked = true;
-
-        document.getElementById(`card-${qIdx}`).style.animation = "glitch 0.3s ease";
+    function handleSel(el, i, sel) {
+        if(answered.has(i)) return;
+        answered.add(i);
+        const correct = questions[i].a;
+        const qCard = document.getElementById(`qb-${i}`);
+        document.getElementById(`opts-${i}`).querySelectorAll('.opt-label').forEach(l => l.classList.add('locked'));
         
-        const answered = document.querySelectorAll('.locked').length / 2;
-        document.getElementById('progress-bar').style.width = (answered / 30 * 100) + "%";
-
-        const scareQuotes = ["Target Locked.", "No Going Back.", "Brain Scan Complete.", "Choice Encrypted.", "Data Synchronized.", "Security Alert!"];
-        if(answered % 5 === 0) showToast(scareQuotes[Math.floor(Math.random()*scareQuotes.length)]);
-    };
-
-    function showToast(m) {
-        const t = document.getElementById('toast');
-        t.innerText = m; t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 2000);
-    }
-
-    function startTimer() {
-        timerInt = setInterval(() => {
-            let m = Math.floor(time / 60); let s = time % 60;
-            document.getElementById('time-left').innerText = `${m}:${s<10?'0':''}${s}`;
-            if(time < 300) { 
-                document.getElementById('t-box').classList.add('timer-warn');
-                document.getElementById('main-header').classList.add('panic-mode');
-            }
-            if(time-- <= 0) { clearInterval(timerInt); window.submitExam(); }
-        }, 1000);
-    }
-
-    window.submitExam = async () => {
-        let correct = 0;
-        const reviewBox = document.getElementById('review-box');
-        reviewBox.innerHTML = "<h3 style='text-align:center; color:var(--zen)'>ENCRYPTED LOG ANALYSIS</h3>";
-
-        questions.forEach((item, i) => {
-            const sel = document.querySelector(`input[name="q${i}"]:checked`);
-            const isCorrect = sel && sel.value === item.a;
-            if(isCorrect) correct++;
-            reviewBox.innerHTML += `<div class="q-card" style="border-left: 5px solid ${isCorrect?'var(--success)':'var(--danger)'}">
-                <div style="font-weight:700; font-size:14px;">${item.q}</div>
-                <div style="font-size:12px; margin-top:5px; color:${isCorrect?'var(--success)':'var(--danger)'}">
-                    ${isCorrect ? '✓ VALIDATED' : '✗ SYSTEM ERROR'}: ${sel ? sel.value : 'NULL'}
-                </div>
-                ${!isCorrect ? `<div style="font-size:11px; opacity:0.6;">Key: ${item.a}</div>` : ''}
-            </div>`;
-        });
-
-        const xp = correct * 500;
-        let rank = xp > 14000 ? "CYBER TITAN" : "ROOKIE";
-
-        document.getElementById('exam-screen').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'block';
-        document.getElementById('final-rank').innerText = rank;
-        document.getElementById('accuracy-stat').innerText = `HITS: ${correct}/30 | XP: ${xp}`;
-
-        let c = 0; const cInt = setInterval(() => {
-            if(c >= xp) { c = xp; clearInterval(cInt); }
-            document.getElementById('final-xp').innerText = c.toLocaleString();
-            c += Math.ceil(xp/40);
-        }, 25);
-
-        await addDoc(collection(db, "exam_results"), { name: currentAgent, score: xp, rank, time: Date.now() });
-        clearInterval(timerInt); window.scrollTo(0,0);
-    };
-
-    window.unlockAdmin = () => {
-        if(prompt("ADMIN PASSWORD:") === "admin") {
-            document.getElementById('leaderboard-section').classList.add('admin-active');
-            alert("ADMIN OVERRIDE GRANTED");
+        if(sel === correct) {
+            correctCount++; streak++;
+            el.classList.add('correct-glow');
+            confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 }, colors:['#6366f1', '#38bdf8'] });
+            if(streak === 3) showStreak("🔥 TRIPLE KILL!");
+            if(streak === 5) showStreak("⚡ UNSTOPPABLE!");
+        } else {
+            streak = 0;
+            el.classList.add('wrong-glow');
+            qCard.classList.add('shake');
+            const sad = document.createElement('div'); sad.className = "sad-emoji"; sad.innerText = "😢";
+            qCard.appendChild(sad);
+            setTimeout(() => sad.remove(), 1200);
         }
-    };
+        document.getElementById('ms-correct-bar').style.width = (correctCount / 40 * 100) + "%";
+    }
 
-    window.purgeData = async (id) => {
-        if(confirm("Purge this entity from the system?")) await deleteDoc(doc(db, "exam_results", id));
-    };
+    function showStreak(msg) {
+        const div = document.createElement('div'); div.className = "streak-msg"; div.innerText = msg;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 1000);
+    }
 
-    onSnapshot(query(collection(db, "exam_results"), orderBy("score", "desc"), limit(15)), (s) => {
-        const b = document.getElementById('l-body'); b.innerHTML = "";
-        s.forEach(d => {
-            const data = d.data();
-            b.innerHTML += `
-                <tr style="border-bottom:1px solid var(--border)">
-                    <td style="padding:12px 5px;">
-                        <b>${data.name}</b> <i class="ri-delete-bin-6-line delete-icon" onclick="purgeData('${d.id}')"></i>
-                        <br><small style="opacity:0.5">${data.rank || 'ROOKIE'}</small>
-                    </td>
-                    <td style="text-align:right; color:var(--xp); font-weight:800;">${(data.score || 0).toLocaleString()} XP</td>
-                </tr>`;
+    function updateProgress() {
+        if(timeLeft <= 0) finishExam();
+        let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+        document.getElementById('time-left').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        document.getElementById('ms-time-dot').style.left = `calc(${((1800-timeLeft)/1800)*100}% - 10px)`;
+        timeLeft--;
+    }
+
+    function finishExam() {
+        clearInterval(timer);
+        document.getElementById('exam-screen').style.display = 'none';
+        document.getElementById('ms-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        
+        const score = correctCount;
+        document.getElementById('final-score').innerText = `${score}/40`;
+        document.getElementById('accuracy-stat').innerText = `SYSTEM ACCURACY: ${Math.round(score/40*100)}%`;
+        
+        // Rank Assignment
+        let rank = "SECURITY TRAINEE";
+        if(score >= 35) rank = "🛡️ CYBER OVERLORD";
+        else if(score >= 25) rank = "⚡ DATA NINJA";
+        else if(score >= 15) rank = "👨‍💻 CODE APPRENTICE";
+        document.getElementById('rank-display').innerText = rank;
+
+        saveScore(); showLeaderboard(); window.scrollTo(0,0);
+    }
+
+    function showReview() {
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('exam-screen').style.display = 'block';
+        document.getElementById('final-btn').style.display = 'none';
+        questions.forEach((q, i) => {
+            const labels = document.getElementById(`opts-${i}`).querySelectorAll('.opt-label');
+            labels.forEach(l => {
+                l.classList.add('locked');
+                if(l.innerText.trim() === q.a) {
+                    l.style.borderColor = "var(--success)";
+                    l.style.background = "rgba(16, 185, 129, 0.1)";
+                    l.innerHTML += ' <i class="ri-check-double-line"></i>';
+                }
+            });
         });
-    });
+    }
+
+    function saveScore() {
+        let s = JSON.parse(localStorage.getItem('ct_scores') || '[]');
+        s.push({name: currentAgent, score: correctCount});
+        s.sort((a,b) => b.score - a.score);
+        localStorage.setItem('ct_scores', JSON.stringify(s.slice(0,5)));
+    }
+
+    function showLeaderboard() {
+        const s = JSON.parse(localStorage.getItem('ct_scores') || '[]');
+        document.getElementById('lb-body').innerHTML = s.map((x, i) => `
+            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span>${i+1}. ${x.name}</span><span style="color:var(--zen); font-weight:800;">${x.score}/40</span>
+            </div>`).join('');
+    }
+
+    function shareScore() {
+        const text = `🏆 MISSION ACCOMPLISHED!\n👤 Agent: ${currentAgent}\n✅ Score: ${correctCount}/40\n🎖️ Rank: ${document.getElementById('rank-display').innerText}\nCan you beat my score?`;
+        navigator.clipboard.writeText(text);
+        alert("Result Copied! Paste on WhatsApp.");
+    }
 </script>
 </body>
 </html>
