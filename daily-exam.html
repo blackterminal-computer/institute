@@ -3,305 +3,382 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Cyber Titan Assessment</title>
+    <title>BT | Terminal Exam v2.0</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         :root {
-            --primary: #6366f1; --bg: #020617; --card: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --danger: #f43f5e; --zen: #38bdf8;
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --danger: #f43f5e;
+            --terminal-green: #10b981;
         }
-        body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* Animations */
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-        @keyframes floatUp { 0% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, -100px); opacity: 0; } }
-        @keyframes streakPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+        body { 
+            background: var(--bg); 
+            color: #f8fafc; 
+            min-height: 100vh;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            overflow-x: hidden;
+        }
 
-        .shake { animation: shake 0.3s ease-in-out; }
-        .sad-emoji { position: absolute; font-size: 50px; left: 50%; top: 20%; animation: floatUp 1.2s forwards; pointer-events: none; z-index: 100; }
-        .streak-msg { position: fixed; top: 40%; font-size: 40px; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.5); z-index: 4000; animation: streakPop 1s forwards; pointer-events: none; }
+        body::before {
+            content: " ";
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            z-index: 100;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
 
-        /* Intro & Overlay */
-        #intro-overlay { position: fixed; inset: 0; z-index: 6000; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
-        .intro-text { font-size: 20px; font-weight: 700; color: var(--zen); margin-bottom: 20px; display: none; }
-        #countdown-box { font-size: 120px; font-weight: 900; color: var(--primary); display: none; }
-
-        /* Milestone Tracker */
-        .milestone-wrap { width: 100%; max-width: 650px; background: rgba(255,255,255,0.05); height: 12px; border-radius: 20px; position: fixed; top: 0; z-index: 3000; display:none; }
-        #ms-correct-bar { height: 100%; width: 0%; background: linear-gradient(to right, #6366f1, #38bdf8); border-radius: 20px; transition: 0.5s; box-shadow: 0 0 15px var(--primary); }
-        #ms-time-dot { position: absolute; top: -4px; left: 0%; width: 20px; height: 20px; background: var(--danger); border: 3px solid var(--bg); border-radius: 50%; transition: 1s linear; }
-
-        /* UI Components */
-        #auth-screen { position: fixed; inset: 0; z-index: 5000; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .auth-card { max-width: 400px; width: 100%; padding: 40px 30px; border-radius: 28px; background: var(--card); border: 1px solid var(--border); text-align: center; }
-        .terminal-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 18px; border-radius: 15px; color: var(--zen); text-align: center; margin: 25px 0; outline: none; font-size: 16px; }
-        .container { width: 100%; max-width: 650px; margin-top: 30px; }
-        .header-card { background: var(--card); border: 1px solid var(--border); padding: 15px 20px; border-radius: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 25px; z-index: 1000; backdrop-filter: blur(20px); }
-        .q-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 25px; margin-bottom: 15px; position: relative; overflow: hidden; }
-        .opt-label { display: flex; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 16px; border-radius: 14px; margin-top: 10px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-        .opt-label.locked { pointer-events: none; opacity: 0.6; }
-        .opt-label.correct-glow { border-color: var(--success) !important; background: rgba(16, 185, 129, 0.2) !important; font-weight: 700; }
-        .opt-label.wrong-glow { border-color: var(--danger) !important; background: rgba(244, 63, 94, 0.2) !important; }
+        .stats-bar { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; z-index: 10; }
         
-        .btn-submit { width: 100%; padding: 20px; background: var(--primary); border: none; border-radius: 20px; color: #fff; font-weight: 800; cursor: pointer; font-size: 16px; margin-bottom: 10px; }
-        .rank-tag { display: inline-block; padding: 5px 15px; border-radius: 50px; background: var(--primary); font-size: 12px; font-weight: 800; margin-bottom: 10px; }
+        .brand { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        .brand i { color: var(--accent); }
+
+        .timer-pill { 
+            background: rgba(16, 185, 129, 0.1); 
+            color: var(--success); 
+            padding: 8px 16px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(16, 185, 129, 0.2); 
+            font-family: 'Fira Code', monospace;
+            font-weight: 600; 
+            font-size: 14px; 
+        }
+
+        .timer-warning { 
+            background: rgba(244, 63, 94, 0.15); 
+            color: var(--danger); 
+            border-color: var(--danger); 
+            animation: pulse 1s infinite; 
+        }
+
+        .card { 
+            width: 100%; 
+            max-width: 600px; 
+            background: var(--glass); 
+            border: 1px solid var(--glass-border); 
+            padding: 32px 24px; 
+            border-radius: 24px; 
+            backdrop-filter: blur(20px); 
+            position: relative; 
+        }
+
+        #q-num { font-family: 'Fira Code', monospace; font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; display: block; opacity: 0.8; }
+        #q { font-size: 22px; font-weight: 700; line-height: 1.4; margin-bottom: 28px; color: #fff; }
+        
+        .options-grid { display: grid; gap: 14px; }
+        .opt { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--glass-border); 
+            padding: 20px; 
+            border-radius: 16px; 
+            cursor: pointer; 
+            transition: 0.2s all; 
+            display: flex; 
+            align-items: center; 
+            font-weight: 500; 
+            font-size: 16px;
+        }
+        
+        .opt:hover:not(.lock) { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); transform: translateX(4px); }
+        .opt.correct { background: rgba(16, 185, 129, 0.15) !important; border-color: var(--success) !important; color: var(--success); font-weight: 700; }
+        .opt.wrong { background: rgba(244, 63, 94, 0.15) !important; border-color: var(--danger) !important; color: var(--danger); animation: shake 0.4s; }
+        .opt.lock { cursor: default; }
+        
+        .footer { width: 100%; max-width: 600px; margin-top: 24px; display: flex; justify-content: flex-end; }
+        
+        .btn-primary { 
+            padding: 14px 28px; 
+            border-radius: 14px; 
+            background: #fff; 
+            color: #000; 
+            font-weight: 700; 
+            border: none;
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+        }
+
+        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
     </style>
 </head>
 <body>
 
-<div id="intro-overlay">
-    <div id="p1" class="intro-text">🚀 Welcome to the Future of Learning.</div>
-    <div id="p2" class="intro-text">🔥 Speed, Accuracy, and Focus.</div>
-    <div id="p3" class="intro-text">💻 Show them who's the real Cyber Titan!</div>
-    <div id="countdown-box">10</div>
-</div>
-
-<div id="auth-screen">
-    <div class="auth-card">
-        <i class="ri-user-star-line" style="font-size: 50px; color: var(--primary);"></i>
-        <h2>IDENTITY VERIFICATION</h2>
-        <input type="text" id="agent-callsign" class="terminal-input" placeholder="AGENT NAME..." maxlength="15">
-        <button class="btn-submit" onclick="enableFullScreenAndStart()">I'M READY. START MISSION</button>
+    <div class="stats-bar">
+        <div class="brand"><i class="ri-terminal-box-fill"></i>BT_TERMINAL</div>
+        <div class="timer-pill" id="timer-box"><i class="ri-timer-flash-line"></i> <span id="timer">40:00</span></div>
     </div>
-</div>
 
-<div id="ms-container" class="milestone-wrap">
-    <div id="ms-correct-bar"></div>
-    <div id="ms-time-dot"></div>
-</div>
-
-<div class="container" id="exam-screen" style="display:none;">
-    <div class="header-card">
-        <div id="display-name" style="font-weight: 800; color: var(--zen);">Agent</div>
-        <div style="font-weight:800; color: var(--danger);"><i class="ri-flashlight-line"></i> <span id="time-left">30:00</span></div>
+    <div class="card" id="examBox">
+        <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 24px; overflow: hidden;">
+            <div id="p-fill" style="height: 100%; background: var(--accent); width: 0%; transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+        </div>
+        <span id="q-num">Initializing...</span>
+        <h3 id="q">Fetching System Data...</h3>
+        <div class="options-grid" id="options"></div>
+        <div class="footer"><button id="nextBtn" class="btn-primary" disabled>Next Sequence <i class="ri-arrow-right-line"></i></button></div>
     </div>
-    <div id="questions-box"></div>
-    <button class="btn-submit" id="final-btn" onclick="finishExam()">UPLOAD FINAL DATA</button>
-</div>
 
-<div class="container" id="result-screen" style="display:none; text-align:center; padding:40px 15px;">
-    <div id="rank-display" class="rank-tag">SECURITY TRAINEE</div>
-    <h1 id="final-score" style="font-size: 70px; margin: 10px 0; color: var(--primary);">0/40</h1>
-    <p id="accuracy-stat" style="font-weight: 800; color: var(--zen);"></p>
-    
-    <button class="btn-submit" style="background:#22c55e" onclick="shareScore()"><i class="ri-whatsapp-line"></i> SHARE WITH FRIENDS</button>
-    <button class="btn-submit" style="background:#334155" onclick="showReview()"><i class="ri-book-open-line"></i> REVIEW SESSION</button>
-
-    <div class="leaderboard-card" style="background:rgba(255,255,255,0.03); padding:20px; border-radius:20px; margin-top:30px; text-align:left;">
-        <h3 style="margin:0 0 15px 0;"><i class="ri-medal-fill" style="color:#fbbf24"></i> TOP AGENTS</h3>
-        <div id="lb-body"></div>
-    </div>
-</div>
-
-<script>
-    // Fullscreen Function logic
-    function enableFullScreenAndStart() {
-        let elem = document.documentElement;
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) { /* Safari */
-            elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) { /* IE11 */
-            elem.msRequestFullscreen();
-        }
-        startCountdown(); // Start the usual process after going full screen
-    }
-
-    const questions = [
-        { q: "Octal (74) to Hexadecimal:", a: "3C", o: ["3C", "4D", "3B", "4C"] },
-        { q: "Octal (127) to Hexadecimal:", a: "57", o: ["57", "67", "A7", "5F"] },
-        { q: "Hexadecimal (1A) to Octal:", a: "32", o: ["32", "26", "42", "30"] },
-        { q: "Hexadecimal (FF) to Octal:", a: "377", o: ["377", "255", "400", "366"] },
-        { q: "Decimal (45) to Binary:", a: "101101", o: ["101101", "110011", "101010", "111001"] },
-        { q: "Decimal (10) to Binary:", a: "1010", o: ["1010", "1100", "1001", "1011"] },
-        { q: "Decimal (25) to Binary:", a: "11001", o: ["11001", "10101", "11100", "11011"] },
-        { q: "Decimal (64) to Octal:", a: "100", o: ["100", "70", "110", "64"] },
-        { q: "Decimal (92) to Octal:", a: "134", o: ["134", "124", "144", "114"] },
-        { q: "Decimal (255) to Hexadecimal:", a: "FF", o: ["FF", "FE", "EF", "F0"] },
-        { q: "Decimal (165) to Hexadecimal:", a: "A5", o: ["A5", "B5", "A6", "95"] },
-        { q: "Binary (111000) to Octal:", a: "70", o: ["70", "60", "77", "50"] },
-        { q: "Binary (101011) to Octal:", a: "53", o: ["53", "43", "63", "55"] },
-        { q: "Binary (11011110) to Hexadecimal:", a: "DE", o: ["DE", "BE", "CE", "FE"] },
-        { q: "Binary (10101010) to Hexadecimal:", a: "AA", o: ["AA", "BB", "A1", "A0"] },
-        { q: "CMD: Command to change color?", a: "color", o: ["color", "setcolor", "paint", "chr"] },
-        { q: "CMD: Command to create folder?", a: "mkdir", o: ["mkdir", "newdir", "create", "folder"] },
-        { q: "CMD: Command to rename folder?", a: "ren", o: ["ren", "rename", "move", "name"] },
-        { q: "CMD: Command to delete folder?", a: "rd", o: ["rd", "del", "remove", "erase"] },
-        { q: "CMD: Command to delete file?", a: "del", o: ["del", "remove", "erase", "kill"] },
-        { q: "CMD: Command to shutdown?", a: "shutdown /s", o: ["shutdown /s", "stop", "exit", "off"] },
-        { q: "CMD: Command to copy file?", a: "copy", o: ["copy", "cp", "move", "duplicate"] },
-        { q: "CMD: Command to move file?", a: "move", o: ["move", "mv", "transfer", "shift"] },
-        { q: "CMD: Command system information?", a: "systeminfo", o: ["systeminfo", "sysconfig", "specs", "about"] },
-        { q: "CMD: Command check IP?", a: "ipconfig", o: ["ipconfig", "ifconfig", "myip", "netstat"] },
-        { q: "CMD: Command clear screen?", a: "cls", o: ["cls", "clear", "clean", "reset"] },
-        { q: "CMD: Command list files?", a: "dir", o: ["dir", "ls", "list", "show"] },
-        { q: "CMD: Command ping server?", a: "ping", o: ["ping", "connect", "trace", "link"] },
-        { q: "What is a Computer?", a: "An electronic device that processes data", o: ["An electronic device that processes data", "A mechanical machine", "A typing tool", "None"] },
-        { q: "Full Form of COMPUTER?", a: "Commonly Operated Machine Particularly Used for Technical and Educational Research", o: ["Commonly Operated Machine Particularly Used for Technical and Educational Research", "Central Operating Machine", "None"] },
-        { q: "Full Form of ASCII?", a: "American Standard Code for Information Interchange", o: ["American Standard Code for Information Interchange", "All Standard Code", "None"] },
-        { q: "Father of Computer?", a: "Charles Babbage", o: ["Charles Babbage", "Alan Turing", "Bill Gates", "Tesla"] },
-        { q: "Smallest unit of data?", a: "Bit", o: ["Bit", "Byte", "KB", "Nibble"] },
-        { q: "1 Byte is equal to?", a: "8 Bits", o: ["8 Bits", "4 Bits", "1024 Bits", "16 Bits"] },
-        { q: "Brain of Computer?", a: "CPU", o: ["CPU", "RAM", "HDD", "Monitor"] },
-        { q: "Binary system base?", a: "2", o: ["2", "10", "8", "16"] },
-        { q: "Octal system base?", a: "8", o: ["8", "10", "2", "16"] },
-        { q: "Hexadecimal system base?", a: "16", o: ["16", "8", "10", "2"] },
-        { q: "CMD exit command?", a: "exit", o: ["exit", "close", "bye", "quit"] },
-        { q: "Full form of CPU:", a: "Central Processing Unit", o: ["Central Processing Unit", "Central Power Unit", "Computer Unit", "None"] }
-    ];
-
-    let timer, timeLeft = 1800, correctCount = 0, currentAgent = "", answered = new Set(), streak = 0;
-
-    window.onload = () => {
-        const pArr = ["p1", "p2", "p3"];
-        pArr.forEach((id, i) => {
-            setTimeout(() => {
-                if(i > 0) document.getElementById(pArr[i-1]).style.display = 'none';
-                document.getElementById(id).style.display = 'block';
-            }, i * 2000);
-        });
-        setTimeout(() => {
-            document.getElementById('intro-overlay').style.display = 'none';
-            document.getElementById('auth-screen').style.display = 'flex';
-        }, 6000);
-    };
-
-    function startCountdown() {
-        currentAgent = document.getElementById('agent-callsign').value.trim();
-        if(!currentAgent) return alert("Enter Agent Name!");
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('intro-overlay').style.display = 'flex';
-        document.getElementById('p3').style.display = 'none';
-        let box = document.getElementById('countdown-box');
-        box.style.display = 'block';
-        let count = 10;
-        let intv = setInterval(() => {
-            count--; box.innerText = count;
-            if(count <= 0) { clearInterval(intv); initExam(); }
-        }, 1000);
-    }
-
-    function initExam() {
-        document.getElementById('intro-overlay').style.display = 'none';
-        document.getElementById('exam-screen').style.display = 'block';
-        document.getElementById('ms-container').style.display = 'block';
-        document.getElementById('display-name').innerText = "AGENT: " + currentAgent.toUpperCase();
-        renderQuestions();
-        timer = setInterval(updateProgress, 1000);
-    }
-
-    function renderQuestions() {
-        const box = document.getElementById('questions-box');
-        box.innerHTML = '';
-        questions.forEach((q, i) => {
-            const shuffled = [...q.o].sort(() => Math.random() - 0.5);
-            box.innerHTML += `
-                <div class="q-card" id="qb-${i}">
-                    <p style="font-size:10px; color:var(--primary); font-weight:800;">DATA_NODE_${i+1}</p>
-                    <p style="font-weight:700; margin:10px 0;">${q.q}</p>
-                    <div id="opts-${i}">
-                        ${shuffled.map(opt => `<label class="opt-label" onclick="handleSel(this, ${i}, '${opt}')">${opt}</label>`).join('')}
-                    </div>
-                </div>`;
-        });
-    }
-
-    function handleSel(el, i, sel) {
-        if(answered.has(i)) return;
-        answered.add(i);
-        const correct = questions[i].a;
-        const qCard = document.getElementById(`qb-${i}`);
-        document.getElementById(`opts-${i}`).querySelectorAll('.opt-label').forEach(l => l.classList.add('locked'));
+    <div class="card" id="lockBox" style="display:none; text-align: center;">
+        <div style="margin-bottom: 20px;">
+            <i class="ri-checkbox-circle-fill" style="font-size: 56px; color: var(--success);"></i>
+        </div>
+        <h2 style="font-weight: 800; font-size: 24px;">Terminal Sync Complete</h2>
         
-        if(sel === correct) {
-            correctCount++; streak++;
-            el.classList.add('correct-glow');
-            confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 }, colors:['#6366f1', '#38bdf8'] });
-            if(streak === 3) showStreak("🔥 TRIPLE KILL!");
-            if(streak === 5) showStreak("⚡ UNSTOPPABLE!");
+        <p id="score-text" style="font-family: 'Fira Code'; margin: 12px 0 4px 0; color: var(--accent); font-size: 18px;"></p>
+        <p id="time-taken-text" style="font-family: 'Fira Code'; margin-bottom: 12px; color: var(--success); font-size: 14px; opacity: 0.9;"></p>
+        
+        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 20px; border: 1px solid var(--glass-border); margin: 24px 0;">
+            <p style="font-size: 10px; font-weight: 800; opacity: 0.5; letter-spacing: 2px;">NEXT PROTOCOL UNLOCKS IN</p>
+            <div id="count" style="font-size: 28px; font-weight: 700; color: #fff; margin-top: 8px; font-family: 'Fira Code';">00:00:00</div>
+        </div>
+
+        <div style="text-align: left;">
+            <p style="font-size: 11px; font-weight: 800; opacity: 0.5; margin-bottom: 12px;">SYSTEM RANKINGS</p>
+            <table style="width:100%; border-collapse: collapse;"><tbody id="leaderboard-body"></tbody></table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, updateDoc, increment, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const manualQuestions = [
+            { question: "Which company developed the Java programming language?", a: "Microsoft", b: "Sun Microsystems", c: "Google", d: "Apple", correct: "B" },
+            { question: "What does SQL stand for?", a: "Structured Query Language", b: "Simple Query Level", c: "System Quick Layer", d: "Standard Query List", correct: "A" },
+            { question: "In CSS, which property is used to make text bold?", a: "text-decoration", b: "font-style", c: "font-weight", d: "bold-text", correct: "C" },
+            { question: "Which data structure follows the Last-In-First-Out (LIFO) principle?", a: "Queue", b: "Stack", c: "Array", d: "Linked List", correct: "B" },
+            { question: "What is the default port number for HTTP?", a: "443", b: "21", c: "80", d: "25", correct: "C" },
+            { question: "Which of the following is a client-side scripting language?", a: "PHP", b: "Python", c: "JavaScript", d: "Ruby", correct: "C" },
+            { question: "What does the 'S' in HTTPS stand for?", a: "Standard", b: "Secure", d: "System", c: "Simple", correct: "B" },
+            { question: "Which HTML tag is used to create a hyperlink?", a: "<link>", b: "<a>", c: "<href>", d: "<url>", correct: "B" },
+            { question: "In JavaScript, which keyword is used to declare a block-scoped variable?", a: "var", b: "set", c: "let", d: "block", correct: "C" },
+            { question: "Which operating system is based on the Linux kernel?", a: "Windows", b: "Android", c: "iOS", d: "macOS", correct: "B" },
+            { question: "What is the primary function of a Router?", a: "Store data", b: "Forward data packets", c: "Compile code", d: "Display graphics", correct: "B" },
+            { question: "Which of these is a CSS framework?", a: "React", b: "Bootstrap", c: "Node.js", d: "Django", correct: "B" },
+            { question: "What does API stand for?", a: "App Program Interface", b: "Application Programming Interface", c: "Applied Protocol Integration", d: "Automated Process Input", correct: "B" },
+            { question: "Which Git command is used to stage changes?", a: "git commit", b: "git push", c: "git add", d: "git init", correct: "C" },
+            { question: "Which language is primarily used for Android app development?", a: "Swift", b: "Kotlin", c: "PHP", d: "Objective-C", correct: "B" },
+            { question: "What is the extension of a Python file?", a: ".py", b: ".pt", c: ".python", d: ".exe", correct: "A" },
+            { question: "Which logic gate returns true only if both inputs are true?", a: "OR", b: "NOT", c: "AND", d: "XOR", correct: "C" },
+            { question: "What is the purpose of 'Docker'?", a: "Styling", b: "Containerization", c: "Documentation", d: "Hardware testing", correct: "B" },
+            { question: "Which HTML tag is used to define an internal style sheet?", a: "<css>", b: "<script>", c: "<style>", d: "<layout>", correct: "C" },
+            { question: "What is the full form of RAM?", a: "Read Access Memory", b: "Random Access Memory", c: "Rapid Action Module", d: "Remote Area Memory", correct: "B" },
+            { question: "Which of these is an example of Cloud Storage?", a: "CPU", b: "Google Drive", c: "Keyboard", d: "VLC", correct: "B" },
+            { question: "Which symbol is used for comments in Python?", a: "//", b: "/*", c: "#", d: "--", correct: "C" },
+            { question: "What does DNS stand for?", a: "Data Node System", b: "Domain Name System", c: "Digital Network Service", d: "Dynamic Name Storage", correct: "B" },
+            { question: "In SQL, which clause is used to filter records?", a: "WHERE", b: "GROUP BY", c: "ORDER BY", d: "SELECT", correct: "A" },
+            { question: "Which company owns GitHub?", a: "Google", b: "Microsoft", c: "Amazon", d: "Facebook", correct: "B" },
+            { question: "What is 'npm' in the context of Node.js?", a: "New Program Manager", b: "Node Package Manager", c: "Node Project Module", d: "Normal Process Mode", correct: "B" },
+            { question: "Which CSS property controls the size of text?", a: "text-size", b: "font-style", c: "font-size", d: "text-style", correct: "C" },
+            { question: "What does JSON stand for?", a: "Java Object Notation", b: "JavaScript Object Notation", c: "Joint System Object Node", d: "None", correct: "B" },
+            { question: "Which device is considered the 'Brain' of the computer?", a: "RAM", b: "Hard Drive", c: "CPU", d: "Monitor", correct: "C" },
+            { question: "What is the base of a Hexadecimal system?", a: "2", b: "8", c: "10", d: "16", correct: "D" },
+            { question: "Which HTTP status code represents 'Internal Server Error'?", a: "404", b: "200", c: "500", d: "403", correct: "C" },
+            { question: "In HTML, which attribute is used to provide an image path?", a: "href", b: "path", c: "src", d: "link", correct: "C" },
+            { question: "Which of these is a Backend framework?", a: "Angular", b: "Vue.js", c: "Express.js", d: "Sass", correct: "C" },
+            { question: "What is a 'Bug' in software?", a: "Hardware failure", b: "An error in code", c: "A virus", d: "A type of hacker", correct: "B" },
+            { question: "Which unit is used to measure CPU clock speed?", a: "MB", b: "GHz", c: "Watts", d: "TB", correct: "B" },
+            { question: "What is the full form of PDF?", a: "Printable Document Format", b: "Portable Document Format", c: "Personal Data File", d: "Portable Digital File", correct: "B" },
+            { question: "Which programming language is known as the 'Mother of Languages'?", a: "Python", b: "Java", c: "C", d: "Assembly", correct: "C" },
+            { question: "What does BIOS stand for?", a: "Binary Input Output System", b: "Basic Input Output System", c: "Better Integrated OS", d: "Base Internal OS", correct: "B" },
+            { question: "Which CSS value is used to center a block element horizontally?", a: "align: center", b: "margin: auto", c: "text-align: center", d: "padding: auto", correct: "B" },
+            { question: "What is the primary role of an IP Address?", a: "Storage", b: "Identifying a device on a network", c: "Compiling code", d: "Creating websites", correct: "B" },
+            { question: "Which of these is a Version Control System?", a: "Git", b: "Docker", c: "NPM", d: "AWS", correct: "A" },
+            { question: "What is the purpose of 'head' tag in HTML?", a: "To show content", b: "To store metadata", c: "To create footer", d: "To insert images", correct: "B" },
+            { question: "Which language is used for styling web pages?", a: "HTML", b: "SQL", c: "CSS", d: "XML", correct: "C" },
+            { question: "What is the result of 10 % 3 in programming?", a: "3", b: "30", c: "1", d: "0", correct: "C" },
+            { question: "Which tag is used for the largest heading in HTML?", a: "<h6>", b: "<head>", c: "<h1>", d: "<header>", correct: "C" },
+            { question: "What does UI stand for?", a: "User Interface", b: "User Integration", c: "Unit Input", d: "Universal Interface", correct: "A" },
+            { question: "Which of these is NOT a programming language?", b: "Python", c: "Java", a: "HTML", d: "C++", correct: "A" },
+            { question: "What is the full form of URL?", a: "Uniform Resource Locator", b: "United Resource Link", c: "Universal Record Locator", d: "None", correct: "A" },
+            { question: "Which keyword is used to return a value from a function?", a: "give", b: "send", c: "return", d: "back", correct: "C" },
+            { question: "Who is known as the founder of Microsoft?", a: "Steve Jobs", b: "Elon Musk", c: "Bill Gates", d: "Jeff Bezos", correct: "C" }
+        ];
+
+        let student = localStorage.getItem("studentName") || "Root_User";
+        let questions = [], index = 0, score = 0, locked = false;
+        let totalTimeLimit = 40 * 60; // 40 minutes in seconds
+        let timeRemaining = totalTimeLimit;
+        let timerInterval;
+        let startTime;
+
+        const todayStr = new Date().toDateString();
+        if (localStorage.getItem("daily_done_" + student) === todayStr) {
+            // Load saved score and time if already done today
+            score = localStorage.getItem("last_score_" + student) || 0;
+            const savedTime = localStorage.getItem("last_time_" + student) || "00:00";
+            lockScreen(savedTime);
         } else {
-            streak = 0;
-            el.classList.add('wrong-glow');
-            qCard.classList.add('shake');
-            const sad = document.createElement('div'); sad.className = "sad-emoji"; sad.innerText = "😢";
-            qCard.appendChild(sad);
-            setTimeout(() => sad.remove(), 1200);
+            initExam();
         }
-        document.getElementById('ms-correct-bar').style.width = (correctCount / 40 * 100) + "%";
-    }
 
-    function showStreak(msg) {
-        const div = document.createElement('div'); div.className = "streak-msg"; div.innerText = msg;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 1000);
-    }
+        function initExam() {
+            questions = [...manualQuestions].sort(() => Math.random() - 0.5);
+            startTime = Date.now();
+            showQ();
+            startGlobalTimer();
+        }
 
-    function updateProgress() {
-        if(timeLeft <= 0) finishExam();
-        let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
-        document.getElementById('time-left').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        document.getElementById('ms-time-dot').style.left = `calc(${((1800-timeLeft)/1800)*100}% - 10px)`;
-        timeLeft--;
-    }
+        function showQ() {
+            if (index >= questions.length) { finish(); return; }
+            locked = false;
+            document.getElementById("nextBtn").disabled = true;
+            
+            const q = questions[index];
+            const examBox = document.getElementById("examBox");
+            
+            examBox.style.transform = "translateY(10px)";
+            setTimeout(() => examBox.style.transform = "translateY(0px)", 50);
 
-    function finishExam() {
-        clearInterval(timer);
-        document.getElementById('exam-screen').style.display = 'none';
-        document.getElementById('ms-container').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'block';
-        
-        const score = correctCount;
-        document.getElementById('final-score').innerText = `${score}/40`;
-        document.getElementById('accuracy-stat').innerText = `SYSTEM ACCURACY: ${Math.round(score/40*100)}%`;
-        
-        let rank = "SECURITY TRAINEE";
-        if(score >= 35) rank = "🛡️ CYBER OVERLORD";
-        else if(score >= 25) rank = "⚡ DATA NINJA";
-        else if(score >= 15) rank = "👨‍💻 CODE APPRENTICE";
-        document.getElementById('rank-display').innerText = rank;
+            document.getElementById("q-num").innerText = `Sequence ${index + 1} // ${questions.length}`;
+            document.getElementById("p-fill").style.width = ((index + 1) / questions.length * 100) + "%";
+            document.getElementById("q").innerText = q.question;
+            
+            const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
+            document.getElementById("options").innerHTML = opts.map(o => `
+                <div class="opt" onclick="window.selectOpt('${o.id}', this)">
+                    <span style="font-family:'Fira Code'; color:var(--accent); margin-right:15px; font-size:12px; border: 1px solid rgba(6,182,212,0.2); padding: 2px 6px; border-radius: 4px;">${o.id}</span> ${o.v}
+                </div>
+            `).join('');
+        }
 
-        saveScore(); showLeaderboard(); window.scrollTo(0,0);
-    }
+        window.selectOpt = (v, el) => {
+            if (locked) return;
+            locked = true;
+            document.getElementById("nextBtn").disabled = false;
+            const correct = questions[index].correct;
+            
+            if (v === correct) { 
+                el.classList.add("correct"); 
+                score++; 
+                if (window.navigator.vibrate) window.navigator.vibrate(50);
+            } else { 
+                el.classList.add("wrong");
+                document.querySelectorAll(".opt").forEach(o => {
+                    const optionText = o.innerText.split(' ').slice(1).join(' ');
+                    if(optionText === questions[index][correct.toLowerCase()]) o.classList.add("correct");
+                });
+            }
+            document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
+        };
 
-    function showReview() {
-        document.getElementById('result-screen').style.display = 'none';
-        document.getElementById('exam-screen').style.display = 'block';
-        document.getElementById('final-btn').style.display = 'none';
-        questions.forEach((q, i) => {
-            const labels = document.getElementById(`opts-${i}`).querySelectorAll('.opt-label');
-            labels.forEach(l => {
-                l.classList.add('locked');
-                if(l.innerText.trim() === q.a) {
-                    l.style.borderColor = "var(--success)";
-                    l.style.background = "rgba(16, 185, 129, 0.1)";
-                    l.innerHTML += ' <i class="ri-check-double-line"></i>';
+        document.getElementById("nextBtn").onclick = () => { index++; showQ(); };
+
+        function startGlobalTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                
+                let mins = Math.floor(timeRemaining / 60);
+                let secs = timeRemaining % 60;
+                document.getElementById("timer").innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                
+                if(timeRemaining <= 60) document.getElementById("timer-box").classList.add("timer-warning");
+                
+                if (timeRemaining <= 0) { 
+                    clearInterval(timerInterval);
+                    finish(); 
                 }
-            });
-        });
-    }
+            }, 1000);
+        }
 
-    function saveScore() {
-        let s = JSON.parse(localStorage.getItem('ct_scores') || '[]');
-        s.push({name: currentAgent, score: correctCount});
-        s.sort((a,b) => b.score - a.score);
-        localStorage.setItem('ct_scores', JSON.stringify(s.slice(0,5)));
-    }
+        async function finish() {
+            clearInterval(timerInterval);
+            
+            // Calculate time taken
+            const timeDiff = Date.now() - startTime;
+            const totalSecsTaken = Math.floor(timeDiff / 1000);
+            const displayMins = Math.floor(totalSecsTaken / 60);
+            const displaySecs = totalSecsTaken % 60;
+            const timeTakenStr = `${displayMins}m ${displaySecs}s`;
 
-    function showLeaderboard() {
-        const s = JSON.parse(localStorage.getItem('ct_scores') || '[]');
-        document.getElementById('lb-body').innerHTML = s.map((x, i) => `
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                <span>${i+1}. ${x.name}</span><span style="color:var(--zen); font-weight:800;">${x.score}/40</span>
-            </div>`).join('');
-    }
+            localStorage.setItem("daily_done_" + student, new Date().toDateString());
+            localStorage.setItem("last_score_" + student, score);
+            localStorage.setItem("last_time_" + student, timeTakenStr);
+            
+            if((score / questions.length) >= 0.7) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#06b6d4', '#10b981'] });
+            }
 
-    function shareScore() {
-        const text = `🏆 MISSION ACCOMPLISHED!\n👤 Agent: ${currentAgent}\n✅ Score: ${correctCount}/40\n🎖️ Rank: ${document.getElementById('rank-display').innerText}\nCan you beat my score?`;
-        navigator.clipboard.writeText(text);
-        alert("Result Copied! Paste on WhatsApp.");
-    }
-</script>
+            if(student !== "Root_User") {
+                try {
+                    await updateDoc(doc(db, "students", student), { 
+                        xp: increment(score * 10),
+                        lastTime: timeTakenStr 
+                    });
+                } catch (e) { console.error("Sync Error", e); }
+            }
+            lockScreen(timeTakenStr);
+        }
+
+        async function lockScreen(finalTime) {
+            document.getElementById("examBox").style.display = "none";
+            document.getElementById("lockBox").style.display = "block";
+            
+            const totalQs = manualQuestions.length;
+            document.getElementById("score-text").innerText = `Accuracy: ${Math.round((score/totalQs)*100)}% [${score}/${totalQs}]`;
+            document.getElementById("time-taken-text").innerText = `Total Time Taken: ${finalTime}`;
+            
+            const countdown = () => {
+                const now = new Date();
+                const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
+                const diff = midnight - now;
+                if (diff <= 0) { localStorage.removeItem("daily_done_" + student); location.reload(); }
+                let h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                let m = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
+                let s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+                document.getElementById("count").innerText = `${h}:${m}:${s}`;
+            };
+            setInterval(countdown, 1000); countdown();
+
+            try {
+                const snap = await getDocs(collection(db, "students"));
+                let p = []; snap.forEach(d => p.push({ n: d.id, x: d.data().xp || 0 }));
+                p.sort((a, b) => b.x - a.x);
+                document.getElementById("leaderboard-body").innerHTML = p.slice(0, 5).map((u, i) => `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 12px 0; font-family:'Fira Code'; font-size:12px; color:var(--accent);">0${i+1}</td>
+                        <td style="padding: 12px 0; font-weight: 600;">${u.n}</td>
+                        <td style="padding: 12px 0; text-align: right; color: var(--success); font-family:'Fira Code'; font-size:12px;">${u.x}XP</td>
+                    </tr>
+                `).join('');
+            } catch(e) {}
+        }
+    </script>
 </body>
 </html>
