@@ -3,110 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Refer & Earn</title>
+    <title>BT | Refer & Earn Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --glass: rgba(255, 255, 255, 0.05); }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 20px; }
-        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
-        .input-ui { width: 100%; padding: 15px; background: #000; border: 1px solid var(--accent); border-radius: 12px; color: white; margin: 10px 0; }
-        .btn-ui { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; }
+        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --glass: rgba(255, 255, 255, 0.05); --success: #22c55e; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', Roboto, sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 24px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+        .input-ui { width: 100%; padding: 15px; background: #000; border: 1px solid var(--accent); border-radius: 12px; color: white; margin: 10px 0; box-sizing: border-box; }
+        .btn-ui { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-ui:active { transform: scale(0.98); }
+        .tier-badge { background: var(--accent); color: #000; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .ref-link-box { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; border: 1px dashed var(--accent); display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        #referral-list { max-height: 200px; overflow-y: auto; }
     </style>
 </head>
 <body>
 
-    <div class="card" style="text-align:center;">
-        <p>Wallet Balance</p>
-        <h1 id="wallet-balance" style="color:var(--accent);">₹0</h1>
+    <div class="card" style="text-align:center; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 10px; right: 10px;" id="tier-tag"><span class="tier-badge">Tier 1</span></div>
+        <p style="opacity: 0.7; font-size: 14px;">Total Earnings</p>
+        <h1 id="wallet-balance" style="color:var(--accent); font-size: 42px; margin: 10px 0;">₹0</h1>
+        <p id="reward-info" style="font-size:12px; color:var(--success);">Earn ₹100 per verified friend</p>
     </div>
 
     <div class="card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span id="milestone-text" style="font-size:12px; font-weight:bold;">0 / 10 Referrals</span>
-            <span id="reward-info" style="font-size:12px; color:var(--accent);">Reward: ₹100 per referral</span>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+            <span id="milestone-text" style="font-size:13px; font-weight:bold;">0 Referrals</span>
+            <span id="next-tier-info" style="font-size:11px; opacity: 0.6;">Next Tier: 10 Refs</span>
         </div>
-        <div style="height:8px; background:#000; border-radius:10px; display:flex; gap:2px; margin-bottom:15px;">
-            <div id="m1" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m2" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m3" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m4" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m5" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m6" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m7" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m8" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m9" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
-            <div id="m10" style="flex:1; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+        <div style="height:10px; background:rgba(0,0,0,0.4); border-radius:10px; display:flex; gap:4px; padding: 2px;">
+            <div id="progress-container" style="display:contents;"></div>
         </div>
     </div>
 
     <div class="card">
-        <h3>Manual Refer</h3>
-        <select id="student-dropdown" class="input-ui"><option>Fetching...</option></select>
-        <button onclick="processReferral()" class="btn-ui">SUBMIT FOR REVIEW</button>
+        <h3 style="margin-top:0"><i class="ri-share-forward-line"></i> Your Invite Link</h3>
+        <div class="ref-link-box">
+            <code id="share-url" style="font-size: 12px; color: var(--accent);">loading...</code>
+            <i class="ri-file-copy-line" onclick="copyLink()" style="cursor:pointer; color: var(--accent);"></i>
+        </div>
     </div>
 
     <div class="card">
-        <h3>Referral History</h3>
-        <div id="referral-list"></div>
+        <h3><i class="ri-user-add-line"></i> Manual Refer</h3>
+        <select id="student-dropdown" class="input-ui"><option>Fetching students...</option></select>
+        <button onclick="processReferral()" class="btn-ui">SUBMIT REFERRAL</button>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0">Referral History</h3>
+        <div id="referral-list"><p style="opacity:0.5; font-size:13px;">No referrals yet.</p></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, getDocs, setDoc, query, where, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const db = getFirestore(initializeApp({
+        // Firebase Config
+        const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             projectId: "black-terminal-f2c91",
             storageBucket: "black-terminal-f2c91.firebasestorage.app",
             messagingSenderId: "552489994197",
             appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        }));
+        };
 
-        const student = localStorage.getItem("studentName") || "Guest";
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // Referral Listener - Yahan se tier calculation aur balance update ho raha hai
-        onSnapshot(query(collection(db, "students"), where("referred_by", "==", student)), (snap) => {
+        const currentStudent = localStorage.getItem("studentName") || "Guest";
+        
+        // Update Share URL
+        document.getElementById('share-url').innerText = `blackterminal.com/join?ref=${currentStudent}`;
+
+        // Initialize Progress Segments
+        const progContainer = document.getElementById('progress-container');
+        for(let i=1; i<=10; i++) {
+            progContainer.innerHTML += `<div id="m${i}" style="flex:1; background:rgba(255,255,255,0.05); border-radius:10px; transition: 0.5s;"></div>`;
+        }
+
+        // Referral Listener
+        onSnapshot(query(collection(db, "students"), where("referred_by", "==", currentStudent)), (snap) => {
             const listDiv = document.getElementById("referral-list");
             listDiv.innerHTML = "";
             let verifiedCount = 0;
 
+            if (snap.empty) {
+                listDiv.innerHTML = `<p style="opacity:0.5; font-size:13px;">No referrals found yet.</p>`;
+            }
+
             snap.forEach(d => {
                 const data = d.data();
                 if(data.status === 'verified') verifiedCount++;
-                listDiv.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between;">
-                    <span>${d.id}</span>
-                    <span style="color:${data.status === 'verified' ? '#22c55e' : '#facc15'}">${data.status || 'pending'}</span>
+                listDiv.innerHTML += `
+                <div style="background:rgba(255,255,255,0.03); padding:12px; margin-bottom:8px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="font-weight:500;">${d.id}</span>
+                    <span style="font-size:12px; padding:4px 8px; border-radius:6px; background:${data.status === 'verified' ? 'rgba(34,197,94,0.1)' : 'rgba(250,204,21,0.1)'}; color:${data.status === 'verified' ? '#22c55e' : '#facc15'}">
+                        ${data.status || 'pending'}
+                    </span>
                 </div>`;
             });
 
-            // Tier Calculation Logic
-            let tier = Math.floor(verifiedCount / 10);
-            let rewardPerRef = (tier === 0) ? 100 : (tier === 1) ? 200 : 300;
-            let totalWallet = verifiedCount * rewardPerRef;
+            // Tier & Logic Update
+            let tier = Math.min(3, Math.floor(verifiedCount / 10) + 1);
+            let rewardPerRef = (tier === 1) ? 100 : (tier === 2) ? 200 : 300;
             let progress = verifiedCount % 10;
-
-            // UI Update
-            document.getElementById('wallet-balance').innerText = `₹${totalWallet}`;
-            document.getElementById("milestone-text").innerText = `${verifiedCount} Total Verified Referrals`;
-            document.getElementById("reward-info").innerText = `Reward: ₹${rewardPerRef} per referral`;
+            
+            // UI Updates
+            document.getElementById('wallet-balance').innerText = `₹${verifiedCount * rewardPerRef}`;
+            document.getElementById('tier-tag').innerHTML = `<span class="tier-badge">Tier ${tier}</span>`;
+            document.getElementById("milestone-text").innerText = `${verifiedCount} Verified Referrals`;
+            document.getElementById("reward-info").innerText = `Earn ₹${rewardPerRef} per verified friend`;
             
             for(let i = 1; i <= 10; i++) {
                 document.getElementById(`m${i}`).style.background = (i <= progress) ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+                document.getElementById(`m${i}`).style.boxShadow = (i <= progress) ? '0 0 10px var(--accent)' : 'none';
             }
         });
 
+        // Load Students for Manual Refer
         async function loadStudents() {
             const dropdown = document.getElementById("student-dropdown");
             const snap = await getDocs(collection(db, "students"));
             dropdown.innerHTML = '<option value="">Select Student</option>';
-            snap.forEach(d => { if(d.id !== student) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; });
+            snap.forEach(d => { 
+                if(d.id !== currentStudent) dropdown.innerHTML += `<option value="${d.id}">${d.id}</option>`; 
+            });
         }
 
         window.processReferral = async () => {
             const refName = document.getElementById("student-dropdown").value;
-            if(!refName) return alert("Select student!");
-            await setDoc(doc(db, "students", refName), { referred_by: student, status: "pending" }, { merge: true });
-            alert("Referral Submitted!");
+            if(!refName) return alert("Please select a student!");
+            
+            try {
+                await setDoc(doc(db, "students", refName), { 
+                    referred_by: currentStudent, 
+                    status: "pending",
+                    timestamp: new Date()
+                }, { merge: true });
+                alert("Referral submitted for review! 🎉");
+            } catch (e) {
+                alert("Error submitting referral.");
+            }
+        };
+
+        window.copyLink = () => {
+            const link = document.getElementById('share-url').innerText;
+            navigator.clipboard.writeText(link);
+            alert("Referral link copied!");
         };
 
         loadStudents();
