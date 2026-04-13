@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Holiday Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system; padding: 20px; background: #f2f2f7; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: #007AFF; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; cursor: pointer; }
+        .list { margin-top: 20px; background: white; border-radius: 12px; padding: 10px; }
+        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .del-btn { color: #FF3B30; cursor: pointer; border: none; background: none; }
+    </style>
+</head>
+<body>
+    <h2>Admin Panel</h2>
+    <input type="text" id="name" placeholder="Holiday Name (e.g. Diwali)">
+    <input type="text" id="date" placeholder="Date (e.g. 24 Oct)">
+    <button onclick="addHoliday()">Add Holiday</button>
+
+    <div class="list" id="adminList"></div>
+
+    <script>
+        function loadHolidays() {
+            let holidays = JSON.parse(localStorage.getItem('myHolidays')) || [];
+            let html = '';
+            holidays.forEach((h, index) => {
+                html += `<div class="item">
+                    <span><b>${h.name}</b> - ${h.date}</span>
+                    <button class="del-btn" onclick="deleteHoliday(${index})">Delete</button>
+                </div>`;
+            });
+            document.getElementById('adminList').innerHTML = html;
+        }
+
+        function addHoliday() {
+            let name = document.getElementById('name').value;
+            let date = document.getElementById('date').value;
+            if(!name || !date) return alert("Fill both fields");
+
+            let holidays = JSON.parse(localStorage.getItem('myHolidays')) || [];
+            holidays.push({name, date});
+            localStorage.setItem('myHolidays', JSON.stringify(holidays));
+            
+            document.getElementById('name').value = '';
+            document.getElementById('date').value = '';
+            loadHolidays();
+        }
+
+        function deleteHoliday(index) {
+            let holidays = JSON.parse(localStorage.getItem('myHolidays'));
+            holidays.splice(index, 1);
+            localStorage.setItem('myHolidays', JSON.stringify(holidays));
+            loadHolidays();
+        }
+
+        loadHolidays();
+    </script>
+</body>
+</html>
