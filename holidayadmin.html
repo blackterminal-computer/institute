@@ -1,42 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Holiday Admin</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holiday Admin Pro</title>
     <style>
-        body { font-family: -apple-system; padding: 20px; background: #f2f2f7; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #007AFF; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; cursor: pointer; }
-        .list { margin-top: 20px; background: white; border-radius: 12px; padding: 10px; }
-        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
-        .del-btn { color: #FF3B30; cursor: pointer; border: none; background: none; }
+        :root {
+            --primary: #007AFF;
+            --danger: #FF3B30;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            padding: 20px; 
+            background: var(--bg); 
+            color: #1c1c1e;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header { margin-bottom: 24px; }
+        h2 { font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px; }
+
+        .input-group {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            margin-bottom: 20px;
+        }
+
+        label { font-size: 12px; font-weight: 600; color: #8e8e93; text-transform: uppercase; margin-left: 4px; }
+        
+        input { 
+            width: 100%; padding: 12px; margin: 8px 0 16px; 
+            border-radius: 10px; border: 1px solid #e5e5ea; 
+            box-sizing: border-box; font-size: 16px; outline: none;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        button.add-btn { 
+            background: var(--primary); color: white; border: none; 
+            padding: 14px; border-radius: 12px; width: 100%; 
+            font-weight: 600; font-size: 16px; cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        button.add-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        .item { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card); padding: 16px; 
+            border-radius: 14px; margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .info b { display: block; font-size: 17px; }
+        .info span { font-size: 14px; color: #8e8e93; }
+
+        .badge {
+            background: #eef6ff; color: var(--primary);
+            padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;
+        }
+
+        .del-btn { color: var(--danger); font-weight: 600; cursor: pointer; border: none; background: none; font-size: 14px; }
     </style>
 </head>
 <body>
-    <h2>Admin Panel</h2>
-    <input type="text" id="name" placeholder="Holiday Name (e.g. Diwali)">
-    <input type="text" id="date" placeholder="Date (e.g. 24 Oct)">
-    <button onclick="addHoliday()">Add Holiday</button>
 
-    <div class="list" id="adminList"></div>
+    <div class="header">
+        <h2>Holiday Admin</h2>
+        <p style="color: #8e8e93; margin: 0;">Manage your upcoming breaks</p>
+    </div>
+
+    <div class="input-group">
+        <label>Holiday Name</label>
+        <input type="text" id="name" placeholder="e.g. Summer Vacation">
+        
+        <label>Date</label>
+        <input type="date" id="date">
+        
+        <button class="add-btn" onclick="addHoliday()">Add Holiday</button>
+    </div>
+
+    <div id="adminList"></div>
 
     <script>
+        function getDaysRemaining(targetDate) {
+            const diff = new Date(targetDate) - new Date().setHours(0,0,0,0);
+            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            return days === 0 ? "Today" : days > 0 ? `${days}d left` : "Passed";
+        }
+
         function loadHolidays() {
             let holidays = JSON.parse(localStorage.getItem('myHolidays')) || [];
+            
+            // Sort by date: closest first
+            holidays.sort((a, b) => new Date(a.date) - new Date(b.date));
+
             let html = '';
             holidays.forEach((h, index) => {
-                html += `<div class="item">
-                    <span><b>${h.name}</b> - ${h.date}</span>
-                    <button class="del-btn" onclick="deleteHoliday(${index})">Delete</button>
+                const countdown = getDaysRemaining(h.date);
+                html += `
+                <div class="item">
+                    <div class="info">
+                        <b>${h.name}</b>
+                        <span>${new Date(h.date).toDateString()}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="badge">${countdown}</div>
+                        <button class="del-btn" onclick="deleteHoliday(${index})">Delete</button>
+                    </div>
                 </div>`;
             });
-            document.getElementById('adminList').innerHTML = html;
+            document.getElementById('adminList').innerHTML = html || '<p style="text-align:center; color:#8e8e93;">No holidays added yet.</p>';
         }
 
         function addHoliday() {
-            let name = document.getElementById('name').value;
-            let date = document.getElementById('date').value;
-            if(!name || !date) return alert("Fill both fields");
+            const name = document.getElementById('name').value;
+            const date = document.getElementById('date').value;
+            
+            if(!name || !date) return alert("Please fill in all fields");
 
             let holidays = JSON.parse(localStorage.getItem('myHolidays')) || [];
             holidays.push({name, date});
