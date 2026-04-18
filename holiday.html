@@ -3,119 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Holiday Calendar</title>
+    <title>Holiday Hub Pro</title>
     <style>
-        /* Apple Style CSS */
+        :root {
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --text: #1c1c1e;
+            --accent: #007AFF;
+            --secondary: #8e8e93;
+            --success: #34C759;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --card: #1c1c1e;
+                --text: #ffffff;
+                --accent: #0A84FF;
+            }
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f2f2f7;
-            margin: 0;
-            padding: 20px;
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 20px;
+            transition: 0.3s;
         }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* Header & Funny Image */
+        header { margin-bottom: 25px; }
+        .meme-box {
+            width: 100%; height: 200px;
+            border-radius: 20px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: #ddd; margin-bottom: 20px;
+            cursor: pointer; position: relative;
+        }
+        .meme-box img { width: 100%; height: 100%; object-fit: cover; }
+        .meme-label {
+            position: absolute; bottom: 10px; left: 10px;
+            background: rgba(0,0,0,0.6); color: white;
+            padding: 4px 10px; border-radius: 8px; font-size: 12px;
         }
 
-        .back-link {
-            text-decoration: none;
-            color: #007AFF;
-            font-size: 17px;
-            display: inline-block;
-            margin-bottom: 15px;
+        h1 { font-size: 34px; font-weight: 800; letter-spacing: -1px; margin: 0; }
+
+        /* Holiday Cards */
+        .holiday-list { display: flex; flex-direction: column; gap: 12px; }
+        
+        .card {
+            background: var(--card);
+            padding: 18px; border-radius: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
         }
 
-        h1 {
-            font-size: 34px;
-            font-weight: 700;
+        .info b { font-size: 18px; display: block; margin-bottom: 4px; }
+        .info span { font-size: 14px; color: var(--secondary); }
+
+        .countdown { text-align: right; }
+        .days-num { 
+            font-size: 22px; font-weight: 800; color: var(--accent); 
+            display: block; line-height: 1;
+        }
+        .days-sub { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--secondary); }
+
+        /* Survival Message */
+        .survival-msg {
+            background: var(--accent); color: white;
+            padding: 12px; border-radius: 12px;
+            text-align: center; font-size: 14px; font-weight: 600;
             margin-bottom: 20px;
-            letter-spacing: -0.5px;
         }
 
-        /* List Styling */
-        .holiday-card {
-            background: white;
-            border-radius: 14px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            overflow: hidden;
-        }
-
-        .holiday-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px;
-            border-bottom: 1px solid #e5e5ea;
-        }
-
-        .holiday-item:last-child {
-            border-bottom: none;
-        }
-
-        .name {
-            font-size: 17px;
-            font-weight: 600;
-            display: block;
-        }
-
-        .date {
-            font-size: 14px;
-            color: #8e8e93;
-            margin-top: 2px;
-            display: block;
-        }
-
-        .no-data {
-            padding: 30px;
-            text-align: center;
-            color: #8e8e93;
-        }
+        .empty-state { text-align: center; padding: 50px; color: var(--secondary); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <a href="index.html" class="back-link">‹ Settings</a>
+        <header>
+            <div class="meme-box" onclick="newMeme()">
+                <img id="meme-img" src="https://picsum.photos/500/300?grayscale" alt="Random Vibe">
+                <span class="meme-label">Tap for new vibe ✨</span>
+            </div>
+            <h1>Holidays</h1>
+            <p id="survival-pill"></p>
+        </header>
 
-        <h1>Holidays</h1>
-
-        <div class="holiday-card" id="holiday-list">
-            <div class="no-data">Loading holidays...</div>
-        </div>
+        <div id="list" class="holiday-list">
+            </div>
     </div>
 
     <script>
-        function fetchHolidays() {
-            const listContainer = document.getElementById('holiday-list');
-            
-            // LocalStorage se data nikalna (Admin ne isi name se save kiya tha)
-            const savedHolidays = localStorage.getItem('myHolidays');
-
-            if (savedHolidays) {
-                const holidays = JSON.parse(savedHolidays);
-
-                if (holidays.length > 0) {
-                    // Agar holidays hain, toh unhe screen par dikhao
-                    listContainer.innerHTML = holidays.map(h => `
-                        <div class="holiday-item">
-                            <div>
-                                <span class="name">${h.name}</span>
-                                <span class="date">${h.date}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    listContainer.innerHTML = '<div class="no-data">No holidays scheduled.</div>';
-                }
-            } else {
-                listContainer.innerHTML = '<div class="no-data">No holidays added yet.</div>';
-            }
+        function newMeme() {
+            document.getElementById('meme-img').src = "https://picsum.photos/500/300?random=" + Math.random();
         }
 
-        // Page load hote hi function run karo
-        window.onload = fetchHolidays;
-    </script>
+        function init() {
+            const list = document.getElementById('list');
+            const pill = document.getElementById('survival-pill');
+            const data = JSON.parse(localStorage.getItem('myHolidays')) || [];
+            const today = new Date().setHours(0,0,0,0);
 
+            // Filter out past holidays and sort by closest
+            const upcoming = data
+                .filter(h => new Date(h.date) >= today)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (upcoming.length === 0) {
+                list.innerHTML = `<div class="empty-state">No holidays? That's tragic. Go add some in Admin!</div>`;
+                return;
+            }
+
+            // Set Survival Message for the next holiday
+            const nextH = new Date(upcoming[0].date);
+            const nextDiff = Math.ceil((nextH - today) / (1000 * 60 * 60 * 24));
+            pill.innerHTML = `<div class="survival-msg">Hang in there! Only ${nextDiff * 8} hours of work left until ${upcoming[0].name}! ☕</div>`;
+
+            // Render List
+            list.innerHTML = upcoming.map(h => {
+                const hDate = new Date(h.date);
+                const diff = Math.ceil((hDate - today) / (1000 * 60 * 60 * 24));
+                
+                let color = 'var(--accent)';
+                let label = 'Days Left';
+                let displayDays = diff;
+
+                if (diff === 0) {
+                    color = 'var(--success)';
+                    label = 'OFF DUTY';
+                    displayDays = '🎉';
+                } else if (diff === 1) {
+                    displayDays = '1';
+                    label = 'DAY LEFT';
+                }
+
+                return `
+                    <div class="card">
+                        <div class="info">
+                            <b>${h.name}</b>
+                            <span>${hDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        </div>
+                        <div class="countdown">
+                            <span class="days-num" style="color: ${color}">${displayDays}</span>
+                            <span class="days-sub">${label}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.onload = () => {
+            init();
+            newMeme();
+        };
+    </script>
 </body>
 </html>
