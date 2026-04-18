@@ -2,145 +2,146 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Admin Command Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BT | Pro Admin v5.0</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root { 
-            --bg: #020617; 
-            --card-bg: rgba(30, 41, 59, 0.4); 
-            --accent: #6366f1; 
-            --success: #22c55e;
-            --warning: #facc15;
+            --bg: #030712; 
+            --card-bg: rgba(15, 23, 42, 0.6); 
+            --accent: #818cf8; 
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: rgba(255, 255, 255, 0.08);
         }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', system-ui; }
         
         body { 
             background: var(--bg); 
             color: #f8fafc; 
-            font-family: 'Inter', system-ui, sans-serif; 
-            padding: 20px; 
-            margin: 0;
+            padding: 15px;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent 40%);
+            min-height: 100vh;
         }
 
-        .header-section { margin-bottom: 30px; }
-        
-        /* Dashboard Stats */
-        .stats-grid { 
+        /* Modern Navigation */
+        .admin-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 10px 5px; }
+        .admin-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+        .admin-logo i { background: var(--accent); padding: 8px; border-radius: 12px; color: #000; }
+
+        /* Advanced Stats Grid */
+        .stats-row { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 15px; 
-            margin-bottom: 30px; 
-        }
-        .stat-card { 
-            background: var(--card-bg); 
-            padding: 15px; 
-            border-radius: 16px; 
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .stat-val { font-size: 24px; font-weight: 800; display: block; }
-        .stat-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-
-        .section-wrapper { margin-bottom: 40px; animate: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .referrer-header { 
-            display: flex; 
-            align-items: center; 
+            grid-template-columns: 1fr 1fr; 
             gap: 12px; 
-            margin-bottom: 15px; 
-            padding-left: 5px;
+            margin-bottom: 25px; 
         }
-        .badge { 
-            background: var(--accent); 
-            padding: 4px 10px; 
-            border-radius: 6px; 
-            font-size: 10px; 
-            font-weight: 700;
-        }
-
-        /* Horizontal Scroll Logic */
-        .scroll-container { 
-            display: flex; 
-            gap: 16px; 
-            overflow-x: auto; 
-            padding: 10px 5px; 
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-        }
-        .scroll-container::-webkit-scrollbar { display: none; }
-
-        /* Card Styling */
-        .ref-card { 
+        .stat-item { 
             background: var(--card-bg); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255,255,255,0.1); 
-            min-width: 160px; 
             padding: 20px; 
             border-radius: 24px; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
         }
-        .ref-card:hover { 
-            transform: translateY(-5px); 
-            border-color: var(--accent); 
-            background: rgba(30, 41, 59, 0.7);
-        }
+        .stat-item::before { content: ''; position: absolute; top:0; left:0; width:4px; height:100%; background: var(--accent); }
+        .stat-item p { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-item h2 { font-size: 28px; font-weight: 800; margin-top: 5px; }
 
-        .student-id { font-weight: 700; font-size: 13px; margin-bottom: 4px; color: #fff; overflow: hidden; text-overflow: ellipsis; }
-        .status-pill { 
-            font-size: 10px; 
-            font-weight: 800;
-            padding: 4px 10px; 
-            border-radius: 20px; 
-            background: rgba(0,0,0,0.2); 
-            margin-bottom: 15px; 
-            display: inline-block;
-            text-transform: uppercase;
+        /* Search Engine v2 */
+        .search-container { position: relative; margin-bottom: 25px; }
+        .search-container i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 20px; }
+        .search-input { 
+            width: 100%; padding: 18px 18px 18px 50px; 
+            background: var(--card-bg); border: 1px solid var(--border); 
+            border-radius: 20px; color: white; font-size: 15px; outline: none; transition: 0.3s;
         }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(129, 140, 248, 0.1); }
 
-        button { 
-            width: 100%; 
-            padding: 10px; 
-            border: none; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-size: 11px; 
-            font-weight: 700; 
-            background: #334155; 
-            color: white; 
-            transition: 0.2s;
-            letter-spacing: 0.5px;
+        /* Referrer Grouping */
+        .section-box { margin-bottom: 35px; animation: slideIn 0.4s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .group-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px; padding: 0 5px;
         }
-        button.verify-btn:hover { background: var(--success); }
-        button.unverify-btn:hover { background: #ef4444; }
+        .leader-name { display: flex; align-items: center; gap: 8px; font-weight: 800; color: #fff; }
+        .leader-name i { color: var(--accent); }
+        .count-pill { background: rgba(129, 140, 248, 0.1); color: var(--accent); padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; }
+
+        /* Horizontal Card Logic */
+        .h-scroll { 
+            display: flex; gap: 14px; overflow-x: auto; 
+            padding: 5px 5px 20px 5px; scrollbar-width: none;
+        }
+        .h-scroll::-webkit-scrollbar { display: none; }
+
+        .user-card { 
+            min-width: 190px; background: var(--card-bg); 
+            border: 1px solid var(--border); border-radius: 28px; 
+            padding: 20px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .user-card.pending-glow { border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 0 15px rgba(245, 158, 11, 0.1); }
+        .user-card:hover { transform: scale(1.02); background: rgba(30, 41, 59, 0.8); }
+
+        .user-id { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+        .status-row { font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; margin-bottom: 20px; }
+
+        /* Action Buttons */
+        .btn-action { 
+            width: 100%; padding: 14px; border: none; border-radius: 16px; 
+            font-size: 11px; font-weight: 800; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-v { background: #fff; color: #000; }
+        .btn-r { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        
+        /* Floating Toast */
+        #toast { 
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
+            background: #fff; color: #000; padding: 12px 25px; 
+            border-radius: 50px; font-weight: 800; font-size: 13px; z-index: 9999;
+            display: none; animation: pop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        @keyframes pop { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="header-section">
-        <h1 style="font-size: 24px; margin-bottom: 5px;">Admin Command Center</h1>
-        <p style="color: #64748b; font-size: 14px; margin-bottom: 25px;">Black Terminal Referral Management</p>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-label">Total Referrals</span>
-                <span class="stat-val" id="stat-total">0</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">Pending</span>
-                <span class="stat-val" id="stat-pending" style="color: var(--warning);">0</span>
-            </div>
+    <nav class="admin-nav">
+        <div class="admin-logo"><i class="ri-radar-fill"></i> BT COMMAND</div>
+        <i class="ri-refresh-line" onclick="location.reload()" style="opacity:0.5; cursor:pointer;"></i>
+    </nav>
+
+    <div class="stats-row">
+        <div class="stat-item">
+            <p>Direct Leads</p>
+            <h2 id="stat-total">0</h2>
+        </div>
+        <div class="stat-item">
+            <p>Action Queue</p>
+            <h2 id="stat-pending" style="color: var(--warning);">0</h2>
         </div>
     </div>
 
-    <div id="admin-container"></div>
+    <div class="search-container">
+        <i class="ri-search-2-line"></i>
+        <input type="text" id="adminSearch" class="search-input" placeholder="Search Referrer or Student..." oninput="filterFeed()">
+    </div>
+
+    <div id="admin-feed"></div>
+
+    <div id="toast">Update Applied!</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
             projectId: "black-terminal-f2c91",
@@ -152,13 +153,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Real-time Listener
         onSnapshot(collection(db, "students"), (snap) => {
-            const container = document.getElementById("admin-container");
+            const feed = document.getElementById("admin-feed");
             const totalEl = document.getElementById("stat-total");
             const pendingEl = document.getElementById("stat-pending");
             
-            container.innerHTML = "";
+            feed.innerHTML = "";
             let totalCount = 0;
             let pendingCount = 0;
             const groups = {};
@@ -177,52 +177,78 @@
             totalEl.innerText = totalCount;
             pendingEl.innerText = pendingCount;
 
-            for (const referrer in groups) {
+            Object.keys(groups).sort().forEach(referrer => {
                 const section = document.createElement("div");
-                section.className = "section-wrapper";
+                section.className = "section-box";
+                section.setAttribute('data-referrer', referrer.toLowerCase());
                 section.innerHTML = `
-                    <div class="referrer-header">
-                        <span style="font-weight:800; font-size:18px;">${referrer}</span>
-                        <span class="badge">${groups[referrer].length}</span>
+                    <div class="group-header">
+                        <div class="leader-name"><i class="ri-user-follow-line"></i> ${referrer}</div>
+                        <span class="count-pill">${groups[referrer].length} Students</span>
                     </div>
-                    <div class="scroll-container" id="row-${referrer}"></div>
+                    <div class="h-scroll" id="row-${referrer}"></div>
                 `;
-                container.appendChild(section);
+                feed.appendChild(section);
 
                 const scroll = document.getElementById(`row-${referrer}`);
                 groups[referrer].forEach(ref => {
                     const isVerified = ref.status === 'verified';
                     const card = document.createElement("div");
-                    card.className = "ref-card";
+                    card.className = `user-card ${!isVerified ? 'pending-glow' : ''}`;
+                    card.setAttribute('data-id', ref.id.toLowerCase());
                     card.innerHTML = `
-                        <div>
-                            <div class="student-id">${ref.id}</div>
-                            <div class="status-pill" style="color:${isVerified ? 'var(--success)' : 'var(--warning)'}">
-                                ${ref.status || 'pending'}
-                            </div>
+                        <div class="user-id">${ref.id}</div>
+                        <div class="status-row" style="color:${isVerified ? 'var(--success)' : 'var(--warning)'}">
+                            <i class="ri-${isVerified ? 'shield-check' : 'error-warning'}-fill"></i>
+                            ${(ref.status || 'pending').toUpperCase()}
                         </div>
-                        <button class="${isVerified ? 'unverify-btn' : 'verify-btn'}" 
-                                onclick="toggleStatus('${ref.id}', '${ref.status}')">
-                            ${isVerified ? 'REVOKE' : 'VERIFY'}
+                        <button class="btn-action ${isVerified ? 'btn-r' : 'btn-v'}" 
+                                onclick="updateStatus('${ref.id}', '${ref.status}')">
+                            ${isVerified ? 'REVOKE STATUS' : 'APPROVE NOW'}
                         </button>
                     `;
                     scroll.appendChild(card);
                 });
-            }
+            });
         });
 
-        // Global function for the buttons
-        window.toggleStatus = async (sid, currentStatus) => {
+        window.updateStatus = async (sid, currentStatus) => {
             const newStatus = currentStatus === 'verified' ? 'pending' : 'verified';
             try {
-                const docRef = doc(db, "students", sid);
-                await updateDoc(docRef, { status: newStatus });
-                if (window.navigator.vibrate) window.navigator.vibrate(40);
+                await updateDoc(doc(db, "students", sid), { status: newStatus });
+                showToast(newStatus === 'verified' ? "Verified Successfully ✅" : "Status Revoked ❌");
             } catch (err) {
-                console.error("Update failed:", err);
-                alert("Error updating status. Check console.");
+                alert("Database Error!");
             }
         };
+
+        window.filterFeed = () => {
+            const term = document.getElementById('adminSearch').value.toLowerCase();
+            document.querySelectorAll('.section-box').forEach(box => {
+                const referrer = box.getAttribute('data-referrer');
+                const cards = box.querySelectorAll('.user-card');
+                let groupVisible = referrer.includes(term);
+                
+                cards.forEach(card => {
+                    const userId = card.getAttribute('data-id');
+                    if (userId.includes(term) || groupVisible) {
+                        card.style.display = 'block';
+                        groupVisible = true;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                box.style.display = groupVisible ? 'block' : 'none';
+            });
+        };
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.style.display = "block";
+            if (window.navigator.vibrate) window.navigator.vibrate(50);
+            setTimeout(() => t.style.display = "none", 2500);
+        }
     </script>
 </body>
 </html>
