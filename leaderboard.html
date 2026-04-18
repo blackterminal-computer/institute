@@ -3,101 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Global Ranks</title>
+    <title>BT | Global Terminal Standings</title>
     
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --primary: #6366f1;
-            --accent: #06b6d4;
-            --bg: #020617;
+            --accent: #22d3ee;
+            --bg: #050810;
             --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --gold: #facc15;
-            --silver: #cbd5e1;
-            --bronze: #fb923c;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --gold: #fbbf24;
+            --silver: #94a3b8;
+            --bronze: #cd7f32;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         
         body { 
-            background: var(--bg); color: #f8fafc; min-height: 100vh; padding: 15px;
-            background-image: radial-gradient(circle at top, #1e1b4b, transparent);
-            overflow-x: hidden;
+            background: var(--bg); color: #fff; min-height: 100vh; padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.1), transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.05), transparent 40%);
+            overflow-x: hidden; padding-bottom: 120px;
         }
 
-        header { text-align: center; margin-bottom: 25px; margin-top: 10px; }
-        header h1 { font-size: 24px; font-weight: 800; }
-        header p { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
+        /* Stats Bar */
+        .stats-overview {
+            display: flex; gap: 10px; margin-bottom: 30px; margin-top: 10px;
+        }
+        .stat-card {
+            flex: 1; background: var(--glass); border: 1px solid var(--glass-border);
+            padding: 12px; border-radius: 20px; backdrop-filter: blur(10px);
+        }
+        .stat-card span { display: block; font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; }
+        .stat-card h3 { font-size: 16px; color: var(--accent); }
 
-        .top-three {
+        /* Podium V3 */
+        .podium-wrap {
             display: flex; justify-content: center; align-items: flex-end;
-            gap: 8px; margin: 20px auto 35px auto; width: 100%; max-width: 450px;
+            gap: 12px; margin: 20px 0 40px;
         }
-
-        .podium {
-            background: var(--glass); border: 1px solid var(--glass-border);
-            border-radius: 20px; padding: 15px 5px; text-align: center;
-            flex: 1; position: relative; transition: 0.4s;
+        .p-box {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+            border: 1px solid var(--glass-border); border-radius: 30px;
+            padding: 20px 10px; text-align: center; flex: 1; position: relative;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        .p-box:active { transform: scale(0.95); }
+        .p-box.rank-1 { height: 210px; border-color: rgba(251, 191, 36, 0.4); box-shadow: 0 0 25px rgba(251, 191, 36, 0.1); }
+        .p-box.rank-2 { height: 180px; }
+        .p-box.rank-3 { height: 165px; }
 
-        .podium.rank-1 { height: 180px; border-color: var(--gold); background: rgba(250, 204, 21, 0.05); z-index: 2; }
-        .podium.rank-2 { height: 155px; border-color: var(--silver); }
-        .podium.rank-3 { height: 140px; border-color: var(--bronze); }
-        
-        /* Fixed Image Display */
         .p-img {
-            width: 50px; height: 50px; border-radius: 50%; border: 2px solid white;
-            margin: 0 auto 10px auto; object-fit: cover; display: block;
-            background: #1e1b4b; /* Taaki load hone tak dark dikhe */
+            width: 55px; height: 55px; border-radius: 22px; object-fit: cover;
+            border: 2px solid var(--glass-border); margin-bottom: 12px;
         }
-        .rank-1 .p-img { width: 65px; height: 65px; border-color: var(--gold); }
+        .rank-1 .p-img { width: 75px; height: 75px; border-color: var(--gold); }
 
-        .crown { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 24px; }
-        .podium-name { font-size: 11px; font-weight: 800; margin-top: 5px; display: block; }
-        .podium-xp { font-size: 10px; color: var(--accent); font-weight: 700; display: block; }
+        .rank-badge {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: var(--bg); border: 1px solid var(--glass-border);
+            padding: 4px 12px; border-radius: 12px; font-size: 10px; font-weight: 800;
+        }
+        .r1-text { color: var(--gold); border-color: var(--gold); }
 
-        .board-container { max-width: 500px; margin: 0 auto 100px auto; }
+        /* List Styling */
+        .list-header { font-size: 12px; font-weight: 800; color: #475569; margin-left: 10px; margin-bottom: 15px; }
+
         .player-row {
             background: var(--glass); border: 1px solid var(--glass-border);
-            margin-bottom: 8px; padding: 12px 18px; border-radius: 18px;
+            border-radius: 24px; padding: 14px 20px; margin-bottom: 12px;
             display: flex; align-items: center; justify-content: space-between;
+            transition: 0.3s;
         }
-        
-        .my-rank { border-color: var(--accent); background: rgba(6, 182, 212, 0.1); }
+        .player-row:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
+        .is-me { border-color: var(--accent); background: rgba(34, 211, 238, 0.08); }
 
-        .player-info { display: flex; align-items: center; gap: 12px; }
-        .rank-tag { font-weight: 800; color: #64748b; width: 25px; font-size: 13px; }
-        
-        .list-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); }
-        .player-name { font-weight: 600; font-size: 14px; }
-        .xp-tag { font-weight: 800; color: var(--gold); font-size: 13px; display: flex; align-items: center; gap: 4px; }
+        .p-info { display: flex; align-items: center; gap: 15px; }
+        .r-num { font-weight: 800; color: #334155; font-size: 14px; width: 25px; }
+        .p-avatar { width: 42px; height: 42px; border-radius: 14px; background: #1e293b; }
+        .p-name { font-weight: 700; font-size: 15px; }
 
-        .home-btn {
+        .p-xp { text-align: right; }
+        .xp-num { color: var(--gold); font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 5px; }
+        .xp-label { font-size: 9px; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Navigation Bar */
+        .bottom-nav {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-            background: var(--primary); color: white; padding: 12px 25px; 
-            border-radius: 50px; font-weight: 800; text-decoration: none;
-            display: flex; align-items: center; gap: 8px;
+            width: calc(100% - 40px); max-width: 400px;
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 28px;
+            padding: 12px; display: flex; justify-content: space-around; z-index: 100;
         }
+        .nav-btn { color: #64748b; text-decoration: none; font-size: 22px; transition: 0.3s; position: relative; }
+        .nav-btn.active { color: var(--accent); }
+        .nav-btn.active::after {
+            content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 4px; background: var(--accent); border-radius: 50%;
+        }
+
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Global <span>Standings</span></h1>
-        <p>Terminal Rank System</p>
-    </header>
+    <div class="stats-overview">
+        <div class="stat-card">
+            <span>Server King</span>
+            <h3 id="king-name">Loading...</h3>
+        </div>
+        <div class="stat-card">
+            <span>Global XP</span>
+            <h3 id="total-xp">0</h3>
+        </div>
+    </div>
 
-    <div id="podium-area" class="top-three"></div>
-    <div class="board-container" id="board"></div>
+    <div class="podium-wrap" id="podium-root">
+        </div>
 
-    <a href="index.html" class="home-btn"><i class="ri-home-4-line"></i> Back to Terminal</a>
+    <h2 class="list-header">TOP CONTENDERS</h2>
+    <div id="list-root"></div>
+
+    <div class="bottom-nav">
+        <a href="index.html" class="nav-btn"><i class="ri-terminal-box-line"></i></a>
+        <a href="#" class="nav-btn active"><i class="ri-trophy-fill"></i></a>
+        <a href="#" class="nav-btn" onclick="location.reload()"><i class="ri-refresh-line"></i></a>
+        <a href="#" class="nav-btn"><i class="ri-settings-4-line"></i></a>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -112,74 +151,59 @@
         const db = getFirestore(app);
         const currentUser = localStorage.getItem("studentName") || "";
 
-        // Yeh default image tab aayegi jab database khali ho
-        const defaultPic = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        const getPic = (name) => `https://api.dicebear.com/7.x/pixel-art/svg?seed=${name}`;
 
-        async function fetchFreshData() {
-            try {
-                const snap = await getDocs(collection(db, "students"));
-                let players = [];
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    
-                    // Logic: Hum database mein 'photo', 'pic', aur 'profilePic' teeno dhoondh rahe hain
-                    // Kyunki ho sakta hai homepage par aapne alag naam rakha ho
-                    const userPhoto = data.photo || data.pic || data.profilePic || data.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.id}`;
-
-                    players.push({ 
-                        name: doc.id, 
-                        xp: data.xp || 0,
-                        photo: userPhoto 
-                    });
-                });
-                
-                players.sort((a, b) => b.xp - a.xp);
-                renderLeaderboard(players);
-            } catch (e) { console.error("Error:", e); }
-        }
-        fetchFreshData();
-
-        function renderLeaderboard(data) {
-            if(!data || data.length === 0) return;
-
+        function renderUI(data) {
             const top = data.slice(0, 3);
-            document.getElementById("podium-area").innerHTML = `
-                <div class="podium rank-2">
-                    <span class="crown">🥈</span>
-                    <img class="p-img" src="${top[1]?.photo || defaultPic}" onerror="this.src='${defaultPic}'">
-                    <span class="podium-name">${top[1]?.name || '---'}</span>
-                    <span class="podium-xp">${top[1]?.xp || 0} XP</span>
+            
+            // Stats Update
+            document.getElementById("king-name").innerText = top[0]?.name || "N/A";
+            const totalXP = data.reduce((sum, p) => sum + (p.xp || 0), 0);
+            document.getElementById("total-xp").innerText = totalXP.toLocaleString();
+
+            // Podium Update
+            document.getElementById("podium-root").innerHTML = `
+                <div class="p-box rank-2">
+                    <div class="rank-badge">RANK 2</div>
+                    <img class="p-img" src="${top[1]?.photo || getPic(top[1]?.name)}">
+                    <div style="font-weight: 800; font-size: 13px;">${top[1]?.name || '---'}</div>
+                    <div style="color: var(--accent); font-weight: 800; font-size: 12px;">${top[1]?.xp || 0}</div>
                 </div>
-                <div class="podium rank-1">
-                    <span class="crown">👑</span>
-                    <img class="p-img" src="${top[0]?.photo || defaultPic}" onerror="this.src='${defaultPic}'">
-                    <span class="podium-name">${top[0]?.name || '---'}</span>
-                    <span class="podium-xp">${top[0]?.xp || 0} XP</span>
+                <div class="p-box rank-1">
+                    <div class="rank-badge r1-text">KING</div>
+                    <img class="p-img" src="${top[0]?.photo || getPic(top[0]?.name)}">
+                    <div style="font-weight: 800; font-size: 15px;">${top[0]?.name || '---'}</div>
+                    <div style="color: var(--gold); font-weight: 800; font-size: 14px;">${top[0]?.xp || 0}</div>
                 </div>
-                <div class="podium rank-3">
-                    <span class="crown">🥉</span>
-                    <img class="p-img" src="${top[2]?.photo || defaultPic}" onerror="this.src='${defaultPic}'">
-                    <span class="podium-name">${top[2]?.name || '---'}</span>
-                    <span class="podium-xp">${top[2]?.xp || 0} XP</span>
+                <div class="p-box rank-3">
+                    <div class="rank-badge">RANK 3</div>
+                    <img class="p-img" src="${top[2]?.photo || getPic(top[2]?.name)}">
+                    <div style="font-weight: 800; font-size: 13px;">${top[2]?.name || '---'}</div>
+                    <div style="color: var(--accent); font-weight: 800; font-size: 12px;">${top[2]?.xp || 0}</div>
                 </div>
             `;
 
-            let listHtml = "";
-            data.slice(3).forEach((p, i) => {
-                const isMe = p.name === currentUser;
-                listHtml += `
-                    <div class="player-row ${isMe ? 'my-rank' : ''}">
-                        <div class="player-info">
-                            <span class="rank-tag">#${i + 4}</span>
-                            <img class="list-avatar" src="${p.photo}" onerror="this.src='${defaultPic}'">
-                            <span class="player-name">${p.name} ${isMe ? '<small>(You)</small>' : ''}</span>
-                        </div>
-                        <div class="xp-tag"><i class="ri-star-fill"></i> ${p.xp}</div>
+            // List Update
+            document.getElementById("list-root").innerHTML = data.slice(3).map((p, i) => `
+                <div class="player-row ${p.name === currentUser ? 'is-me' : ''}">
+                    <div class="p-info">
+                        <span class="r-num">#${i + 4}</span>
+                        <img class="p-avatar" src="${p.photo || getPic(p.name)}">
+                        <span class="p-name">${p.name}</span>
                     </div>
-                `;
-            });
-            document.getElementById("board").innerHTML = listHtml;
+                    <div class="p-xp">
+                        <div class="xp-num"><i class="ri-flashlight-fill"></i> ${p.xp}</div>
+                        <div class="xp-label">Total Points</div>
+                    </div>
+                </div>
+            `).join('');
         }
+
+        const q = query(collection(db, "students"), orderBy("xp", "desc"));
+        onSnapshot(q, (snap) => {
+            const players = snap.docs.map(doc => ({ name: doc.id, ...doc.data() }));
+            renderUI(players);
+        });
     </script>
 </body>
 </html>
