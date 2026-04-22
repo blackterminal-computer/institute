@@ -3,73 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Terminal | BlackTerminal</title>
+    <title>Staff Terminal | BlackTerminal 2.0</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; --success: #28a745; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; padding: 20px; }
         .app-container { width: 100%; max-width: 450px; }
-        .glass-card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid #222; box-shadow: 0 15px 35px rgba(0,0,0,0.5); margin-bottom: 20px; }
-        .step { display: none; } .active { display: block; animation: fadeIn 0.4s; }
-        input, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: none; box-sizing: border-box; font-size: 1rem; }
-        input { background: #1c222b; color: white; border: 1px solid #333; }
-        .btn-premium { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; font-weight: bold; cursor: pointer; }
-        .dp-box { width: 120px; height: 120px; border-radius: 50%; border: 2px dashed var(--primary); margin: 0 auto 15px; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .salary-badge { background: #1e2631; padding: 15px; border-radius: 12px; border-left: 4px solid #ffaa00; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-card { background: var(--card); padding: 25px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 40px rgba(0,0,0,0.6); margin-bottom: 20px; backdrop-filter: blur(10px); }
+        .step { display: none; } .active { display: block; animation: slideUp 0.5s ease-out; }
+        input, button { width: 100%; padding: 16px; margin: 12px 0; border-radius: 12px; border: none; box-sizing: border-box; font-size: 1rem; transition: 0.3s; }
+        input { background: rgba(28, 34, 43, 0.8); color: white; border: 1px solid #333; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
+        .btn-premium { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-premium:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-premium:disabled { background: #444; cursor: not-allowed; }
+        .dp-box { width: 130px; height: 130px; border-radius: 50%; border: 2px dashed var(--primary); margin: 0 auto 20px; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; background: rgba(0,212,255,0.05); }
+        .salary-badge { background: linear-gradient(45deg, #1e2631, #12161d); padding: 20px; border-radius: 16px; border-left: 5px solid #ffaa00; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <h1 style="text-align: center; color: var(--primary);">BlackTerminal</h1>
+    <h1 style="text-align: center; color: var(--primary); letter-spacing: 2px;">BLACK<span style="color:white">TERMINAL</span></h1>
 
     <div id="step1" class="glass-card step active">
         <h3>Staff Login</h3>
-        <input type="text" id="staff_name" placeholder="Full Name">
-        <button class="btn-premium" onclick="showStep(2)">Continue</button>
+        <p style="color: #888; font-size: 0.9rem;">Enter your name to begin registration or login.</p>
+        <input type="text" id="staff_name" placeholder="Enter Full Name">
+        <button class="btn-premium" onclick="validateStep1()">Continue</button>
     </div>
 
     <div id="step2" class="glass-card step">
-        <h3>Staff KYC</h3>
+        <h3>Identity Verification</h3>
         <div class="dp-box" onclick="document.getElementById('fileInput').click()">
-            <span id="plus">+ DP</span>
+            <span id="plus" style="color: var(--primary);">+ Upload Photo</span>
             <img id="profileImg" style="display:none; width:100%; height:100%; object-fit:cover;">
         </div>
         <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="compressImage(event)">
-        <input type="text" id="staff_id" placeholder="Aadhaar Number">
-        <button class="btn-premium" id="submitBtn" onclick="submitKYC()">Submit & Register</button>
+        <input type="number" id="staff_id" placeholder="12-Digit Aadhaar Number" oninput="this.value=this.value.slice(0,12)">
+        <button class="btn-premium" id="submitBtn" onclick="submitKYC()">Complete Registration</button>
     </div>
 
     <div id="step3" class="step">
-        <div class="glass-card">
-            <h3>📍 Attendance</h3>
-            <button class="btn-premium" onclick="markAttendance()" style="background: #28a745;">Punch In (GPS)</button>
-            <p id="att-msg" style="font-size: 0.8rem; text-align: center;"></p>
+        <div class="glass-card" style="text-align: center;">
+            <h3 id="welcome-msg">Welcome!</h3>
+            <button class="btn-premium" onclick="markAttendance()" style="background: var(--success);">Punch In (GPS)</button>
+            <p id="att-msg" style="font-size: 0.85rem; color: #aaa;"></p>
         </div>
 
         <div class="glass-card salary-badge">
-            <h4 style="margin:0;">⏳ Next Salary</h4>
-            <p id="salaryDays" style="font-size: 1.2rem; font-weight: bold; margin: 10px 0;">Calculating...</p>
+            <h4 style="margin:0; color: #ffaa00;">⏳ Salary Cycle</h4>
+            <p id="salaryDays" style="font-size: 1.3rem; font-weight: bold; margin: 10px 0;">Calculating...</p>
         </div>
 
         <div class="glass-card">
-            <h3>📞 Student Inquiry</h3>
+            <h3>📞 Lead Entry</h3>
             <input type="text" id="inq_name" placeholder="Student Name">
             <input type="text" id="inq_phone" placeholder="Phone Number">
-            <button class="btn-premium" onclick="sendInquiry()">Assign to Owner</button>
+            <button class="btn-premium" onclick="sendInquiry()">Submit Inquiry</button>
         </div>
     </div>
 
     <div id="step4" class="glass-card step" style="text-align: center;">
         <h2 style="color: #ffaa00;">Verification Pending</h2>
-        <p>Aapka KYC Admin ke paas hai. Approve hote hi dashboard khul jayega.</p>
-        <button class="btn-premium" onclick="location.reload()">Check Status</button>
+        <div style="font-size: 3rem; margin: 20px 0;">⏳</div>
+        <p>Your KYC is being reviewed by the Admin. Please check back later.</p>
+        <button class="btn-premium" onclick="location.reload()">Refresh Status</button>
     </div>
 </div>
 
 <script>
+    // Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -79,6 +85,7 @@
         messagingSenderId: "552489994197",
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
+    
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let compressedDP = "";
@@ -88,9 +95,14 @@
         document.getElementById('step' + s).classList.add('active');
     }
 
-    // IMAGE COMPRESSION LOGIC
+    function validateStep1() {
+        if(document.getElementById('staff_name').value.length < 3) return alert("Please enter a valid name.");
+        showStep(2);
+    }
+
     function compressImage(event) {
         const file = event.target.files[0];
+        if(!file) return;
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (e) => {
@@ -98,11 +110,11 @@
             img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const size = 300; 
+                const size = 400; 
                 canvas.width = size; canvas.height = size;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, size, size);
-                compressedDP = canvas.toDataURL('image/jpeg', 0.6);
+                compressedDP = canvas.toDataURL('image/jpeg', 0.7);
                 document.getElementById('profileImg').src = compressedDP;
                 document.getElementById('profileImg').style.display = "block";
                 document.getElementById('plus').style.display = "none";
@@ -113,45 +125,74 @@
     function submitKYC() {
         const name = document.getElementById('staff_name').value;
         const id = document.getElementById('staff_id').value;
-        if(!name || !id || !compressedDP) return alert("Fill all data!");
+        const btn = document.getElementById('submitBtn');
+
+        if(!id || id.length !== 12) return alert("Please enter a valid 12-digit Aadhaar.");
+        if(!compressedDP) return alert("Please upload a profile photo.");
+
+        btn.disabled = true;
+        btn.innerText = "Processing...";
         
-        const ref = db.ref('staff/' + name.replace(/\s/g, ''));
-        ref.set({ name, id, photo: compressedDP, status: 'pending', salary: 15000 }).then(() => {
-            localStorage.setItem('bt_staff', name.replace(/\s/g, ''));
+        const staffKey = name.replace(/\s/g, '').toLowerCase();
+        db.ref('staff/' + staffKey).set({
+            name: name,
+            id: id,
+            photo: compressedDP,
+            status: 'pending',
+            joinedAt: new Date().toISOString()
+        }).then(() => {
+            localStorage.setItem('bt_staff', staffKey);
             showStep(4);
+        }).catch(err => {
+            alert("Error: " + err.message);
+            btn.disabled = false;
         });
     }
 
-    // GPS ATTENDANCE
     function markAttendance() {
+        const btn = event.target;
+        btn.innerText = "Verifying Location...";
+        
         navigator.geolocation.getCurrentPosition(pos => {
-            const officeLat = 21.93, officeLon = 86.75; // Edit real coordinates
+            const officeLat = 21.93, officeLon = 86.75; 
             const dist = Math.sqrt(Math.pow(pos.coords.latitude - officeLat, 2) + Math.pow(pos.coords.longitude - officeLon, 2));
+            
             if(dist < 0.05) {
-                db.ref('attendance').push({ staff: localStorage.getItem('bt_staff'), time: new Date().toLocaleString() });
-                document.getElementById('att-msg').innerHTML = "✅ Verified & Marked!";
-            } else { alert("You are not at the institute!"); }
-        });
+                db.ref('attendance').push({ 
+                    staff: localStorage.getItem('bt_staff'), 
+                    timestamp: firebase.database.ServerValue.TIMESTAMP 
+                });
+                document.getElementById('att-msg').innerHTML = "✅ Attendance Marked at " + new Date().toLocaleTimeString();
+                btn.style.display = "none";
+            } else { 
+                alert("Out of range! Please be at the office location."); 
+                btn.innerText = "Punch In (GPS)";
+            }
+        }, () => alert("Enable GPS to mark attendance."));
     }
 
-    // SALARY COUNTDOWN (SKIP SAT/SUN)
     function calcSalaryDays() {
         let today = new Date();
         let end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         let count = 0;
         for(let d = new Date(today); d <= end; d.setDate(d.getDate()+1)) {
-            if(d.getDay() != 0 && d.getDay() != 6) count++;
+            if(d.getDay() !== 0 && d.getDay() !== 6) count++;
         }
-        document.getElementById('salaryDays').innerText = count + " Working Days Remaining";
+        document.getElementById('salaryDays').innerText = count + " Working Days Left";
     }
 
-    // AUTO LOGIN CHECK
     window.onload = () => {
         const saved = localStorage.getItem('bt_staff');
         if(saved) {
             db.ref('staff/' + saved).on('value', snap => {
                 const data = snap.val();
-                if(data.status === 'active') { showStep(3); calcSalaryDays(); }
+                if(!data) return showStep(1);
+                
+                if(data.status === 'active') { 
+                    document.getElementById('welcome-msg').innerText = "Hi, " + data.name + "!";
+                    showStep(3); 
+                    calcSalaryDays(); 
+                }
                 else { showStep(4); }
             });
         }
@@ -160,8 +201,17 @@
     function sendInquiry() {
         const name = document.getElementById('inq_name').value;
         const phone = document.getElementById('inq_phone').value;
-        db.ref('inquiries').push({ name, phone, from: localStorage.getItem('bt_staff'), date: new Date().toLocaleString() });
-        alert("Sent to Owner!");
+        if(!name || !phone) return alert("Enter student details.");
+        
+        db.ref('inquiries').push({ 
+            student: name, 
+            phone: phone, 
+            staff: localStorage.getItem('bt_staff'), 
+            time: new Date().toLocaleString() 
+        });
+        alert("Inquiry assigned to Owner!");
+        document.getElementById('inq_name').value = "";
+        document.getElementById('inq_phone').value = "";
     }
 </script>
 </body>
