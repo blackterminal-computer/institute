@@ -3,83 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owner Mobile Control | BlackTerminal</title>
+    <title>Owner Control | BlackTerminal Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; --accent: #ffaa00; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; --accent: #ffaa00; --danger: #ff4d4d; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; }
         
-        /* Top Header */
         .top-bar { background: #0a0c10; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; }
         .top-bar h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
 
-        /* Container */
         .container { padding: 15px; max-width: 600px; margin: auto; }
-        .card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #222; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .card { background: var(--card); padding: 20px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        h3 { margin: 0 0 15px 0; font-size: 1.1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: #1c222b; padding: 15px; border-radius: 15px; text-align: center; border-bottom: 3px solid var(--primary); }
+        .stat-box small { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+        .stat-box div { font-size: 1.2rem; font-weight: bold; margin-top: 5px; }
+
+        h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         
-        /* Staff List */
-        .list-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
-        .list-item img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        /* Lists */
+        .list-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; transition: 0.3s; }
+        .list-item:active { transform: scale(0.98); }
+        .list-item img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #333; }
         .staff-info { flex: 1; }
         .staff-info div { font-weight: bold; font-size: 0.9rem; }
-        .staff-info small { color: #888; font-size: 0.75rem; }
+        .staff-badge { background: var(--primary); color: #000; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+
+        /* Inquiry Styling */
+        .inquiry-box { background: #1c222b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border-right: 4px solid var(--accent); position: relative; }
+        .wa-btn { position: absolute; right: 15px; top: 15px; background: #25d366; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; text-decoration: none; font-weight: bold; }
 
         /* Buttons */
-        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
-        .btn-small { padding: 6px 10px; font-size: 0.75rem; background: #333; }
-        .btn-approve { background: #28a745; }
-
-        /* Inquiry Box */
-        .inquiry-box { border-left: 3px solid var(--accent); background: #1c222b; padding: 12px; border-radius: 0 10px 10px 0; margin-bottom: 10px; }
-        .inquiry-box strong { display: block; color: var(--accent); margin-bottom: 3px; }
+        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-danger { background: linear-gradient(135deg, #ff4d4d, #b30000); }
         
-        /* Bottom Navigation (Mobile Friendly) */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0c10; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #222; z-index: 100; }
-        .nav-item { color: #888; font-size: 0.7rem; text-align: center; text-decoration: none; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0c10; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #222; }
+        .nav-item { color: #555; font-size: 0.7rem; text-align: center; text-decoration: none; flex: 1; }
         .nav-item.active { color: var(--primary); }
-        .nav-icon { font-size: 1.2rem; display: block; }
-
-        input { background: #1c222b; border: 1px solid #333; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        .nav-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+        
+        input { background: #1c222b; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <h2>BT Admin 👑</h2>
-    <div id="pending-badge" style="background: red; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; display: none;">New KYC</div>
+    <h2>BlackTerminal Pro 👑</h2>
+    <div id="pending-badge" style="background: red; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; display: none; animation: pulse 1s infinite;">New Staff</div>
 </div>
 
 <div class="container">
-    <div class="card">
-        <h3>Staff Approvals</h3>
-        <div id="pending-list"><p style="color:#555; font-size:0.8rem;">Checking for new staff...</p></div>
+    <div class="stats-grid">
+        <div class="stat-box">
+            <small>Total Payroll</small>
+            <div id="total-payroll">₹0</div>
+        </div>
+        <div class="stat-box" style="border-color: var(--accent);">
+            <small>New Leads (24h)</small>
+            <div id="total-leads">0</div>
+        </div>
     </div>
 
     <div class="card">
-        <h3>Today's Task for Staff</h3>
-        <input type="text" id="taskInput" placeholder="Write task here...">
-        <button style="width: 100%;" onclick="updateTask()">Update Task</button>
+        <h3>🚨 Pending Verification</h3>
+        <div id="pending-list"><p style="color:#555; font-size:0.8rem;">Clean slate. No pending KYC.</p></div>
     </div>
 
     <div class="card">
-        <h3>Recent Student Leads</h3>
+        <h3>👥 Active Staff & Performance</h3>
+        <div id="active-staff-list"></div>
+    </div>
+
+    <div class="card">
+        <h3>📩 Recent Student Leads</h3>
         <div id="inquiry-list"></div>
     </div>
 
     <div class="card">
-        <h3>Staff Salary & Payroll</h3>
-        <div id="active-staff-list"></div>
+        <h3>📢 Daily Task Broadcast</h3>
+        <input type="text" id="taskInput" placeholder="What should the staff focus on today?">
+        <button style="width: 100%;" onclick="updateTask()">Push to Staff Dashboard</button>
     </div>
 </div>
 
 <div class="bottom-nav">
-    <div class="nav-item active"><span class="nav-icon">📊</span>Home</div>
-    <div class="nav-item"><span class="nav-icon">📩</span>Leads</div>
-    <div class="nav-item"><span class="nav-icon">👤</span>Staff</div>
-    <div class="nav-item"><span class="nav-icon">⚙️</span>Settings</div>
+    <a href="#" class="nav-item active"><span class="nav-icon">🏠</span>Overview</a>
+    <a href="#" class="nav-item"><span class="nav-icon">📊</span>Reports</a>
+    <a href="#" class="nav-item"><span class="nav-icon">💬</span>Chat</a>
+    <a href="#" class="nav-item" onclick="location.reload()"><span class="nav-icon">🔄</span>Sync</a>
 </div>
 
 <script>
@@ -95,12 +109,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Listen to Staff Data
+    // Comprehensive Staff Listener
     db.ref('staff').on('value', snap => {
         const staffData = snap.val();
         let pList = "";
         let aList = "";
         let hasPending = false;
+        let totalPay = 0;
 
         for (let key in staffData) {
             const s = staffData[key];
@@ -113,58 +128,85 @@
                             <div>${s.name}</div>
                             <small>ID: ${s.id}</small>
                         </div>
-                        <button class="btn-approve" onclick="approveStaff('${key}')">Approve</button>
+                        <button onclick="approveStaff('${key}')">Approve</button>
                     </div>`;
             } else {
+                totalPay += (s.salary || 0);
                 aList += `
                     <div class="list-item">
                         <img src="${s.photo}">
                         <div class="staff-info">
-                            <div>${s.name}</div>
-                            <small>Sal: ₹${s.salary} | Bonus: ₹${s.bonus || 0}</small>
+                            <div>${s.name} <span class="staff-badge">Active</span></div>
+                            <small>Base: ₹${s.salary} | Bonus: ₹${s.bonus || 0}</small>
                         </div>
-                        <button class="btn-small" onclick="editSal('${key}')">Edit</button>
+                        <button class="btn-danger" style="padding:5px 10px; font-size:0.7rem;" onclick="editSal('${key}')">Manage</button>
                     </div>`;
             }
         }
         document.getElementById('pending-list').innerHTML = pList || "<p style='color:#555;font-size:0.8rem;'>No pending approvals</p>";
         document.getElementById('active-staff-list').innerHTML = aList;
         document.getElementById('pending-badge').style.display = hasPending ? 'block' : 'none';
+        document.getElementById('total-payroll').innerText = "₹" + totalPay.toLocaleString();
     });
 
     function approveStaff(id) {
-        db.ref('staff/' + id).update({ status: 'active' });
-        alert("Staff activated!");
+        db.ref('staff/' + id).update({ status: 'active', salary: 15000 });
+        alert("Staff Access Granted!");
     }
 
     function editSal(id) {
-        const amt = prompt("Enter new base salary:");
-        if(amt) db.ref('staff/' + id).update({ salary: parseInt(amt) });
+        const action = prompt("Type 'S' to change Salary or 'B' to add Bonus:");
+        if(!action) return;
+        
+        const amount = prompt("Enter Amount:");
+        if(!amount) return;
+
+        if(action.toUpperCase() === 'S') {
+            db.ref('staff/' + id).update({ salary: parseInt(amount) });
+        } else if(action.toUpperCase() === 'B') {
+            db.ref('staff/' + id).update({ bonus: parseInt(amount) });
+        }
     }
 
     function updateTask() {
         const val = document.getElementById('taskInput').value;
         if(val) {
-            db.ref('institute/current_task').set(val);
-            alert("Task Updated!");
+            db.ref('institute/current_task').set({
+                text: val,
+                time: new Date().toLocaleTimeString()
+            });
+            alert("Broadcasted to all staff!");
         }
     }
 
-    // Load Inquiries
-    db.ref('inquiries').limitToLast(5).on('value', snap => {
+    // Lead Management with WhatsApp Integration
+    db.ref('inquiries').limitToLast(10).on('value', snap => {
         let html = "";
+        let count = 0;
         snap.forEach(child => {
             const inq = child.val();
+            count++;
+            const cleanPhone = inq.phone.replace(/\D/g,'');
             html = `
                 <div class="inquiry-box">
-                    <strong>${inq.name}</strong>
+                    <a href="https://wa.me/91${cleanPhone}" class="wa-btn">WhatsApp</a>
+                    <strong>${inq.name || inq.student}</strong>
                     <span style="font-size:0.85rem">📞 ${inq.phone}</span><br>
-                    <small style="color:#666; font-size:0.7rem;">By ${inq.from} on ${inq.date}</small>
+                    <small style="color:#888; font-size:0.7rem;">Source: ${inq.from || 'Staff'} • ${inq.date || ''}</small>
                 </div>` + html;
         });
-        document.getElementById('inquiry-list').innerHTML = html || "No inquiries today.";
+        document.getElementById('inquiry-list').innerHTML = html || "No inquiries yet.";
+        document.getElementById('total-leads').innerText = count;
     });
 </script>
+
+<style>
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+</style>
 
 </body>
 </html>
