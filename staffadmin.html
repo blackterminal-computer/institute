@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Owner Control | BlackTerminal</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #050505; color: white; padding: 20px; }
+        .admin-card { background: #161616; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        .inquiry-list { background: #222; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        input { background: #333; color: white; border: 1px solid #444; padding: 10px; margin: 5px; }
+        .btn { background: #00d4ff; color: black; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Owner Dashboard 👑</h1>
+
+    <div class="admin-card">
+        <h3>💰 Manage Salary & Bonus</h3>
+        <input type="number" id="base_sal" placeholder="Base Salary (₹)">
+        <input type="number" id="bonus_sal" placeholder="Bonus (₹)">
+        <button class="btn" onclick="updateSalary()">Update Staff Salary</button>
+    </div>
+
+    <div class="admin-card">
+        <h3>📩 Recent Inquiries (Real-time)</h3>
+        <div id="inquiry_container">Wait, loading inquiries...</div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.firebasestorage.app",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Update Salary
+        function updateSalary() {
+            const base = document.getElementById('base_sal').value;
+            const bonus = document.getElementById('bonus_sal').value;
+            db.ref('salary_settings').set({ base, bonus, lastUpdated: new Date().toLocaleDateString() });
+            alert("Salary Updated!");
+        }
+
+        // Listen for Inquiries
+        db.ref('inquiries').on('value', (snap) => {
+            const container = document.getElementById('inquiry_container');
+            container.innerHTML = '';
+            snap.forEach((child) => {
+                const data = child.val();
+                container.innerHTML += `<div class="inquiry-list">
+                    <strong>${data.name}</strong> - ${data.phone} <br>
+                    <small style="color: #888;">Date: ${data.date}</small>
+                </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
