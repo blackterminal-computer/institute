@@ -16,7 +16,6 @@
         .container { padding: 15px; max-width: 600px; margin: auto; }
         .card { background: var(--card); padding: 20px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .stat-box { background: #1c222b; padding: 15px; border-radius: 15px; text-align: center; border-bottom: 3px solid var(--primary); }
         .stat-box small { font-size: 0.7rem; color: #888; text-transform: uppercase; }
@@ -24,21 +23,20 @@
 
         h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         
-        /* Lists */
         .list-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; transition: 0.3s; }
-        .list-item:active { transform: scale(0.98); }
         .list-item img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #333; }
         .staff-info { flex: 1; }
         .staff-info div { font-weight: bold; font-size: 0.9rem; }
         .staff-badge { background: var(--primary); color: #000; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
 
-        /* Inquiry Styling */
+        .action-btns { display: flex; gap: 5px; }
+
         .inquiry-box { background: #1c222b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border-right: 4px solid var(--accent); position: relative; }
         .wa-btn { position: absolute; right: 15px; top: 15px; background: #25d366; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; text-decoration: none; font-weight: bold; }
 
-        /* Buttons */
-        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
         .btn-danger { background: linear-gradient(135deg, #ff4d4d, #b30000); }
+        .btn-outline-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
         
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0c10; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #222; }
         .nav-item { color: #555; font-size: 0.7rem; text-align: center; text-decoration: none; flex: 1; }
@@ -69,7 +67,7 @@
 
     <div class="card">
         <h3>🚨 Pending Verification</h3>
-        <div id="pending-list"><p style="color:#555; font-size:0.8rem;">Clean slate. No pending KYC.</p></div>
+        <div id="pending-list"></div>
     </div>
 
     <div class="card">
@@ -109,7 +107,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Comprehensive Staff Listener
     db.ref('staff').on('value', snap => {
         const staffData = snap.val();
         let pList = "";
@@ -128,7 +125,10 @@
                             <div>${s.name}</div>
                             <small>ID: ${s.id}</small>
                         </div>
-                        <button onclick="approveStaff('${key}')">Approve</button>
+                        <div class="action-btns">
+                            <button onclick="approveStaff('${key}')">Approve</button>
+                            <button class="btn-outline-danger" onclick="deleteStaff('${key}', '${s.name}')">🗑️</button>
+                        </div>
                     </div>`;
             } else {
                 totalPay += (s.salary || 0);
@@ -137,14 +137,17 @@
                         <img src="${s.photo}">
                         <div class="staff-info">
                             <div>${s.name} <span class="staff-badge">Active</span></div>
-                            <small>Base: ₹${s.salary} | Bonus: ₹${s.bonus || 0}</small>
+                            <small>Sal: ₹${s.salary} | Bonus: ₹${s.bonus || 0}</small>
                         </div>
-                        <button class="btn-danger" style="padding:5px 10px; font-size:0.7rem;" onclick="editSal('${key}')">Manage</button>
+                        <div class="action-btns">
+                            <button class="btn-danger" style="padding:5px 8px;" onclick="editSal('${key}')">Manage</button>
+                            <button class="btn-outline-danger" style="padding:5px 8px;" onclick="deleteStaff('${key}', '${s.name}')">🗑️</button>
+                        </div>
                     </div>`;
             }
         }
-        document.getElementById('pending-list').innerHTML = pList || "<p style='color:#555;font-size:0.8rem;'>No pending approvals</p>";
-        document.getElementById('active-staff-list').innerHTML = aList;
+        document.getElementById('pending-list').innerHTML = pList || "<p style='color:#555;font-size:0.8rem;'>Clean slate. No pending KYC.</p>";
+        document.getElementById('active-staff-list').innerHTML = aList || "<p style='color:#555;font-size:0.8rem;'>No active staff found.</p>";
         document.getElementById('pending-badge').style.display = hasPending ? 'block' : 'none';
         document.getElementById('total-payroll').innerText = "₹" + totalPay.toLocaleString();
     });
@@ -154,59 +157,54 @@
         alert("Staff Access Granted!");
     }
 
-    function editSal(id) {
-        const action = prompt("Type 'S' to change Salary or 'B' to add Bonus:");
-        if(!action) return;
-        
-        const amount = prompt("Enter Amount:");
-        if(!amount) return;
-
-        if(action.toUpperCase() === 'S') {
-            db.ref('staff/' + id).update({ salary: parseInt(amount) });
-        } else if(action.toUpperCase() === 'B') {
-            db.ref('staff/' + id).update({ bonus: parseInt(amount) });
+    // New Delete Function
+    function deleteStaff(id, name) {
+        if (confirm(`⚠️ PERMANENT DELETE\nAre you sure you want to remove ${name} from the terminal? This action cannot be undone.`)) {
+            db.ref('staff/' + id).remove()
+            .then(() => alert("Staff record deleted successfully."))
+            .catch(err => alert("Error: " + err.message));
         }
+    }
+
+    function editSal(id) {
+        const action = prompt("Type 'S' for Salary or 'B' for Bonus:");
+        if(!action) return;
+        const amount = prompt("Enter Amount:");
+        if(!amount || isNaN(amount)) return;
+
+        const update = {};
+        if(action.toUpperCase() === 'S') update.salary = parseInt(amount);
+        if(action.toUpperCase() === 'B') update.bonus = parseInt(amount);
+        
+        db.ref('staff/' + id).update(update);
     }
 
     function updateTask() {
         const val = document.getElementById('taskInput').value;
         if(val) {
-            db.ref('institute/current_task').set({
-                text: val,
-                time: new Date().toLocaleTimeString()
-            });
-            alert("Broadcasted to all staff!");
+            db.ref('institute/current_task').set({ text: val, time: new Date().toLocaleTimeString() });
+            alert("Broadcasted!");
+            document.getElementById('taskInput').value = "";
         }
     }
 
-    // Lead Management with WhatsApp Integration
     db.ref('inquiries').limitToLast(10).on('value', snap => {
         let html = "";
         let count = 0;
         snap.forEach(child => {
             const inq = child.val();
             count++;
-            const cleanPhone = inq.phone.replace(/\D/g,'');
+            const cleanPhone = (inq.phone || "").replace(/\D/g,'');
             html = `
                 <div class="inquiry-box">
                     <a href="https://wa.me/91${cleanPhone}" class="wa-btn">WhatsApp</a>
                     <strong>${inq.name || inq.student}</strong>
-                    <span style="font-size:0.85rem">📞 ${inq.phone}</span><br>
-                    <small style="color:#888; font-size:0.7rem;">Source: ${inq.from || 'Staff'} • ${inq.date || ''}</small>
+                    <span style="font-size:0.85rem">📞 ${inq.phone}</span>
                 </div>` + html;
         });
         document.getElementById('inquiry-list').innerHTML = html || "No inquiries yet.";
         document.getElementById('total-leads').innerText = count;
     });
 </script>
-
-<style>
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.7; }
-    100% { transform: scale(1); opacity: 1; }
-}
-</style>
-
 </body>
 </html>
