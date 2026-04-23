@@ -70,7 +70,6 @@
 
     <div id="step1" class="glass-card step active">
         <h3>Staff Authentication</h3>
-        <p style="color: #8b949e; font-size: 0.9rem;">Enter your official name to proceed.</p>
         <input type="text" id="staff_name" placeholder="Full Name (e.g. Rahul Sharma)">
         <button class="btn-premium" onclick="validateStep1()">Verify Identity</button>
     </div>
@@ -78,7 +77,7 @@
     <div id="step2" class="glass-card step">
         <h3>Identity Verification (KYC)</h3>
         <div class="dp-box" onclick="document.getElementById('fileInput').click()">
-            <span id="plus" style="font-size: 0.7rem; color: #8b949e; text-align: center;">Click to upload<br>Profile Photo</span>
+            <span id="plus" style="font-size: 0.7rem; color: #8b949e; text-align: center;">Click to upload Photo</span>
             <img id="profileImg" style="display:none;">
         </div>
         <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleImage(event)">
@@ -107,14 +106,8 @@
         <div class="glass-card" style="border-left: 4px solid var(--accent); background: linear-gradient(135deg, #1c222b, #161b22);">
             <h4 style="margin:0; color: var(--accent); font-size: 0.8rem; text-transform: uppercase;">Payroll & Performance</h4>
             <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-                <div>
-                    <small style="color:#8b949e">Earned (Live)</small>
-                    <div id="earned-sal" style="font-size: 1.3rem; font-weight: bold; color: var(--primary);">₹0</div>
-                </div>
-                <div style="text-align: right;">
-                    <small style="color:#8b949e">Monthly Total</small>
-                    <div id="total-sal" style="font-size: 1.3rem; font-weight: bold;">₹0</div>
-                </div>
+                <div><small style="color:#8b949e">Earned (Live)</small><div id="earned-sal" style="font-size: 1.3rem; font-weight: bold; color: var(--primary);">₹0</div></div>
+                <div style="text-align: right;"><small style="color:#8b949e">Monthly Total</small><div id="total-sal" style="font-size: 1.3rem; font-weight: bold;">₹0</div></div>
             </div>
             <div id="att-stats" style="font-size: 0.75rem; color: #8b949e; margin-top: 10px; border-top: 1px solid #333; padding-top: 5px;">Present: 0 Days</div>
         </div>
@@ -130,7 +123,6 @@
     <div id="step4" class="glass-card step" style="text-align: center;">
         <h2 style="color: var(--accent);">Pending Approval</h2>
         <div style="font-size: 3rem; margin: 20px 0;">⏳</div>
-        <p style="color: #8b949e;">Your credentials are being verified. Please wait for admin approval.</p>
         <button class="btn-premium" onclick="location.reload()" style="background: #30363d;">Check Status</button>
     </div>
 </div>
@@ -156,14 +148,12 @@
         document.getElementById('step' + s).classList.add('active');
     }
 
-    // Step 1 Logic
     function validateStep1() {
         const name = document.getElementById('staff_name').value.trim();
         if(name.length < 3) return alert("Enter Full Name");
         showStep(2);
     }
 
-    // Image Compression
     function handleImage(event) {
         const file = event.target.files[0];
         if(!file) return;
@@ -184,93 +174,74 @@
         }
     }
 
-    // KYC Submission
     function submitKYC() {
         const name = document.getElementById('staff_name').value.trim();
         const id = document.getElementById('staff_id').value;
         if(id.length !== 12 || !compressedDP) return alert("Complete all fields!");
-        
         const key = name.replace(/\s/g, '').toLowerCase();
         db.ref('staff/' + key).set({
             name: name, id: id, photo: compressedDP, status: 'pending', salary: 12000, bonus: 0
-        }).then(() => {
-            localStorage.setItem('bt_staff', key);
-            showStep(4);
-        });
+        }).then(() => { localStorage.setItem('bt_staff', key); showStep(4); });
     }
 
-    // Payroll Calculation
     function syncDashboard(data, key) {
         staffID = key;
         document.getElementById('welcome-msg').innerText = "Hi, " + data.name;
         
-        // Listen to Attendance
+        // Attendance & Salary
         db.ref('attendance').orderByChild('staff').equalTo(key).on('value', snap => {
             const days = snap.numChildren();
-            const baseSalary = data.salary || 0;
-            const bonus = data.bonus || 0;
-            const perDay = baseSalary / 30;
-            const earned = (perDay * days) + bonus;
-
+            const earned = ((data.salary / 30) * days) + (data.bonus || 0);
             document.getElementById('earned-sal').innerText = "₹" + Math.round(earned).toLocaleString();
-            document.getElementById('total-sal').innerText = "₹" + (baseSalary + bonus).toLocaleString();
-            document.getElementById('att-stats').innerText = `Present: ${days} Days (₹${Math.round(perDay)}/day)`;
+            document.getElementById('total-sal').innerText = "₹" + (data.salary + (data.bonus || 0)).toLocaleString();
+            document.getElementById('att-stats').innerText = `Present: ${days} Days`;
         });
 
-        // Listen to Batches
+        // ⏰ Multi-Batch Support (Text Format)
         db.ref('institute/batches').on('value', snap => {
             const b = snap.val();
             if(b) {
-                document.getElementById('m-time').innerText = formatTime(b.morning);
-                document.getElementById('e-time').innerText = formatTime(b.evening);
+                document.getElementById('m-time').innerText = b.morning || "--:--";
+                document.getElementById('e-time').innerText = b.evening || "--:--";
             }
         });
 
-        // Listen to Tasks
-        db.ref('institute/current_task').on('value', snap => {
-            const task = snap.val();
-            if(task && localStorage.getItem('task_id') !== task.time) {
-                document.getElementById('task-box').style.display = 'block';
-                document.getElementById('task-text').innerText = task.text;
-            }
+        // 📢 Multi-Task Listener (Shows the latest task only)
+        db.ref('institute/tasks').on('value', snap => {
+            const tasks = snap.val();
+            const container = document.getElementById('task-box');
+            if(tasks) {
+                const taskKeys = Object.keys(tasks);
+                const latestKey = taskKeys[taskKeys.length - 1]; // Get latest
+                const latestTask = tasks[latestKey];
+                
+                if(!localStorage.getItem('accepted_' + latestKey)) {
+                    container.style.display = 'block';
+                    document.getElementById('task-text').innerText = latestTask.text;
+                    container.setAttribute('data-current-key', latestKey);
+                } else {
+                    container.style.display = 'none';
+                }
+            } else { container.style.display = 'none'; }
         });
-    }
-
-    function formatTime(t) {
-        if(!t) return "--:--";
-        let [h, m] = t.split(':');
-        let suffix = h >= 12 ? ' PM' : ' AM';
-        h = h % 12 || 12;
-        return h + ":" + m + suffix;
     }
 
     function acceptTask() {
-        db.ref('institute/current_task').once('value', snap => {
-            localStorage.setItem('task_id', snap.val().time);
-            document.getElementById('task-box').style.display = 'none';
-        });
+        const key = document.getElementById('task-box').getAttribute('data-current-key');
+        localStorage.setItem('accepted_' + key, 'true');
+        document.getElementById('task-box').style.display = 'none';
     }
 
     function markAttendance() {
         const btn = document.getElementById('attBtn');
-        btn.disabled = true;
-        btn.innerText = "Locating...";
-        
+        btn.disabled = true; btn.innerText = "Locating...";
         navigator.geolocation.getCurrentPosition(pos => {
-            // Baripada Office Coordinates
             const dist = Math.sqrt(Math.pow(pos.coords.latitude - 21.93, 2) + Math.pow(pos.coords.longitude - 86.75, 2));
             if(dist < 0.05) {
                 db.ref('attendance').push({ staff: staffID, timestamp: firebase.database.ServerValue.TIMESTAMP })
-                .then(() => {
-                    document.getElementById('att-msg').innerText = "✅ Marked: " + new Date().toLocaleTimeString();
-                    btn.innerText = "Punch In Success";
-                });
-            } else {
-                alert("Location Mismatch!");
-                btn.disabled = false;
-                btn.innerText = "Punch In (GPS Verify)";
-            }
-        }, () => alert("Enable GPS Permissions!"));
+                .then(() => { document.getElementById('att-msg').innerText = "✅ Marked!"; btn.innerText = "Punch In Success"; });
+            } else { alert("Location Mismatch!"); btn.disabled = false; btn.innerText = "Punch In"; }
+        }, () => alert("Enable GPS!"));
     }
 
     function sendInquiry() {
@@ -278,11 +249,7 @@
         const p = document.getElementById('inq_phone').value;
         if(n && p.length >= 10) {
             db.ref('inquiries').push({ student: n, phone: p, staff: staffID })
-            .then(() => {
-                alert("Lead Registered!");
-                document.getElementById('inq_name').value = "";
-                document.getElementById('inq_phone').value = "";
-            });
+            .then(() => { alert("Lead Registered!"); document.getElementById('inq_name').value = ""; document.getElementById('inq_phone').value = ""; });
         }
     }
 
@@ -291,12 +258,8 @@
         if(key) {
             db.ref('staff/' + key).on('value', snap => {
                 const data = snap.val();
-                if(data && data.status === 'active') {
-                    showStep(3);
-                    syncDashboard(data, key);
-                } else if(data) {
-                    showStep(4);
-                }
+                if(data && data.status === 'active') { showStep(3); syncDashboard(data, key); }
+                else if(data) { showStep(4); }
             });
         }
     };
