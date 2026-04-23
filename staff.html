@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Terminal | BlackTerminal 2.5</title>
+    <title>Staff Terminal | BlackTerminal 2.5 Final</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
@@ -15,51 +15,65 @@
             --success: #00ff88; 
             --danger: #ff3366;
             --border: rgba(255,255,255,0.08);
+            --wa-green: #25D366;
         }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 50px; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         .app-container { width: 92%; max-width: 450px; margin: auto; }
         
+        /* Header & Timer */
         .main-header { padding: 25px 0 15px; text-align: center; }
         .main-header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 4px; font-weight: 900; color: #fff; }
-        .work-timer { font-size: 0.8rem; color: var(--success); font-family: monospace; display: none; margin-top: 5px; }
+        .work-timer { font-size: 0.8rem; color: var(--success); font-family: monospace; display: none; margin-top: 8px; font-weight: bold; text-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
 
-        /* Carousel Styling */
-        .tc-carousel { background: rgba(0, 212, 255, 0.05); border: 1px solid var(--border); border-radius: 18px; padding: 12px; margin-bottom: 20px; height: 35px; display: flex; align-items: center; overflow: hidden; }
-        .tc-track { display: flex; flex-direction: column; transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; }
-        .tc-item { min-height: 35px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.72rem; color: var(--primary); font-weight: 500; }
+        /* --- Premium Carousel --- */
+        .tc-carousel { 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid var(--border); 
+            border-radius: 20px; 
+            margin-bottom: 25px; 
+            height: 50px; 
+            overflow: hidden; 
+            position: relative;
+            backdrop-filter: blur(5px);
+        }
+        .tc-track { display: flex; flex-direction: column; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1); width: 100%; height: 100%; }
+        .tc-item { min-height: 50px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.8rem; color: var(--primary); font-weight: 600; padding: 0 15px; text-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .tc-progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.05); }
+        .tc-progress-bar { height: 100%; width: 0%; background: var(--primary); box-shadow: 0 0 8px var(--primary); }
 
+        /* Glass Cards */
         .glass-card { background: var(--card); padding: 22px; border-radius: 28px; border: 1px solid var(--border); margin-bottom: 20px; backdrop-filter: blur(10px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
 
         .step { display: none; } 
         .active { display: block; animation: slideUp 0.6s ease-out; }
         
-        input { background: rgba(13, 17, 23, 0.8); color: white; border: 1px solid #222; padding: 15px; border-radius: 16px; width: 100%; box-sizing: border-box; margin: 10px 0; font-size: 1rem; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
+        input { background: rgba(13, 17, 23, 0.8); color: white; border: 1px solid #222; padding: 15px; border-radius: 16px; width: 100%; box-sizing: border-box; margin: 10px 0; font-size: 1rem; outline: none; }
+        input:focus { border-color: var(--primary); }
         
         button { width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.4s; }
         .btn-main { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; box-shadow: 0 8px 15px rgba(0, 114, 255, 0.3); }
-        .btn-main:active { transform: scale(0.96); }
-
         .pulse-active { animation: pulse-green 2s infinite; background: var(--success) !important; color: #000; }
-        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.5); } 70% { box-shadow: 0 0 0 18px rgba(0, 255, 136, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); } }
 
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .stat-item { background: var(--card); padding: 18px; border-radius: 22px; border: 1px solid var(--border); text-align: center; }
-        .stat-item small { color: #8b949e; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-item div { font-size: 1.1rem; font-weight: bold; margin-top: 5px; }
-
-        /* History List */
-        .history-box { margin-top: 20px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
-        .history-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05); }
-
-        .task-banner { background: linear-gradient(135deg, #ff9900, #ff5500); color: white; padding: 18px; border-radius: 20px; margin-bottom: 20px; display: none; box-shadow: 0 10px 20px rgba(255, 85, 0, 0.2); }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        /* History */
+        .history-box { margin-top: 20px; max-height: 180px; overflow-y: auto; padding-right: 5px; border-top: 1px solid var(--border); padding-top: 15px; }
+        .history-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05); }
+
+        /* Floating WhatsApp */
+        .wa-float { position: fixed; width: 60px; height: 60px; bottom: 25px; right: 25px; background: var(--wa-green); color: white; border-radius: 50px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 20px rgba(37, 211, 102, 0.4); z-index: 1000; text-decoration: none; animation: float 3s ease-in-out infinite; }
+        
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.5); } 70% { box-shadow: 0 0 0 18px rgba(0, 255, 136, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); } }
     </style>
 </head>
 <body>
+
+<a href="https://wa.me/917008186187?text=Hi, I need help with the Staff Terminal." class="wa-float" target="_blank">
+    <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M12.031 6.172c-2.32 0-4.591.905-6.234 2.548s-2.548 3.914-2.548 6.234c0 1.52.395 3.012 1.144 4.32l-1.214 4.43 4.532-1.191c1.246.678 2.651 1.036 4.07 1.036 2.321 0 4.591-.905 6.234-2.548s2.548-3.914 2.548-6.234c0-2.321-.905-4.591-2.548-6.234s-3.913-2.548-6.234-2.548zM12.03 5c2.616 0 5.174 1.019 7.021 2.866 1.847 1.847 2.866 4.405 2.866 7.021 0 2.616-1.019 5.174-2.866 7.021s-4.405 2.866-7.021 2.866c-1.611 0-3.18-.403-4.567-1.168L2 24l.583-4.327C1.821 18.29 1.417 16.66 1.417 15c0-2.616 1.019-5.174 2.866-7.021S9.414 5 12.03 5z"/></svg>
+</a>
 
 <div class="app-container">
     <div class="main-header">
@@ -69,18 +83,15 @@
 
     <div class="tc-carousel">
         <div class="tc-track" id="tcTrack">
-            <div class="tc-item">⚠️ Real-time GPS verification enabled.</div>
-            <div class="tc-item">💰 Performance bonus added on 10+ leads.</div>
-            <div class="tc-item">📞 Ensure student numbers are WhatsApp active.</div>
-            <div class="tc-item">⏰ Final Punch-Out mandatory before 9 PM.</div>
-            <div class="tc-item">🛡️ Secure ID: System version 2.5.0 build.</div>
+            <div class="tc-item">🚀 Welcome to BlackTerminal 2.5</div>
+            <div class="tc-item">⚠️ Location spoofing = Permanent Ban</div>
+            <div class="tc-item">💰 Performance bonus active this month!</div>
+            <div class="tc-item">⏰ Don't forget to Punch-Out daily</div>
+            <div class="tc-item">🛡️ All data is end-to-end encrypted</div>
         </div>
-    </div>
-
-    <div id="task-box" class="task-banner">
-        <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">Admin Announcement</div>
-        <div id="task-text" style="margin: 8px 0; font-weight: 600; font-size: 0.95rem;"></div>
-        <button onclick="acceptTask()" style="background:white; color:black; padding:8px 15px; width:auto; font-size:0.75rem; border-radius:10px;">I'm On It</button>
+        <div class="tc-progress-container">
+            <div class="tc-progress-bar" id="tcProgress"></div>
+        </div>
     </div>
 
     <div id="step1" class="glass-card step active">
@@ -91,7 +102,7 @@
 
     <div id="step2" class="glass-card step" style="text-align: center;">
         <h3 style="margin-top:0">Biometric Setup</h3>
-        <div onclick="document.getElementById('fileInput').click()" style="width:110px; height:110px; background:#1c222b; border-radius:35%; margin:0 auto 20px; border:2px dashed var(--primary); overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;">
+        <div onclick="document.getElementById('fileInput').click()" style="width:110px; height:110px; background:#1c222b; border-radius:35%; margin:0 auto 20px; border:2px dashed var(--primary); overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer;">
             <span id="plus" style="font-size: 1.5rem; color:var(--primary)">+</span>
             <img id="profileImg" style="display:none; width:100%; height:100%; object-fit:cover;">
         </div>
@@ -102,12 +113,12 @@
 
     <div id="step3" class="step">
         <div class="stats-grid">
-            <div class="stat-item"><small>🌅 Morning</small><div id="m-time">--:--</div></div>
-            <div class="stat-item"><small>🌆 Evening</small><div id="e-time">--:--</div></div>
+            <div class="stat-item"><small style="color:#8b949e">🌅 Morning</small><div id="m-time">--:--</div></div>
+            <div class="stat-item"><small style="color:#8b949e">🌆 Evening</small><div id="e-time">--:--</div></div>
         </div>
 
         <div class="glass-card" style="text-align: center;">
-            <div id="welcome-msg" style="font-size: 1.2rem; font-weight: 800; color: #fff;">...</div>
+            <div id="welcome-msg" style="font-size: 1.2rem; font-weight: 800;">...</div>
             <p id="shift-label" style="color:#8b949e; font-size:0.8rem; margin: 8px 0 20px;">Ready to start shift?</p>
             <div style="display:flex; gap:12px;">
                 <button id="attBtn" class="btn-main" onclick="markAttendance()" style="flex:2;">PUNCH IN</button>
@@ -117,11 +128,11 @@
 
         <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div><small style="color:#8b949e">Current Earnings</small><div id="earned-sal" style="font-size: 1.6rem; font-weight: 900; color: var(--primary);">₹0</div></div>
-                <div style="text-align: right;"><small style="color:#8b949e">Target</small><div id="target-sal" style="font-weight: 700; color:#fff;">₹0</div></div>
+                <div><small style="color:#8b949e">Earnings</small><div id="earned-sal" style="font-size: 1.6rem; font-weight: 900; color: var(--primary);">₹0</div></div>
+                <div style="text-align: right;"><small style="color:#8b949e">Target</small><div id="target-sal" style="font-weight: 700;">₹0</div></div>
             </div>
             <div style="background:rgba(255,255,255,0.05); height:8px; border-radius:10px; margin-top:15px; overflow:hidden;">
-                <div id="sal-bar" style="background:var(--primary); height:100%; width:0%; transition:1.5s cubic-bezier(0.1, 0, 0.3, 1);"></div>
+                <div id="sal-bar" style="background:var(--primary); height:100%; width:0%; transition:1.5s;"></div>
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                 <span id="att-days" style="font-size: 0.75rem; color: #8b949e;">Present: 0 Days</span>
@@ -131,24 +142,22 @@
 
         <div class="glass-card">
             <h4 style="margin: 0 0 15px 0;">New Inquiry Lead</h4>
-            <input type="text" id="inq_name" placeholder="Student Full Name">
+            <input type="text" id="inq_name" placeholder="Student Name">
             <input type="tel" id="inq_phone" placeholder="WhatsApp Number">
-            <button class="btn-main" onclick="sendInquiry()" style="background:#1c222b; border:1px solid #333; box-shadow:none;">REGISTER STUDENT</button>
-            
-            <div class="history-box" id="leadHistory">
-                </div>
+            <button class="btn-main" onclick="sendInquiry()" style="background:#1c222b; border:1px solid #333;">REGISTER STUDENT</button>
+            <div class="history-box" id="leadHistory"></div>
         </div>
     </div>
 
     <div id="step4" class="glass-card step" style="text-align: center; padding: 50px 25px;">
-        <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
-        <h2 style="color: var(--primary); margin:0;">Account Under Review</h2>
-        <p style="color: #8b949e; font-size: 0.9rem; margin-top: 15px;">Your terminal access is currently being verified by the administrator. Please check back later.</p>
+        <h2 style="color: var(--primary);">Review Pending</h2>
+        <p style="color: #8b949e; font-size: 0.9rem;">Your account is waiting for admin approval.</p>
         <button class="btn-main" onclick="location.reload()" style="background:#222; margin-top:30px;">Sync Status</button>
     </div>
 </div>
 
 <script>
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -158,27 +167,40 @@
         messagingSenderId: "552489994197",
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
-    
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    
     let staffID = "";
     let compressedDP = "";
     let timerInterval;
 
-    // --- Carousel Animation ---
+    // --- Better Carousel Logic ---
     let tcIndex = 0;
-    setInterval(() => {
-        tcIndex = (tcIndex + 1) % 5;
-        document.getElementById('tcTrack').style.transform = `translateY(-${tcIndex * 35}px)`;
-    }, 4000);
+    const intervalTime = 4000;
+    const track = document.getElementById('tcTrack');
+    const progressBar = document.getElementById('tcProgress');
 
+    function rotateCarousel() {
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+        setTimeout(() => {
+            progressBar.style.transition = `width ${intervalTime}ms linear`;
+            progressBar.style.width = '100%';
+        }, 50);
+        tcIndex = (tcIndex + 1) % 5;
+        track.style.transform = `translateY(-${tcIndex * 50}px)`;
+    }
+    setInterval(rotateCarousel, intervalTime);
+    rotateCarousel();
+
+    // --- App Functions ---
     function showStep(s) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
         document.getElementById('step' + s).classList.add('active');
     }
 
     function validateStep1() {
-        if(document.getElementById('staff_name').value.trim().length < 3) return alert("Please enter your name");
+        if(document.getElementById('staff_name').value.trim().length < 3) return alert("Enter full name");
         showStep(2);
     }
 
@@ -204,161 +226,104 @@
     function submitKYC() {
         const name = document.getElementById('staff_name').value.trim();
         const id = document.getElementById('staff_id').value;
-        if(id.length < 4 || !compressedDP) return alert("Photo and ID both required!");
+        if(id.length < 4 || !compressedDP) return alert("Fill all fields!");
         const key = name.replace(/\s/g, '').toLowerCase();
-        db.ref('staff/' + key).set({ name, id, photo: compressedDP, status: 'pending', salary: 12000, bonus: 0, joinDate: Date.now() })
+        db.ref('staff/' + key).set({ name, id, photo: compressedDP, status: 'pending', salary: 12000, bonus: 0, timestamp: Date.now() })
         .then(() => { localStorage.setItem('bt_staff', key); showStep(4); });
-    }
-
-    function startTimer(startTime) {
-        const timerEl = document.getElementById('workTimer');
-        timerEl.style.display = 'block';
-        if(timerInterval) clearInterval(timerInterval);
-        
-        timerInterval = setInterval(() => {
-            const now = Date.now();
-            const diff = now - startTime;
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            timerEl.innerText = `ACTIVE SESSION: ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-        }, 1000);
     }
 
     function syncDashboard(data, key) {
         staffID = key;
-        document.getElementById('welcome-msg').innerText = "Namaste, " + data.name.split(' ')[0];
+        document.getElementById('welcome-msg').innerText = "Hi, " + data.name.split(' ')[0];
         checkAttendance();
 
-        // Stats & Salary
         db.ref('attendance').orderByChild('staff').equalTo(key).on('value', snap => {
             const days = snap.numChildren();
-            const base = data.salary || 12000;
-            const earned = ((base / 30) * days) + (data.bonus || 0);
-            const target = base + (data.bonus || 0);
-            document.getElementById('earned-sal').innerText = "₹" + Math.round(earned).toLocaleString();
-            document.getElementById('target-sal').innerText = "₹" + target.toLocaleString();
+            const earned = ((data.salary / 30) * days) + (data.bonus || 0);
+            document.getElementById('earned-sal').innerText = "₹" + Math.round(earned);
+            document.getElementById('target-sal').innerText = "₹" + (data.salary + data.bonus);
             document.getElementById('att-days').innerText = `Present: ${days} Days`;
-            document.getElementById('sal-bar').style.width = (earned/target * 100) + "%";
+            document.getElementById('sal-bar').style.width = (earned/(data.salary + data.bonus) * 100) + "%";
         });
 
-        // Leads History & Count
         db.ref('inquiries').orderByChild('staff').equalTo(key).on('value', snap => {
-            let html = "";
-            let count = 0;
-            snap.forEach(child => {
-                count++;
-                const inq = child.val();
-                html = `<div class="history-item">
-                            <span><b>${inq.student}</b></span>
-                            <span style="color:#8b949e">${new Date(inq.time).toLocaleDateString()}</span>
-                        </div>` + html;
-            });
-            document.getElementById('leadHistory').innerHTML = html || "<small style='color:#444'>No leads registered yet.</small>";
-            document.getElementById('lead-count').innerText = "Leads: " + count;
+            let h = ""; let c = 0;
+            snap.forEach(ch => { c++; h = `<div class="history-item"><span><b>${ch.val().student}</b></span><span>${new Date(ch.val().time).toLocaleDateString()}</span></div>` + h; });
+            document.getElementById('leadHistory').innerHTML = h || "No leads yet";
+            document.getElementById('lead-count').innerText = "Leads: " + c;
         });
 
-        // Batch Sync
-        db.ref('institute/batches').on('value', snap => {
-            const b = snap.val();
-            if(b) {
-                document.getElementById('m-time').innerText = b.morning || "--:--";
-                document.getElementById('e-time').innerText = b.evening || "--:--";
-            }
-        });
-
-        // Tasks Sync
-        db.ref('institute/tasks').on('value', snap => {
-            const tasks = snap.val();
-            if(tasks) {
-                const keys = Object.keys(tasks);
-                const latest = keys[keys.length - 1];
-                if(!localStorage.getItem('task_' + latest)) {
-                    document.getElementById('task-box').style.display = 'block';
-                    document.getElementById('task-text').innerText = tasks[latest].text;
-                    document.getElementById('task-box').setAttribute('data-id', latest);
-                }
-            }
+        db.ref('institute/batches').on('value', s => { 
+            if(s.val()) { document.getElementById('m-time').innerText = s.val().morning; document.getElementById('e-time').innerText = s.val().evening; }
         });
     }
 
     function checkAttendance() {
         const today = new Date().toLocaleDateString();
         db.ref('attendance').orderByChild('staff').equalTo(staffID).once('value', snap => {
-            let hasIn = false, hasOut = false, inTime = 0;
+            let hasIn = false, hasOut = false, inT = 0;
             snap.forEach(c => {
-                const date = new Date(c.val().timestamp).toLocaleDateString();
-                if(date === today) {
-                    if(c.val().type === 'in') { hasIn = true; inTime = c.val().timestamp; }
+                if(new Date(c.val().timestamp).toLocaleDateString() === today) {
+                    if(c.val().type === 'in') { hasIn = true; inT = c.val().timestamp; }
                     if(c.val().type === 'out') hasOut = true;
                 }
             });
-
-            const btn = document.getElementById('attBtn');
-            const outBtn = document.getElementById('outBtn');
-            const label = document.getElementById('shift-label');
-
             if(hasOut) {
-                btn.disabled = true; btn.innerText = "Shift Ended";
-                outBtn.style.display = "none";
-                label.innerText = "Shift closed for today ✅";
+                document.getElementById('attBtn').innerText = "Shift Ended";
+                document.getElementById('attBtn').disabled = true;
                 document.getElementById('workTimer').style.display = 'none';
-                clearInterval(timerInterval);
             } else if(hasIn) {
-                btn.disabled = true; btn.innerText = "Punch Active";
-                btn.classList.add('pulse-active');
-                outBtn.style.display = "block";
-                label.innerText = "You are currently on duty 🟢";
-                startTimer(inTime);
+                document.getElementById('attBtn').innerText = "On Duty";
+                document.getElementById('attBtn').classList.add('pulse-active');
+                document.getElementById('outBtn').style.display = "block";
+                startTimer(inT);
             }
         });
+    }
+
+    function startTimer(startTime) {
+        document.getElementById('workTimer').style.display = 'block';
+        if(timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            const diff = Date.now() - startTime;
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            document.getElementById('workTimer').innerText = `SESSION: ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }, 1000);
     }
 
     function markAttendance() {
         navigator.geolocation.getCurrentPosition(pos => {
             const dist = Math.sqrt(Math.pow(pos.coords.latitude - 21.93, 2) + Math.pow(pos.coords.longitude - 86.75, 2));
-            if(dist < 0.05) { // 50 meters radius
-                db.ref('attendance').push({ staff: staffID, type: 'in', timestamp: firebase.database.ServerValue.TIMESTAMP })
-                .then(() => checkAttendance());
-            } else { alert("Location Error: You must be at the office branch!"); }
-        }, () => alert("GPS Permission Denied. Cannot mark attendance."));
+            if(dist < 0.05) {
+                db.ref('attendance').push({ staff: staffID, type: 'in', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => checkAttendance());
+            } else { alert("Location Error!"); }
+        });
     }
 
     function markPunchOut() {
-        if(confirm("Confirm Punch-Out? This will end your daily shift.")) {
-            db.ref('attendance').push({ staff: staffID, type: 'out', timestamp: firebase.database.ServerValue.TIMESTAMP })
-            .then(() => checkAttendance());
-        }
-    }
-
-    function acceptTask() {
-        const id = document.getElementById('task-box').getAttribute('data-id');
-        localStorage.setItem('task_' + id, 'true');
-        document.getElementById('task-box').style.display = 'none';
+        if(confirm("Punch out?")) db.ref('attendance').push({ staff: staffID, type: 'out', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => checkAttendance());
     }
 
     function sendInquiry() {
         const n = document.getElementById('inq_name').value;
         const p = document.getElementById('inq_phone').value;
-        if(n.length < 3 || p.length < 10) return alert("Please enter valid Student Name and Phone.");
-        
-        db.ref('inquiries').push({ student: n, phone: p, staff: staffID, time: Date.now() })
-        .then(() => { 
-            alert("Lead registered successfully!"); 
-            document.getElementById('inq_name').value = ""; 
-            document.getElementById('inq_phone').value = ""; 
-        });
+        if(n && p) {
+            db.ref('inquiries').push({ student: n, phone: p, staff: staffID, time: Date.now() }).then(() => {
+                alert("Lead Saved!");
+                document.getElementById('inq_name').value = "";
+                document.getElementById('inq_phone').value = "";
+            });
+        }
     }
 
     window.onload = () => {
-        const key = localStorage.getItem('bt_staff');
-        if(key) {
-            db.ref('staff/' + key).on('value', snap => {
-                const data = snap.val();
-                if(data && data.status === 'active') { showStep(3); syncDashboard(data, key); }
-                else if(data) { showStep(4); }
-            });
-        }
+        const k = localStorage.getItem('bt_staff');
+        if(k) db.ref('staff/' + k).on('value', s => {
+            if(s.val() && s.val().status === 'active') { showStep(3); syncDashboard(s.val(), k); }
+            else if(s.val()) showStep(4);
+        });
     };
 </script>
 </body>
