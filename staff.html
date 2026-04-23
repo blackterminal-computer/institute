@@ -14,70 +14,43 @@
             --text: #e6edf3; 
             --success: #238636; 
             --border: rgba(255,255,255,0.1);
+            --accent: #f2994a;
+            --danger: #ff4d4d;
         }
-        body { 
-            font-family: 'Inter', -apple-system, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            padding: 20px; 
-            line-height: 1.5;
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; padding: 20px; line-height: 1.5; }
         .app-container { width: 100%; max-width: 450px; }
-        .glass-card { 
-            background: var(--card); 
-            padding: 25px; 
-            border-radius: 20px; 
-            border: 1px solid var(--border); 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            margin-bottom: 20px; 
-            position: relative;
-            overflow: hidden;
-        }
+        .glass-card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; position: relative; overflow: hidden; }
+        
         .step { display: none; } 
         .active { display: block; animation: fadeIn 0.4s ease-in-out; }
         
-        input, button { 
-            width: 100%; 
-            padding: 14px; 
-            margin: 10px 0; 
-            border-radius: 10px; 
-            border: none; 
-            box-sizing: border-box; 
-            font-size: 1rem; 
-            transition: all 0.2s; 
-        }
+        input, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: none; box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
         input { background: #0d1117; color: white; border: 1px solid #30363d; }
-        input:focus { border-color: var(--primary); outline: none; background: #161b22; }
+        input:focus { border-color: var(--primary); outline: none; }
         
-        .btn-premium { 
-            background: linear-gradient(135deg, #00d4ff, #0072ff); 
-            color: white; 
-            font-weight: 600; 
-            cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
-        }
-        .btn-premium:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-premium:active { transform: translateY(0); }
-        .btn-premium:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; box-shadow: none; }
+        .btn-premium { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; font-weight: 600; cursor: pointer; }
+        .btn-premium:disabled { background: #30363d; cursor: not-allowed; opacity: 0.6; }
 
-        .dp-box { 
-            width: 120px; height: 120px; border-radius: 50%; 
-            border: 2px dashed #30363d; margin: 0 auto 15px; 
-            overflow: hidden; display: flex; align-items: center; 
-            justify-content: center; cursor: pointer; transition: 0.3s;
-        }
-        .dp-box:hover { border-color: var(--primary); background: rgba(0,212,255,0.05); }
-        
-        .salary-badge { 
-            background: linear-gradient(135deg, #1c2128 0%, #12161d 100%); 
-            border-left: 4px solid #f2994a; 
-        }
-        
-        .status-dot { height: 8px; width: 8px; background: var(--success); border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .dp-box { width: 120px; height: 120px; border-radius: 50%; border: 2px dashed #30363d; margin: 0 auto 15px; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .dp-box img { width: 100%; height: 100%; object-fit: cover; }
 
+        /* Task Shake Alert */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+        .task-alert { 
+            background: linear-gradient(135deg, #f2994a, #f2c94c); 
+            color: #000; padding: 15px; border-radius: 15px; 
+            margin-bottom: 20px; display: none;
+            animation: shake 0.5s ease-in-out infinite;
+        }
+
+        .batch-badge { background: #0d1117; padding: 10px; border-radius: 12px; border: 1px solid #333; text-align: center; flex: 1; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -86,40 +59,64 @@
 <div class="app-container">
     <header style="text-align: center; margin-bottom: 30px;">
         <h1 style="margin:0; font-size: 1.8rem; letter-spacing: 1px;">BLACK<span style="color:var(--primary)">TERMINAL</span></h1>
-        <small style="color: #8b949e; text-transform: uppercase; letter-spacing: 2px;">V2.0.1 Stable</small>
+        <small style="color: #8b949e; text-transform: uppercase;">Staff Interface V2.0</small>
     </header>
 
+    <div id="task-box" class="task-alert">
+        <h4 style="margin:0">📢 ADMIN BROADCAST</h4>
+        <p id="task-text" style="margin: 8px 0; font-size: 0.9rem; font-weight: bold;"></p>
+        <button onclick="acceptTask()" style="background:#000; color:#fff; padding:8px; margin:0; font-size:0.8rem; width: auto;">Confirm & Accept</button>
+    </div>
+
     <div id="step1" class="glass-card step active">
-        <h3 style="margin-top:0">Staff Authentication</h3>
-        <p style="color: #8b949e; font-size: 0.9rem;">Enter your official name to access the terminal.</p>
+        <h3>Staff Authentication</h3>
+        <p style="color: #8b949e; font-size: 0.9rem;">Enter your official name to proceed.</p>
         <input type="text" id="staff_name" placeholder="Full Name (e.g. Rahul Sharma)">
         <button class="btn-premium" onclick="validateStep1()">Verify Identity</button>
     </div>
 
     <div id="step2" class="glass-card step">
-        <h3 style="margin-top:0">Verify KYC</h3>
+        <h3>Identity Verification (KYC)</h3>
         <div class="dp-box" onclick="document.getElementById('fileInput').click()">
-            <span id="plus" style="font-size: 0.8rem; text-align: center; color: #8b949e;">Click to upload<br>Profile Photo</span>
-            <img id="profileImg" style="display:none; width:100%; height:100%; object-fit:cover;">
+            <span id="plus" style="font-size: 0.7rem; color: #8b949e; text-align: center;">Click to upload<br>Profile Photo</span>
+            <img id="profileImg" style="display:none;">
         </div>
-        <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="compressImage(event)">
-        <input type="number" id="staff_id" placeholder="12-Digit ID Number" oninput="limitID(this)">
+        <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleImage(event)">
+        <input type="number" id="staff_id" placeholder="12-Digit ID Number">
         <button class="btn-premium" id="submitBtn" onclick="submitKYC()">Submit for Approval</button>
     </div>
 
     <div id="step3" class="step">
-        <div class="glass-card" style="text-align: center;">
-            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                <span class="status-dot"></span>
-                <span id="welcome-msg" style="font-weight: 600;">Welcome!</span>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <div class="batch-badge">
+                <small style="color:#8b949e">🌅 Morning</small>
+                <div id="m-time" style="font-weight:bold; font-size: 0.9rem;">--:--</div>
             </div>
-            <button class="btn-premium" id="attBtn" onclick="markAttendance()" style="background: var(--success);">Punch In (GPS Verify)</button>
-            <p id="att-msg" style="font-size: 0.85rem; color: #8b949e; margin-top: 10px;"></p>
+            <div class="batch-badge">
+                <small style="color:#8b949e">🌆 Evening</small>
+                <div id="e-time" style="font-weight:bold; font-size: 0.9rem;">--:--</div>
+            </div>
         </div>
 
-        <div class="glass-card salary-badge">
-            <h4 style="margin:0; color: #f2994a; font-size: 0.9rem;">MONTHLY PROGRESS</h4>
-            <p id="salaryDays" style="font-size: 1.2rem; font-weight: bold; margin: 10px 0;">Calculating...</p>
+        <div class="glass-card" style="text-align: center;">
+            <div id="welcome-msg" style="font-weight: 600; margin-bottom: 10px;">Welcome Back!</div>
+            <button class="btn-premium" id="attBtn" onclick="markAttendance()" style="background: var(--success); margin:0;">Punch In (GPS Verify)</button>
+            <p id="att-msg" style="font-size: 0.8rem; color: #8b949e; margin-top: 8px;"></p>
+        </div>
+
+        <div class="glass-card" style="border-left: 4px solid var(--accent); background: linear-gradient(135deg, #1c222b, #161b22);">
+            <h4 style="margin:0; color: var(--accent); font-size: 0.8rem; text-transform: uppercase;">Payroll & Performance</h4>
+            <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                <div>
+                    <small style="color:#8b949e">Earned (Live)</small>
+                    <div id="earned-sal" style="font-size: 1.3rem; font-weight: bold; color: var(--primary);">₹0</div>
+                </div>
+                <div style="text-align: right;">
+                    <small style="color:#8b949e">Monthly Total</small>
+                    <div id="total-sal" style="font-size: 1.3rem; font-weight: bold;">₹0</div>
+                </div>
+            </div>
+            <div id="att-stats" style="font-size: 0.75rem; color: #8b949e; margin-top: 10px; border-top: 1px solid #333; padding-top: 5px;">Present: 0 Days</div>
         </div>
 
         <div class="glass-card">
@@ -131,15 +128,14 @@
     </div>
 
     <div id="step4" class="glass-card step" style="text-align: center;">
-        <h2 style="color: #f2994a;">Verification Pending</h2>
+        <h2 style="color: var(--accent);">Pending Approval</h2>
         <div style="font-size: 3rem; margin: 20px 0;">⏳</div>
-        <p style="color: #8b949e;">Your account is under review by the Administrator. Access will be granted shortly.</p>
-        <button class="btn-premium" onclick="location.reload()" style="background: #30363d;">Check Status Again</button>
+        <p style="color: #8b949e;">Your credentials are being verified. Please wait for admin approval.</p>
+        <button class="btn-premium" onclick="location.reload()" style="background: #30363d;">Check Status</button>
     </div>
 </div>
 
 <script>
-    // Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -152,6 +148,7 @@
     
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    let staffID = "";
     let compressedDP = "";
 
     function showStep(s) {
@@ -159,17 +156,15 @@
         document.getElementById('step' + s).classList.add('active');
     }
 
-    function limitID(el) {
-        if (el.value.length > 12) el.value = el.value.slice(0, 12);
-    }
-
+    // Step 1 Logic
     function validateStep1() {
-        const val = document.getElementById('staff_name').value.trim();
-        if(val.length < 3) return alert("Please enter your full name.");
+        const name = document.getElementById('staff_name').value.trim();
+        if(name.length < 3) return alert("Enter Full Name");
         showStep(2);
     }
 
-    function compressImage(event) {
+    // Image Compression
+    function handleImage(event) {
         const file = event.target.files[0];
         if(!file) return;
         const reader = new FileReader();
@@ -179,122 +174,132 @@
             img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const size = 300; // Smaller size for faster DB performance
-                canvas.width = size; canvas.height = size;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, size, size);
+                canvas.width = 300; canvas.height = 300;
+                canvas.getContext('2d').drawImage(img, 0, 0, 300, 300);
                 compressedDP = canvas.toDataURL('image/jpeg', 0.6);
                 document.getElementById('profileImg').src = compressedDP;
                 document.getElementById('profileImg').style.display = "block";
                 document.getElementById('plus').style.display = "none";
-            };
-        };
+            }
+        }
     }
 
+    // KYC Submission
     function submitKYC() {
         const name = document.getElementById('staff_name').value.trim();
         const id = document.getElementById('staff_id').value;
-        const btn = document.getElementById('submitBtn');
-
-        if(id.length !== 12) return alert("Please enter exactly 12 digits.");
-        if(!compressedDP) return alert("Photo is required for identity verification.");
-
-        btn.disabled = true;
-        btn.innerText = "Encrypting Data...";
+        if(id.length !== 12 || !compressedDP) return alert("Complete all fields!");
         
-        const staffKey = name.replace(/\s/g, '').toLowerCase();
-        db.ref('staff/' + staffKey).set({
-            name: name,
-            id: id,
-            photo: compressedDP,
-            status: 'pending',
-            joinedAt: new Date().toISOString()
+        const key = name.replace(/\s/g, '').toLowerCase();
+        db.ref('staff/' + key).set({
+            name: name, id: id, photo: compressedDP, status: 'pending', salary: 12000, bonus: 0
         }).then(() => {
-            localStorage.setItem('bt_staff', staffKey);
+            localStorage.setItem('bt_staff', key);
             showStep(4);
-        }).catch(err => {
-            alert("Database Error: " + err.message);
-            btn.disabled = false;
-            btn.innerText = "Submit for Approval";
+        });
+    }
+
+    // Payroll Calculation
+    function syncDashboard(data, key) {
+        staffID = key;
+        document.getElementById('welcome-msg').innerText = "Hi, " + data.name;
+        
+        // Listen to Attendance
+        db.ref('attendance').orderByChild('staff').equalTo(key).on('value', snap => {
+            const days = snap.numChildren();
+            const baseSalary = data.salary || 0;
+            const bonus = data.bonus || 0;
+            const perDay = baseSalary / 30;
+            const earned = (perDay * days) + bonus;
+
+            document.getElementById('earned-sal').innerText = "₹" + Math.round(earned).toLocaleString();
+            document.getElementById('total-sal').innerText = "₹" + (baseSalary + bonus).toLocaleString();
+            document.getElementById('att-stats').innerText = `Present: ${days} Days (₹${Math.round(perDay)}/day)`;
+        });
+
+        // Listen to Batches
+        db.ref('institute/batches').on('value', snap => {
+            const b = snap.val();
+            if(b) {
+                document.getElementById('m-time').innerText = formatTime(b.morning);
+                document.getElementById('e-time').innerText = formatTime(b.evening);
+            }
+        });
+
+        // Listen to Tasks
+        db.ref('institute/current_task').on('value', snap => {
+            const task = snap.val();
+            if(task && localStorage.getItem('task_id') !== task.time) {
+                document.getElementById('task-box').style.display = 'block';
+                document.getElementById('task-text').innerText = task.text;
+            }
+        });
+    }
+
+    function formatTime(t) {
+        if(!t) return "--:--";
+        let [h, m] = t.split(':');
+        let suffix = h >= 12 ? ' PM' : ' AM';
+        h = h % 12 || 12;
+        return h + ":" + m + suffix;
+    }
+
+    function acceptTask() {
+        db.ref('institute/current_task').once('value', snap => {
+            localStorage.setItem('task_id', snap.val().time);
+            document.getElementById('task-box').style.display = 'none';
         });
     }
 
     function markAttendance() {
         const btn = document.getElementById('attBtn');
-        const originalText = btn.innerText;
         btn.disabled = true;
-        btn.innerText = "Detecting GPS...";
+        btn.innerText = "Locating...";
         
         navigator.geolocation.getCurrentPosition(pos => {
-            // Updated Office Location (Baripada coordinate example)
-            const officeLat = 21.93, officeLon = 86.75; 
-            const dist = Math.sqrt(Math.pow(pos.coords.latitude - officeLat, 2) + Math.pow(pos.coords.longitude - officeLon, 2));
-            
+            // Baripada Office Coordinates
+            const dist = Math.sqrt(Math.pow(pos.coords.latitude - 21.93, 2) + Math.pow(pos.coords.longitude - 86.75, 2));
             if(dist < 0.05) {
-                db.ref('attendance').push({ 
-                    staff: localStorage.getItem('bt_staff'), 
-                    timestamp: firebase.database.ServerValue.TIMESTAMP 
-                }).then(() => {
-                    document.getElementById('att-msg').innerHTML = "✅ Verified: " + new Date().toLocaleTimeString();
-                    btn.innerText = "Punched In Successfully";
-                    btn.style.background = "#1d2127";
+                db.ref('attendance').push({ staff: staffID, timestamp: firebase.database.ServerValue.TIMESTAMP })
+                .then(() => {
+                    document.getElementById('att-msg').innerText = "✅ Marked: " + new Date().toLocaleTimeString();
+                    btn.innerText = "Punch In Success";
                 });
-            } else { 
-                alert("Location Mismatch! You must be within office premises."); 
+            } else {
+                alert("Location Mismatch!");
                 btn.disabled = false;
-                btn.innerText = originalText;
+                btn.innerText = "Punch In (GPS Verify)";
             }
-        }, () => {
-            alert("Location Permission Denied.");
-            btn.disabled = false;
-            btn.innerText = originalText;
-        });
+        }, () => alert("Enable GPS Permissions!"));
     }
 
-    function calcSalaryDays() {
-        const now = new Date();
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const remaining = lastDay - now.getDate();
-        document.getElementById('salaryDays').innerText = remaining + " Days to Next Cycle";
+    function sendInquiry() {
+        const n = document.getElementById('inq_name').value;
+        const p = document.getElementById('inq_phone').value;
+        if(n && p.length >= 10) {
+            db.ref('inquiries').push({ student: n, phone: p, staff: staffID })
+            .then(() => {
+                alert("Lead Registered!");
+                document.getElementById('inq_name').value = "";
+                document.getElementById('inq_phone').value = "";
+            });
+        }
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('bt_staff');
-        if(saved) {
-            db.ref('staff/' + saved).on('value', snap => {
+        const key = localStorage.getItem('bt_staff');
+        if(key) {
+            db.ref('staff/' + key).on('value', snap => {
                 const data = snap.val();
-                if(!data) {
-                    localStorage.removeItem('bt_staff');
-                    return showStep(1);
-                }
-                
-                if(data.status === 'active') { 
-                    document.getElementById('welcome-msg').innerText = "Hi, " + data.name;
-                    showStep(3); 
-                    calcSalaryDays(); 
-                } else { 
-                    showStep(4); 
+                if(data && data.status === 'active') {
+                    showStep(3);
+                    syncDashboard(data, key);
+                } else if(data) {
+                    showStep(4);
                 }
             });
         }
     };
-
-    function sendInquiry() {
-        const name = document.getElementById('inq_name').value.trim();
-        const phone = document.getElementById('inq_phone').value.trim();
-        if(!name || phone.length < 10) return alert("Valid name and phone required.");
-        
-        db.ref('inquiries').push({ 
-            student: name, 
-            phone: phone, 
-            staff: localStorage.getItem('bt_staff'), 
-            timestamp: firebase.database.ServerValue.TIMESTAMP 
-        }).then(() => {
-            alert("Lead added successfully!");
-            document.getElementById('inq_name').value = "";
-            document.getElementById('inq_phone').value = "";
-        });
-    }
 </script>
 </body>
 </html>
