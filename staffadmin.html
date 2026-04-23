@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owner Control | BlackTerminal Pro</title>
+    <title>Owner Dashboard | BlackTerminal Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; --accent: #ffaa00; --danger: #ff4d4d; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; }
+        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; --accent: #ffaa00; --danger: #ff4d4d; --success: #25d366; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; }
         
         .top-bar { background: #0a0c10; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; }
         .top-bar h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
@@ -23,27 +23,26 @@
 
         h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         
-        .list-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; transition: 0.3s; }
-        .list-item img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #333; }
+        .list-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+        .list-item img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid #333; }
         .staff-info { flex: 1; }
         .staff-info div { font-weight: bold; font-size: 0.9rem; }
-        .staff-badge { background: var(--primary); color: #000; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
-
-        .action-btns { display: flex; gap: 5px; }
+        .staff-badge { background: var(--primary); color: #000; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; }
 
         .inquiry-box { background: #1c222b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border-right: 4px solid var(--accent); position: relative; }
-        .wa-btn { position: absolute; right: 15px; top: 15px; background: #25d366; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; text-decoration: none; font-weight: bold; }
-
-        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+        .inq-actions { position: absolute; right: 15px; top: 12px; display: flex; gap: 10px; }
+        .wa-link { background: var(--success); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; text-decoration: none; font-weight: bold; }
+        
+        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-danger { background: linear-gradient(135deg, #ff4d4d, #b30000); }
-        .btn-outline-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+        .btn-outline { background: transparent; border: 1px solid #444; color: #888; font-size: 0.8rem; }
         
+        input, select { background: #1c222b; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        
+        .batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0c10; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #222; }
-        .nav-item { color: #555; font-size: 0.7rem; text-align: center; text-decoration: none; flex: 1; }
-        .nav-item.active { color: var(--primary); }
-        .nav-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
         
-        input { background: #1c222b; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -60,8 +59,22 @@
             <div id="total-payroll">₹0</div>
         </div>
         <div class="stat-box" style="border-color: var(--accent);">
-            <small>New Leads (24h)</small>
+            <small>Active Leads</small>
             <div id="total-leads">0</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>⏰ Class Batch Timings</h3>
+        <div class="batch-grid">
+            <div>
+                <small style="color:#8b949e">Morning Batch</small>
+                <input type="time" id="morningTime" onchange="updateBatch('morning', this.value)">
+            </div>
+            <div>
+                <small style="color:#8b949e">Evening Batch</small>
+                <input type="time" id="eveningTime" onchange="updateBatch('evening', this.value)">
+            </div>
         </div>
     </div>
 
@@ -71,30 +84,29 @@
     </div>
 
     <div class="card">
-        <h3>👥 Active Staff & Performance</h3>
+        <h3>👥 Staff Management</h3>
         <div id="active-staff-list"></div>
     </div>
 
     <div class="card">
-        <h3>📩 Recent Student Leads</h3>
+        <h3>📩 Student Leads</h3>
         <div id="inquiry-list"></div>
     </div>
 
     <div class="card">
         <h3>📢 Daily Task Broadcast</h3>
-        <input type="text" id="taskInput" placeholder="What should the staff focus on today?">
-        <button style="width: 100%;" onclick="updateTask()">Push to Staff Dashboard</button>
+        <input type="text" id="taskInput" placeholder="Enter today's focus task...">
+        <button style="width: 100%;" onclick="updateTask()">Broadcast to All Staff</button>
     </div>
 </div>
 
 <div class="bottom-nav">
-    <a href="#" class="nav-item active"><span class="nav-icon">🏠</span>Overview</a>
-    <a href="#" class="nav-item"><span class="nav-icon">📊</span>Reports</a>
-    <a href="#" class="nav-item"><span class="nav-icon">💬</span>Chat</a>
-    <a href="#" class="nav-item" onclick="location.reload()"><span class="nav-icon">🔄</span>Sync</a>
+    <div style="text-align:center; color:var(--primary); font-size:0.7rem;">🏠<br>Home</div>
+    <div style="text-align:center; color:#555; font-size:0.7rem;" onclick="location.reload()">🔄<br>Sync</div>
 </div>
 
 <script>
+    // Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -107,104 +119,118 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    db.ref('staff').on('value', snap => {
-        const staffData = snap.val();
-        let pList = "";
-        let aList = "";
-        let hasPending = false;
-        let totalPay = 0;
+    // --- Core Logic ---
 
-        for (let key in staffData) {
-            const s = staffData[key];
+    // 1. Staff & Payroll Listener
+    db.ref('staff').on('value', snap => {
+        const data = snap.val();
+        let pList = "", aList = "", totalPay = 0, hasPending = false;
+
+        for (let key in data) {
+            const s = data[key];
             if (s.status === "pending") {
                 hasPending = true;
                 pList += `
-                    <div class="list-item">
-                        <img src="${s.photo}">
-                        <div class="staff-info">
-                            <div>${s.name}</div>
-                            <small>ID: ${s.id}</small>
-                        </div>
-                        <div class="action-btns">
-                            <button onclick="approveStaff('${key}')">Approve</button>
-                            <button class="btn-outline-danger" onclick="deleteStaff('${key}', '${s.name}')">🗑️</button>
-                        </div>
-                    </div>`;
+                <div class="list-item">
+                    <img src="${s.photo}">
+                    <div class="staff-info">
+                        <div>${s.name}</div>
+                        <small>ID: ${s.id}</small>
+                    </div>
+                    <button onclick="approveStaff('${key}')">Approve</button>
+                </div>`;
             } else {
-                totalPay += (s.salary || 0);
+                let sal = s.salary || 0;
+                let bonus = s.bonus || 0;
+                totalPay += (sal + bonus);
                 aList += `
-                    <div class="list-item">
-                        <img src="${s.photo}">
-                        <div class="staff-info">
-                            <div>${s.name} <span class="staff-badge">Active</span></div>
-                            <small>Sal: ₹${s.salary} | Bonus: ₹${s.bonus || 0}</small>
-                        </div>
-                        <div class="action-btns">
-                            <button class="btn-danger" style="padding:5px 8px;" onclick="editSal('${key}')">Manage</button>
-                            <button class="btn-outline-danger" style="padding:5px 8px;" onclick="deleteStaff('${key}', '${s.name}')">🗑️</button>
-                        </div>
-                    </div>`;
+                <div class="list-item">
+                    <img src="${s.photo}">
+                    <div class="staff-info">
+                        <div>${s.name} <span class="staff-badge">Active</span></div>
+                        <small>₹${sal} + Bonus: ₹${bonus}</small>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-outline" onclick="manageFinance('${key}', '${s.name}')">Edit</button>
+                        <button class="btn-danger" style="padding:5px 10px;" onclick="deleteStaff('${key}')">🗑️</button>
+                    </div>
+                </div>`;
             }
         }
-        document.getElementById('pending-list').innerHTML = pList || "<p style='color:#555;font-size:0.8rem;'>Clean slate. No pending KYC.</p>";
-        document.getElementById('active-staff-list').innerHTML = aList || "<p style='color:#555;font-size:0.8rem;'>No active staff found.</p>";
+        document.getElementById('pending-list').innerHTML = pList || "<p style='color:#444'>No pending requests.</p>";
+        document.getElementById('active-staff-list').innerHTML = aList || "<p style='color:#444'>No active staff.</p>";
         document.getElementById('pending-badge').style.display = hasPending ? 'block' : 'none';
         document.getElementById('total-payroll').innerText = "₹" + totalPay.toLocaleString();
     });
 
-    function approveStaff(id) {
-        db.ref('staff/' + id).update({ status: 'active', salary: 15000 });
-        alert("Staff Access Granted!");
-    }
-
-    // New Delete Function
-    function deleteStaff(id, name) {
-        if (confirm(`⚠️ PERMANENT DELETE\nAre you sure you want to remove ${name} from the terminal? This action cannot be undone.`)) {
-            db.ref('staff/' + id).remove()
-            .then(() => alert("Staff record deleted successfully."))
-            .catch(err => alert("Error: " + err.message));
+    // 2. Batch Timings Listener
+    db.ref('institute/batches').on('value', snap => {
+        const b = snap.val();
+        if(b) {
+            if(b.morning) document.getElementById('morningTime').value = b.morning;
+            if(b.evening) document.getElementById('eveningTime').value = b.evening;
         }
+    });
+
+    // 3. Leads Listener
+    db.ref('inquiries').on('value', snap => {
+        let html = "", count = 0;
+        snap.forEach(child => {
+            const inq = child.val();
+            const key = child.key;
+            count++;
+            html = `
+            <div class="inquiry-box">
+                <div class="inq-actions">
+                    <a href="https://wa.me/91${inq.phone}" class="wa-link">WA</a>
+                    <button style="background:none; border:none; color:var(--danger); cursor:pointer;" onclick="deleteLead('${key}')">🗑️</button>
+                </div>
+                <strong>${inq.student || inq.name}</strong><br>
+                <small style="color:#8b949e">📞 ${inq.phone} | By: ${inq.staff || 'System'}</small>
+            </div>` + html;
+        });
+        document.getElementById('inquiry-list').innerHTML = html || "No leads yet.";
+        document.getElementById('total-leads').innerText = count;
+    });
+
+    // --- Actions ---
+
+    function approveStaff(id) {
+        db.ref('staff/' + id).update({ status: 'active', salary: 12000, bonus: 0 });
     }
 
-    function editSal(id) {
-        const action = prompt("Type 'S' for Salary or 'B' for Bonus:");
-        if(!action) return;
-        const amount = prompt("Enter Amount:");
-        if(!amount || isNaN(amount)) return;
+    function deleteStaff(id) {
+        if(confirm("Delete staff permanently?")) db.ref('staff/' + id).remove();
+    }
+
+    function manageFinance(id, name) {
+        const type = prompt("Type 'S' for Salary or 'B' for Bonus update:");
+        if(!type) return;
+        const amt = prompt("Enter new amount:");
+        if(!amt || isNaN(amt)) return;
 
         const update = {};
-        if(action.toUpperCase() === 'S') update.salary = parseInt(amount);
-        if(action.toUpperCase() === 'B') update.bonus = parseInt(amount);
-        
+        if(type.toUpperCase() === 'S') update.salary = parseInt(amt);
+        else update.bonus = parseInt(amt);
         db.ref('staff/' + id).update(update);
+    }
+
+    function updateBatch(type, val) {
+        db.ref('institute/batches/' + type).set(val);
+    }
+
+    function deleteLead(id) {
+        if(confirm("Delete this lead?")) db.ref('inquiries/' + id).remove();
     }
 
     function updateTask() {
         const val = document.getElementById('taskInput').value;
         if(val) {
             db.ref('institute/current_task').set({ text: val, time: new Date().toLocaleTimeString() });
-            alert("Broadcasted!");
+            alert("Task Broadcasted!");
             document.getElementById('taskInput').value = "";
         }
     }
-
-    db.ref('inquiries').limitToLast(10).on('value', snap => {
-        let html = "";
-        let count = 0;
-        snap.forEach(child => {
-            const inq = child.val();
-            count++;
-            const cleanPhone = (inq.phone || "").replace(/\D/g,'');
-            html = `
-                <div class="inquiry-box">
-                    <a href="https://wa.me/91${cleanPhone}" class="wa-btn">WhatsApp</a>
-                    <strong>${inq.name || inq.student}</strong>
-                    <span style="font-size:0.85rem">📞 ${inq.phone}</span>
-                </div>` + html;
-        });
-        document.getElementById('inquiry-list').innerHTML = html || "No inquiries yet.";
-        document.getElementById('total-leads').innerText = count;
-    });
 </script>
 </body>
 </html>
