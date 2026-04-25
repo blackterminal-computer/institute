@@ -23,69 +23,55 @@
 
         h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         
+        /* Attendance List */
+        .log-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--success); font-size: 0.85rem; position: relative;}
+        .log-late { border-left-color: var(--danger); }
+        .log-time { color: var(--primary); font-weight: bold; }
+        .log-fine { color: var(--danger); font-weight: bold; float: right; }
+
         .list-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
         .list-item img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid #333; }
         .staff-info { flex: 1; }
-        .staff-info div { font-weight: bold; font-size: 0.9rem; }
-
-        .inquiry-box { background: #1c222b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border-right: 4px solid var(--accent); position: relative; }
-        .inq-actions { position: absolute; right: 15px; top: 12px; display: flex; gap: 10px; align-items: center; }
-        .wa-link { background: var(--success); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; text-decoration: none; font-weight: bold; }
         
         button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-danger { background: linear-gradient(135deg, #ff4d4d, #b30000); }
-        .btn-outline { background: transparent; border: 1px solid #444; color: #888; font-size: 0.8rem; }
         
         input { background: #1c222b; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
         
-        .batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .task-item { background: #0d1117; padding: 10px; border-radius: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; }
-        
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0c10; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #222; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <h2>BlackTerminal Admin 👑</h2>
-    <div id="pending-badge" style="background: red; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; display: none; animation: pulse 1s infinite;">New Staff</div>
+    <h2>Admin Dashboard 👑</h2>
+    <div id="pending-badge" style="background: red; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; display: none;">New Staff</div>
 </div>
 
 <div class="container">
     <div class="stats-grid">
-        <div class="stat-box"><small>Payroll</small><div id="total-payroll">₹0</div></div>
-        <div class="stat-box" style="border-color: var(--accent);"><small>Leads</small><div id="total-leads">0</div></div>
+        <div class="stat-box"><small>Total Payroll</small><div id="total-payroll">₹0</div></div>
+        <div class="stat-box" style="border-color: var(--danger);"><small>Late Fines</small><div id="total-fines-collected">₹0</div></div>
     </div>
 
     <div class="card">
-        <h3>⏰ Class Batch Timings</h3>
-        <div class="batch-grid">
-            <div>
-                <small style="color:#8b949e">Morning Batch</small>
-                <input type="text" id="mText" placeholder="e.g. 9:30 to 11 am">
-                <button class="btn-outline" style="width:100%" onclick="updateBatch('morning', 'mText')">Set</button>
-            </div>
-            <div>
-                <small style="color:#8b949e">Evening Batch</small>
-                <input type="text" id="eText" placeholder="e.g. 5 to 8 pm">
-                <button class="btn-outline" style="width:100%" onclick="updateBatch('evening', 'eText')">Set</button>
-            </div>
+        <h3>📍 Live Punch-In Log (Today)</h3>
+        <div id="attendance-log-container">
+            <small style="color:#444">Awaiting data...</small>
         </div>
     </div>
 
     <div class="card">
-        <h3>📢 Task Management</h3>
-        <input type="text" id="taskInput" placeholder="Enter new focus task...">
-        <button style="width: 100%;" onclick="pushTask()">Push New Task</button>
-        <div id="active-tasks-list" style="margin-top:15px;">
-            <small style="color:#8b949e">Active Tasks:</small>
-            <div id="tasks-container"></div>
+        <h3>⏰ Set Batch Timings</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <input type="text" id="mText" placeholder="Morning (e.g. 09:00)">
+            <input type="text" id="eText" placeholder="Evening (e.g. 16:00)">
         </div>
+        <button style="width:100%" onclick="updateBatches()">Save Timings</button>
     </div>
 
-    <div class="card"><h3>🚨 Pending Verification</h3><div id="pending-list"></div></div>
-    <div class="card"><h3>👥 Staff Management</h3><div id="active-staff-list"></div></div>
+    <div class="card"><h3>👥 Staff Performance</h3><div id="active-staff-list"></div></div>
+    <div class="card"><h3>🚨 Verification Queue</h3><div id="pending-list"></div></div>
     
     <div class="card">
         <h3>📩 Student Leads</h3>
@@ -111,93 +97,75 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Batch Management
-    function updateBatch(type, inputId) {
-        const val = document.getElementById(inputId).value;
-        if(!val) return alert("Enter time first!");
-        db.ref('institute/batches/' + type).set(val).then(() => alert("Batch Updated!"));
-    }
-
-    db.ref('institute/batches').on('value', snap => {
-        const b = snap.val();
-        if(b) {
-            document.getElementById('mText').value = b.morning || "";
-            document.getElementById('eText').value = b.evening || "";
-        }
-    });
-
-    // 2. Multiple Task Management
-    function pushTask() {
-        const text = document.getElementById('taskInput').value;
-        if(!text) return;
-        db.ref('institute/tasks').push({ text: text, time: Date.now() }).then(() => {
-            document.getElementById('taskInput').value = "";
-        });
-    }
-
-    db.ref('institute/tasks').on('value', snap => {
+    // 1. Live Attendance Tracking
+    db.ref('attendance').limitToLast(15).on('value', snap => {
         let html = "";
+        let totalFines = 0;
+        const today = new Date().toLocaleDateString();
+
         snap.forEach(child => {
-            html += `<div class="task-item">
-                <span style="font-size:0.85rem;">📍 ${child.val().text}</span>
-                <button class="btn-danger" style="padding:4px 8px; font-size:0.7rem;" onclick="deleteItem('institute/tasks/${child.key}')">Remove</button>
-            </div>`;
+            const att = child.val();
+            const time = new Date(att.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const isToday = new Date(att.timestamp).toLocaleDateString() === today;
+            
+            if(att.fine) totalFines += att.fine;
+
+            if(isToday && att.type === 'in') {
+                html = `
+                <div class="log-item ${att.fine ? 'log-late' : ''}">
+                    <span class="log-fine">${att.fine ? 'Fine: ₹'+att.fine : 'On Time'}</span>
+                    <span class="log-time">${time}</span> | <b>${att.staff.toUpperCase()}</b><br>
+                    <small style="color:#8b949e">📍 Baripada Branch (Verified)</small>
+                </div>` + html;
+            }
         });
-        document.getElementById('tasks-container').innerHTML = html || "<small style='color:#444'>No active tasks.</small>";
+        document.getElementById('attendance-log-container').innerHTML = html || "<small style='color:#444'>No punch-ins today.</small>";
+        document.getElementById('total-fines-collected').innerText = "₹" + totalFines;
     });
 
-    // 3. Staff & Payroll
+    // 2. Staff Management
     db.ref('staff').on('value', snap => {
         let pList = "", aList = "", totalPay = 0, hasPending = false;
         snap.forEach(child => {
             const s = child.val(); const key = child.key;
             if (s.status === "pending") {
                 hasPending = true;
-                pList += `<div class="list-item"><img src="${s.photo}"><div class="staff-info"><b>${s.name}</b><br><small>ID: ${s.id}</small></div>
+                pList += `<div class="list-item"><img src="${s.photo}"><div class="staff-info"><b>${s.name}</b><br><small>Pass: ${s.id}</small></div>
                 <button onclick="approveStaff('${key}')">Approve</button></div>`;
             } else {
-                totalPay += ((s.salary || 0) + (s.bonus || 0));
-                aList += `<div class="list-item"><img src="${s.photo}"><div class="staff-info"><b>${s.name}</b><br><small>₹${s.salary} + ₹${s.bonus}</small></div>
-                <div style="display:flex; gap:5px;"><button class="btn-outline" onclick="manageFinance('${key}')">Edit</button>
-                <button class="btn-danger" style="padding:5px 10px;" onclick="deleteItem('staff/${key}')">🗑️</button></div></div>`;
+                totalPay += (s.salary || 0);
+                aList += `<div class="list-item"><img src="${s.photo}"><div class="staff-info"><b>${s.name}</b><br><small>Pay: ₹${s.salary}</small></div>
+                <button class="btn-danger" onclick="deleteItem('staff/${key}')">🗑️</button></div>`;
             }
         });
-        document.getElementById('pending-list').innerHTML = pList || "<small>No requests.</small>";
-        document.getElementById('active-staff-list').innerHTML = aList || "<small>No active staff.</small>";
+        document.getElementById('pending-list').innerHTML = pList || "<small>Clear</small>";
+        document.getElementById('active-staff-list').innerHTML = aList || "<small>No Staff</small>";
         document.getElementById('pending-badge').style.display = hasPending ? 'block' : 'none';
-        document.getElementById('total-payroll').innerText = "₹" + totalPay.toLocaleString();
+        document.getElementById('total-payroll').innerText = "₹" + totalPay;
     });
 
-    function approveStaff(id) { db.ref('staff/' + id).update({ status: 'active', salary: 12000, bonus: 0 }); }
-    function manageFinance(id) {
-        const type = prompt("Type 'S' for Salary or 'B' for Bonus:");
-        const amt = prompt("Enter amount:");
-        if(!amt) return;
-        const up = {};
-        if(type.toUpperCase() === 'S') up.salary = parseInt(amt); else up.bonus = parseInt(amt);
-        db.ref('staff/' + id).update(up);
+    // 3. Update Batches
+    function updateBatches() {
+        const m = document.getElementById('mText').value;
+        const e = document.getElementById('eText').value;
+        db.ref('institute/batches').set({ morning: m, evening: e }).then(() => alert("Timings Updated!"));
     }
 
-    // 4. Leads Management (With WhatsApp and Trash)
+    // 4. Lead Management
     db.ref('inquiries').on('value', snap => {
-        let html = "", count = 0;
+        let html = "";
         snap.forEach(child => {
-            count++; const inq = child.val(); const key = child.key;
-            html = `
-            <div class="inquiry-box">
-                <div class="inq-actions">
-                    <a href="https://wa.me/91${inq.phone}" class="wa-link">WA</a>
-                    <button style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.2rem;" onclick="deleteItem('inquiries/${key}')">🗑️</button>
-                </div>
-                <strong>${inq.student || inq.name}</strong><br>
-                <small style="color:#8b949e">📞 ${inq.phone} | By: ${inq.staff || 'System'}</small>
+            const inq = child.val();
+            html = `<div class="list-item" style="background:#0d1117; border-left:3px solid var(--primary)">
+                <div class="staff-info"><b>${inq.student}</b><br><small>📞 ${inq.phone}</small></div>
+                <a href="https://wa.me/91${inq.phone}" style="text-decoration:none; padding:8px; background:var(--success); border-radius:8px;">💬</a>
             </div>` + html;
         });
-        document.getElementById('inquiry-list').innerHTML = html || "<small>No leads yet.</small>";
-        document.getElementById('total-leads').innerText = count;
+        document.getElementById('inquiry-list').innerHTML = html || "<small>No Leads</small>";
     });
 
-    function deleteItem(path) { if(confirm("Are you sure?")) db.ref(path).remove(); }
+    function approveStaff(id) { db.ref('staff/' + id).update({ status: 'active', salary: 12000, joinDate: Date.now() }); }
+    function deleteItem(path) { if(confirm("Confirm Deletion?")) db.ref(path).remove(); }
 </script>
 </body>
 </html>
