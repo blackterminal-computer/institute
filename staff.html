@@ -18,7 +18,7 @@
             --border: rgba(255,255,255,0.08);
             --wa-green: #25D366;
         }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         .app-container { width: 92%; max-width: 450px; margin: auto; }
         
         .main-header { padding: 30px 0 10px; text-align: center; }
@@ -37,10 +37,10 @@
         .penalty-card { background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.2); padding: 15px; border-radius: 20px; margin-bottom: 20px; display: none; }
         .penalty-line { display: flex; justify-content: space-between; font-size: 0.8rem; margin: 4px 0; }
 
-        .step { display: none; } 
+        .step, .tab-content { display: none; } 
         .active { display: block; animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
         
-        input { background: rgba(0, 0, 0, 0.3); color: white; border: 1px solid #222; padding: 16px; border-radius: 18px; width: 100%; box-sizing: border-box; margin: 10px 0; font-size: 1rem; outline: none; }
+        input, select { background: rgba(0, 0, 0, 0.3); color: white; border: 1px solid #222; padding: 16px; border-radius: 18px; width: 100%; box-sizing: border-box; margin: 10px 0; font-size: 1rem; outline: none; }
         button { width: 100%; padding: 18px; border-radius: 18px; border: none; font-size: 1rem; font-weight: 800; cursor: pointer; transition: 0.3s; }
         button:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
         .btn-main { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; }
@@ -52,11 +52,23 @@
         .history-box { margin-top: 15px; max-height: 200px; overflow-y: auto; }
         .history-item { background: rgba(255,255,255,0.02); padding: 14px; border-radius: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; font-size: 0.85rem; border-left: 3px solid var(--primary); }
         
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10, 12, 15, 0.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--border); z-index: 1000; }
+        .nav-item { color: #8b949e; font-size: 0.7rem; text-align: center; cursor: pointer; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        #cam-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; text-align: center; }
+        #cam-overlay video { width: 100%; height: 80%; object-fit: cover; }
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.6); } 70% { box-shadow: 0 0 0 20px rgba(0, 255, 136, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); } }
     </style>
 </head>
 <body>
+
+<div id="cam-overlay">
+    <video id="video" autoplay playsinline></video>
+    <div style="padding: 20px;"><h3 style="color:white;">Verifying Identity...</h3><p>Look at the camera</p></div>
+    <canvas id="canvas" style="display:none;"></canvas>
+</div>
 
 <div class="app-container">
     <div class="main-header">
@@ -71,7 +83,7 @@
             <div class="tc-item">📍 GPS Check: Ensure you are at the office branch.</div>
             <div class="tc-item">⏳ Punch-In: Only 5 mins before batch time.</div>
             <div class="tc-item">❌ Absenteeism: ₹200 deduction per day.</div>
-            <div class="tc-item">🔒 Security: Terminal lock active after 9 PM.</div>
+            <div class="tc-item">📸 Photo Proof: Mandatory for each punch-in.</div>
         </div>
         <div class="tc-progress-container"><div class="tc-progress-bar" id="tcProgress"></div></div>
     </div>
@@ -93,55 +105,89 @@
         <button class="btn-main" onclick="submitKYC()">Complete Setup</button>
     </div>
 
-    <div id="step3" class="step">
-        <div id="penaltyBox" class="penalty-card">
-            <div style="color:var(--danger); font-weight:bold; font-size:0.9rem; margin-bottom:8px;">⚠️ Deduction Records</div>
-            <div class="penalty-line"><span>Late Login Fines:</span><span id="fine-late">₹0</span></div>
-            <div class="penalty-line"><span>Absent Penalties:</span><span id="fine-absent">₹0</span></div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-item"><small style="color:#8b949e; font-size:0.6rem;">MORNING BATCH</small><div id="m-time">09:00 AM</div></div>
-            <div class="stat-item"><small style="color:#8b949e; font-size:0.6rem;">EVENING BATCH</small><div id="e-time">04:00 PM</div></div>
-        </div>
-
-        <div class="glass-card" style="text-align: center;">
-            <div id="welcome-msg" style="font-size: 1.3rem; font-weight: 900;">...</div>
-            <p id="shift-label" style="color:#8b949e; font-size:0.8rem; margin: 10px 0 20px;">Status: Initializing...</p>
-            <div style="display:flex; gap:12px;">
-                <button id="attBtn" class="btn-main" onclick="markAttendance()" style="flex:2;" disabled>LOCKED</button>
-                <button id="outBtn" class="btn-main" onclick="markPunchOut()" style="background:var(--danger); flex:1; display:none;">OUT</button>
-            </div>
-        </div>
-
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div><small style="color:#8b949e">Net Earnings</small><div id="earned-sal" style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">₹0</div></div>
-                <div style="text-align: right;"><small style="color:#8b949e">Target</small><div id="target-sal" style="font-weight: 700;">₹0</div></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:10px; border-radius:10px; margin-top:15px; overflow:hidden;">
-                <div id="sal-bar" style="background:linear-gradient(90deg, var(--primary), var(--success)); height:100%; width:0%; transition:1.5s;"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 12px;">
-                <span id="att-days" style="font-size: 0.75rem; color: #8b949e;">Present: 0 Days</span>
-                <span id="lead-count" style="font-size: 0.75rem; color: var(--success); font-weight:bold;">Leads: 0</span>
-            </div>
-        </div>
-
-        <div class="glass-card">
-            <h4 style="margin: 0 0 15px 0; color:var(--primary);">Register New Inquiry</h4>
-            <input type="text" id="inq_name" placeholder="Student Name">
-            <input type="tel" id="inq_phone" placeholder="WhatsApp Number">
-            <button class="btn-main" onclick="sendInquiry()" style="background:#111; border:1px solid #333;">SAVE LEAD</button>
-            <div class="history-box" id="leadHistory"></div>
-        </div>
-    </div>
-
     <div id="step4" class="glass-card step" style="text-align:center; padding:60px 20px;">
         <div style="font-size:4rem; margin-bottom:20px;">⏳</div>
         <h2>Identity Verified</h2>
         <p>Reviewing profile. Access enabled shortly.</p>
         <button class="btn-main" onclick="location.reload()">Sync Database</button>
+    </div>
+
+    <div id="step3" class="step">
+        <div id="tab-home" class="tab-content active">
+            <div id="penaltyBox" class="penalty-card">
+                <div style="color:var(--danger); font-weight:bold; font-size:0.9rem; margin-bottom:8px;">⚠️ Deduction Records</div>
+                <div class="penalty-line"><span>Late Login Fines:</span><span id="fine-late">₹0</span></div>
+                <div class="penalty-line"><span>Absent Penalties:</span><span id="fine-absent">₹0</span></div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item"><small style="color:#8b949e; font-size:0.6rem;">MORNING BATCH</small><div id="m-time">09:00 AM</div></div>
+                <div class="stat-item"><small style="color:#8b949e; font-size:0.6rem;">EVENING BATCH</small><div id="e-time">16:00 PM</div></div>
+            </div>
+
+            <div class="glass-card" style="text-align: center;">
+                <div id="welcome-msg" style="font-size: 1.3rem; font-weight: 900;">...</div>
+                <p id="shift-label" style="color:#8b949e; font-size:0.8rem; margin: 10px 0 20px;">Status: Initializing...</p>
+                <div style="display:flex; gap:12px;">
+                    <button id="attBtn" class="btn-main" onclick="startVerification()" style="flex:2;" disabled>LOCKED</button>
+                    <button id="outBtn" class="btn-main" onclick="markPunchOut()" style="background:var(--danger); flex:1; display:none;">OUT</button>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div><small style="color:#8b949e">Net Earnings</small><div id="earned-sal" style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">₹0</div></div>
+                    <div style="text-align: right;"><small style="color:#8b949e">Target</small><div id="target-sal" style="font-weight: 700;">₹0</div></div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); height:10px; border-radius:10px; margin-top:15px; overflow:hidden;">
+                    <div id="sal-bar" style="background:linear-gradient(90deg, var(--primary), var(--success)); height:100%; width:0%; transition:1.5s;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+                    <span id="att-days" style="font-size: 0.75rem; color: #8b949e;">Present: 0 Days</span>
+                    <span id="lead-count" style="font-size: 0.75rem; color: var(--success); font-weight:bold;">Leads: 0</span>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h4 style="margin: 0 0 15px 0; color:var(--primary);">Register New Inquiry</h4>
+                <input type="text" id="inq_name" placeholder="Student Name">
+                <input type="tel" id="inq_phone" placeholder="WhatsApp Number">
+                <button class="btn-main" onclick="sendInquiry()" style="background:#111; border:1px solid #333;">SAVE LEAD</button>
+                <div class="history-box" id="leadHistory"></div>
+            </div>
+        </div>
+
+        <div id="tab-leaves" class="tab-content">
+            <div class="glass-card">
+                <h3 style="margin-top:0;">Request Leave</h3>
+                <input type="date" id="leave_date">
+                <select id="leave_reason">
+                    <option value="Personal Work">Personal Work</option>
+                    <option value="Sick Leave">Sick Leave</option>
+                    <option value="Emergency">Emergency</option>
+                </select>
+                <button class="btn-main" onclick="applyLeave()">Submit Request</button>
+            </div>
+            <div id="leave_status_list"></div>
+        </div>
+
+        <div id="tab-payments" class="tab-content">
+            <div class="glass-card">
+                <h3 style="margin-top:0;">Payment Settings</h3>
+                <input type="text" id="staff_upi" placeholder="upi-id@bank">
+                <button class="btn-main" onclick="saveUPI()">Save UPI ID</button>
+            </div>
+            <div class="glass-card">
+                <h4>Payment History</h4>
+                <div id="payout_history" style="font-size:0.8rem; color:#8b949e;">No recent payouts.</div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('home', this)">🏠<br>Home</div>
+            <div class="nav-item" onclick="switchTab('leaves', this)">📅<br>Leaves</div>
+            <div class="nav-item" onclick="switchTab('payments', this)">💰<br>Payments</div>
+        </div>
     </div>
 </div>
 
@@ -163,6 +209,13 @@
     let sessionInterval;
     let lockInterval;
     let batchTimes = { morning: "09:00", evening: "16:00" };
+
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        el.classList.add('active');
+    }
 
     function updateClock() {
         const now = new Date();
@@ -218,16 +271,39 @@
         }).then(() => { localStorage.setItem('bt_staff', key); showStep(4); });
     }
 
+    function startVerification() {
+        const overlay = document.getElementById('cam-overlay');
+        const video = document.getElementById('video');
+        overlay.style.display = 'block';
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => {
+                video.srcObject = stream;
+                setTimeout(() => captureSelfie(stream), 3000);
+            })
+            .catch(err => {
+                alert("Camera Access Required!");
+                overlay.style.display = 'none';
+            });
+    }
+
+    function captureSelfie(stream) {
+        const canvas = document.getElementById('canvas');
+        const video = document.getElementById('video');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const selfie = canvas.toDataURL('image/jpeg', 0.5);
+        stream.getTracks().forEach(track => track.stop());
+        document.getElementById('cam-overlay').style.display = 'none';
+        markAttendance(selfie);
+    }
+
     function syncDashboard(data, key) {
         staffKey = key;
         document.getElementById('welcome-msg').innerText = "Namaste, " + data.name.split(' ')[0];
-        
+        document.getElementById('staff_upi').value = data.upi || "";
         db.ref('institute/batches').on('value', s => {
-            if(s.val()) {
-                batchTimes = s.val();
-                document.getElementById('m-time').innerText = batchTimes.morning;
-                document.getElementById('e-time').innerText = batchTimes.evening;
-            }
+            if(s.val()) batchTimes = s.val();
             checkAttendance();
         });
 
@@ -239,27 +315,13 @@
             const absentFine = absentDays * 200;
             let lateFine = 0;
             Object.values(attRecords).forEach(rec => { if(rec.fine) lateFine += rec.fine; });
-
             const base = data.salary || 12000;
             const earned = ((base / 30) * presentDays) - (absentFine + lateFine);
-
             document.getElementById('earned-sal').innerText = "₹" + Math.max(0, Math.round(earned));
             document.getElementById('target-sal').innerText = "₹" + (base + (data.bonus || 0));
             document.getElementById('att-days').innerText = `Present: ${presentDays} | Absent: ${absentDays}`;
             document.getElementById('sal-bar').style.width = (earned/base * 100) + "%";
-            
-            if(absentFine > 0 || lateFine > 0) {
-                document.getElementById('penaltyBox').style.display = 'block';
-                document.getElementById('fine-late').innerText = "₹" + lateFine;
-                document.getElementById('fine-absent').innerText = "₹" + absentFine;
-            }
-        });
-
-        db.ref('inquiries').orderByChild('staff').equalTo(key).on('value', snap => {
-            let html = ""; let count = 0;
-            snap.forEach(ch => { count++; html = `<div class="history-item"><span><b>${ch.val().student}</b></span><span>${new Date(ch.val().time).toLocaleDateString()}</span></div>` + html; });
-            document.getElementById('leadHistory').innerHTML = html || "<small>No leads.</small>";
-            document.getElementById('lead-count').innerText = "Leads: " + count;
+            if(absentFine > 0 || lateFine > 0) document.getElementById('penaltyBox').style.display = 'block';
         });
     }
 
@@ -283,11 +345,13 @@
                 outBtn.style.display="none"; label.innerText = "Daily shift completed.";
                 if(lockInterval) clearInterval(lockInterval);
             } else if(hasIn) {
-                btn.innerText = "ACTIVE DUTY"; btn.disabled = true; btn.classList.add('pulse-active');
-                outBtn.style.display="block"; label.innerText = "Work in progress...";
+                btn.disabled = true; 
+                btn.innerText = "ACTIVE DUTY";
+                btn.classList.add('pulse-active');
+                outBtn.style.display="block"; 
+                label.innerText = "Work in progress...";
                 startTimer(inT);
-                // After 1st punch, unlock button only 5 mins before 2nd batch (Evening)
-                manageButtonLock(punchCount);
+                manageButtonLock(punchCount); // This will handle freeze for next batch
             } else {
                 manageButtonLock(0);
             }
@@ -301,47 +365,48 @@
 
         lockInterval = setInterval(() => {
             const now = new Date();
-            // Determine which batch we are waiting for
+            // Morning batch punch ho gaya (count=1) toh target evening karo
+            // Warna target morning rakho
             let targetBatch = count === 0 ? batchTimes.morning : batchTimes.evening;
             const [tHr, tMin] = targetBatch.split(':').map(Number);
-            
             const targetDate = new Date();
             targetDate.setHours(tHr, tMin, 0, 0);
-
             const diff = targetDate - now;
             const fiveMin = 5 * 60 * 1000;
 
-            if(diff > fiveMin) {
-                // Too early
+            if (count > 0 && diff > fiveMin) {
+                // Pehla batch ho gaya, dusre batch ke liye freeze
                 btn.disabled = true;
+                btn.classList.remove('pulse-active');
                 const hours = Math.floor(diff / 3600000);
                 const mins = Math.floor((diff % 3600000) / 60000);
                 btn.innerText = `LOCKED (${hours}h ${mins}m)`;
-                label.innerText = `Unlocks 5 mins before ${targetBatch} batch.`;
+                label.innerText = `Evening batch unlocks 5 mins before ${targetBatch}.`;
+            } else if(diff > fiveMin) {
+                // Abhi pehla batch bhi nahi aaya (Early morning)
+                btn.disabled = true;
+                btn.innerText = "LOCKED";
+                label.innerText = `Unlocks 5 mins before ${targetBatch}.`;
             } else if(diff <= fiveMin && diff > 0) {
-                // Window Open
+                // Unlock window (5 min before batch)
                 btn.disabled = false;
                 btn.innerText = "PUNCH IN NOW";
-                label.innerText = `Window Open! Batch starts at ${targetBatch}`;
+                btn.classList.remove('pulse-active');
+                label.innerText = `Batch window open!`;
             } else {
-                // Late Window
+                // Batch start ho gaya (Late mode)
                 btn.disabled = false;
-                btn.innerText = "PUNCH IN (LATE)";
-                label.innerText = `Batch started at ${targetBatch}. Late fine active.`;
+                btn.innerText = count === 0 ? "PUNCH IN (LATE)" : "PUNCH IN (EVENING)";
+                label.innerText = `Active batch window.`;
             }
         }, 1000);
     }
 
-    function markAttendance() {
+    function markAttendance(selfieData) {
         const now = new Date();
         const hr = now.getHours();
         const min = now.getMinutes();
-        
-        // Late Fine Logic (Calculated based on target batch)
-        // Note: Realistically you'd check which batch they are punching for. 
-        // For simplicity, checking if past 15 mins of Morning or Evening
         let fineAmount = 0;
-        // Check if late for Morning (after 9:15) or Evening (after 16:15)
         if((hr === 9 && min > 15) || hr > 9 && hr < 13) fineAmount = 50; 
         if((hr === 16 && min > 15) || hr > 16) fineAmount = 50;
 
@@ -351,9 +416,9 @@
                 db.ref('attendance').push({ 
                     staff: staffKey, type: 'in', 
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    fine: fineAmount
+                    fine: fineAmount,
+                    proof: selfieData
                 }).then(() => {
-                    if(fineAmount > 0) alert(`Late Entry! ₹${fineAmount} fine.`);
                     checkAttendance();
                 });
             } else alert("Not at branch location!");
@@ -374,12 +439,17 @@
         if(confirm("End Shift?")) db.ref('attendance').push({ staff: staffKey, type: 'out', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => checkAttendance());
     }
 
-    function sendInquiry() {
-        const n = document.getElementById('inq_name').value, p = document.getElementById('inq_phone').value;
-        if(n.length < 3 || p.length < 10) return alert("Invalid Details");
-        db.ref('inquiries').push({ student: n, phone: p, staff: staffKey, time: Date.now() }).then(() => {
-            alert("Lead Saved!"); document.getElementById('inq_name').value = ""; document.getElementById('inq_phone').value = "";
-        });
+    function applyLeave() {
+        const date = document.getElementById('leave_date').value;
+        const reason = document.getElementById('leave_reason').value;
+        if(!date) return alert("Select Date");
+        db.ref('leaves').push({ staff: staffKey, date, reason, status: 'pending' }).then(() => alert("Applied!"));
+    }
+
+    function saveUPI() {
+        const upi = document.getElementById('staff_upi').value;
+        if(!upi.includes('@')) return alert("Invalid UPI");
+        db.ref('staff/' + staffKey).update({ upi: upi }).then(() => alert("Updated!"));
     }
 
     window.onload = () => {
