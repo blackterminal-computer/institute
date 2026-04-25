@@ -7,45 +7,56 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; --accent: #ffaa00; --danger: #ff4d4d; --success: #25d366; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; }
+        :root { --primary: #00d4ff; --bg: #05070a; --card: #12161d; --text: #ffffff; --accent: #ffaa00; --danger: #ff4d4d; --success: #25d366; --border: rgba(255,255,255,0.08); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; }
         
         .top-bar { background: #0a0c10; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; }
-        .top-bar h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+        .top-bar h2 { margin: 0; font-size: 1.2rem; color: var(--primary); letter-spacing: 1px; }
 
         .container { padding: 15px; max-width: 600px; margin: auto; }
-        .card { background: var(--card); padding: 20px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card { background: var(--card); padding: 20px; border-radius: 22px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .stat-box { background: #1c222b; padding: 15px; border-radius: 15px; text-align: center; border-bottom: 3px solid var(--primary); }
         .stat-box small { font-size: 0.7rem; color: #888; text-transform: uppercase; }
         .stat-box div { font-size: 1.2rem; font-weight: bold; margin-top: 5px; }
 
-        h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         
-        /* Attendance List */
-        .log-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--success); font-size: 0.85rem; position: relative;}
+        /* Attendance Log with Selfie */
+        .log-item { background: #1c222b; padding: 12px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid var(--success); position: relative; display: flex; align-items: center; gap: 12px;}
         .log-late { border-left-color: var(--danger); }
-        .log-time { color: var(--primary); font-weight: bold; }
-        .log-fine { color: var(--danger); font-weight: bold; float: right; }
+        .log-img { width: 45px; height: 45px; border-radius: 10px; object-fit: cover; border: 1px solid #333; cursor: pointer; }
+        .log-details { flex: 1; font-size: 0.85rem; }
+        .log-fine { color: var(--danger); font-weight: bold; font-size: 0.75rem; background: rgba(255,77,77,0.1); padding: 2px 6px; border-radius: 5px; }
 
-        .list-item { background: #1c222b; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
-        .list-item img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid #333; }
+        .list-item { background: #1c222b; padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); }
+        .list-item img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; }
         .staff-info { flex: 1; }
+        .upi-tag { font-size: 0.7rem; color: var(--primary); background: rgba(0,212,255,0.1); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
         
-        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 14px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:active { transform: scale(0.95); }
         .btn-danger { background: linear-gradient(135deg, #ff4d4d, #b30000); }
+        .btn-small { padding: 5px 10px; font-size: 0.7rem; }
         
-        input { background: #1c222b; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        input { background: rgba(0,0,0,0.2); border: 1px solid #333; color: white; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 10px; outline: none; }
+        input:focus { border-color: var(--primary); }
         
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0c10; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #222; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0c10; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #222; backdrop-filter: blur(10px); }
+
+        /* Modal for Selfie Preview */
+        #imgModal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index: 1000; align-items:center; justify-content:center; }
+        #imgModal img { max-width: 90%; border-radius: 20px; border: 2px solid var(--primary); }
     </style>
 </head>
 <body>
 
+<div id="imgModal" onclick="this.style.display='none'"><img id="modalImg" src=""></div>
+
 <div class="top-bar">
-    <h2>Admin Dashboard 👑</h2>
-    <div id="pending-badge" style="background: red; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; display: none;">New Staff</div>
+    <h2>BlackTerminal Admin 👑</h2>
+    <div id="pending-badge" style="background: var(--danger); color: white; font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; display: none; font-weight: bold; animation: pulse 1.5s infinite;">NEW STAFF</div>
 </div>
 
 <div class="container">
@@ -55,33 +66,45 @@
     </div>
 
     <div class="card">
-        <h3>📍 Live Punch-In Log (Today)</h3>
+        <h3>📸 Live Attendance & CCTV Logs</h3>
         <div id="attendance-log-container">
-            <small style="color:#444">Awaiting data...</small>
+            <small style="color:#555">Loading live feeds...</small>
         </div>
+    </div>
+
+    <div class="card" id="leave-card" style="display: none;">
+        <h3 style="color:var(--accent)">📅 Pending Leave Requests</h3>
+        <div id="leave-requests-container"></div>
     </div>
 
     <div class="card">
-        <h3>⏰ Set Batch Timings</h3>
+        <h3>⏰ Shift Batch Timings</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <input type="text" id="mText" placeholder="Morning (e.g. 09:00)">
-            <input type="text" id="eText" placeholder="Evening (e.g. 16:00)">
+            <div><small style="color:#888">Morning</small><input type="time" id="mText"></div>
+            <div><small style="color:#888">Evening</small><input type="time" id="eText"></div>
         </div>
-        <button style="width:100%" onclick="updateBatches()">Save Timings</button>
+        <button style="width:100%; margin-top:10px;" onclick="updateBatches()">Update Schedule</button>
     </div>
 
-    <div class="card"><h3>👥 Staff Performance</h3><div id="active-staff-list"></div></div>
-    <div class="card"><h3>🚨 Verification Queue</h3><div id="pending-list"></div></div>
+    <div class="card">
+        <h3>👥 Active Staff & Payout Info</h3>
+        <div id="active-staff-list"></div>
+    </div>
+
+    <div class="card">
+        <h3>🚨 Registration Queue</h3>
+        <div id="pending-list"></div>
+    </div>
     
     <div class="card">
-        <h3>📩 Student Leads</h3>
+        <h3>📩 Student Inquiries</h3>
         <div id="inquiry-list"></div>
     </div>
 </div>
 
 <div class="bottom-nav">
-    <div style="text-align:center; color:var(--primary); font-size:0.7rem;">🏠<br>Home</div>
-    <div style="text-align:center; color:#555; font-size:0.7rem;" onclick="location.reload()">🔄<br>Sync</div>
+    <div style="text-align:center; color:var(--primary); font-size:0.7rem;">🏠<br>Dashboard</div>
+    <div style="text-align:center; color:#555; font-size:0.7rem;" onclick="location.reload()">🔄<br>Sync Data</div>
 </div>
 
 <script>
@@ -97,7 +120,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Live Attendance Tracking
+    // Show Image in Modal
+    function viewSelfie(src) {
+        document.getElementById('modalImg').src = src;
+        document.getElementById('imgModal').style.display = 'flex';
+    }
+
+    // 1. Live Attendance Tracking with Proof
     db.ref('attendance').limitToLast(15).on('value', snap => {
         let html = "";
         let totalFines = 0;
@@ -111,11 +140,15 @@
             if(att.fine) totalFines += att.fine;
 
             if(isToday && att.type === 'in') {
+                const proofImg = att.proof ? `<img src="${att.proof}" class="log-img" onclick="viewSelfie('${att.proof}')">` : `<div class="log-img" style="background:#222; display:flex; align-items:center; justify-content:center; font-size:0.6rem;">No Pic</div>`;
+                
                 html = `
                 <div class="log-item ${att.fine ? 'log-late' : ''}">
-                    <span class="log-fine">${att.fine ? 'Fine: ₹'+att.fine : 'On Time'}</span>
-                    <span class="log-time">${time}</span> | <b>${att.staff.toUpperCase()}</b><br>
-                    <small style="color:#8b949e">📍 Baripada Branch (Verified)</small>
+                    ${proofImg}
+                    <div class="log-details">
+                        <b>${att.staff.toUpperCase()}</b> <span class="log-fine">${att.fine ? '₹'+att.fine+' Fine' : 'On Time'}</span><br>
+                        <small style="color:var(--primary)">Punch-in at ${time}</small>
+                    </div>
                 </div>` + html;
             }
         });
@@ -123,7 +156,7 @@
         document.getElementById('total-fines-collected').innerText = "₹" + totalFines;
     });
 
-    // 2. Staff Management
+    // 2. Staff Management & UPI Detection
     db.ref('staff').on('value', snap => {
         let pList = "", aList = "", totalPay = 0, hasPending = false;
         snap.forEach(child => {
@@ -134,38 +167,68 @@
                 <button onclick="approveStaff('${key}')">Approve</button></div>`;
             } else {
                 totalPay += (s.salary || 0);
-                aList += `<div class="list-item"><img src="${s.photo}"><div class="staff-info"><b>${s.name}</b><br><small>Pay: ₹${s.salary}</small></div>
-                <button class="btn-danger" onclick="deleteItem('staff/${key}')">🗑️</button></div>`;
+                const upiDisplay = s.upi ? `<br><span class="upi-tag">UPI: ${s.upi}</span>` : `<br><small style="color:#555">UPI Not Set</small>`;
+                aList += `<div class="list-item"><img src="${s.photo}"><div class="staff-info"><b>${s.name}</b>${upiDisplay}<br><small>Pay: ₹${s.salary}</small></div>
+                <button class="btn-danger btn-small" onclick="deleteItem('staff/${key}')">Remove</button></div>`;
             }
         });
-        document.getElementById('pending-list').innerHTML = pList || "<small>Clear</small>";
-        document.getElementById('active-staff-list').innerHTML = aList || "<small>No Staff</small>";
+        document.getElementById('pending-list').innerHTML = pList || "<small>No pending requests.</small>";
+        document.getElementById('active-staff-list').innerHTML = aList || "<small>No Active Staff</small>";
         document.getElementById('pending-badge').style.display = hasPending ? 'block' : 'none';
         document.getElementById('total-payroll').innerText = "₹" + totalPay;
     });
 
-    // 3. Update Batches
+    // 3. Leave Requests
+    db.ref('leaves').orderByChild('status').equalTo('pending').on('value', snap => {
+        let html = "";
+        let count = 0;
+        snap.forEach(child => {
+            count++;
+            const l = child.val(); const key = child.key;
+            html += `<div class="list-item" style="border-left:4px solid var(--accent)">
+                <div class="staff-info"><b>${l.staff.toUpperCase()}</b><br><small>Date: ${l.date}</small><br><small>Reason: ${l.reason}</small></div>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <button class="btn-small" style="background:var(--success)" onclick="updateStatus('leaves/${key}', 'approved')">Approve</button>
+                    <button class="btn-small btn-danger" onclick="updateStatus('leaves/${key}', 'rejected')">Reject</button>
+                </div>
+            </div>`;
+        });
+        document.getElementById('leave-card').style.display = count > 0 ? 'block' : 'none';
+        document.getElementById('leave-requests-container').innerHTML = html;
+    });
+
+    // Fetch batch times
+    db.ref('institute/batches').once('value', s => {
+        if(s.val()){
+            document.getElementById('mText').value = s.val().morning;
+            document.getElementById('eText').value = s.val().evening;
+        }
+    });
+
     function updateBatches() {
         const m = document.getElementById('mText').value;
         const e = document.getElementById('eText').value;
-        db.ref('institute/batches').set({ morning: m, evening: e }).then(() => alert("Timings Updated!"));
+        if(!m || !e) return alert("Select times");
+        db.ref('institute/batches').set({ morning: m, evening: e }).then(() => alert("Shift Timings Updated!"));
     }
 
-    // 4. Lead Management
-    db.ref('inquiries').on('value', snap => {
+    function approveStaff(id) { db.ref('staff/' + id).update({ status: 'active', salary: 12000, joinDate: Date.now() }); }
+    function updateStatus(path, status) { db.ref(path).update({ status: status }); }
+    function deleteItem(path) { if(confirm("Confirm Deletion?")) db.ref(path).remove(); }
+
+    // Leads logic remains same
+    db.ref('inquiries').limitToLast(10).on('value', snap => {
         let html = "";
         snap.forEach(child => {
             const inq = child.val();
-            html = `<div class="list-item" style="background:#0d1117; border-left:3px solid var(--primary)">
+            html = `<div class="list-item" style="background:#0d1117;">
                 <div class="staff-info"><b>${inq.student}</b><br><small>📞 ${inq.phone}</small></div>
-                <a href="https://wa.me/91${inq.phone}" style="text-decoration:none; padding:8px; background:var(--success); border-radius:8px;">💬</a>
+                <a href="https://wa.me/91${inq.phone}" style="text-decoration:none; padding:10px; background:var(--success); border-radius:12px;">💬</a>
             </div>` + html;
         });
         document.getElementById('inquiry-list').innerHTML = html || "<small>No Leads</small>";
     });
 
-    function approveStaff(id) { db.ref('staff/' + id).update({ status: 'active', salary: 12000, joinDate: Date.now() }); }
-    function deleteItem(path) { if(confirm("Confirm Deletion?")) db.ref(path).remove(); }
 </script>
 </body>
 </html>
