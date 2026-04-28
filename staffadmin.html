@@ -2,85 +2,176 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Control | Black Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin | Black Terminal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        :root { --accent: #ff3e3e; --bg: #05070a; --glass: rgba(255, 255, 255, 0.03); }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .card { background: var(--glass); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        h2 { color: var(--accent); border-bottom: 1px solid #333; padding-bottom: 10px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; font-size: 0.9rem; }
-        th { color: var(--accent); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
-        input, select, textarea { background: #111; border: 1px solid #333; color: white; padding: 8px; border-radius: 5px; width: 100%; box-sizing: border-box; }
-        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-save { background: #2ecc71; color: white; }
-        .btn-wa { background: #25d366; color: white; text-decoration: none; display: inline-block; font-size: 0.8rem; }
-        .btn-task { background: var(--accent); color: white; margin-top: 10px; }
+        :root { 
+            --accent: #ff3e3e; 
+            --bg: #030508; 
+            --card: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #2ecc71;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 15px; 
+            line-height: 1.4;
+        }
+
+        .header-flex { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 10px;
+            margin-bottom: 25px; 
+            text-align: center;
+        }
         
-        .flex { display: flex; gap: 10px; align-items: center; }
+        h1 { font-size: 1.2rem; letter-spacing: 3px; font-weight: 800; margin: 0; }
+        h1 span { color: var(--accent); }
+
+        .card { 
+            background: var(--card); 
+            padding: 18px; 
+            border-radius: 22px; 
+            border: 1px solid var(--border); 
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        h2 { font-size: 0.95rem; color: #fff; margin-top: 0; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+
+        /* Mobile Scrollable Tables */
+        .table-container { 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.2);
+        }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th { text-align: left; font-size: 0.65rem; text-transform: uppercase; opacity: 0.5; padding: 10px; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 10px; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.02); }
+
+        /* Form Styling for Mobile */
+        input, select, textarea { 
+            background: rgba(0,0,0,0.5); 
+            border: 1px solid var(--border); 
+            color: white; 
+            padding: 12px; 
+            border-radius: 12px; 
+            width: 100%; 
+            font-size: 16px; /* Prevents auto-zoom on iOS */
+            margin-bottom: 10px;
+        }
+
+        .btn { 
+            padding: 12px; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 0.8rem; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 6px;
+            width: 100%; /* Mobile buttons are easier to click when full width */
+        }
+        
+        .btn-update { background: var(--success); color: black; }
+        .btn-remove { background: rgba(255, 62, 62, 0.1); color: var(--accent); border: 1px solid rgba(255, 62, 62, 0.2); }
+        .btn-wa { background: #25d366; color: black; text-decoration: none; width: auto; padding: 8px 12px; }
+        .btn-task { background: white; color: black; }
+
+        .action-btns { display: flex; gap: 8px; }
+        .action-btns .btn { width: 45px; height: 40px; } /* Small square buttons for table actions */
+
+        .holiday-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .holiday-tag { background: #1a1a1a; padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; border: 1px solid var(--border); }
+
+        /* Layout Grid for larger screens */
+        @media (min-width: 768px) {
+            .container { max-width: 1000px; margin: auto; }
+            .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+            .header-flex { flex-direction: row; justify-content: space-between; text-align: left; }
+            .btn { width: auto; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>ADMIN CONTROL PANEL</h1>
-
-    <div class="card">
-        <h2>Staff List & Salary</h2>
-        <table id="staff-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Joined Date</th>
-                    <th>Per Day (₹)</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="staff-body"></tbody>
-        </table>
+    <div class="header-flex">
+        <h1>BLACK<span>TERMINAL</span> ADMIN</h1>
+        <div id="status-tag" style="font-size: 0.6rem; background: var(--success); color: black; padding: 5px 12px; border-radius: 15px; font-weight: 800;">ONLINE</div>
     </div>
 
-    <div class="card">
-        <h2>Leads & WhatsApp</h2>
-        <table id="lead-table">
-            <thead>
-                <tr>
-                    <th>Student</th>
-                    <th>Course</th>
-                    <th>Staff Name</th>
-                    <th>WhatsApp</th>
-                </tr>
-            </thead>
-            <tbody id="lead-body"></tbody>
-        </table>
-    </div>
-
-    <div class="card">
-        <h2>Assign Task to Staff</h2>
-        <select id="task-staff-select"><option>Select Staff</option></select>
-        <textarea id="task-desc" placeholder="Write task details here..." rows="3" style="margin-top:10px;"></textarea>
-        <button class="btn btn-task" onclick="sendTask()">SEND TASK</button>
-    </div>
-
-    <div class="card">
-        <h2>Holiday Management</h2>
-        <p style="font-size: 0.8rem; opacity: 0.6;">Select dates to disable attendance (No Holiday Dates)</p>
-        <div class="flex">
-            <input type="date" id="holiday-date">
-            <button class="btn btn-save" onclick="addHoliday()">ADD HOLIDAY</button>
+    <div class="grid">
+        <div class="card">
+            <h2><i class="fas fa-users"></i> Staff Payroll</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Staff Name</th>
+                            <th>Rate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staff-body"></tbody>
+                </table>
+            </div>
         </div>
-        <div id="holiday-list" style="margin-top:10px; font-size: 0.8rem;"></div>
+
+        <div class="card">
+            <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+            <select id="task-staff-select"></select>
+            <textarea id="task-desc" placeholder="Assign task details..." rows="2"></textarea>
+            <button class="btn btn-task" onclick="sendTask()"><i class="fas fa-paper-plane"></i> SEND TASK</button>
+            
+            <div style="margin-top: 25px;">
+                <h2><i class="fas fa-calendar-alt"></i> Set Holiday</h2>
+                <div style="display: flex; gap: 10px;">
+                    <input type="date" id="holiday-date" style="margin-bottom:0;">
+                    <button class="btn btn-update" style="width: 50px;" onclick="addHoliday()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="holiday-list" class="holiday-list"></div>
+            </div>
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2><i class="fas fa-headset"></i> Recent Leads</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>WhatsApp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lead-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // Same Firebase Config
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -93,7 +184,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Fetch Staff
+    // Fetch Staff
     db.ref('staff').on('value', snap => {
         const tbody = document.getElementById('staff-body');
         const select = document.getElementById('task-staff-select');
@@ -102,14 +193,16 @@
 
         snap.forEach(child => {
             const user = child.val();
-            const date = new Date(user.joinedOn).toLocaleDateString();
-            
             tbody.innerHTML += `
                 <tr>
-                    <td>${user.name}</td>
-                    <td>${date}</td>
-                    <td><input type="number" id="wage-${child.key}" value="${user.perDayWage || 500}" style="width:80px"></td>
-                    <td><button class="btn btn-save" onclick="updateWage('${child.key}')">Update</button></td>
+                    <td><b>${user.name}</b></td>
+                    <td><input type="number" id="wage-${child.key}" value="${user.perDayWage || 500}" style="width:65px; padding:5px; margin:0;"></td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-update" onclick="updateWage('${child.key}')"><i class="fas fa-save"></i></button>
+                            <button class="btn btn-remove" onclick="removeStaff('${child.key}', '${user.name}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
                 </tr>
             `;
             select.innerHTML += `<option value="${child.key}">${user.name}</option>`;
@@ -118,56 +211,52 @@
 
     function updateWage(id) {
         const newWage = document.getElementById('wage-'+id).value;
-        db.ref(`staff/${id}/perDayWage`).set(parseInt(newWage))
-        .then(() => alert("Salary Updated!"));
+        db.ref(`staff/${id}/perDayWage`).set(parseInt(newWage)).then(() => alert("Saved!"));
     }
 
-    // 2. Fetch Leads
+    function removeStaff(id, name) {
+        if(confirm(`Delete ${name}?`)) {
+            db.ref(`staff/${id}`).remove();
+        }
+    }
+
+    // Fetch Leads
     db.ref('leads').on('value', snap => {
         const tbody = document.getElementById('lead-body');
         tbody.innerHTML = "";
         snap.forEach(child => {
             const lead = child.val();
-            const waLink = `https://wa.me/91${lead.phone}?text=Hello%20${lead.name},%20we%20received%20your%20interest%20for%20${lead.course}`;
+            const waLink = `https://wa.me/91${lead.phone}?text=Hello%20${lead.name}`;
             tbody.innerHTML += `
                 <tr>
                     <td>${lead.name}</td>
-                    <td>${lead.course}</td>
-                    <td>${lead.staff || 'N/A'}</td>
-                    <td><a href="${waLink}" target="_blank" class="btn btn-wa">WhatsApp</a></td>
+                    <td><span style="color:var(--accent)">${lead.course}</span></td>
+                    <td><a href="${waLink}" target="_blank" class="btn btn-wa"><i class="fab fa-whatsapp"></i> Chat</a></td>
                 </tr>
             `;
         });
     });
 
-    // 3. Send Task
     function sendTask() {
-        const staffId = document.getElementById('task-staff-select').value;
+        const sid = document.getElementById('task-staff-select').value;
         const desc = document.getElementById('task-desc').value;
-        if(staffId === "Select Staff" || !desc) return alert("Fill details!");
-
-        db.ref(`tasks/${staffId}`).push({
-            task: desc,
-            status: "Pending",
-            date: Date.now()
-        }).then(() => {
+        if(sid === "Select Staff" || !desc) return alert("Missing Info");
+        db.ref(`tasks/${sid}`).push({ task: desc, date: Date.now() }).then(() => {
             alert("Task Sent!");
             document.getElementById('task-desc').value = "";
         });
     }
 
-    // 4. Holiday Management
     function addHoliday() {
-        const date = document.getElementById('holiday-date').value;
-        if(!date) return;
-        db.ref('holidays').push(date).then(() => alert("Holiday Added!"));
+        const d = document.getElementById('holiday-date').value;
+        if(d) db.ref('holidays').push(d);
     }
 
     db.ref('holidays').on('value', snap => {
         const list = document.getElementById('holiday-list');
-        list.innerHTML = "Holidays: ";
+        list.innerHTML = "";
         snap.forEach(child => {
-            list.innerHTML += `<span style="background:#333; padding:3px 8px; margin-right:5px; border-radius:3px;">${child.val()}</span>`;
+            list.innerHTML += `<span class="holiday-tag">${child.val()}</span>`;
         });
     });
 </script>
