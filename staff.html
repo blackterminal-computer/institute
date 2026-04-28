@@ -3,131 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Terminal | BlackTerminal 2.6</title>
+    <title>Black Terminal | Staff Portal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     
     <style>
-        :root { 
-            --primary: #00d4ff; 
-            --bg: #05070a; 
-            --card: rgba(17, 20, 24, 0.9); 
-            --text: #e6edf3; 
-            --success: #00ff88; 
-            --danger: #ff3366;
-            --warning: #ffaa00;
-            --border: rgba(255,255,255,0.08);
-        }
+        :root { --accent: #00d4ff; --bg: #030508; --glass: rgba(255, 255, 255, 0.03); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
-        .app-container { width: 92%; max-width: 450px; margin: auto; padding-bottom: 50px; }
+        .container { width: 90%; max-width: 380px; padding: 35px; background: var(--glass); border-radius: 35px; border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); text-align: center; }
+        .logo { font-size: 1rem; letter-spacing: 6px; opacity: 0.5; margin-bottom: 30px; }
         
-        /* Premium Components */
-        .glass-card { background: var(--card); padding: 25px; border-radius: 30px; border: 1px solid var(--border); margin-bottom: 20px; backdrop-filter: blur(15px); }
-        input { background: rgba(0, 0, 0, 0.4); color: white; border: 1px solid #222; padding: 18px; border-radius: 18px; width: 100%; box-sizing: border-box; margin: 10px 0; outline: none; font-size: 1rem; }
-        button { width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 0.9rem; font-weight: 800; cursor: pointer; transition: 0.3s; }
-        .btn-main { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; box-shadow: 0 10px 20px rgba(0, 212, 255, 0.2); }
-        .btn-main:disabled { background: #222; color: #555; }
-
-        /* Onboarding */
-        .onboarding-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; transition: 0.8s; }
-        .slide { text-align: center; display: none; animation: slideIn 0.5s forwards; }
-        .slide.active { display: block; }
-
-        /* Student List UI */
-        .student-item { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 20px; margin-bottom: 12px; border: 1px solid var(--border); }
-        .status-btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .s-btn { padding: 8px; font-size: 0.65rem; border-radius: 10px; background: transparent; border: 1px solid #333; color: #888; }
-        .s-btn.active-paid { border-color: var(--success); color: var(--success); background: rgba(0,255,136,0.05); }
-        .s-btn.active-unpaid { border-color: var(--danger); color: var(--danger); background: rgba(255,51,102,0.05); }
-        .s-btn.active-later { border-color: var(--warning); color: var(--warning); background: rgba(255,170,0,0.05); }
-
-        /* Camera & KYC */
-        .kyc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
-        .kyc-box { background: #111; border: 2px dashed #333; border-radius: 20px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; overflow: hidden; position: relative; }
-        .kyc-box.filled { border: 2px solid var(--success); }
-        .kyc-box img { position: absolute; width: 100%; height: 100%; object-fit: cover; }
-        #cam-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 6000; }
-        .shutter { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 70px; height: 70px; background: white; border-radius: 50%; border: 5px solid #333; }
-
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        input { width: 100%; padding: 16px; margin: 10px 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; color: white; text-align: center; outline: none; }
+        
+        .btn { width: 100%; padding: 16px; border-radius: 18px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s; margin-top: 15px; }
+        .btn-main { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; }
+        
+        .toggle-link { margin-top: 20px; font-size: 0.8rem; opacity: 0.6; cursor: pointer; display: block; }
+        .toggle-link b { color: var(--accent); }
     </style>
 </head>
 <body>
 
-<div id="onboarding" class="onboarding-screen">
-    <div class="slide active" id="s1">
-        <div style="font-size: 4rem;">💎</div>
-        <h2>Terminal 2.6</h2>
-        <p style="color:#8b949e">Smart Staff Management & Student Tracker.</p>
-        <button class="btn-main" onclick="nextSlide(2)">Next</button>
-    </div>
-    <div class="slide" id="s2">
-        <div style="font-size: 4rem;">🛡️</div>
-        <h2>Secure KYC</h2>
-        <p style="color:#8b949e">Upload details for branch access.</p>
-        <button class="btn-main" onclick="closeOnboarding()">Start Now</button>
-    </div>
-</div>
+<div class="container" id="auth-box">
+    <div class="logo">BLACK TERMINAL</div>
 
-<div id="cam-overlay">
-    <video id="video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-    <div class="shutter" onclick="capturePhoto()"></div>
-</div>
-
-<div class="app-container">
-    <header style="text-align: center; padding: 30px 0;">
-        <h1 style="letter-spacing: 5px; font-size: 1rem; opacity: 0.5; margin:0;">BLACK TERMINAL</h1>
-        <div id="clock" style="font-size: 2.2rem; font-weight: 900; color: var(--primary); font-family: monospace;">00:00:00</div>
-    </header>
-
-    <div id="reg-form">
-        <div id="step1" class="glass-card">
-            <h3>Identity Search</h3>
-            <input type="text" id="staff_name" placeholder="Full Name">
-            <input type="tel" id="staff_phone" placeholder="WhatsApp Number">
-            <button class="btn-main" onclick="checkUser()">Check Eligibility</button>
-        </div>
-
-        <div id="step2" class="glass-card" style="display:none;">
-            <h3>KYC Vault</h3>
-            <div class="kyc-grid">
-                <div class="kyc-box" id="box-selfie" onclick="openCam()">
-                    <span>Face Selfie</span>
-                    <img id="img-selfie" style="display:none">
-                </div>
-                <div class="kyc-box" id="box-id" onclick="document.getElementById('id-upload').click()">
-                    <span>ID Proof</span>
-                    <img id="img-id" style="display:none">
-                </div>
-            </div>
-            <input type="file" id="id-upload" hidden accept="image/*" onchange="previewID(this)">
-            <input type="password" id="staff_pass" placeholder="Passcode (6 Digits)" maxlength="6">
-            <button class="btn-main" id="final-btn" onclick="finalSubmit()">Finalize Enrollment</button>
-        </div>
+    <div id="login-ui">
+        <input type="tel" id="login-phone" placeholder="Registered Mobile Number">
+        <input type="password" id="login-pass" placeholder="Your Passcode">
+        <button class="btn btn-main" onclick="handleLogin()">ACCESS SYSTEM</button>
+        <span class="toggle-link" onclick="toggleAuth(true)">Don't have access? <b>Register Now</b></span>
     </div>
 
-    <div id="main-ui" style="display:none;">
-        <div class="glass-card">
-            <h2 id="welcome-txt" style="margin:0;">Namaste!</h2>
-            <div id="status-badge" style="font-size:0.75rem; margin-top:10px; color:var(--warning);">Verification Pending...</div>
-        </div>
-
-        <div class="glass-card">
-            <h3 style="margin-top:0; color:var(--primary); font-size:0.95rem;">STUDENT PAYMENT TRACKER</h3>
-            <div id="student-list" style="max-height:350px; overflow-y:auto; padding-right:5px;">
-                <p style="color:#555; font-size:0.8rem;">Loading database...</p>
-            </div>
-        </div>
-        
-        <button class="btn-main" onclick="location.reload()">Refresh Data</button>
+    <div id="register-ui" style="display:none;">
+        <h3 style="margin-top:0">New Staff Registration</h3>
+        <input type="text" id="reg-name" placeholder="Full Name">
+        <input type="tel" id="reg-phone" placeholder="Mobile Number">
+        <input type="password" id="reg-pass" placeholder="Create 6-Digit Passcode" maxlength="6">
+        <button class="btn btn-main" onclick="handleRegister()">CREATE ACCOUNT</button>
+        <span class="toggle-link" onclick="toggleAuth(false)">Already a member? <b>Login</b></span>
     </div>
 </div>
-
-<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
+    // Firebase Config (Keep your existing config here)
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -139,137 +58,60 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const storage = firebase.storage();
 
-    let kycData = { selfie: null, id: null };
-
-    // Basic UI Logic
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB'); }, 1000);
-    function nextSlide(n) { document.getElementById('s1').classList.remove('active'); document.getElementById('s2').classList.add('active'); }
-    function closeOnboarding() { document.getElementById('onboarding').style.transform = 'translateY(-100%)'; }
-
-    // KYC Logic
-    function checkUser() {
-        const name = document.getElementById('staff_name').value.trim();
-        if(name.length < 3) return alert("Enter valid name");
-        const key = name.replace(/\s/g, '').toLowerCase();
-        db.ref('staff/' + key).once('value', s => {
-            if(s.exists()) alert("Already Registered!");
-            else { document.getElementById('step1').style.display='none'; document.getElementById('step2').style.display='block'; }
-        });
+    function toggleAuth(isReg) {
+        document.getElementById('login-ui').style.display = isReg ? 'none' : 'block';
+        document.getElementById('register-ui').style.display = isReg ? 'block' : 'none';
     }
 
-    function openCam() {
-        document.getElementById('cam-overlay').style.display = 'block';
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(s => { document.getElementById('video').srcObject = s; });
-    }
+    function handleRegister() {
+        const name = document.getElementById('reg-name').value;
+        const phone = document.getElementById('reg-phone').value;
+        const pass = document.getElementById('reg-pass').value;
 
-    function capturePhoto() {
-        const v = document.getElementById('video');
-        const c = document.getElementById('canvas');
-        c.width = v.videoWidth; c.height = v.videoHeight;
-        c.getContext('2d').drawImage(v, 0, 0);
-        kycData.selfie = c.toDataURL('image/jpeg', 0.6);
-        document.getElementById('img-selfie').src = kycData.selfie;
-        document.getElementById('img-selfie').style.display = 'block';
-        document.getElementById('box-selfie').classList.add('filled');
-        v.srcObject.getTracks().forEach(t => t.stop());
-        document.getElementById('cam-overlay').style.display = 'none';
-    }
+        if(!name || !phone || pass.length < 4) return alert("Please fill all fields!");
 
-    function previewID(input) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            kycData.id = e.target.result;
-            document.getElementById('img-id').src = e.target.result;
-            document.getElementById('img-id').style.display = 'block';
-            document.getElementById('box-id').classList.add('filled');
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-
-    async function finalSubmit() {
-        const btn = document.getElementById('final-btn');
-        const name = document.getElementById('staff_name').value;
-        const key = name.replace(/\s/g, '').toLowerCase();
-        if(!kycData.selfie || !kycData.id) return alert("KYC Incomplete");
-
-        btn.disabled = true; btn.innerText = "UPLOADING...";
-
-        try {
-            let fUrl = kycData.selfie, iUrl = kycData.id;
-            try {
-                const sRef = storage.ref(`kyc/${key}_f.jpg`);
-                await sRef.putString(kycData.selfie, 'data_url');
-                fUrl = await sRef.getDownloadURL();
-                const idRef = storage.ref(`kyc/${key}_i.jpg`);
-                await idRef.putString(kycData.id, 'data_url');
-                iUrl = await idRef.getDownloadURL();
-            } catch(e) { console.log("Cloud Skip"); }
-
-            await db.ref('staff/' + key).set({
-                name, phone: document.getElementById('staff_phone').value,
-                passcode: document.getElementById('staff_pass').value,
-                photo: fUrl, id_card: iUrl, status: 'pending', joinDate: Date.now()
-            });
-
-            localStorage.setItem('bt_staff', key);
-            location.reload();
-        } catch(err) { alert(err.message); btn.disabled = false; }
-    }
-
-    // STUDENT MANAGEMENT LOGIC
-    function loadStudents() {
-        db.ref('students').on('value', snap => {
-            let html = "";
-            if(!snap.exists()) {
-                html = "<p style='text-align:center; color:#444;'>No student records found.</p>";
+        // Check if phone already exists
+        db.ref('staff').orderByChild('phone').equalTo(phone).once('value', snap => {
+            if(snap.exists()) {
+                alert("This number is already registered!");
             } else {
-                snap.forEach(child => {
-                    const s = child.val();
-                    const sid = child.key;
-                    const status = s.paymentStatus || 'unpaid';
-
-                    html += `
-                    <div class="student-item">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <b style="font-size:0.9rem;">${s.name}</b>
-                            <small style="color:${status==='paid'?'#00ff88':status==='later'?'#ffaa00':'#ff3366'}">${status.toUpperCase()}</small>
-                        </div>
-                        <div class="status-btn-group">
-                            <button class="s-btn ${status==='paid'?'active-paid':''}" onclick="setPay('${sid}','paid')">PAID</button>
-                            <button class="s-btn ${status==='unpaid'?'active-unpaid':''}" onclick="setPay('${sid}','unpaid')">UNPAID</button>
-                            <button class="s-btn ${status==='later'?'active-later':''}" onclick="setPay('${sid}','later')">LATER</button>
-                        </div>
-                    </div>`;
+                const newStaffRef = db.ref('staff').push();
+                newStaffRef.set({
+                    name: name,
+                    phone: phone,
+                    passcode: pass,
+                    salary: 0,
+                    joinedOn: Date.now()
+                }).then(() => {
+                    alert("Registration Successful! Please Login.");
+                    toggleAuth(false);
                 });
             }
-            document.getElementById('student-list').innerHTML = html;
         });
     }
 
-    function setPay(id, val) {
-        db.ref('students/'+id).update({ paymentStatus: val, lastUpdated: Date.now() });
-    }
+    function handleLogin() {
+        const phone = document.getElementById('login-phone').value;
+        const pass = document.getElementById('login-pass').value;
 
-    window.onload = () => {
-        const user = localStorage.getItem('bt_staff');
-        if(user) {
-            document.getElementById('onboarding').style.display='none';
-            document.getElementById('reg-form').style.display='none';
-            document.getElementById('main-ui').style.display='block';
-            db.ref('staff/'+user).once('value', s => {
-                if(s.exists()){
-                    document.getElementById('welcome-txt').innerText = "Namaste, " + s.val().name;
-                    if(s.val().status === 'active'){
-                        document.getElementById('status-badge').innerText = "Verified Staff ✅";
-                        document.getElementById('status-badge').style.color = "var(--success)";
+        db.ref('staff').orderByChild('phone').equalTo(phone).once('value', snap => {
+            if(snap.exists()) {
+                let userFound = false;
+                snap.forEach(child => {
+                    if(child.val().passcode === pass) {
+                        userFound = true;
+                        localStorage.setItem('bt_staff_id', child.key);
+                        localStorage.setItem('bt_staff_name', child.val().name);
+                        window.location.href = "home.html"; // Redirect to your homepage
                     }
-                }
-            });
-            loadStudents();
-        }
-    };
+                });
+                if(!userFound) alert("Incorrect Passcode!");
+            } else {
+                alert("Mobile number not registered!");
+            }
+        });
+    }
 </script>
 </body>
 </html>
