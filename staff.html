@@ -3,165 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Terminal | Staff Portal</title>
+    <title>Staff Terminal | Black Terminal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
         :root {
             --apple-blue: #007AFF;
-            --bg-color: #000000;
+            --bg: #000000;
             --card-bg: rgba(28, 28, 30, 0.7);
-            --input-bg: rgba(255, 255, 255, 0.08);
-            --text-main: #FFFFFF;
+            --accent: #00d4ff;
             --text-sec: #8E8E93;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            background: var(--bg);
             background-image: radial-gradient(circle at top right, #1c1c1e, #000000);
-            color: var(--text-main);
+            color: white;
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
+            padding: 20px;
             -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            width: 85%;
-            max-width: 360px;
-            padding: 40px 24px;
+        .container { max-width: 450px; margin: auto; }
+
+        .header { text-align: left; margin-bottom: 30px; padding-left: 10px; }
+        .header h1 { font-size: 24px; margin: 0; font-weight: 700; }
+        .header p { color: var(--apple-blue); font-size: 14px; margin: 4px 0; font-weight: 500; }
+
+        .card {
             background: var(--card-bg);
-            backdrop-filter: blur(30px) saturate(180%);
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
-            border-radius: 38px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-            text-align: center;
-        }
-
-        .logo-area {
-            margin-bottom: 40px;
-        }
-
-        .logo-area h1 {
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin: 0;
-        }
-
-        .logo-area p {
-            color: var(--text-sec);
-            font-size: 13px;
-            margin-top: 4px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .input-group {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 24px;
             margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        input {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 18px;
-            margin-bottom: 12px;
-            background: var(--input-bg);
-            border: none;
-            border-radius: 16px;
-            color: white;
-            font-size: 16px; /* Prevents iOS zoom on focus */
-            transition: all 0.2s ease;
-            outline: none;
-        }
+        h3 { font-size: 16px; margin-top: 0; display: flex; align-items: center; gap: 10px; color: var(--text-sec); }
+        h3 i { color: var(--apple-blue); }
 
-        input:focus {
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 2px var(--apple-blue);
-        }
+        /* Stats Logic */
+        .stat-grid { display: flex; justify-content: space-between; margin: 15px 0; }
+        .stat-box { text-align: left; }
+        .stat-box small { display: block; font-size: 11px; color: var(--text-sec); text-transform: uppercase; }
+        .stat-box b { font-size: 20px; color: #fff; }
 
+        /* Buttons */
         .btn {
-            width: 100%;
-            padding: 16px;
-            border-radius: 16px;
-            border: none;
-            font-size: 17px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.1s ease, opacity 0.2s ease;
-            margin-top: 10px;
+            width: 100%; padding: 16px; border-radius: 16px; border: none;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+        .btn-main { background: var(--apple-blue); color: white; }
+        .btn:disabled { background: rgba(255,255,255,0.1); color: var(--text-sec); cursor: not-allowed; }
+
+        /* Task List */
+        .task-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px; border-radius: 18px; margin-top: 12px;
+            border-left: 4px solid var(--apple-blue);
+        }
+        .task-item p { margin: 0; font-size: 14px; line-height: 1.4; }
+        .task-item small { color: var(--text-sec); font-size: 11px; display: block; margin-top: 8px; }
+
+        /* Input */
+        input {
+            width: 100%; padding: 14px; margin: 10px 0; background: rgba(255,255,255,0.08);
+            border: none; border-radius: 12px; color: white; outline: none; box-sizing: border-box;
         }
 
-        .btn-main {
-            background-color: var(--apple-blue);
-            color: white;
-        }
-
-        .btn:active {
-            transform: scale(0.97);
-            opacity: 0.8;
-        }
-
-        .toggle-link {
-            margin-top: 25px;
-            font-size: 14px;
-            color: var(--text-sec);
-            cursor: pointer;
-            display: block;
-        }
-
-        .toggle-link b {
-            color: var(--apple-blue);
-            font-weight: 500;
-        }
-
-        /* Smooth UI Transitions */
-        #login-ui, #register-ui {
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .countdown { font-size: 12px; color: #ffadad; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="logo-area">
-        <h1>Black Terminal</h1>
-        <p>Staff Portal</p>
+    <div class="header">
+        <p id="current-date"></p>
+        <h1 id="user-display">Welcome, Staff</h1>
     </div>
 
-    <div id="login-ui">
-        <div class="input-group">
-            <input type="tel" id="login-phone" placeholder="Mobile Number" inputmode="tel">
-            <input type="password" id="login-pass" placeholder="Passcode">
+    <div class="card">
+        <h3><i class="fas fa-wallet"></i> FINANCE & ATTENDANCE</h3>
+        <div class="stat-grid">
+            <div class="stat-box">
+                <small>Daily Rate</small>
+                <b id="daily-rate">₹0</b>
+            </div>
+            <div class="stat-box" style="text-align: right;">
+                <small>Total Earning</small>
+                <b id="total-earning">₹0</b>
+            </div>
         </div>
-        <button class="btn btn-main" onclick="handleLogin()">Sign In</button>
-        <span class="toggle-link" onclick="toggleAuth(true)">New here? <b>Create Account</b></span>
+        <button id="att-btn" class="btn btn-main" onclick="markAttendance()">PUNCH IN TODAY</button>
+        <div id="cycle-text" class="countdown"></div>
     </div>
 
-    <div id="register-ui" style="display:none;">
-        <div class="input-group">
-            <input type="text" id="reg-name" placeholder="Full Name">
-            <input type="tel" id="reg-phone" placeholder="Mobile Number" inputmode="tel">
-            <input type="password" id="reg-pass" placeholder="6-Digit Passcode" maxlength="6" inputmode="numeric">
+    <div class="card">
+        <h3><i class="fas fa-tasks"></i> ASSIGNED TASKS</h3>
+        <div id="task-list">
+            <p style="font-size: 13px; opacity: 0.5;">No active tasks assigned.</p>
         </div>
-        <button class="btn btn-main" onclick="handleRegister()">Register</button>
-        <span class="toggle-link" onclick="toggleAuth(false)">Already have access? <b>Login</b></span>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-user-plus"></i> SUBMIT NEW LEAD</h3>
+        <input type="text" id="l-name" placeholder="Student Name">
+        <input type="text" id="l-course" placeholder="Course Interested">
+        <input type="tel" id="l-phone" placeholder="WhatsApp Number">
+        <button class="btn btn-main" style="background: #fff; color: #000;" onclick="submitLead()">SUBMIT TO ADMIN</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-file-download"></i> RESOURCES</h3>
+        <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff; margin-bottom: 10px;" onclick="alert('Downloading...')">Terms & Conditions</button>
+        <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff;" onclick="alert('Downloading...')">Monthly Agreement</button>
     </div>
 </div>
 
 <script>
-    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -174,60 +137,118 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function toggleAuth(isReg) {
-        document.getElementById('login-ui').style.display = isReg ? 'none' : 'block';
-        document.getElementById('register-ui').style.display = isReg ? 'block' : 'none';
-    }
+    const staffId = localStorage.getItem('bt_staff_id');
+    const staffName = localStorage.getItem('bt_staff_name');
 
-    function handleRegister() {
-        const name = document.getElementById('reg-name').value;
-        const phone = document.getElementById('reg-phone').value;
-        const pass = document.getElementById('reg-pass').value;
+    if(!staffId) window.location.href = "index.html";
 
-        if(!name || !phone || pass.length < 4) {
-            alert("Please fill all details correctly.");
-            return;
+    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+    // --- 1. Attendance & Salary System ---
+    let myDailyRate = 500; 
+
+    async function initSystem() {
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        const day = today.getDay(); // 0: Sun, 6: Sat
+
+        // Check Weekend
+        if(day === 0 || day === 6) {
+            disableBtn("WEEKEND OFF");
         }
 
-        db.ref('staff').orderByChild('phone').equalTo(phone).once('value', snap => {
-            if(snap.exists()) {
-                alert("Number already registered!");
-            } else {
-                db.ref('staff').push({
-                    name: name,
-                    phone: phone,
-                    passcode: pass,
-                    salary: 0,
-                    joinedOn: Date.now()
-                }).then(() => {
-                    alert("Registration Successful!");
-                    toggleAuth(false);
-                });
-            }
+        // Check Holidays
+        db.ref('holidays').once('value', snap => {
+            snap.forEach(child => {
+                if(child.val() === dateStr) disableBtn("HOLIDAY TODAY");
+            });
+        });
+
+        // Check if Already Marked
+        db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
+            if(snap.exists()) disableBtn("PUNCHED IN");
+        });
+
+        // Fetch My Salary Data
+        db.ref(`staff/${staffId}`).on('value', snap => {
+            const val = snap.val();
+            myDailyRate = val.perDayWage || 500;
+            document.getElementById('daily-rate').innerText = `₹${myDailyRate}`;
+            document.getElementById('total-earning').innerText = `₹${val.salary || 0}`;
+        });
+
+        updateCycle();
+        loadTasks();
+    }
+
+    function disableBtn(txt) {
+        const btn = document.getElementById('att-btn');
+        btn.disabled = true;
+        btn.innerText = txt;
+    }
+
+    function markAttendance() {
+        const dateStr = new Date().toISOString().split('T')[0];
+        db.ref(`attendance/${staffId}/${dateStr}`).set({
+            time: new Date().toLocaleTimeString(),
+            status: "Present"
+        }).then(() => {
+            db.ref(`staff/${staffId}/salary`).transaction(current => (current || 0) + myDailyRate);
+            alert("Punch-in Successful!");
+            location.reload();
         });
     }
 
-    function handleLogin() {
-        const phone = document.getElementById('login-phone').value;
-        const pass = document.getElementById('login-pass').value;
+    function updateCycle() {
+        const now = new Date();
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const rem = lastDay - now.getDate();
+        document.getElementById('cycle-text').innerText = `${rem} days left in current salary cycle`;
+    }
 
-        db.ref('staff').orderByChild('phone').equalTo(phone).once('value', snap => {
-            if(snap.exists()) {
-                let userFound = false;
-                snap.forEach(child => {
-                    if(child.val().passcode === pass) {
-                        userFound = true;
-                        localStorage.setItem('bt_staff_id', child.key);
-                        localStorage.setItem('bt_staff_name', child.val().name);
-                        window.location.href = "home.html";
-                    }
-                });
-                if(!userFound) alert("Invalid Passcode");
-            } else {
-                alert("User not found");
+    // --- 2. Admin Tasks System ---
+    function loadTasks() {
+        db.ref(`tasks/${staffId}`).on('value', snap => {
+            const container = document.getElementById('task-list');
+            container.innerHTML = "";
+            if(!snap.exists()) {
+                container.innerHTML = `<p style="font-size:13px; opacity:0.5;">No pending tasks.</p>`;
+                return;
             }
+            snap.forEach(child => {
+                const t = child.val();
+                container.innerHTML += `
+                    <div class="task-item">
+                        <p>${t.task}</p>
+                        <small>Assigned: ${new Date(t.date).toLocaleDateString()}</small>
+                    </div>
+                `;
+            });
         });
     }
+
+    // --- 3. Lead Submission ---
+    function submitLead() {
+        const n = document.getElementById('l-name').value;
+        const c = document.getElementById('l-course').value;
+        const p = document.getElementById('l-phone').value;
+
+        if(!n || !c || p.length < 10) return alert("Enter valid lead details!");
+
+        db.ref('leads').push({
+            name: n, course: c, phone: p,
+            staff: staffName, staffId: staffId,
+            date: Date.now()
+        }).then(() => {
+            alert("Lead Shared with Admin!");
+            document.getElementById('l-name').value = "";
+            document.getElementById('l-course').value = "";
+            document.getElementById('l-phone').value = "";
+        });
+    }
+
+    initSystem();
 </script>
 </body>
 </html>
