@@ -3,56 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT Admin | Master Control</title>
+    <title>Admin Control | Black Terminal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --accent: #00d4ff; --bg: #05070a; --glass: rgba(255,255,255,0.03); }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px 15px 100px 15px; }
-        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 25px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 14px; margin: 8px 0; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: white; outline: none; }
-        .btn { width: 100%; padding: 14px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; background: var(--accent); color: #000; }
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: rgba(10,15,20,0.95); border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; align-items: center; backdrop-filter: blur(20px); }
-        .nav-item { text-align: center; color: #555; flex: 1; font-size: 0.7rem; }
-        .nav-item.active { color: var(--accent); }
-        .section { display: none; } .section.active { display: block; }
+        :root { --accent: #ff3e3e; --bg: #05070a; --glass: rgba(255, 255, 255, 0.03); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .card { background: var(--glass); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        h2 { color: var(--accent); border-bottom: 1px solid #333; padding-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; font-size: 0.9rem; }
+        th { color: var(--accent); }
+
+        input, select, textarea { background: #111; border: 1px solid #333; color: white; padding: 8px; border-radius: 5px; width: 100%; box-sizing: border-box; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-save { background: #2ecc71; color: white; }
+        .btn-wa { background: #25d366; color: white; text-decoration: none; display: inline-block; font-size: 0.8rem; }
+        .btn-task { background: var(--accent); color: white; margin-top: 10px; }
+        
+        .flex { display: flex; gap: 10px; align-items: center; }
     </style>
 </head>
 <body>
 
-    <div id="staff" class="section active">
-        <h1>Staff Setup</h1>
-        <div class="card">
-            <h3>Add New Staff</h3>
-            <input type="text" id="s-name" placeholder="Staff Name">
-            <input type="tel" id="s-phone" placeholder="Phone Number">
-            <input type="password" id="s-pass" placeholder="Set Login Passcode">
-            <button class="btn" onclick="addStaff()">REGISTER STAFF</button>
-        </div>
-        <div id="staff-list"></div>
+<div class="container">
+    <h1>ADMIN CONTROL PANEL</h1>
+
+    <div class="card">
+        <h2>Staff List & Salary</h2>
+        <table id="staff-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Joined Date</th>
+                    <th>Per Day (₹)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="staff-body"></tbody>
+        </table>
     </div>
 
-    <div id="controls" class="section">
-        <h1>Broadcasting</h1>
-        <div class="card">
-            <h3>Marquee Text</h3>
-            <input type="text" id="m-text" placeholder="Admin message...">
-            <button class="btn" onclick="updateMarquee()">UPDATE</button>
-        </div>
-        <div class="card">
-            <h3>No-Leave Dates</h3>
-            <input type="text" id="h-dates" placeholder="e.g., May 10, June 15">
-            <button class="btn" onclick="updateHolidays()">LOCK DATES</button>
-        </div>
+    <div class="card">
+        <h2>Leads & WhatsApp</h2>
+        <table id="lead-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>Staff Name</th>
+                    <th>WhatsApp</th>
+                </tr>
+            </thead>
+            <tbody id="lead-body"></tbody>
+        </table>
     </div>
 
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="tab('staff', this)"><i class="fas fa-users"></i><br>STAFF</div>
-        <div class="nav-item" onclick="tab('controls', this)"><i class="fas fa-bullhorn"></i><br>CONTROL</div>
-    </nav>
+    <div class="card">
+        <h2>Assign Task to Staff</h2>
+        <select id="task-staff-select"><option>Select Staff</option></select>
+        <textarea id="task-desc" placeholder="Write task details here..." rows="3" style="margin-top:10px;"></textarea>
+        <button class="btn btn-task" onclick="sendTask()">SEND TASK</button>
+    </div>
+
+    <div class="card">
+        <h2>Holiday Management</h2>
+        <p style="font-size: 0.8rem; opacity: 0.6;">Select dates to disable attendance (No Holiday Dates)</p>
+        <div class="flex">
+            <input type="date" id="holiday-date">
+            <button class="btn btn-save" onclick="addHoliday()">ADD HOLIDAY</button>
+        </div>
+        <div id="holiday-list" style="margin-top:10px; font-size: 0.8rem;"></div>
+    </div>
+</div>
 
 <script>
+    // Same Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -65,25 +93,83 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function tab(id, el) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        el.classList.add('active');
+    // 1. Fetch Staff
+    db.ref('staff').on('value', snap => {
+        const tbody = document.getElementById('staff-body');
+        const select = document.getElementById('task-staff-select');
+        tbody.innerHTML = "";
+        select.innerHTML = "<option>Select Staff</option>";
+
+        snap.forEach(child => {
+            const user = child.val();
+            const date = new Date(user.joinedOn).toLocaleDateString();
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${date}</td>
+                    <td><input type="number" id="wage-${child.key}" value="${user.perDayWage || 500}" style="width:80px"></td>
+                    <td><button class="btn btn-save" onclick="updateWage('${child.key}')">Update</button></td>
+                </tr>
+            `;
+            select.innerHTML += `<option value="${child.key}">${user.name}</option>`;
+        });
+    });
+
+    function updateWage(id) {
+        const newWage = document.getElementById('wage-'+id).value;
+        db.ref(`staff/${id}/perDayWage`).set(parseInt(newWage))
+        .then(() => alert("Salary Updated!"));
     }
 
-    function addStaff() {
-        const name = document.getElementById('s-name').value;
-        const phone = document.getElementById('s-phone').value;
-        const pass = document.getElementById('s-pass').value;
-        if(name && phone && pass) {
-            db.ref('staff').push({ name, phone, passcode: pass });
-            alert("Staff Added! Now they can login.");
-        }
+    // 2. Fetch Leads
+    db.ref('leads').on('value', snap => {
+        const tbody = document.getElementById('lead-body');
+        tbody.innerHTML = "";
+        snap.forEach(child => {
+            const lead = child.val();
+            const waLink = `https://wa.me/91${lead.phone}?text=Hello%20${lead.name},%20we%20received%20your%20interest%20for%20${lead.course}`;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${lead.name}</td>
+                    <td>${lead.course}</td>
+                    <td>${lead.staff || 'N/A'}</td>
+                    <td><a href="${waLink}" target="_blank" class="btn btn-wa">WhatsApp</a></td>
+                </tr>
+            `;
+        });
+    });
+
+    // 3. Send Task
+    function sendTask() {
+        const staffId = document.getElementById('task-staff-select').value;
+        const desc = document.getElementById('task-desc').value;
+        if(staffId === "Select Staff" || !desc) return alert("Fill details!");
+
+        db.ref(`tasks/${staffId}`).push({
+            task: desc,
+            status: "Pending",
+            date: Date.now()
+        }).then(() => {
+            alert("Task Sent!");
+            document.getElementById('task-desc').value = "";
+        });
     }
 
-    function updateMarquee() { db.ref('admin/marquee').set(document.getElementById('m-text').value); }
-    function updateHolidays() { db.ref('admin/restricted_dates').set(document.getElementById('h-dates').value); }
+    // 4. Holiday Management
+    function addHoliday() {
+        const date = document.getElementById('holiday-date').value;
+        if(!date) return;
+        db.ref('holidays').push(date).then(() => alert("Holiday Added!"));
+    }
+
+    db.ref('holidays').on('value', snap => {
+        const list = document.getElementById('holiday-list');
+        list.innerHTML = "Holidays: ";
+        snap.forEach(child => {
+            list.innerHTML += `<span style="background:#333; padding:3px 8px; margin-right:5px; border-radius:3px;">${child.val()}</span>`;
+        });
+    });
 </script>
 </body>
 </html>
