@@ -3,118 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Terminal | BlackTerminal Pro</title>
+    <title>BT Admin | Master Control</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { 
-            --primary: #00d4ff; 
-            --bg: #030508; 
-            --card: rgba(18, 22, 29, 0.95); 
-            --text: #e6edf3; 
-            --accent: #ffaa00; 
-            --danger: #ff4d4d; 
-            --success: #00ff88; 
-            --border: rgba(255,255,255,0.08); 
-        }
-        
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; }
-        
-        .header { background: #0a0c10; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
-        .header h2 { margin: 0; font-size: 1rem; color: var(--primary); letter-spacing: 4px; font-weight: 900; }
-
-        .container { padding: 15px; max-width: 500px; margin: auto; }
-        .glass-card { background: var(--card); padding: 20px; border-radius: 25px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
-        
-        /* Stats Styling */
-        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .stat-card { background: #11141a; padding: 15px; border-radius: 20px; border-bottom: 3px solid var(--primary); text-align: left; }
-        .stat-card small { font-size: 0.65rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-card div { font-size: 1.3rem; font-weight: 900; margin-top: 5px; color: #fff; }
-
-        h3 { margin: 0 0 15px 0; font-size: 0.9rem; color: var(--primary); display: flex; align-items: center; gap: 10px; opacity: 0.8; }
-        
-        /* Log & List Styling */
-        .item-row { background: rgba(255,255,255,0.02); padding: 12px; border-radius: 18px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); transition: 0.3s; }
-        .item-row:hover { background: rgba(255,255,255,0.05); border-color: var(--primary); }
-        .thumb { width: 45px; height: 45px; border-radius: 12px; object-fit: cover; background: #222; cursor: pointer; }
-        .details { flex: 1; font-size: 0.8rem; }
-        .details b { font-size: 0.9rem; display: block; color: #fff; }
-        
-        .badge { font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
-        .badge-late { background: rgba(255,77,77,0.1); color: var(--danger); }
-        .badge-ok { background: rgba(0,255,136,0.1); color: var(--success); }
-
-        button { background: linear-gradient(135deg, var(--primary), #0072ff); color: white; border: none; padding: 10px 15px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 0.75rem; }
-        .btn-reject { background: #1a1c20; border: 1px solid #333; color: var(--danger); }
-        
-        input, select { background: rgba(0,0,0,0.3); border: 1px solid #222; color: white; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 10px; outline: none; }
-
-        /* Modal View */
-        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
-        #modal img { max-width: 90%; max-height: 70%; border-radius: 15px; border: 2px solid var(--primary); }
-
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        .new-indicator { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; display: inline-block; animation: pulse 1s infinite; }
+        :root { --accent: #00d4ff; --bg: #05070a; --glass: rgba(255,255,255,0.03); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px 15px 100px 15px; }
+        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 25px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 14px; margin: 8px 0; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: white; outline: none; }
+        .btn { width: 100%; padding: 14px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; background: var(--accent); color: #000; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: rgba(10,15,20,0.95); border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; align-items: center; backdrop-filter: blur(20px); }
+        .nav-item { text-align: center; color: #555; flex: 1; font-size: 0.7rem; }
+        .nav-item.active { color: var(--accent); }
+        .section { display: none; } .section.active { display: block; }
     </style>
 </head>
 <body>
 
-<div id="modal" onclick="this.style.display='none'">
-    <img id="modalImg">
-    <p style="color:white; margin-top:20px;">Click anywhere to close</p>
-</div>
-
-<div class="header">
-    <h2>MASTER TERMINAL</h2>
-    <div id="live-dot" style="display:flex; align-items:center; gap:5px; font-size:0.7rem; color:var(--success)">
-        <span class="new-indicator" style="background:var(--success)"></span> LIVE SYNC
-    </div>
-</div>
-
-<div class="container">
-    <div class="stats-row">
-        <div class="stat-card">
-            <small>Monthly Payroll</small>
-            <div id="stat-pay">₹0</div>
+    <div id="staff" class="section active">
+        <h1>Staff Setup</h1>
+        <div class="card">
+            <h3>Add New Staff</h3>
+            <input type="text" id="s-name" placeholder="Staff Name">
+            <input type="tel" id="s-phone" placeholder="Phone Number">
+            <input type="password" id="s-pass" placeholder="Set Login Passcode">
+            <button class="btn" onclick="addStaff()">REGISTER STAFF</button>
         </div>
-        <div class="stat-card" style="border-color: var(--danger);">
-            <small>Fine Collected</small>
-            <div id="stat-fine">₹0</div>
-        </div>
+        <div id="staff-list"></div>
     </div>
 
-    <div class="glass-card">
-        <h3>📸 Today's Digital Logs</h3>
-        <div id="attendance-box">
-            <p style="color:#555; font-size:0.8rem;">Monitoring logs...</p>
+    <div id="controls" class="section">
+        <h1>Broadcasting</h1>
+        <div class="card">
+            <h3>Marquee Text</h3>
+            <input type="text" id="m-text" placeholder="Admin message...">
+            <button class="btn" onclick="updateMarquee()">UPDATE</button>
+        </div>
+        <div class="card">
+            <h3>No-Leave Dates</h3>
+            <input type="text" id="h-dates" placeholder="e.g., May 10, June 15">
+            <button class="btn" onclick="updateHolidays()">LOCK DATES</button>
         </div>
     </div>
 
-    <div class="glass-card" id="kyc-section" style="display:none;">
-        <h3>🚨 Registration Queue <span class="new-indicator"></span></h3>
-        <div id="pending-box"></div>
-    </div>
-
-    <div class="glass-card">
-        <h3>👥 Staff Directory</h3>
-        <div id="staff-box"></div>
-    </div>
-
-    <div class="glass-card">
-        <h3>⏰ System Batch Times</h3>
-        <div style="display:flex; gap:10px;">
-            <input type="time" id="time-m">
-            <input type="time" id="time-e">
-        </div>
-        <button style="width:100%" onclick="saveBatches()">Sync Times to All Terminals</button>
-    </div>
-
-    <div class="glass-card">
-        <h3>📩 Student Inquiries</h3>
-        <div id="lead-box"></div>
-    </div>
-</div>
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="tab('staff', this)"><i class="fas fa-users"></i><br>STAFF</div>
+        <div class="nav-item" onclick="tab('controls', this)"><i class="fas fa-bullhorn"></i><br>CONTROL</div>
+    </nav>
 
 <script>
     const firebaseConfig = {
@@ -129,106 +65,25 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function showImg(url) {
-        document.getElementById('modalImg').src = url;
-        document.getElementById('modal').style.display = 'flex';
+    function tab(id, el) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
     }
 
-    // 1. Live Attendance Logs
-    db.ref('attendance').limitToLast(10).on('value', snap => {
-        let html = "";
-        let fineSum = 0;
-        const today = new Date().toLocaleDateString();
-        
-        snap.forEach(child => {
-            const a = child.val();
-            const date = new Date(a.timestamp).toLocaleDateString();
-            if(a.fine) fineSum += a.fine;
-
-            if(date === today && a.type === 'in') {
-                html = `
-                <div class="item-row">
-                    <img src="${a.proof || ''}" class="thumb" onclick="showImg(this.src)">
-                    <div class="details">
-                        <b>${a.staff.toUpperCase()}</b>
-                        <span class="badge ${a.fine ? 'badge-late' : 'badge-ok'}">${a.fine ? '₹'+a.fine+' Fine' : 'On-Time'}</span>
-                    </div>
-                    <small style="color:#555">${new Date(a.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</small>
-                </div>` + html;
-            }
-        });
-        document.getElementById('attendance-box').innerHTML = html || "<p style='color:#444'>Waiting for today's logs...</p>";
-        document.getElementById('stat-fine').innerText = "₹" + fineSum;
-    });
-
-    // 2. Staff & KYC Management
-    db.ref('staff').on('value', snap => {
-        let activeHtml = "", pendingHtml = "", totalPayroll = 0, pCount = 0;
-        
-        snap.forEach(child => {
-            const s = child.val();
-            const key = child.key;
-            
-            if(s.status === 'pending') {
-                pCount++;
-                pendingHtml += `
-                <div class="item-row" style="background:rgba(255,170,0,0.05)">
-                    <img src="${s.photo}" class="thumb" onclick="showImg(this.src)">
-                    <div class="details"><b>${s.name}</b><small>Pass: ${s.passcode}</small></div>
-                    <div style="display:flex; gap:5px;">
-                        <button onclick="viewID('${s.id_card}')" style="background:#222">ID</button>
-                        <button onclick="approve('${key}')">✔</button>
-                    </div>
-                </div>`;
-            } else {
-                totalPayroll += (s.salary || 12000);
-                activeHtml += `
-                <div class="item-row">
-                    <img src="${s.photo}" class="thumb" onclick="showImg(this.src)">
-                    <div class="details"><b>${s.name}</b><small>${s.upi || 'UPI Not Set'}</small></div>
-                    <button class="btn-reject" onclick="removeStaff('${key}')">✕</button>
-                </div>`;
-            }
-        });
-        
-        document.getElementById('staff-box').innerHTML = activeHtml;
-        document.getElementById('pending-box').innerHTML = pendingHtml;
-        document.getElementById('kyc-section').style.display = pCount > 0 ? 'block' : 'none';
-        document.getElementById('stat-pay').innerText = "₹" + totalPayroll;
-    });
-
-    // 3. Batch Settings
-    db.ref('institute/batches').once('value', s => {
-        if(s.val()){
-            document.getElementById('time-m').value = s.val().morning;
-            document.getElementById('time-e').value = s.val().evening;
+    function addStaff() {
+        const name = document.getElementById('s-name').value;
+        const phone = document.getElementById('s-phone').value;
+        const pass = document.getElementById('s-pass').value;
+        if(name && phone && pass) {
+            db.ref('staff').push({ name, phone, passcode: pass });
+            alert("Staff Added! Now they can login.");
         }
-    });
-
-    function saveBatches() {
-        const m = document.getElementById('time-m').value;
-        const e = document.getElementById('time-e').value;
-        db.ref('institute/batches').update({ morning: m, evening: e })
-          .then(() => alert("All terminals updated!"));
     }
 
-    function viewID(url) { if(url) showImg(url); else alert("No ID uploaded"); }
-    function approve(id) { db.ref('staff/'+id).update({ status: 'active' }); }
-    function removeStaff(id) { if(confirm("Terminate Staff?")) db.ref('staff/'+id).remove(); }
-
-    // 4. Inquiries
-    db.ref('inquiries').limitToLast(10).on('value', snap => {
-        let html = "";
-        snap.forEach(c => {
-            const i = c.val();
-            html = `
-            <div class="item-row">
-                <div class="details"><b>${i.student}</b><small>${i.phone}</small></div>
-                <a href="https://wa.me/91${i.phone}" style="text-decoration:none; background:#25D366; padding:8px; border-radius:10px;">💬</a>
-            </div>` + html;
-        });
-        document.getElementById('lead-box').innerHTML = html || "<p>No inquiries.</p>";
-    });
+    function updateMarquee() { db.ref('admin/marquee').set(document.getElementById('m-text').value); }
+    function updateHolidays() { db.ref('admin/restricted_dates').set(document.getElementById('h-dates').value); }
 </script>
 </body>
 </html>
