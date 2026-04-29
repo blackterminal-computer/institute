@@ -2,137 +2,129 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Portal | Black Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Staff Terminal | Black Terminal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-
-        :root { 
-            --accent: #00d4ff; 
-            --bg: #05070a; 
-            --glass: rgba(255, 255, 255, 0.03);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --neon-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        :root {
+            --apple-blue: #007AFF;
+            --bg: #000000;
+            --card-bg: rgba(28, 28, 30, 0.7);
+            --accent: #00d4ff;
+            --text-sec: #8E8E93;
         }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg); 
-            background-image: radial-gradient(circle at 50% 0%, #102030 0%, #05070a 100%);
-            color: white; 
-            margin: 0; 
-            padding: 20px; 
-            min-height: 100vh;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(circle at top right, #1c1c1e, #000000);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .header { text-align: center; margin-bottom: 35px; }
-        .header h2 { letter-spacing: 2px; font-weight: 800; margin-bottom: 5px; }
-        .header span { color: var(--accent); font-size: 0.8rem; opacity: 0.8; text-transform: uppercase; }
+        .container { max-width: 450px; margin: auto; }
 
-        .grid { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 450px; margin: auto; }
-        
-        .card { 
-            background: var(--glass); 
-            padding: 25px; 
-            border-radius: 28px; 
-            border: 1px solid var(--card-border); 
-            backdrop-filter: blur(15px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        .header { text-align: left; margin-bottom: 30px; padding-left: 10px; }
+        .header h1 { font-size: 24px; margin: 0; font-weight: 700; }
+        .header p { color: var(--apple-blue); font-size: 14px; margin: 4px 0; font-weight: 500; }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        h3 { margin-top: 0; font-size: 1rem; color: #fff; border-left: 3px solid var(--accent); padding-left: 12px; margin-bottom: 20px; }
-        
-        /* Stats Styling */
-        .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .stat-label { opacity: 0.6; font-size: 0.85rem; }
-        .stat-value { font-weight: 600; font-size: 1.1rem; }
-        .stat-value.highlight { color: var(--accent); text-shadow: var(--neon-shadow); }
+        h3 { font-size: 16px; margin-top: 0; display: flex; align-items: center; gap: 10px; color: var(--text-sec); }
+        h3 i { color: var(--apple-blue); }
 
-        /* Input Styling */
-        input { 
-            width: 100%; padding: 14px; margin: 8px 0; 
-            background: rgba(0,0,0,0.5); 
-            border: 1px solid var(--card-border); 
-            border-radius: 14px; 
-            color: white; 
-            box-sizing: border-box;
-            transition: 0.3s;
-        }
-        input:focus { border-color: var(--accent); outline: none; box-shadow: var(--neon-shadow); }
+        /* Stats Logic */
+        .stat-grid { display: flex; justify-content: space-between; margin: 15px 0; }
+        .stat-box { text-align: left; }
+        .stat-box small { display: block; font-size: 11px; color: var(--text-sec); text-transform: uppercase; }
+        .stat-box b { font-size: 20px; color: #fff; }
 
         /* Buttons */
-        .btn { 
-            width: 100%; padding: 15px; border-radius: 14px; border: none; 
-            font-weight: 700; cursor: pointer; transition: 0.4s; margin-top: 10px;
-            text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem;
+        .btn {
+            width: 100%; padding: 16px; border-radius: 16px; border: none;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s;
         }
-        .btn-att { background: linear-gradient(135deg, #00d4ff, #0072ff); color: white; }
-        .btn-att:disabled { background: #1a1c20; color: #444; border: 1px solid #333; cursor: not-allowed; }
-        
-        .btn-lead { background: #fff; color: #000; }
-        .btn-lead:hover { background: var(--accent); }
+        .btn-main { background: var(--apple-blue); color: white; }
+        .btn:disabled { background: rgba(255,255,255,0.1); color: var(--text-sec); cursor: not-allowed; }
 
-        .btn-download { 
-            background: transparent; color: #fff; border: 1px solid var(--card-border); 
-            display: flex; justify-content: space-between; align-items: center;
+        /* Task List */
+        .task-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px; border-radius: 18px; margin-top: 12px;
+            border-left: 4px solid var(--apple-blue);
         }
-        .btn-download:hover { background: rgba(255,255,255,0.05); border-color: #fff; }
+        .task-item p { margin: 0; font-size: 14px; line-height: 1.4; }
+        .task-item small { color: var(--text-sec); font-size: 11px; display: block; margin-top: 8px; }
 
-        .countdown { 
-            background: rgba(255, 173, 173, 0.1); color: #ffadad; 
-            padding: 8px 15px; border-radius: 10px; font-size: 0.75rem; 
-            display: inline-block; margin-top: 10px; 
+        /* Input */
+        input {
+            width: 100%; padding: 14px; margin: 10px 0; background: rgba(255,255,255,0.08);
+            border: none; border-radius: 12px; color: white; outline: none; box-sizing: border-box;
         }
 
+        .countdown { font-size: 12px; color: #ffadad; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <span id="date-now"></span>
-    <h2 id="welcome-name">STAFF TERMINAL</h2>
-</div>
-
-<div class="grid">
-    <div class="card">
-        <h3>FINANCE & ATTENDANCE</h3>
-        <div class="stat-row">
-            <span class="stat-label">Daily Wage</span>
-            <span class="stat-value" id="per-day-income">₹0</span>
-        </div>
-        <div class="stat-row">
-            <span class="stat-label">Current Balance</span>
-            <span class="stat-value highlight" id="total-salary">₹0</span>
-        </div>
-        
-        <button id="att-btn" class="btn btn-att" onclick="markAttendance()">PUNCH IN TODAY</button>
-        <center><div class="countdown" id="salary-timer">Loading cycle...</div></center>
+<div class="container">
+    <div class="header">
+        <p id="current-date"></p>
+        <h1 id="user-display">Welcome, Staff</h1>
     </div>
 
     <div class="card">
-        <h3>LEAD GENERATION</h3>
-        <input type="text" id="lead-name" placeholder="Student Name">
-        <input type="text" id="lead-course" placeholder="Interest Course">
-        <input type="tel" id="lead-phone" placeholder="WhatsApp Number">
-        <button class="btn btn-lead" onclick="submitLead()">SUBMIT LEAD TO ADMIN</button>
+        <h3><i class="fas fa-wallet"></i> FINANCE & ATTENDANCE</h3>
+        <div class="stat-grid">
+            <div class="stat-box">
+                <small>Daily Rate</small>
+                <b id="daily-rate">₹0</b>
+            </div>
+            <div class="stat-box" style="text-align: right;">
+                <small>Total Earning</small>
+                <b id="total-earning">₹0</b>
+            </div>
+        </div>
+        <button id="att-btn" class="btn btn-main" onclick="markAttendance()">PUNCH IN TODAY</button>
+        <div id="cycle-text" class="countdown"></div>
     </div>
 
     <div class="card">
-        <h3>RESOURCES</h3>
-        <button class="btn btn-download" onclick="downloadDoc('Terms')">
-            TERMS & CONDITIONS <span>→</span>
-        </button>
-        <button class="btn btn-download" onclick="downloadDoc('Agreement')">
-            MONTHLY AGREEMENT <span>→</span>
-        </button>
+        <h3><i class="fas fa-tasks"></i> ASSIGNED TASKS</h3>
+        <div id="task-list">
+            <p style="font-size: 13px; opacity: 0.5;">No active tasks assigned.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-user-plus"></i> SUBMIT NEW LEAD</h3>
+        <input type="text" id="l-name" placeholder="Student Name">
+        <input type="text" id="l-course" placeholder="Course Interested">
+        <input type="tel" id="l-phone" placeholder="WhatsApp Number">
+        <button class="btn btn-main" style="background: #fff; color: #000;" onclick="submitLead()">SUBMIT TO ADMIN</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-file-download"></i> RESOURCES</h3>
+        <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff; margin-bottom: 10px;" onclick="alert('Downloading...')">Terms & Conditions</button>
+        <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff;" onclick="alert('Downloading...')">Monthly Agreement</button>
     </div>
 </div>
 
 <script>
-    // [Firebase Config remains same as before]
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -147,40 +139,53 @@
 
     const staffId = localStorage.getItem('bt_staff_id');
     const staffName = localStorage.getItem('bt_staff_name');
-    const PER_DAY_WAGE = 500; 
 
     if(!staffId) window.location.href = "index.html";
-    document.getElementById('welcome-name').innerText = staffName.toUpperCase();
-    document.getElementById('date-now').innerText = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric'});
 
-    // --- Core Logic ---
+    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    function checkStatus() {
+    // --- 1. Attendance & Salary System ---
+    let myDailyRate = 500; 
+
+    async function initSystem() {
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
-        const day = today.getDay(); 
+        const day = today.getDay(); // 0: Sun, 6: Sat
 
+        // Check Weekend
         if(day === 0 || day === 6) {
-            const btn = document.getElementById('att-btn');
-            btn.disabled = true;
-            btn.innerText = "WEEKEND REST";
-            btn.style.background = "#1a1c20";
+            disableBtn("WEEKEND OFF");
         }
 
-        db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
-            if(snap.exists()) {
-                const btn = document.getElementById('att-btn');
-                btn.disabled = true;
-                btn.innerText = "ALREADY PUNCHED";
-            }
+        // Check Holidays
+        db.ref('holidays').once('value', snap => {
+            snap.forEach(child => {
+                if(child.val() === dateStr) disableBtn("HOLIDAY TODAY");
+            });
         });
 
-        db.ref(`staff/${staffId}`).on('value', snap => {
-            const data = snap.val();
-            document.getElementById('total-salary').innerText = `₹${data.salary || 0}`;
-            document.getElementById('per-day-income').innerText = `₹${PER_DAY_WAGE}`;
-            updateTimer();
+        // Check if Already Marked
+        db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
+            if(snap.exists()) disableBtn("PUNCHED IN");
         });
+
+        // Fetch My Salary Data
+        db.ref(`staff/${staffId}`).on('value', snap => {
+            const val = snap.val();
+            myDailyRate = val.perDayWage || 500;
+            document.getElementById('daily-rate').innerText = `₹${myDailyRate}`;
+            document.getElementById('total-earning').innerText = `₹${val.salary || 0}`;
+        });
+
+        updateCycle();
+        loadTasks();
+    }
+
+    function disableBtn(txt) {
+        const btn = document.getElementById('att-btn');
+        btn.disabled = true;
+        btn.innerText = txt;
     }
 
     function markAttendance() {
@@ -189,40 +194,61 @@
             time: new Date().toLocaleTimeString(),
             status: "Present"
         }).then(() => {
-            db.ref(`staff/${staffId}/salary`).transaction(c => (c || 0) + PER_DAY_WAGE);
-            alert("Attendance Success!");
+            db.ref(`staff/${staffId}/salary`).transaction(current => (current || 0) + myDailyRate);
+            alert("Punch-in Successful!");
             location.reload();
         });
     }
 
-    function updateTimer() {
+    function updateCycle() {
         const now = new Date();
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const rem = lastDay - now.getDate();
-        document.getElementById('salary-timer').innerText = `Next Cycle: ${rem} Days Left`;
+        document.getElementById('cycle-text').innerText = `${rem} days left in current salary cycle`;
     }
 
-    function submitLead() {
-        const n = document.getElementById('lead-name').value;
-        const c = document.getElementById('lead-course').value;
-        const p = document.getElementById('lead-phone').value;
-
-        if(!n || !c || p.length < 10) return alert("Invalid Details!");
-
-        db.ref('leads').push({
-            name: n, course: c, phone: p,
-            staff: staffName, date: new Date().toLocaleString()
-        }).then(() => {
-            alert("Lead Shared!");
-            ["lead-name", "lead-course", "lead-phone"].forEach(id => document.getElementById(id).value = "");
+    // --- 2. Admin Tasks System ---
+    function loadTasks() {
+        db.ref(`tasks/${staffId}`).on('value', snap => {
+            const container = document.getElementById('task-list');
+            container.innerHTML = "";
+            if(!snap.exists()) {
+                container.innerHTML = `<p style="font-size:13px; opacity:0.5;">No pending tasks.</p>`;
+                return;
+            }
+            snap.forEach(child => {
+                const t = child.val();
+                container.innerHTML += `
+                    <div class="task-item">
+                        <p>${t.task}</p>
+                        <small>Assigned: ${new Date(t.date).toLocaleDateString()}</small>
+                    </div>
+                `;
+            });
         });
     }
 
-    function downloadDoc(type) {
-        alert(type + " download starting...");
+    // --- 3. Lead Submission ---
+    function submitLead() {
+        const n = document.getElementById('l-name').value;
+        const c = document.getElementById('l-course').value;
+        const p = document.getElementById('l-phone').value;
+
+        if(!n || !c || p.length < 10) return alert("Enter valid lead details!");
+
+        db.ref('leads').push({
+            name: n, course: c, phone: p,
+            staff: staffName, staffId: staffId,
+            date: Date.now()
+        }).then(() => {
+            alert("Lead Shared with Admin!");
+            document.getElementById('l-name').value = "";
+            document.getElementById('l-course').value = "";
+            document.getElementById('l-phone').value = "";
+        });
     }
 
-    checkStatus();
+    initSystem();
 </script>
 </body>
 </html>
