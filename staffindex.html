@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Staff Terminal | Black Terminal</title>
+    <!-- Firebase Compat Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -179,8 +182,11 @@
         messagingSenderId: "552489994197",
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
+    
+    // Initialize App
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = firebase.database();  // Realtime DB (For Staff/Tasks)
+    const fs = firebase.firestore(); // Firestore (For Student Attendance)
 
     const staffId = localStorage.getItem('bt_staff_id');
     const staffName = localStorage.getItem('bt_staff_name') || "Staff";
@@ -194,6 +200,7 @@
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
         
+        // Staff punch-in check (Realtime DB)
         db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
             if(snap.exists()) {
                 const btn = document.getElementById('att-btn');
@@ -203,6 +210,7 @@
             }
         });
 
+        // Staff wage/streak check (Realtime DB)
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             const rate = val.perDayWage || 500;
@@ -225,44 +233,40 @@
         listenStudentAttendance(); 
     }
 
-    // UPDATED ROBUST ATTENDANCE LISTENER
+    // --- FIRESTORE POWERED ATTENDANCE ---
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
         const countSpan = document.getElementById('present-count');
 
-        db.ref('attendance').on('value', snap => {
+        fs.collection("attendance")
+          .where("date", "==", todayStr)
+          .onSnapshot((snapshot) => {
             listDiv.innerHTML = "";
             let count = 0;
-            
-            snap.forEach(userSnap => {
-                const userId = userSnap.key;
-                const dailyRecords = userSnap.val();
+
+            if (snapshot.empty) {
+                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
+                countSpan.innerText = "0";
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                count++;
                 
-                // Check if this specific user has a record for TODAY
-                if (dailyRecords && dailyRecords[todayStr]) {
-                    const record = dailyRecords[todayStr];
-                    
-                    // Logic: Use userName (synced from smart att), else record name, else userId
-                    const studentName = record.userName || record.name || userId;
-                    
-                    // Don't show staff names in student attendance
-                    if (userId !== staffId) {
-                        count++;
-                        listDiv.innerHTML += `
-                            <div class="att-item">
-                                <span class="att-name">${studentName}</span>
-                                <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                            </div>
-                        `;
-                    }
-                }
+                // Maps to studentName/userName saved by your Smart Attendance Page
+                const displayName = data.userName || data.studentName || "Unknown Student";
+
+                listDiv.innerHTML += `
+                    <div class="att-item">
+                        <span class="att-name">${displayName}</span>
+                        <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
+                    </div>
+                `;
             });
 
             countSpan.innerText = count;
-            if (count === 0) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
-            }
         });
     }
 
@@ -274,8 +278,7 @@
         db.ref(`attendance/${staffId}/${dateStr}`).set({
             time: new Date().toLocaleTimeString(),
             status: "Present",
-            name: staffName,
-            userName: staffName
+            name: staffName
         }).then(() => {
             db.ref(`staff/${staffId}`).transaction(staff => {
                 if (staff) {
