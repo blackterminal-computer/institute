@@ -139,6 +139,7 @@
         </button>
     </div>
 
+    <!-- STUDENT ATTENDANCE SECTION -->
     <div class="card">
         <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
         <div id="attendance-list">
@@ -225,7 +226,7 @@
         listenStudentAttendance();
     }
 
-    // --- UPDATED: Shows Name instead of ID ---
+    // --- ENHANCED: Fetches Names from 'students' folder if ID is found ---
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -239,20 +240,22 @@
                 const userId = userSnap.key;
                 const attendanceData = userSnap.val();
                 
-                // If student has attendance record for today
                 if (attendanceData[todayStr]) {
                     count++;
                     const info = attendanceData[todayStr];
                     
-                    // Logic: Use name or userName field if available, otherwise fallback to ID
-                    const displayName = info.userName || info.name || userId;
-                    
-                    listDiv.innerHTML += `
-                        <div class="att-item">
-                            <span class="att-name">${displayName}</span>
-                            <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                        </div>
-                    `;
+                    // 1. Try to get name from attendance record itself
+                    let displayName = info.userName || info.name;
+
+                    if (displayName) {
+                        renderAttendanceItem(displayName);
+                    } else {
+                        // 2. If name is missing, fetch it from the 'students' directory
+                        db.ref(`students/${userId}/name`).once('value', nameSnap => {
+                            const fetchedName = nameSnap.val() || userId; // Fallback to ID if name not found in DB
+                            renderAttendanceItem(fetchedName);
+                        });
+                    }
                 }
             });
 
@@ -261,6 +264,18 @@
                 listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
             }
         });
+
+        function renderAttendanceItem(name) {
+            // Check if item already exists to prevent duplicates from the async fetch
+            if (!document.getElementById(`att-${name}`)) {
+                listDiv.innerHTML += `
+                    <div class="att-item" id="att-${name}">
+                        <span class="att-name">${name}</span>
+                        <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
+                    </div>
+                `;
+            }
+        }
     }
 
     function markAttendance() {
@@ -271,7 +286,7 @@
         db.ref(`attendance/${staffId}/${dateStr}`).set({
             time: new Date().toLocaleTimeString(),
             status: "Present",
-            name: staffName // Adding name for easier identification in logs
+            name: staffName
         }).then(() => {
             db.ref(`staff/${staffId}`).transaction(staff => {
                 if (staff) {
