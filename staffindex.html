@@ -139,7 +139,7 @@
         </button>
     </div>
 
-    <!-- NEW STUDENT ATTENDANCE SECTION -->
+    <!-- UPDATED STUDENT ATTENDANCE SECTION -->
     <div class="card">
         <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
         <div id="attendance-list">
@@ -223,10 +223,10 @@
         document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days left`;
 
         loadTasks();
-        listenStudentAttendance(); // Load attendance on startup
+        listenStudentAttendance(); 
     }
 
-    // --- NEW: Listers for Real-time Student Attendance ---
+    // --- UPDATED: Displays Name with double-check logic ---
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -237,19 +237,25 @@
             let count = 0;
             
             snap.forEach(userSnap => {
+                const userId = userSnap.key;
                 const attendanceData = userSnap.val();
-                // Check if this user has entry for today
-                if (attendanceData[todayStr]) {
+                
+                if (attendanceData && attendanceData[todayStr]) {
                     count++;
                     const info = attendanceData[todayStr];
-                    const name = info.userName || info.name || userSnap.key; // Fallback to ID if name missing
                     
-                    listDiv.innerHTML += `
-                        <div class="att-item">
-                            <span class="att-name">${name}</span>
-                            <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                        </div>
-                    `;
+                    // Logic: Check entry first, then cross-reference student profile
+                    let displayName = info.userName || info.name;
+
+                    if (displayName) {
+                        renderRow(displayName);
+                    } else {
+                        // If name is missing in entry, fetch from students folder
+                        db.ref(`students/${userId}/name`).once('value', nameSnap => {
+                            const fetchedName = nameSnap.val() || userId;
+                            renderRow(fetchedName);
+                        });
+                    }
                 }
             });
 
@@ -258,6 +264,19 @@
                 listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
             }
         });
+
+        function renderRow(name) {
+            // Prevent duplicates if multiple lookups finish
+            const existing = Array.from(listDiv.querySelectorAll('.att-name')).map(el => el.innerText);
+            if (!existing.includes(name)) {
+                listDiv.innerHTML += `
+                    <div class="att-item">
+                        <span class="att-name">${name}</span>
+                        <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
+                    </div>
+                `;
+            }
+        }
     }
 
     function markAttendance() {
@@ -268,7 +287,8 @@
         db.ref(`attendance/${staffId}/${dateStr}`).set({
             time: new Date().toLocaleTimeString(),
             status: "Present",
-            name: staffName // Adding name for easier identification
+            name: staffName,
+            userName: staffName
         }).then(() => {
             db.ref(`staff/${staffId}`).transaction(staff => {
                 if (staff) {
