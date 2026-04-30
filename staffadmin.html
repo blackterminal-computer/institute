@@ -17,6 +17,7 @@
             --card: rgba(255, 255, 255, 0.04);
             --border: rgba(255, 255, 255, 0.08);
             --success: #2ecc71;
+            --info: #3498db;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -53,7 +54,6 @@
 
         h2 { font-size: 0.95rem; color: #fff; margin-top: 0; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
 
-        /* Mobile Scrollable Tables */
         .table-container { 
             overflow-x: auto; 
             -webkit-overflow-scrolling: touch;
@@ -65,7 +65,6 @@
         th { text-align: left; font-size: 0.65rem; text-transform: uppercase; opacity: 0.5; padding: 10px; border-bottom: 1px solid var(--border); }
         td { padding: 12px 10px; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.02); }
 
-        /* Form Styling for Mobile */
         input, select, textarea { 
             background: rgba(0,0,0,0.5); 
             border: 1px solid var(--border); 
@@ -73,7 +72,7 @@
             padding: 12px; 
             border-radius: 12px; 
             width: 100%; 
-            font-size: 16px; /* Prevents auto-zoom on iOS */
+            font-size: 16px;
             margin-bottom: 10px;
         }
 
@@ -88,7 +87,7 @@
             align-items: center; 
             justify-content: center;
             gap: 6px;
-            width: 100%; /* Mobile buttons are easier to click when full width */
+            width: 100%;
         }
         
         .btn-update { background: var(--success); color: black; }
@@ -97,12 +96,23 @@
         .btn-task { background: white; color: black; }
 
         .action-btns { display: flex; gap: 8px; }
-        .action-btns .btn { width: 45px; height: 40px; } /* Small square buttons for table actions */
+        .action-btns .btn { width: 45px; height: 40px; }
 
         .holiday-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         .holiday-tag { background: #1a1a1a; padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; border: 1px solid var(--border); }
 
-        /* Layout Grid for larger screens */
+        /* Attendance List Styling */
+        .att-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--success);
+        }
+
         @media (min-width: 768px) {
             .container { max-width: 1000px; margin: auto; }
             .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
@@ -116,62 +126,75 @@
 <div class="container">
     <div class="header-flex">
         <h1>BLACK<span>TERMINAL</span> ADMIN</h1>
-        <div id="status-tag" style="font-size: 0.6rem; background: var(--success); color: black; padding: 5px 12px; border-radius: 15px; font-weight: 800;">ONLINE</div>
+        <div style="display:flex; gap:10px;">
+            <div id="att-count" style="font-size: 0.6rem; background: var(--info); color: white; padding: 5px 12px; border-radius: 15px; font-weight: 800;">PRESENT: 0</div>
+            <div id="status-tag" style="font-size: 0.6rem; background: var(--success); color: black; padding: 5px 12px; border-radius: 15px; font-weight: 800;">ONLINE</div>
+        </div>
     </div>
 
     <div class="grid">
-        <div class="card">
-            <h2><i class="fas fa-users"></i> Staff Payroll</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Staff Name</th>
-                            <th>Rate</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="staff-body"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
-            <select id="task-staff-select"></select>
-            <textarea id="task-desc" placeholder="Assign task details..." rows="2"></textarea>
-            <button class="btn btn-task" onclick="sendTask()"><i class="fas fa-paper-plane"></i> SEND TASK</button>
-            
-            <div style="margin-top: 25px;">
-                <h2><i class="fas fa-calendar-alt"></i> Set Holiday</h2>
-                <div style="display: flex; gap: 10px;">
-                    <input type="date" id="holiday-date" style="margin-bottom:0;">
-                    <button class="btn btn-update" style="width: 50px;" onclick="addHoliday()"><i class="fas fa-plus"></i></button>
+        <div class="left-col">
+            <div class="card">
+                <h2><i class="fas fa-users"></i> Staff Payroll</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Rate</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staff-body"></tbody>
+                    </table>
                 </div>
-                <div id="holiday-list" class="holiday-list"></div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-headset"></i> Recent Leads</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>WhatsApp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lead-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="card" style="grid-column: 1 / -1;">
-            <h2><i class="fas fa-headset"></i> Recent Leads</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Course</th>
-                            <th>WhatsApp</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lead-body"></tbody>
-                </table>
+        <div class="right-col">
+            <div class="card">
+                <h2><i class="fas fa-fingerprint"></i> Today's Attendance</h2>
+                <div id="attendance-list" style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">
+                    <p style="opacity: 0.5; text-align: center;">Waiting for data...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+                <select id="task-staff-select"></select>
+                <textarea id="task-desc" placeholder="Assign task details..." rows="2"></textarea>
+                <button class="btn btn-task" onclick="sendTask()"><i class="fas fa-paper-plane"></i> SEND TASK</button>
+                
+                <div style="margin-top: 25px;">
+                    <h2><i class="fas fa-calendar-alt"></i> Set Holiday</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" id="holiday-date" style="margin-bottom:0;">
+                        <button class="btn btn-update" style="width: 50px;" onclick="addHoliday()"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="holiday-list" class="holiday-list"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -184,15 +207,21 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Staff names map for attendance lookup
+    let staffNames = {};
+
     // Fetch Staff
     db.ref('staff').on('value', snap => {
         const tbody = document.getElementById('staff-body');
         const select = document.getElementById('task-staff-select');
         tbody.innerHTML = "";
         select.innerHTML = "<option>Select Staff</option>";
+        staffNames = {}; // Reset map
 
         snap.forEach(child => {
             const user = child.val();
+            staffNames[child.key] = user.name; // ID to Name mapping
+
             tbody.innerHTML += `
                 <tr>
                     <td><b>${user.name}</b></td>
@@ -207,6 +236,34 @@
             `;
             select.innerHTML += `<option value="${child.key}">${user.name}</option>`;
         });
+    });
+
+    // Attendance Logic
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    db.ref('attendance').on('value', snap => {
+        const attList = document.getElementById('attendance-list');
+        const attCountDisplay = document.getElementById('att-count');
+        attList.innerHTML = "";
+        let count = 0;
+
+        snap.forEach(staffChild => {
+            const staffId = staffChild.key;
+            const dates = staffChild.val();
+            
+            if(dates[today]) {
+                count++;
+                const name = staffNames[staffId] || staffId;
+                attList.innerHTML += `
+                    <div class="att-item">
+                        <span><b>${name}</b></span>
+                        <span style="color:var(--success); font-weight:bold;">${dates[today].time}</span>
+                    </div>
+                `;
+            }
+        });
+
+        attCountDisplay.innerText = "PRESENT: " + count;
+        if(count === 0) attList.innerHTML = "<p style='opacity: 0.5; text-align: center;'>No one present today</p>";
     });
 
     function updateWage(id) {
