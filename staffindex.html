@@ -226,7 +226,7 @@
         listenStudentAttendance(); 
     }
 
-    // --- UPDATED: Displays Name with double-check logic ---
+    // --- NEW: DISPLAYS NAME SYNCED WITH SMART ATTENDANCE ---
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -240,22 +240,20 @@
                 const userId = userSnap.key;
                 const attendanceData = userSnap.val();
                 
+                // Checks if student has entry for today
                 if (attendanceData && attendanceData[todayStr]) {
                     count++;
                     const info = attendanceData[todayStr];
                     
-                    // Logic: Check entry first, then cross-reference student profile
-                    let displayName = info.userName || info.name;
+                    // Priority: Use 'userName' (synced from Smart Attendance), then 'name', then ID
+                    const displayName = info.userName || info.name || userId;
 
-                    if (displayName) {
-                        renderRow(displayName);
-                    } else {
-                        // If name is missing in entry, fetch from students folder
-                        db.ref(`students/${userId}/name`).once('value', nameSnap => {
-                            const fetchedName = nameSnap.val() || userId;
-                            renderRow(fetchedName);
-                        });
-                    }
+                    listDiv.innerHTML += `
+                        <div class="att-item">
+                            <span class="att-name">${displayName}</span>
+                            <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
+                        </div>
+                    `;
                 }
             });
 
@@ -264,19 +262,6 @@
                 listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
             }
         });
-
-        function renderRow(name) {
-            // Prevent duplicates if multiple lookups finish
-            const existing = Array.from(listDiv.querySelectorAll('.att-name')).map(el => el.innerText);
-            if (!existing.includes(name)) {
-                listDiv.innerHTML += `
-                    <div class="att-item">
-                        <span class="att-name">${name}</span>
-                        <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                    </div>
-                `;
-            }
-        }
     }
 
     function markAttendance() {
