@@ -81,7 +81,7 @@
         .task-info p { margin: 0; font-size: 14px; font-weight: 500; }
         .task-info small { color: var(--text-sec); font-size: 11px; margin-top: 5px; display: block; }
 
-        /* NEW ATTENDANCE STYLES */
+        /* ATTENDANCE STYLES */
         #attendance-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; }
         .att-item { 
             background: rgba(255,255,255,0.05); 
@@ -139,7 +139,6 @@
         </button>
     </div>
 
-    <!-- UPDATED STUDENT ATTENDANCE SECTION -->
     <div class="card">
         <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
         <div id="attendance-list">
@@ -226,7 +225,7 @@
         listenStudentAttendance(); 
     }
 
-    // --- NEW: DISPLAYS NAME SYNCED WITH SMART ATTENDANCE ---
+    // UPDATED ROBUST ATTENDANCE LISTENER
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -238,22 +237,25 @@
             
             snap.forEach(userSnap => {
                 const userId = userSnap.key;
-                const attendanceData = userSnap.val();
+                const dailyRecords = userSnap.val();
                 
-                // Checks if student has entry for today
-                if (attendanceData && attendanceData[todayStr]) {
-                    count++;
-                    const info = attendanceData[todayStr];
+                // Check if this specific user has a record for TODAY
+                if (dailyRecords && dailyRecords[todayStr]) {
+                    const record = dailyRecords[todayStr];
                     
-                    // Priority: Use 'userName' (synced from Smart Attendance), then 'name', then ID
-                    const displayName = info.userName || info.name || userId;
-
-                    listDiv.innerHTML += `
-                        <div class="att-item">
-                            <span class="att-name">${displayName}</span>
-                            <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                        </div>
-                    `;
+                    // Logic: Use userName (synced from smart att), else record name, else userId
+                    const studentName = record.userName || record.name || userId;
+                    
+                    // Don't show staff names in student attendance
+                    if (userId !== staffId) {
+                        count++;
+                        listDiv.innerHTML += `
+                            <div class="att-item">
+                                <span class="att-name">${studentName}</span>
+                                <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
+                            </div>
+                        `;
+                    }
                 }
             });
 
