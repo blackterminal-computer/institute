@@ -139,9 +139,8 @@
         </button>
     </div>
 
-    <!-- NEW: LIVE STUDENT ATTENDANCE SECTION -->
     <div class="card">
-        <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE (<span id="present-count">0</span>)</h3>
+        <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
         <div id="attendance-list">
             <p style="text-align:center; font-size:12px; opacity:0.4;">Loading attendance...</p>
         </div>
@@ -171,7 +170,6 @@
 </div>
 
 <script>
-    // Initialize Firebase (Using your existing config)
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -189,7 +187,6 @@
 
     if(!staffId) window.location.href = "index.html";
 
-    // Setup UI
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -197,7 +194,6 @@
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
         
-        // 1. Check Staff Attendance Status
         db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
             if(snap.exists()) {
                 const btn = document.getElementById('att-btn');
@@ -207,7 +203,6 @@
             }
         });
 
-        // 2. Fetch Salary & Streak Data
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             const rate = val.perDayWage || 500;
@@ -222,7 +217,6 @@
             document.getElementById('salary-progress').style.width = percent + "%";
         });
 
-        // 3. Update Cycle countdown
         const now = new Date();
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days left`;
@@ -231,14 +225,12 @@
         listenStudentAttendance();
     }
 
-    // --- LIVE STUDENT ATTENDANCE LOGIC (Realtime Database Style) ---
+    // --- UPDATED: Shows Name instead of ID ---
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
         const countSpan = document.getElementById('present-count');
 
-        // Assuming students' attendance is stored at 'student_attendance/DATE/STUDENT_ID'
-        // or a similar path. Adjusting to common Realtime DB structure:
         db.ref('attendance').on('value', snap => {
             listDiv.innerHTML = "";
             let count = 0;
@@ -247,13 +239,17 @@
                 const userId = userSnap.key;
                 const attendanceData = userSnap.val();
                 
-                // Check if this user has an entry for today
+                // If student has attendance record for today
                 if (attendanceData[todayStr]) {
                     count++;
                     const info = attendanceData[todayStr];
+                    
+                    // Logic: Use name or userName field if available, otherwise fallback to ID
+                    const displayName = info.userName || info.name || userId;
+                    
                     listDiv.innerHTML += `
                         <div class="att-item">
-                            <span class="att-name">${userId}</span>
+                            <span class="att-name">${displayName}</span>
                             <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
                         </div>
                     `;
@@ -274,7 +270,8 @@
 
         db.ref(`attendance/${staffId}/${dateStr}`).set({
             time: new Date().toLocaleTimeString(),
-            status: "Present"
+            status: "Present",
+            name: staffName // Adding name for easier identification in logs
         }).then(() => {
             db.ref(`staff/${staffId}`).transaction(staff => {
                 if (staff) {
