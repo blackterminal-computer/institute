@@ -69,9 +69,7 @@
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-punch { background: var(--apple-blue); color: white; }
-        .btn-main { background: #fff; color: #000; }
 
-        /* ATTENDANCE LIST STYLES */
         #attendance-list { display: flex; flex-direction: column; gap: 10px; }
         .att-item { 
             background: rgba(255,255,255,0.05); 
@@ -84,27 +82,20 @@
         }
         .att-name { font-size: 14px; font-weight: 600; flex: 1; }
         
-        /* WHATSAPP BUTTON */
         .wa-action {
             background: rgba(34, 197, 94, 0.15);
             color: #22C55E;
-            width: 35px;
-            height: 35px;
+            width: 35px; height: 35px;
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-            cursor: pointer;
-            transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            margin-right: 12px; cursor: pointer; transition: 0.2s;
         }
-        .wa-action:active { transform: scale(0.8); background: #22C55E; color: #fff; }
-
+        .wa-action:active { transform: scale(0.8); }
         .att-tag { font-size: 11px; color: var(--apple-green); font-weight: 700; }
 
         input {
             width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border); border-radius: 16px; color: white; outline: none; box-sizing: border-box;
+            border: 1px solid var(--border); border-radius: 16px; color: white; box-sizing: border-box;
         }
     </style>
 </head>
@@ -130,20 +121,22 @@
             </div>
         </div>
         <div class="progress-container"><div id="salary-progress" class="progress-bar"></div></div>
+        <br>
         <button id="att-btn" class="btn btn-punch" onclick="markAttendance()">PUNCH IN</button>
     </div>
 
     <div class="card">
         <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
-        <div id="attendance-list"></div>
+        <div id="attendance-list">
+            <p style="text-align:center; opacity:0.3; font-size:12px;">Syncing attendance...</p>
+        </div>
     </div>
 
     <div class="card">
         <h3><i class="fas fa-paper-plane"></i> LEAD GENERATOR</h3>
         <input type="text" id="l-name" placeholder="Student Name">
         <input type="tel" id="l-phone" placeholder="WhatsApp Number">
-        <input type="text" id="l-course" placeholder="Interest">
-        <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD</button>
+        <button class="btn btn-punch" style="background:#fff; color:#000" onclick="submitLead()">SUBMIT LEAD</button>
     </div>
 </div>
 
@@ -153,7 +146,7 @@
         authDomain: "black-terminal-f2c91.firebaseapp.com",
         databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
         projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.firebasestorage.app",
+        storageBucket: "black-terminal-f2c91.appspot.com",
         messagingSenderId: "552489994197",
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
@@ -165,43 +158,57 @@
     const staffId = localStorage.getItem('bt_staff_id');
     const staffName = localStorage.getItem('bt_staff_name') || "Staff";
 
-    function listenStudentAttendance() {
+    // CORE LOGIC: Fetch Student WhatsApp using Admin Profile Data
+    async function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
         
         fs.collection("attendance").where("date", "==", todayStr)
-          .onSnapshot((snapshot) => {
+          .onSnapshot(async (snapshot) => {
             listDiv.innerHTML = "";
             document.getElementById('present-count').innerText = snapshot.size;
 
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const name = data.userName || data.studentName || "Unknown";
-                const rawPhone = data.userPhone || data.phoneNumber || data.phone || "";
+            if(snapshot.empty) {
+                listDiv.innerHTML = `<p style="text-align:center; opacity:0.3; font-size:12px;">No attendance yet.</p>`;
+                return;
+            }
+
+            for (const docSnap of snapshot.docs) {
+                const data = docSnap.data();
+                // Admin Panel ke mutabik document ID hi Student Name hai
+                const studentName = data.userName || data.studentName || data.name;
                 
-                // Phone Number Cleaning & WA Link
-                const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-                let waBtn = "";
+                let phone = "";
                 
+                // Firestore lookup: 'students' collection se number uthao
+                try {
+                    const studentRef = await fs.collection("students").doc(studentName).get();
+                    if(studentRef.exists) {
+                        phone = studentRef.data().phoneNumber || studentRef.data().phone || "";
+                    }
+                } catch(e) { console.error("Lookup failed", e); }
+
+                const cleanPhone = phone.toString().replace(/\D/g, '');
+                let waAction = "";
+
                 if(cleanPhone.length >= 10) {
-                    const finalPhone = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    const msg = encodeURIComponent(`Hi ${name}, this is a reminder from Black Terminal regarding your pending fees. Please clear it today. Thank you!`);
-                    waBtn = `<div class="wa-action" onclick="window.open('https://wa.me/${finalPhone}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                    const msg = encodeURIComponent(`Hi ${studentName}, reminder from Black Terminal regarding your dues. Please clear them today.`);
+                    waAction = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
                 } else {
-                    waBtn = `<div class="wa-action" style="opacity:0.2" onclick="alert('No valid number found for this student.')"><i class="fab fa-whatsapp"></i></div>`;
+                    waAction = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number missing in student profile.')"><i class="fab fa-whatsapp"></i></div>`;
                 }
 
                 listDiv.innerHTML += `
                     <div class="att-item">
-                        <span class="att-name">${name}</span>
-                        ${waBtn}
+                        <span class="att-name">${studentName}</span>
+                        ${waAction}
                         <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
                     </div>`;
-            });
+            }
         });
     }
 
-    // Standard mark attendance function
     function markAttendance() {
         const dateStr = new Date().toISOString().split('T')[0];
         db.ref(`attendance/${staffId}/${dateStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName })
@@ -211,17 +218,17 @@
           });
     }
 
-    // Load initial data
+    function submitLead() {
+        const n = document.getElementById('l-name').value;
+        const p = document.getElementById('l-phone').value;
+        if(!n || !p) return alert("Fill details");
+        db.ref('leads').push({ name: n, phone: p, staff: staffName, timestamp: Date.now() })
+          .then(() => { alert("Lead Saved!"); });
+    }
+
+    // Init
     document.getElementById('user-display').innerText = `Hi, ${staffName}`;
     document.getElementById('current-date').innerText = new Date().toDateString();
-    
-    db.ref(`staff/${staffId}`).on('value', snap => {
-        const v = snap.val() || {};
-        document.getElementById('daily-rate').innerText = `₹${v.perDayWage || 200}`;
-        document.getElementById('total-earning').innerText = `₹${v.salary || 0}`;
-        document.getElementById('streak-val').innerText = v.streak || 0;
-    });
-
     listenStudentAttendance();
 </script>
 </body>
