@@ -2,363 +2,167 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Staff Terminal | Black Terminal</title>
-    <!-- Firebase Compat Libraries -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | Student Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root {
-            --apple-blue: #007AFF;
-            --apple-green: #34C759;
-            --bg: #000000;
-            --glass: rgba(28, 28, 30, 0.6);
-            --border: rgba(255, 255, 255, 0.1);
-            --text-sec: #8E8E93;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            background: var(--bg);
-            background-image: radial-gradient(circle at 0% 0%, #1c1c1e 0%, #000 50%);
+            background: #020617;
             color: white;
-            margin: 0;
-            padding: env(safe-area-inset-top) 20px 40px 20px;
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
         }
-
-        .container { max-width: 450px; margin: auto; }
-
-        .header { margin: 30px 0; padding-left: 5px; position: relative;}
-        .header h1 { font-size: 28px; margin: 0; font-weight: 700; letter-spacing: -0.5px; }
-        .header p { color: var(--apple-blue); font-size: 14px; margin: 5px 0; font-weight: 600; text-transform: uppercase; }
-        
-        .streak-badge {
-            position: absolute; right: 0; top: 10px;
-            background: rgba(255, 159, 10, 0.15);
-            color: #FF9F0A; padding: 6px 12px; border-radius: 20px;
-            font-size: 13px; font-weight: 700; border: 1px solid rgba(255, 159, 10, 0.3);
-        }
-
-        .card {
-            background: var(--glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 24px;
-            padding: 22px;
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 15px;
             margin-bottom: 20px;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        h3 { font-size: 13px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.5px; }
-
-        .progress-container { background: rgba(255,255,255,0.05); height: 6px; border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--apple-blue); width: 0%; transition: 1s ease-out; }
-
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
-        .stat-box small { display: block; font-size: 10px; color: var(--text-sec); margin-bottom: 4px; }
-        .stat-box b { font-size: 22px; font-weight: 700; }
-
-        .btn {
-            width: 100%; padding: 18px; border-radius: 18px; border: none;
-            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+        .student-card {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
-        .btn-main { background: #fff; color: #000; }
-        .btn-main:active { transform: scale(0.97); opacity: 0.8; }
-        .btn-punch { background: var(--apple-blue); color: white; }
-        .btn:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+        .student-info h4 { margin: 0; font-size: 16px; }
+        .student-info p { margin: 2px 0 0; font-size: 12px; color: #94a3b8; }
+        .student-info .num-tag { color: #6366f1; font-weight: bold; background: rgba(99,102,241,0.1); padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        
+        .xp-edit-group { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+        .xp-input { width: 80px; background: #020617; border: 1px solid #1e293b; color: #fbbf24; padding: 5px; border-radius: 5px; font-weight: bold; text-align: center; }
+        .xp-save-btn { background: #22c55e; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; }
 
-        @keyframes pulse-task {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+        .actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn-action {
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            text-decoration: none;
         }
 
-        .task-item {
-            background: rgba(255,255,255,0.03);
-            padding: 16px; border-radius: 20px; margin-top: 12px;
-            border: 1px solid rgba(255,255,255,0.05);
-            display: flex; align-items: flex-start; gap: 12px;
-        }
-        .task-dot { 
-            height: 10px; width: 10px; background: var(--apple-blue); 
-            border-radius: 50%; margin-top: 4px; 
-            box-shadow: 0 0 10px var(--apple-blue);
-            animation: pulse-task 2s infinite; 
-        }
-        .task-info p { margin: 0; font-size: 14px; font-weight: 500; }
-        .task-info small { color: var(--text-sec); font-size: 11px; margin-top: 5px; display: block; }
-
-        #attendance-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; }
-        .att-item { 
-            background: rgba(255,255,255,0.05); 
-            padding: 12px 16px; 
-            border-radius: 15px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .att-name { font-size: 14px; font-weight: 600; flex-grow: 1; }
-        .att-actions { display: flex; align-items: center; gap: 14px; }
-        .whatsapp-btn { font-size: 18px; cursor: pointer; transition: 0.3s; text-decoration: none; }
-        .whatsapp-btn:active { transform: scale(1.2); }
-        .att-tag { font-size: 11px; color: var(--apple-green); font-weight: 700; display: flex; align-items: center; gap: 4px; }
-
-        input {
-            width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border); border-radius: 16px; color: white; outline: none; box-sizing: border-box;
-            font-size: 15px; transition: 0.3s;
-        }
-        input:focus { border-color: var(--apple-blue); background: rgba(255,255,255,0.1); }
-
-        .footer-note { text-align: center; color: var(--text-sec); font-size: 11px; margin-top: 30px; opacity: 0.6; }
+        .wa-btn { background: #22c55e; color: white; }
+        .wa-btn:hover { background: #16a34a; }
+        
+        .delete-btn { background: #ef4444; color: white; }
+        .delete-btn:hover { background: #dc2626; }
+        
+        .loading { text-align: center; margin-top: 50px; color: #6366f1; }
     </style>
 </head>
 <body>
 
-<div class="container">
     <div class="header">
-        <p id="current-date">--</p>
-        <h1 id="user-display">Staff Terminal</h1>
-        <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> Day Streak</div>
+        <h2><i class="ri-admin-line"></i> Student Admin</h2>
+        <span id="count" style="background: #1e293b; padding: 5px 12px; border-radius: 20px; font-size: 12px;">0 Students</span>
     </div>
 
-    <!-- PERFORMANCE CARD -->
-    <div class="card">
-        <h3><i class="fas fa-chart-line"></i> PERFORMANCE & WAGES</h3>
-        <div class="stat-grid">
-            <div class="stat-box">
-                <small>TODAY'S RATE</small>
-                <b id="daily-rate">₹0</b>
-            </div>
-            <div class="stat-box" style="text-align: right;">
-                <small>TOTAL EARNED</small>
-                <b id="total-earning">₹0</b>
-            </div>
-        </div>
-        <div class="progress-container">
-            <div id="salary-progress" class="progress-bar"></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sec);">
-            <span>Cycle Progress</span>
-            <span id="cycle-days">-- days left</span>
-        </div>
-        <br>
-        <button id="att-btn" class="btn btn-punch" onclick="markAttendance()">
-            <i class="fas fa-fingerprint"></i> PUNCH IN
-        </button>
+    <div id="studentList">
+        <div class="loading">Loading students...</div>
     </div>
 
-    <!-- STUDENT LIST WITH AUTO-FETCH WHATSAPP -->
-    <div class="card">
-        <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
-        <div id="attendance-list">
-            <p style="text-align:center; font-size:12px; opacity:0.4;">Loading attendance...</p>
-        </div>
-    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, deleteDoc, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <!-- TASKS -->
-    <div class="card">
-        <h3><i class="fas fa-list-check"></i> PRIORITY TASKS</h3>
-        <div id="task-list">
-            <div style="text-align: center; padding: 20px; opacity: 0.4;">
-                <i class="fas fa-moon fa-2x"></i>
-                <p style="font-size: 12px; margin-top: 10px;">All caught up!</p>
-            </div>
-        </div>
-    </div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
 
-    <!-- LEAD GENERATOR -->
-    <div class="card">
-        <h3><i class="fas fa-paper-plane"></i> LEAD GENERATOR</h3>
-        <input type="text" id="l-name" placeholder="Student Name">
-        <input type="tel" id="l-phone" placeholder="WhatsApp Number">
-        <input type="text" id="l-course" placeholder="Interest (e.g. Python, AI)">
-        <button class="btn btn-main" onclick="submitLead()">
-            SUBMIT TO ADMIN <i class="fas fa-chevron-right"></i>
-        </button>
-    </div>
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    <p class="footer-note">TERMINAL V2.6 • SECURED BY BLACK TERMINAL CLOUD</p>
-</div>
+        // 1. Load Students with WhatsApp Integration
+        function loadStudents() {
+            onSnapshot(collection(db, "students"), (snapshot) => {
+                const listDiv = document.getElementById("studentList");
+                listDiv.innerHTML = ""; 
+                document.getElementById("count").innerText = `${snapshot.size} Students`;
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.firebasestorage.app",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const fs = firebase.firestore();
-
-    const staffId = localStorage.getItem('bt_staff_id');
-    const staffName = localStorage.getItem('bt_staff_name') || "Staff";
-
-    if(!staffId) window.location.href = "index.html";
-
-    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
-    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-
-    async function initSystem() {
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
-        
-        db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
-            if(snap.exists()) {
-                const btn = document.getElementById('att-btn');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> PUNCHED IN';
-                btn.style.background = "var(--apple-green)";
-            }
-        });
-
-        db.ref(`staff/${staffId}`).on('value', snap => {
-            const val = snap.val() || {};
-            const rate = val.perDayWage || 500;
-            const total = val.salary || 0;
-            document.getElementById('daily-rate').innerText = `₹${rate}`;
-            document.getElementById('total-earning').innerText = `₹${total}`;
-            document.getElementById('streak-val').innerText = val.streak || 0;
-            const target = rate * 25;
-            const percent = Math.min((total / target) * 100, 100);
-            document.getElementById('salary-progress').style.width = percent + "%";
-        });
-
-        const now = new Date();
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days left`;
-
-        loadTasks();
-        listenStudentAttendance(); 
-    }
-
-    // AUTO-FETCH ATTENDANCE LOGIC
-    function listenStudentAttendance() {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const listDiv = document.getElementById('attendance-list');
-        const countSpan = document.getElementById('present-count');
-
-        fs.collection("attendance")
-          .where("date", "==", todayStr)
-          .onSnapshot((snapshot) => {
-            listDiv.innerHTML = "";
-            let count = 0;
-
-            if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
-                countSpan.innerText = "0";
-                return;
-            }
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                count++;
-                
-                const displayName = data.userName || data.studentName || "Unknown Student";
-                // AUTO-FETCH: checks for different common phone field names
-                const phone = data.userPhone || data.phone || data.mobile || data.whatsapp || ""; 
-
-                const msg = encodeURIComponent(`Hi ${displayName}, this is a reminder from Black Terminal regarding your pending fees. Please settle the balance at the desk today. Thank you!`);
-                
-                const waLink = phone ? `https://wa.me/${phone}?text=${msg}` : "javascript:void(0)";
-                const waAction = phone ? `target="_blank"` : `onclick="manualWA('${displayName}')"`;
-                const iconColor = phone ? "#25D366" : "rgba(255,255,255,0.1)"; 
-
-                listDiv.innerHTML += `
-                    <div class="att-item">
-                        <span class="att-name">${displayName}</span>
-                        <div class="att-actions">
-                            <a href="${waLink}" ${waAction} class="whatsapp-btn" style="color: ${iconColor}">
-                                <i class="fab fa-whatsapp"></i>
-                            </a>
-                            <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                        </div>
-                    </div>
-                `;
-            });
-            countSpan.innerText = count;
-        });
-    }
-
-    function manualWA(name) {
-        const num = prompt(`Phone number missing for ${name}. Enter WhatsApp number:`);
-        if(num) {
-            const msg = encodeURIComponent(`Hi ${name}, reminder from Black Terminal regarding pending fees...`);
-            window.open(`https://wa.me/${num}?text=${msg}`, '_blank');
-        }
-    }
-
-    function markAttendance() {
-        const dateStr = new Date().toISOString().split('T')[0];
-        const btn = document.getElementById('att-btn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
-
-        db.ref(`attendance/${staffId}/${dateStr}`).set({
-            time: new Date().toLocaleTimeString(),
-            status: "Present",
-            name: staffName
-        }).then(() => {
-            db.ref(`staff/${staffId}`).transaction(staff => {
-                if (staff) {
-                    staff.salary = (staff.salary || 0) + (staff.perDayWage || 500);
-                    staff.streak = (staff.streak || 0) + 1;
+                if (snapshot.empty) {
+                    listDiv.innerHTML = "<p style='text-align:center; opacity:0.5;'>No students found.</p>";
+                    return;
                 }
-                return staff;
-            });
-            alert("Attendance Marked! 🔥");
-            location.reload();
-        });
-    }
 
-    function loadTasks() {
-        db.ref(`tasks/${staffId}`).on('value', snap => {
-            const container = document.getElementById('task-list');
-            if(!snap.exists()) return;
-            container.innerHTML = "";
-            snap.forEach(child => {
-                const t = child.val();
-                container.innerHTML += `
-                    <div class="task-item">
-                        <div class="task-dot"></div>
-                        <div class="task-info">
-                            <p>${t.task}</p>
-                            <small>${new Date(t.date).toLocaleDateString()}</small>
+                snapshot.forEach((studentDoc) => {
+                    const data = studentDoc.data();
+                    const studentId = studentDoc.id;
+                    const phone = data.phoneNumber || "";
+
+                    // WhatsApp Message Template
+                    const msg = encodeURIComponent(`Hi ${studentId}, this is a reminder from Black Terminal regarding your pending fees/dues. Please clear it at the earliest. Thank you!`);
+                    const waLink = phone ? `https://wa.me/${phone}?text=${msg}` : "#";
+
+                    const card = document.createElement("div");
+                    card.className = "student-card";
+                    card.innerHTML = `
+                        <div class="student-info">
+                            <h4>${studentId}</h4>
+                            <p><span class="num-tag">📞 ${phone || 'No Number'}</span> | 🔥 Streak: ${data.streak || 0}</p>
+                            <div class="xp-edit-group">
+                                <span>⭐ XP:</span>
+                                <input type="number" id="xp-${studentId}" class="xp-input" value="${data.xp || 0}">
+                                <button class="xp-save-btn" onclick="updateXP('${studentId}')">Save</button>
+                            </div>
                         </div>
-                    </div>
-                `;
+                        <div class="actions">
+                            ${phone ? `
+                                <a href="${waLink}" target="_blank" class="btn-action wa-btn">
+                                    <i class="ri-whatsapp-line"></i> Pay Reminder
+                                </a>
+                            ` : ''}
+                            <button class="btn-action delete-btn" onclick="deleteStudent('${studentId}')">
+                                <i class="ri-delete-bin-line"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    listDiv.appendChild(card);
+                });
             });
-        });
-    }
+        }
 
-    function submitLead() {
-        const n = document.getElementById('l-name').value;
-        const p = document.getElementById('l-phone').value;
-        const c = document.getElementById('l-course').value;
-        if(!n || p.length < 10) return alert("Enter valid details.");
-        db.ref('leads').push({
-            name: n, phone: p, course: c,
-            staff: staffName, staffId: staffId,
-            timestamp: Date.now()
-        }).then(() => {
-            alert("Lead sent to Admin! 🚀");
-            document.querySelectorAll('input').forEach(i => i.value = "");
-        });
-    }
+        // 2. Delete Logic
+        window.deleteStudent = async (id) => {
+            if (confirm(`Are you sure you want to delete ${id}?`)) {
+                try {
+                    await deleteDoc(doc(db, "students", id));
+                } catch (error) {
+                    alert("Delete failed.");
+                }
+            }
+        };
 
-    initSystem();
-</script>
+        // 3. XP Update Logic
+        window.updateXP = async (id) => {
+            const newXP = parseInt(document.getElementById(`xp-${id}`).value);
+            if(isNaN(newXP)) return alert("Enter valid number");
+            try {
+                await updateDoc(doc(db, "students", id), { xp: newXP });
+                alert("XP Updated!");
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        };
+
+        loadStudents();
+    </script>
 </body>
 </html>
