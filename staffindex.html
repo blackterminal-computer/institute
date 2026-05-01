@@ -106,8 +106,8 @@
             border: 1px solid rgba(255,255,255,0.05);
         }
         .att-name { font-size: 14px; font-weight: 600; flex-grow: 1; }
-        .att-actions { display: flex; align-items: center; gap: 12px; }
-        .whatsapp-btn { font-size: 18px; cursor: pointer; text-decoration: none; transition: 0.3s; }
+        .att-actions { display: flex; align-items: center; gap: 14px; }
+        .whatsapp-btn { font-size: 18px; cursor: pointer; transition: 0.3s; text-decoration: none; }
         .whatsapp-btn:active { transform: scale(1.2); }
         .att-tag { font-size: 11px; color: var(--apple-green); font-weight: 700; display: flex; align-items: center; gap: 4px; }
 
@@ -156,7 +156,7 @@
         </button>
     </div>
 
-    <!-- STUDENT ATTENDANCE CARD -->
+    <!-- STUDENT LIST WITH AUTO-FETCH WHATSAPP -->
     <div class="card">
         <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
         <div id="attendance-list">
@@ -164,7 +164,7 @@
         </div>
     </div>
 
-    <!-- TASKS CARD -->
+    <!-- TASKS -->
     <div class="card">
         <h3><i class="fas fa-list-check"></i> PRIORITY TASKS</h3>
         <div id="task-list">
@@ -175,7 +175,7 @@
         </div>
     </div>
 
-    <!-- LEAD GEN CARD -->
+    <!-- LEAD GENERATOR -->
     <div class="card">
         <h3><i class="fas fa-paper-plane"></i> LEAD GENERATOR</h3>
         <input type="text" id="l-name" placeholder="Student Name">
@@ -229,11 +229,9 @@
             const val = snap.val() || {};
             const rate = val.perDayWage || 500;
             const total = val.salary || 0;
-            
             document.getElementById('daily-rate').innerText = `₹${rate}`;
             document.getElementById('total-earning').innerText = `₹${total}`;
             document.getElementById('streak-val').innerText = val.streak || 0;
-
             const target = rate * 25;
             const percent = Math.min((total / target) * 100, 100);
             document.getElementById('salary-progress').style.width = percent + "%";
@@ -247,7 +245,7 @@
         listenStudentAttendance(); 
     }
 
-    // STUDENT ATTENDANCE WITH WHATSAPP REMAINDER
+    // AUTO-FETCH ATTENDANCE LOGIC
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -270,34 +268,35 @@
                 count++;
                 
                 const displayName = data.userName || data.studentName || "Unknown Student";
-                const phone = data.userPhone || data.phone || ""; 
+                // AUTO-FETCH: checks for different common phone field names
+                const phone = data.userPhone || data.phone || data.mobile || data.whatsapp || ""; 
 
                 const msg = encodeURIComponent(`Hi ${displayName}, this is a reminder from Black Terminal regarding your pending fees. Please settle the balance at the desk today. Thank you!`);
                 
-                // If number exists, link to WA. If not, trigger prompt function.
-                const waAction = phone ? `onclick="window.open('https://wa.me/${phone}?text=${msg}', '_blank')"` : `onclick="manualWA('${displayName}')"`;
-                const iconColor = phone ? "#25D366" : "#444"; 
+                const waLink = phone ? `https://wa.me/${phone}?text=${msg}` : "javascript:void(0)";
+                const waAction = phone ? `target="_blank"` : `onclick="manualWA('${displayName}')"`;
+                const iconColor = phone ? "#25D366" : "rgba(255,255,255,0.1)"; 
 
                 listDiv.innerHTML += `
                     <div class="att-item">
                         <span class="att-name">${displayName}</span>
                         <div class="att-actions">
-                            <i class="fab fa-whatsapp whatsapp-btn" style="color: ${iconColor}" ${waAction}></i>
+                            <a href="${waLink}" ${waAction} class="whatsapp-btn" style="color: ${iconColor}">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
                             <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
                         </div>
                     </div>
                 `;
             });
-
             countSpan.innerText = count;
         });
     }
 
-    // Manual prompt if phone number is missing in DB
     function manualWA(name) {
-        const num = prompt(`Enter WhatsApp number for ${name}:`);
+        const num = prompt(`Phone number missing for ${name}. Enter WhatsApp number:`);
         if(num) {
-            const msg = encodeURIComponent(`Hi ${name}, this is a reminder from Black Terminal regarding your pending fees. Please settle the balance today. Thank you!`);
+            const msg = encodeURIComponent(`Hi ${name}, reminder from Black Terminal regarding pending fees...`);
             window.open(`https://wa.me/${num}?text=${msg}`, '_blank');
         }
     }
@@ -319,7 +318,7 @@
                 }
                 return staff;
             });
-            alert("Attendance Marked! 🔥 Keep the streak going.");
+            alert("Attendance Marked! 🔥");
             location.reload();
         });
     }
@@ -348,9 +347,7 @@
         const n = document.getElementById('l-name').value;
         const p = document.getElementById('l-phone').value;
         const c = document.getElementById('l-course').value;
-
-        if(!n || p.length < 10) return alert("Please enter valid details.");
-
+        if(!n || p.length < 10) return alert("Enter valid details.");
         db.ref('leads').push({
             name: n, phone: p, course: c,
             staff: staffName, staffId: staffId,
