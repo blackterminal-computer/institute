@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Staff Terminal | Black Terminal</title>
-    <!-- Firebase -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Terminal v3.2 | Black Terminal</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -13,12 +13,12 @@
     
     <style>
         :root {
-            --apple-blue: #007AFF;
-            --apple-green: #34C759;
-            --danger: #FF3B30;
+            --apple-blue: #0A84FF;
+            --apple-green: #30D158;
+            --danger: #FF453A;
             --warning: #FF9F0A;
             --bg: #000000;
-            --glass: rgba(28, 28, 30, 0.7);
+            --card-bg: rgba(28, 28, 30, 0.7);
             --border: rgba(255, 255, 255, 0.1);
             --text-sec: #8E8E93;
         }
@@ -26,188 +26,142 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             background: var(--bg);
-            background-image: radial-gradient(circle at 20% 20%, #1c1c1e 0%, #000 60%);
+            background-image: radial-gradient(circle at 50% -20%, #1c1c1e 0%, #000 80%);
             color: white;
             margin: 0;
-            padding: env(safe-area-inset-top) 20px 40px 20px;
+            padding: calc(20px + env(safe-area-inset-top)) 16px 120px 16px;
             -webkit-font-smoothing: antialiased;
         }
 
         .container { max-width: 450px; margin: auto; }
 
-        /* Header & Streak */
-        .header { margin: 30px 0; position: relative;}
-        .header h1 { font-size: 32px; margin: 0; font-weight: 700; letter-spacing: -1px; }
-        .header p { color: var(--apple-blue); font-size: 14px; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
-        
-        .streak-badge {
-            position: absolute; right: 0; top: 5px;
-            background: rgba(255, 159, 10, 0.15);
-            color: #FF9F0A; padding: 8px 15px; border-radius: 25px;
-            font-size: 13px; font-weight: 700; border: 1px solid rgba(255, 159, 10, 0.3);
-            display: flex; align-items: center; gap: 6px;
+        /* Header UI */
+        .status-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+        .time-group h2 { font-size: 42px; margin: 0; font-weight: 800; letter-spacing: -2px; }
+        .time-group p { margin: 0; color: var(--apple-blue); font-weight: 700; font-size: 12px; text-transform: uppercase; }
+
+        .streak-pill {
+            background: rgba(255, 159, 10, 0.1);
+            border: 1px solid rgba(255, 159, 10, 0.3);
+            padding: 8px 14px; border-radius: 40px;
+            display: flex; align-items: center; gap: 6px; color: var(--warning);
         }
 
         /* Card System */
         .card {
-            background: var(--glass);
+            background: var(--card-bg);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
             border-radius: 28px;
             padding: 24px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             border: 1px solid var(--border);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         }
 
-        h3 { font-size: 12px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 1px; text-transform: uppercase; }
+        h3 { font-size: 11px; margin: 0 0 18px 0; color: var(--text-sec); letter-spacing: 1.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
 
-        /* Modern Calendar Style Update (Image Type) */
-        .strict-scroll-container {
-            display: flex;
-            overflow-x: auto;
-            gap: 15px;
-            padding: 10px 5px;
-            scrollbar-width: none;
+        /* Strict Scroll */
+        .strict-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
+        .strict-row::-webkit-scrollbar { display: none; }
+        .strict-item {
+            min-width: 80px; background: rgba(255, 69, 58, 0.1); border: 1px solid rgba(255, 69, 58, 0.2);
+            border-radius: 20px; padding: 15px 5px; text-align: center;
         }
-        .strict-scroll-container::-webkit-scrollbar { display: none; }
+        .strict-item b { font-size: 22px; display: block; color: #fff; }
+        .strict-item small { font-size: 10px; color: var(--danger); font-weight: 800; text-transform: uppercase; }
 
-        .strict-card-mini {
-            flex: 0 0 100px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 24px;
-            padding: 25px 10px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: inset 0 0 15px rgba(255,255,255,0.02);
+        /* Buttons */
+        .btn-punch {
+            background: #fff; color: #000; width: 100%; padding: 20px; border-radius: 22px;
+            font-size: 18px; font-weight: 800; border: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .strict-day-num { 
-            font-size: 28px; 
-            font-weight: 700; 
-            display: block; 
-            margin-bottom: 2px;
-            color: white;
+        .btn-punch:disabled { background: var(--apple-green); color: white; opacity: 1; }
+        .btn-punch:active { transform: scale(0.96); }
+
+        /* Inputs */
+        .input-box {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            border-radius: 18px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center;
         }
-        .strict-month-name { 
-            font-size: 11px; 
-            font-weight: 600; 
-            color: var(--danger); 
-            text-transform: capitalize;
+        .input-box input { background: transparent; border: none; color: white; width: 100%; outline: none; margin-left: 10px; font-size: 16px; }
+
+        .progress-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin: 20px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--apple-blue), #5AC8FA); transition: 1.5s ease; width: 0%; }
+
+        /* Penalty Alert */
+        .penalty-badge { background: var(--danger); color: white; padding: 4px 10px; border-radius: 10px; font-size: 10px; font-weight: 800; margin-left: auto; }
+
+        /* Bottom Nav */
+        .nav-bar {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 80%; background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px);
+            border-radius: 35px; padding: 16px; display: flex; justify-content: space-around;
+            border: 1px solid var(--border); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
         }
-
-        /* Stats & Buttons */
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .stat-box b { font-size: 24px; font-weight: 800; display: block; }
-        .stat-box small { color: var(--text-sec); font-size: 10px; }
-
-        .progress-container { background: rgba(255,255,255,0.05); height: 6px; border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--apple-blue); width: 0%; transition: 1.5s cubic-bezier(0.1, 0, 0, 1); }
-
-        .btn {
-            width: 100%; padding: 18px; border-radius: 20px; border: none;
-            font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-punch { background: var(--apple-blue); color: white; box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3); }
-        .btn-main { background: white; color: black; }
-        .btn:disabled { opacity: 0.4; filter: grayscale(1); }
-
-        /* Attendance & Tasks */
-        .att-item { background: rgba(255,255,255,0.05); padding: 14px 18px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid var(--border); }
-        .task-item { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 20px; margin-top: 10px; display: flex; gap: 15px; border: 1px solid var(--border); }
-        .task-dot { width: 8px; height: 8px; background: var(--apple-blue); border-radius: 50%; margin-top: 6px; box-shadow: 0 0 10px var(--apple-blue); }
-
-        input { width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 18px; color: white; box-sizing: border-box; font-size: 15px; outline: none; }
-        .footer-note { text-align: center; color: var(--text-sec); font-size: 10px; margin-top: 40px; text-transform: uppercase; letter-spacing: 2px; }
-
-        /* Animation Updates */
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(0.98); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        .penalty-warning {
-            font-size: 11px; 
-            color: var(--danger); 
-            margin-top: 15px; 
-            text-align: center; 
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            animation: pulse 2s infinite ease-in-out;
-        }
+        .nav-bar i { font-size: 22px; color: var(--text-sec); }
+        .nav-bar i.active { color: var(--apple-blue); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <p id="current-date">--</p>
-        <h1 id="user-display">Hi, Staff</h1>
-        <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> Day Streak</div>
-    </div>
-
-    <!-- STRICT DAYS SECTION (Updated to Image Style) -->
-    <div class="card" id="strict-card" style="display:none; border: none; background: transparent; padding: 10px 0; box-shadow: none; backdrop-filter: none;">
-        <h3 style="color: var(--text-sec); padding-left: 10px;"><i class="fas fa-calendar-alt"></i> Mandatory Work Days</h3>
-        <div id="strict-days-list" class="strict-scroll-container">
-            <!-- JS updates this -->
+    <div class="status-header">
+        <div class="time-group">
+            <p id="header-date">--</p>
+            <h2 id="clock">00:00</h2>
+        </div>
+        <div class="streak-pill">
+            <i class="fas fa-fire"></i> <span id="streak-count">0</span>
         </div>
     </div>
 
-    <!-- MAIN PERFORMANCE CARD -->
+    <!-- MANDATORY DAYS -->
+    <div class="card" id="strict-card" style="display:none;">
+        <h3><i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> Strict Days (Penalty ₹200)</h3>
+        <div class="strict-row" id="strict-list"></div>
+    </div>
+
+    <!-- PERFORMANCE -->
     <div class="card">
-        <h3><i class="fas fa-chart-pie"></i> Activity & Earnings</h3>
-        <div class="stat-grid">
-            <div class="stat-box">
-                <small>DAILY RATE</small>
-                <b id="daily-rate">₹0</b>
+        <h3><i class="fas fa-wallet"></i> Earnings & Attendance</h3>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <small style="color: var(--text-sec); font-size: 10px;">BALANCE</small>
+                <span style="font-size: 34px; font-weight: 800; display: block;" id="total-earning">₹0</span>
             </div>
-            <div class="stat-box" style="text-align: right;">
-                <small>NET EARNED</small>
-                <b id="total-earning">₹0</b>
+            <div style="text-align: right;">
+                <span id="cycle-info" style="color: var(--apple-blue); font-weight: 700; font-size: 12px;">--</span>
             </div>
         </div>
-        <div class="progress-container">
-            <div id="salary-progress" class="progress-bar"></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sec);">
-            <span id="cycle-days">-- days left</span>
-            <span>Target: 25 Days</span>
-        </div>
-        <br>
-        <button id="att-btn" class="btn btn-punch" onclick="markAttendance()">
-            <i class="fas fa-fingerprint"></i> PUNCH IN
-        </button>
         
-        <!-- Updated Pulse Warning -->
-        <p id="strict-warning" style="display:none;" class="penalty-warning">
-            <i class="fas fa-exclamation-triangle"></i> MANDATORY ATTENDANCE TODAY (PENALTY ₹200)
-        </p>
+        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+
+        <button id="att-btn" class="btn-punch" onclick="markAttendance()">PUNCH IN</button>
+        <p id="strict-warn" style="color: var(--danger); font-size: 11px; text-align: center; font-weight: 800; margin-top: 15px; display: none; animation: pulse 2s infinite;">⚠️ MANDATORY SHIFT TODAY</p>
     </div>
 
-    <!-- OTHER SECTIONS -->
+    <!-- STUDENT LIST -->
     <div class="card">
-        <h3><i class="fas fa-users"></i> Student Tracker ( <span id="present-count">0</span> )</h3>
-        <div id="attendance-list"></div>
+        <h3><i class="fas fa-users"></i> Students Today ( <span id="student-count">0</span> )</h3>
+        <div id="student-list"></div>
     </div>
 
-    <div class="card">
-        <h3><i class="fas fa-tasks"></i> Pending Tasks</h3>
-        <div id="task-list"></div>
+    <!-- LEAD SUBMISSION -->
+    <div class="card" id="lead-section">
+        <h3><i class="fas fa-user-plus"></i> New Lead</h3>
+        <div class="input-box"><i class="fas fa-user"></i><input type="text" id="l-name" placeholder="Name"></div>
+        <div class="input-box"><i class="fab fa-whatsapp"></i><input type="tel" id="l-phone" placeholder="WhatsApp"></div>
+        <div class="input-box"><i class="fas fa-graduation-cap"></i><input type="text" id="l-course" placeholder="Course"></div>
+        <button class="btn-punch" style="background: var(--apple-blue); color: white;" onclick="submitLead()">SAVE LEAD</button>
     </div>
 
-    <div class="card">
-        <h3><i class="fas fa-user-plus"></i> Lead Drop</h3>
-        <input type="text" id="l-name" placeholder="Name">
-        <input type="tel" id="l-phone" placeholder="WhatsApp Number">
-        <input type="text" id="l-course" placeholder="Interest">
-        <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD</button>
-    </div>
+    <p style="text-align: center; opacity: 0.2; font-size: 10px; padding-bottom: 40px;">V3.2 • CLOUD SECURE</p>
+</div>
 
-    <p class="footer-note">Black Terminal Cloud • V2.8</p>
+<div class="nav-bar">
+    <i class="fas fa-home active"></i>
+    <i class="fas fa-plus-circle" onclick="document.getElementById('lead-section').scrollIntoView({behavior:'smooth'})"></i>
+    <i class="fas fa-sign-out-alt" onclick="logout()"></i>
 </div>
 
 <script>
@@ -226,87 +180,88 @@
     const fs = firebase.firestore(); 
 
     const staffId = localStorage.getItem('bt_staff_id');
-    const staffName = localStorage.getItem('bt_staff_name') || "Staff Member";
+    const staffName = localStorage.getItem('bt_staff_name') || "Staff";
     const todayStr = new Date().toISOString().split('T')[0];
 
     if(!staffId) window.location.href = "index.html";
 
-    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
-    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    function updateClock() {
+        const d = new Date();
+        document.getElementById('clock').innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        document.getElementById('header-date').innerText = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    function init() {
-        // 1. Check Attendance & Holiday
-        db.ref('holidays').on('value', hSnap => {
-            let isHoliday = false;
-            hSnap.forEach(h => { if(h.val() === todayStr) isHoliday = true; });
+    async function init() {
+        // 1. Check Previous Day Penalty
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yestStr = yesterday.toISOString().split('T')[0];
 
-            db.ref(`attendance/${staffId}/${todayStr}`).on('value', snap => {
-                const btn = document.getElementById('att-btn');
-                if(isHoliday) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-umbrella-beach"></i> OFFICE CLOSED';
-                    btn.style.background = "#333";
-                } else if(snap.exists()) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-check-circle"></i> PUNCHED IN';
-                    btn.style.background = "var(--apple-green)";
+        const sDays = await db.ref('strictDays').once('value');
+        const attYest = await db.ref(`attendance/${staffId}/${yestStr}`).once('value');
+        const penaltyKey = `penalty_${yestStr}`;
+        const hasPenaltyProcessed = await db.ref(`staff/${staffId}/processed_penalties/${penaltyKey}`).once('value');
+
+        let isStrictYest = false;
+        sDays.forEach(d => { if(d.val() === yestStr) isStrictYest = true; });
+
+        // If yesterday was strict and staff missed it and hasn't been charged yet
+        if (isStrictYest && !attYest.exists() && !hasPenaltyProcessed.exists()) {
+            db.ref(`staff/${staffId}`).transaction(s => {
+                if (s) {
+                    s.salary = (parseInt(s.salary) || 0) - 200;
+                    if(!s.processed_penalties) s.processed_penalties = {};
+                    s.processed_penalties[penaltyKey] = true;
+                    s.streak = 0; // Reset streak on miss
                 }
+                return s;
             });
+            alert("⚠️ Penalty: ₹200 deducted for missing Mandatory Day (" + yestStr + ")");
+        }
+
+        // 2. Attendance & UI Setup
+        db.ref(`attendance/${staffId}/${todayStr}`).on('value', snap => {
+            if(snap.exists()) {
+                const btn = document.getElementById('att-btn');
+                btn.disabled = true;
+                btn.innerText = "PUNCHED IN";
+            }
         });
 
-        // 2. Load Strict Days (Updated UI logic)
         db.ref('strictDays').on('value', snap => {
-            const list = document.getElementById('strict-days-list');
-            const card = document.getElementById('strict-card');
-            const warning = document.getElementById('strict-warning');
-            list.innerHTML = "";
-            
+            const list = document.getElementById('strict-list');
             if(snap.exists()) {
-                card.style.display = "block";
-                snap.forEach(child => {
-                    const d = child.val();
-                    const dObj = new Date(d);
-                    if(d === todayStr) warning.style.display = "flex";
-                    
-                    list.innerHTML += `
-                        <div class="strict-card-mini">
-                            <span class="strict-day-num">${dObj.getDate()}</span>
-                            <span class="strict-month-name">${dObj.toLocaleDateString('en-US', {month:'short'})}</span>
-                        </div>`;
+                document.getElementById('strict-card').style.display = "block";
+                list.innerHTML = "";
+                snap.forEach(c => {
+                    const d = c.val();
+                    const dt = new Date(d);
+                    if(d === todayStr) document.getElementById('strict-warn').style.display = "block";
+                    list.innerHTML += `<div class="strict-item"><b>${dt.getDate()}</b><small>${dt.toLocaleDateString('en-US',{month:'short'})}</small></div>`;
                 });
             }
         });
 
-        // 3. Stats
         db.ref(`staff/${staffId}`).on('value', snap => {
             const v = snap.val() || {};
-            document.getElementById('daily-rate').innerText = `₹${v.perDayWage || 500}`;
             document.getElementById('total-earning').innerText = `₹${v.salary || 0}`;
-            document.getElementById('streak-val').innerText = v.streak || 0;
-            const progress = ((v.salary || 0) / ((v.perDayWage || 500) * 25)) * 100;
-            document.getElementById('salary-progress').style.width = Math.min(progress, 100) + "%";
+            document.getElementById('streak-count').innerText = v.streak || 0;
+            const prog = ((v.salary || 0) / ((v.perDayWage || 500) * 25)) * 100;
+            document.getElementById('progress-fill').style.width = Math.min(prog, 100) + "%";
         });
 
-        // Time Remaining
-        const now = new Date();
-        const daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
-        document.getElementById('cycle-days').innerText = `${daysLeft} days left`;
+        const daysLeft = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate();
+        document.getElementById('cycle-info').innerText = `${daysLeft} DAYS LEFT`;
 
-        loadTasks();
-        listenStudentAttendance();
+        listenStudents();
     }
 
     async function markAttendance() {
         const btn = document.getElementById('att-btn');
-        const hSnap = await db.ref('holidays').once('value');
-        let isH = false;
-        hSnap.forEach(h => { if(h.val() === todayStr) isH = true; });
-
-        if(isH) return alert("Office is closed today.");
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCING...';
-
+        btn.innerText = "PUNCHING...";
+        
         db.ref(`attendance/${staffId}/${todayStr}`).set({
             time: new Date().toLocaleTimeString(),
             status: "Present",
@@ -322,32 +277,21 @@
         });
     }
 
-    function listenStudentAttendance() {
+    function listenStudents() {
         fs.collection("attendance").where("date", "==", todayStr).onSnapshot(snap => {
-            const list = document.getElementById('attendance-list');
-            document.getElementById('present-count').innerText = snap.size;
-            list.innerHTML = snap.empty ? '<p style="text-align:center; font-size:12px; opacity:0.3;">No entries today</p>' : '';
+            const list = document.getElementById('student-list');
+            document.getElementById('student-count').innerText = snap.size;
+            list.innerHTML = snap.empty ? '<p style="text-align:center; opacity:0.3; font-size:12px; padding:20px;">No students yet</p>' : '';
             snap.forEach(doc => {
                 const d = doc.data();
                 list.innerHTML += `
-                    <div class="att-item">
-                        <span><b>${d.userName}</b></span>
-                        <div style="display:flex; align-items:center; gap:10px">
-                            <i class="fab fa-whatsapp" style="color:var(--apple-green)" onclick="window.open('https://wa.me/91${d.userPhone}')"></i>
-                            <span style="font-size:11px; color:var(--apple-green)">● PRESENT</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <div style="display:flex; align-items:center; gap:12px">
+                            <div style="width:32px; height:32px; background:#3a3a3c; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--apple-blue);">${d.userName.charAt(0)}</div>
+                            <span style="font-weight:600; font-size:14px;">${d.userName}</span>
                         </div>
+                        <i class="fab fa-whatsapp" style="color:var(--apple-green); font-size:18px;" onclick="window.open('https://wa.me/91${d.userPhone}')"></i>
                     </div>`;
-            });
-        });
-    }
-
-    function loadTasks() {
-        db.ref(`tasks/${staffId}`).on('value', snap => {
-            const list = document.getElementById('task-list');
-            list.innerHTML = snap.exists() ? '' : '<p style="text-align:center; opacity:0.3; font-size:12px;">All caught up!</p>';
-            snap.forEach(child => {
-                const t = child.val();
-                list.innerHTML += `<div class="task-item"><div class="task-dot"></div><div><p style="margin:0; font-size:14px">${t.task}</p><small style="color:var(--text-sec); font-size:11px">${new Date(t.date).toLocaleDateString()}</small></div></div>`;
             });
         });
     }
@@ -361,6 +305,8 @@
             });
         }
     }
+
+    function logout() { if(confirm("Logout?")) { localStorage.clear(); window.location.href = "index.html"; } }
 
     init();
 </script>
