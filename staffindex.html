@@ -19,6 +19,7 @@
             --glass: rgba(28, 28, 30, 0.6);
             --border: rgba(255, 255, 255, 0.1);
             --text-sec: #8E8E93;
+            --danger: #FF3B30;
         }
 
         body {
@@ -93,6 +94,10 @@
         input { width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 16px; color: white; outline: none; box-sizing: border-box; font-size: 15px; }
 
         .footer-note { text-align: center; color: var(--text-sec); font-size: 11px; margin-top: 30px; opacity: 0.6; }
+
+        /* Strict Days UI */
+        .strict-badge { background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.2); border-radius: 12px; padding: 10px; margin-top: 5px; display: flex; align-items: center; gap: 10px; }
+        .strict-date-text { color: var(--danger); font-size: 13px; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -102,6 +107,13 @@
         <p id="current-date">--</p>
         <h1 id="user-display">Staff Terminal</h1>
         <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> Day Streak</div>
+    </div>
+
+    <!-- NEW: Strict Days Card -->
+    <div class="card" id="strict-card" style="display:none; border: 1px solid rgba(255, 59, 48, 0.3);">
+        <h3 style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> STRICT WORK DAYS (NO HOLIDAY)</h3>
+        <div id="strict-days-list"></div>
+        <p style="font-size: 10px; color: var(--text-sec); margin-top: 10px;">* Absence on these dates will result in a ₹200 penalty.</p>
     </div>
 
     <div class="card">
@@ -127,6 +139,7 @@
         <button id="att-btn" class="btn btn-punch" onclick="markAttendance()">
             <i class="fas fa-fingerprint"></i> PUNCH IN
         </button>
+        <p id="strict-warning" style="display:none; color: var(--danger); font-size: 11px; text-align: center; margin-top: 10px; font-weight: 700;">⚠️ MANDATORY ATTENDANCE TODAY</p>
     </div>
 
     <div class="card">
@@ -197,6 +210,29 @@
                     btn.style.background = "var(--apple-green)";
                 }
             });
+        });
+
+        // NEW: Monitor Strict Days
+        db.ref('strictDays').on('value', snap => {
+            const container = document.getElementById('strict-days-list');
+            const card = document.getElementById('strict-card');
+            const warning = document.getElementById('strict-warning');
+            container.innerHTML = "";
+            
+            if(snap.exists()) {
+                card.style.display = "block";
+                snap.forEach(child => {
+                    const d = child.val();
+                    if(d === todayStr) warning.style.display = "block";
+                    container.innerHTML += `
+                        <div class="strict-badge">
+                            <i class="fas fa-calendar-day" style="color:var(--danger)"></i>
+                            <span class="strict-date-text">${new Date(d).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</span>
+                        </div>`;
+                });
+            } else {
+                card.style.display = "none";
+            }
         });
 
         // 2. Real-time Earnings
