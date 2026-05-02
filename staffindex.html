@@ -74,12 +74,6 @@
         .btn-punch { background: var(--apple-blue); color: white; }
         .btn:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
 
-        @keyframes pulse-task {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
-        }
-
         .task-item {
             background: rgba(255,255,255,0.03);
             padding: 16px; border-radius: 20px; margin-top: 12px;
@@ -90,7 +84,6 @@
             height: 10px; width: 10px; background: var(--apple-blue); 
             border-radius: 50%; margin-top: 4px; 
             box-shadow: 0 0 10px var(--apple-blue);
-            animation: pulse-task 2s infinite; 
         }
         .task-info p { margin: 0; font-size: 14px; font-weight: 500; }
         .task-info small { color: var(--text-sec); font-size: 11px; margin-top: 5px; display: block; }
@@ -107,7 +100,6 @@
         }
         .att-name { font-size: 14px; font-weight: 600; flex: 1; }
         
-        /* WHATSAPP ACTION STYLE */
         .wa-action {
             background: rgba(34, 197, 94, 0.15);
             color: #22C55E;
@@ -216,27 +208,30 @@
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
-    async function initSystem() {
+    function initSystem() {
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
         
-        db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
+        // Listener for Punch Status
+        db.ref(`attendance/${staffId}/${dateStr}`).on('value', snap => {
+            const btn = document.getElementById('att-btn');
             if(snap.exists()) {
-                const btn = document.getElementById('att-btn');
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-check-circle"></i> PUNCHED IN';
                 btn.style.background = "var(--apple-green)";
             }
         });
 
+        // Real-time Staff Data (Salary, Rate, Streak)
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             const rate = val.perDayWage || 500;
             const total = val.salary || 0;
+            const streak = val.streak || 0;
             
             document.getElementById('daily-rate').innerText = `₹${rate}`;
             document.getElementById('total-earning').innerText = `₹${total}`;
-            document.getElementById('streak-val').innerText = val.streak || 0;
+            document.getElementById('streak-val').innerText = streak;
 
             const target = rate * 25;
             const percent = Math.min((total / target) * 100, 100);
@@ -251,7 +246,42 @@
         listenStudentAttendance(); 
     }
 
-    // FINAL ERROR-FREE WHATSAPP LOGIC
+    function markAttendance() {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const btn = document.getElementById('att-btn');
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
+        btn.disabled = true;
+
+        // Step 1: Record Attendance
+        db.ref(`attendance/${staffId}/${dateStr}`).set({
+            time: new Date().toLocaleTimeString(),
+            status: "Present",
+            name: staffName
+        }).then(() => {
+            // Step 2: Atomic Transaction for Salary & Streak
+            db.ref(`staff/${staffId}`).transaction((staff) => {
+                if (staff) {
+                    const dailyWage = parseInt(staff.perDayWage) || 500;
+                    staff.salary = (parseInt(staff.salary) || 0) + dailyWage;
+                    staff.streak = (parseInt(staff.streak) || 0) + 1;
+                }
+                return staff;
+            }, (error, committed) => {
+                if (committed) {
+                    alert("Attendance Recorded & Wage Updated! 🔥");
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
+                    alert("Update failed. Please try again.");
+                }
+            });
+        }).catch(err => {
+            alert("Error: " + err.message);
+            btn.disabled = false;
+        });
+    }
+
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -268,22 +298,11 @@
                 return;
             }
 
-            for (const attDoc of snapshot.docs) {
-                const data = attDoc.data();
+            snapshot.forEach(doc => {
+                const data = doc.data();
                 const displayName = data.userName || data.studentName || "Unknown Student";
+                const phone = data.userPhone || data.phoneNumber || "0000000000";
                 
-                // Fetch Phone Number from Profiles
-                let phone = data.userPhone || data.phoneNumber || "";
-                
-                if(!phone) {
-                    try {
-                        const studentProfile = await fs.collection("students").doc(displayName).get();
-                        if(studentProfile.exists) {
-                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
-                        }
-                    } catch(e) { console.log("Profile error", e); }
-                }
-
                 const cleanPhone = phone.toString().replace(/\D/g, '');
                 let waBtnHtml = "";
 
@@ -291,8 +310,6 @@
                     const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
                     const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
                     waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('No number found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
                 }
 
                 listDiv.innerHTML += `
@@ -302,37 +319,18 @@
                         <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
                     </div>
                 `;
-            }
-        });
-    }
-
-    function markAttendance() {
-        const dateStr = new Date().toISOString().split('T')[0];
-        const btn = document.getElementById('att-btn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
-
-        db.ref(`attendance/${staffId}/${dateStr}`).set({
-            time: new Date().toLocaleTimeString(),
-            status: "Present",
-            name: staffName
-        }).then(() => {
-            db.ref(`staff/${staffId}`).transaction(staff => {
-                if (staff) {
-                    staff.salary = (staff.salary || 0) + (staff.perDayWage || 500);
-                    staff.streak = (staff.streak || 0) + 1;
-                }
-                return staff;
             });
-            alert("Attendance Marked! 🔥");
-            location.reload();
         });
     }
 
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
             const container = document.getElementById('task-list');
-            if(!snap.exists()) return;
             container.innerHTML = "";
+            if(!snap.exists()) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.4;"><i class="fas fa-moon fa-2x"></i><p style="font-size: 12px; margin-top: 10px;">All caught up!</p></div>';
+                return;
+            }
             snap.forEach(child => {
                 const t = child.val();
                 container.innerHTML += `
