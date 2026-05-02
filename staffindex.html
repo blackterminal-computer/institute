@@ -70,7 +70,6 @@
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-main { background: #fff; color: #000; }
-        .btn-main:active { transform: scale(0.97); opacity: 0.8; }
         .btn-punch { background: var(--apple-blue); color: white; }
         .btn:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
 
@@ -80,43 +79,18 @@
             border: 1px solid rgba(255,255,255,0.05);
             display: flex; align-items: flex-start; gap: 12px;
         }
-        .task-dot { 
-            height: 10px; width: 10px; background: var(--apple-blue); 
-            border-radius: 50%; margin-top: 4px; 
-            box-shadow: 0 0 10px var(--apple-blue);
-        }
+        .task-dot { height: 10px; width: 10px; background: var(--apple-blue); border-radius: 50%; margin-top: 4px; box-shadow: 0 0 10px var(--apple-blue); }
         .task-info p { margin: 0; font-size: 14px; font-weight: 500; }
         .task-info small { color: var(--text-sec); font-size: 11px; margin-top: 5px; display: block; }
 
         #attendance-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; }
-        .att-item { 
-            background: rgba(255,255,255,0.05); 
-            padding: 12px 16px; 
-            border-radius: 15px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border: 1px solid rgba(255,255,255,0.05);
-        }
+        .att-item { background: rgba(255,255,255,0.05); padding: 12px 16px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
         .att-name { font-size: 14px; font-weight: 600; flex: 1; }
         
-        .wa-action {
-            background: rgba(34, 197, 94, 0.15);
-            color: #22C55E;
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            margin-right: 12px; cursor: pointer; transition: 0.2s;
-        }
-        .wa-action:active { transform: scale(0.9); background: #22C55E; color: #fff; }
+        .wa-action { background: rgba(34, 197, 94, 0.15); color: #22C55E; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px; cursor: pointer; transition: 0.2s; }
         .att-tag { font-size: 11px; color: var(--apple-green); font-weight: 700; display: flex; align-items: center; gap: 4px; }
 
-        input {
-            width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border); border-radius: 16px; color: white; outline: none; box-sizing: border-box;
-            font-size: 15px; transition: 0.3s;
-        }
-        input:focus { border-color: var(--apple-blue); background: rgba(255,255,255,0.1); }
+        input { width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 16px; color: white; outline: none; box-sizing: border-box; font-size: 15px; }
 
         .footer-note { text-align: center; color: var(--text-sec); font-size: 11px; margin-top: 30px; opacity: 0.6; }
     </style>
@@ -164,12 +138,7 @@
 
     <div class="card">
         <h3><i class="fas fa-list-check"></i> PRIORITY TASKS</h3>
-        <div id="task-list">
-            <div style="text-align: center; padding: 20px; opacity: 0.4;">
-                <i class="fas fa-moon fa-2x"></i>
-                <p style="font-size: 12px; margin-top: 10px;">All caught up!</p>
-            </div>
-        </div>
+        <div id="task-list"></div>
     </div>
 
     <div class="card">
@@ -209,33 +178,37 @@
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
     function initSystem() {
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
         
-        // Listener for Punch Status
-        db.ref(`attendance/${staffId}/${dateStr}`).on('value', snap => {
-            const btn = document.getElementById('att-btn');
-            if(snap.exists()) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> PUNCHED IN';
-                btn.style.background = "var(--apple-green)";
-            }
+        // 1. Monitor Attendance & Holidays
+        db.ref('holidays').on('value', hSnap => {
+            let isHoliday = false;
+            hSnap.forEach(h => { if(h.val() === todayStr) isHoliday = true; });
+
+            db.ref(`attendance/${staffId}/${todayStr}`).on('value', snap => {
+                const btn = document.getElementById('att-btn');
+                if(isHoliday) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-umbrella-beach"></i> HOLIDAY';
+                    btn.style.background = "#555";
+                } else if(snap.exists()) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> PUNCHED IN';
+                    btn.style.background = "var(--apple-green)";
+                }
+            });
         });
 
-        // Real-time Staff Data (Salary, Rate, Streak)
+        // 2. Real-time Earnings
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             const rate = val.perDayWage || 500;
             const total = val.salary || 0;
-            const streak = val.streak || 0;
-            
             document.getElementById('daily-rate').innerText = `₹${rate}`;
             document.getElementById('total-earning').innerText = `₹${total}`;
-            document.getElementById('streak-val').innerText = streak;
-
+            document.getElementById('streak-val').innerText = val.streak || 0;
             const target = rate * 25;
-            const percent = Math.min((total / target) * 100, 100);
-            document.getElementById('salary-progress').style.width = percent + "%";
+            document.getElementById('salary-progress').style.width = Math.min((total / target) * 100, 100) + "%";
         });
 
         const now = new Date();
@@ -246,79 +219,53 @@
         listenStudentAttendance(); 
     }
 
-    function markAttendance() {
+    async function markAttendance() {
         const dateStr = new Date().toISOString().split('T')[0];
         const btn = document.getElementById('att-btn');
-        
+
+        // Holiday Check
+        const hSnap = await db.ref('holidays').once('value');
+        let isHoliday = false;
+        hSnap.forEach(h => { if(h.val() === dateStr) isHoliday = true; });
+
+        if(isHoliday) return alert("Today is a Holiday! 🌴");
+
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
         btn.disabled = true;
 
-        // Step 1: Record Attendance
         db.ref(`attendance/${staffId}/${dateStr}`).set({
             time: new Date().toLocaleTimeString(),
             status: "Present",
             name: staffName
         }).then(() => {
-            // Step 2: Atomic Transaction for Salary & Streak
-            db.ref(`staff/${staffId}`).transaction((staff) => {
-                if (staff) {
-                    const dailyWage = parseInt(staff.perDayWage) || 500;
-                    staff.salary = (parseInt(staff.salary) || 0) + dailyWage;
-                    staff.streak = (parseInt(staff.streak) || 0) + 1;
+            db.ref(`staff/${staffId}`).transaction(s => {
+                if (s) {
+                    s.salary = (parseInt(s.salary) || 0) + (parseInt(s.perDayWage) || 500);
+                    s.streak = (parseInt(s.streak) || 0) + 1;
                 }
-                return staff;
-            }, (error, committed) => {
-                if (committed) {
-                    alert("Attendance Recorded & Wage Updated! 🔥");
-                } else {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
-                    alert("Update failed. Please try again.");
-                }
+                return s;
+            }, (err, comm) => {
+                if(comm) alert("Attendance Recorded! 🔥");
             });
-        }).catch(err => {
-            alert("Error: " + err.message);
-            btn.disabled = false;
         });
     }
 
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
-        const listDiv = document.getElementById('attendance-list');
-        const countSpan = document.getElementById('present-count');
-
-        fs.collection("attendance")
-          .where("date", "==", todayStr)
-          .onSnapshot(async (snapshot) => {
-            listDiv.innerHTML = "";
-            countSpan.innerText = snapshot.size;
-
-            if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
-                return;
-            }
-
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const displayName = data.userName || data.studentName || "Unknown Student";
-                const phone = data.userPhone || data.phoneNumber || "0000000000";
-                
-                const cleanPhone = phone.toString().replace(/\D/g, '');
-                let waBtnHtml = "";
-
-                if(cleanPhone.length >= 10) {
-                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
-                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                }
-
+        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(snap => {
+            const listDiv = document.getElementById('attendance-list');
+            document.getElementById('present-count').innerText = snap.size;
+            listDiv.innerHTML = snap.empty ? '<p style="text-align:center; font-size:12px; opacity:0.4;">No students yet</p>' : '';
+            snap.forEach(doc => {
+                const d = doc.data();
+                const phone = d.userPhone || "0";
+                const msg = encodeURIComponent(`Hi ${d.userName}, reminder from Black Terminal.`);
                 listDiv.innerHTML += `
                     <div class="att-item">
-                        <span class="att-name">${displayName}</span>
-                        ${waBtnHtml}
+                        <span class="att-name">${d.userName || "Student"}</span>
+                        <div class="wa-action" onclick="window.open('https://wa.me/91${phone}?text=${msg}')"><i class="fab fa-whatsapp"></i></div>
                         <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                    </div>
-                `;
+                    </div>`;
             });
         });
     }
@@ -326,39 +273,19 @@
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
             const container = document.getElementById('task-list');
-            container.innerHTML = "";
-            if(!snap.exists()) {
-                container.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.4;"><i class="fas fa-moon fa-2x"></i><p style="font-size: 12px; margin-top: 10px;">All caught up!</p></div>';
-                return;
-            }
+            container.innerHTML = snap.exists() ? '' : '<p style="text-align:center; opacity:0.4; font-size:12px;">No tasks yet</p>';
             snap.forEach(child => {
                 const t = child.val();
-                container.innerHTML += `
-                    <div class="task-item">
-                        <div class="task-dot"></div>
-                        <div class="task-info">
-                            <p>${t.task}</p>
-                            <small>${new Date(t.date).toLocaleDateString()}</small>
-                        </div>
-                    </div>
-                `;
+                container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString()}</small></div></div>`;
             });
         });
     }
 
     function submitLead() {
-        const n = document.getElementById('l-name').value;
-        const p = document.getElementById('l-phone').value;
-        const c = document.getElementById('l-course').value;
-
-        if(!n || p.length < 10) return alert("Please enter valid details.");
-
-        db.ref('leads').push({
-            name: n, phone: p, course: c,
-            staff: staffName, staffId: staffId,
-            timestamp: Date.now()
-        }).then(() => {
-            alert("Lead sent to Admin! 🚀");
+        const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
+        if(!n || p.length < 10) return alert("Valid details required.");
+        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, staffId: staffId, timestamp: Date.now() }).then(() => {
+            alert("Lead sent! 🚀");
             document.querySelectorAll('input').forEach(i => i.value = "");
         });
     }
