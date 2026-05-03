@@ -66,6 +66,9 @@
         .btn-task { background: white; color: black; }
         .btn-strict { background: var(--accent); color: white; }
 
+        /* Specific delete button for leads table */
+        .btn-lead-del { background: rgba(255, 62, 62, 0.2); color: #ff3e3e; padding: 8px 10px; }
+
         .action-btns { display: flex; gap: 8px; }
         .action-btns .btn { width: 45px; height: 40px; }
 
@@ -129,7 +132,8 @@
                             <tr>
                                 <th>Student</th>
                                 <th>Course</th>
-                                <th>WhatsApp</th>
+                                <th>Phone</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="lead-body"></tbody>
@@ -149,7 +153,6 @@
             <div class="card">
                 <h2><i class="fas fa-calendar-alt"></i> Date Controls</h2>
                 
-                <!-- Holiday Section -->
                 <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
                     <p style="font-size: 0.7rem; opacity: 0.6; margin-bottom: 8px;">SET HOLIDAY (No Punch-in Allowed)</p>
                     <div style="display: flex; gap: 8px;">
@@ -159,7 +162,6 @@
                     <div id="holiday-list" class="holiday-list"></div>
                 </div>
 
-                <!-- Strict No-Holiday Days Section -->
                 <div>
                     <p style="font-size: 0.7rem; color: var(--accent); font-weight: bold; margin-bottom: 8px;">STRICT DAYS (Penalty ₹200 if Absent)</p>
                     <div style="display: flex; gap: 8px;">
@@ -290,9 +292,32 @@
         tbody.innerHTML = "";
         snap.forEach(child => {
             const lead = child.val();
-            tbody.innerHTML += `<tr><td>${lead.name}</td><td>${lead.course}</td><td><a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-wa"><i class="fab fa-whatsapp"></i> Chat</a></td></tr>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${lead.name}</td>
+                    <td>${lead.course}</td>
+                    <td>${lead.phone}</td>
+                    <td>
+                        <div style="display:flex; gap:5px;">
+                            <a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-wa"><i class="fab fa-whatsapp"></i></a>
+                            <button class="btn btn-lead-del" onclick="deleteLead('${child.key}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>`;
         });
     });
+
+    function deleteLead(key) {
+        if(confirm("Delete this lead?")) {
+            db.ref(`leads/${key}`).remove();
+        }
+    }
+
+    function removeStaff(id, name) {
+        if(confirm("Delete " + name + "?")) {
+            db.ref(`staff/${id}`).remove();
+        }
+    }
 </script>
 </body>
 </html>
