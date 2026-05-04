@@ -70,8 +70,15 @@
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-main { background: #fff; color: #000; }
+        .btn-main:active { transform: scale(0.97); opacity: 0.8; }
         .btn-punch { background: var(--apple-blue); color: white; }
         .btn:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+
+        @keyframes pulse-task {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+        }
 
         .task-item {
             background: rgba(255,255,255,0.03);
@@ -79,11 +86,16 @@
             border: 1px solid rgba(255,255,255,0.05);
             display: flex; align-items: flex-start; gap: 12px;
         }
-        .task-dot { height: 10px; width: 10px; background: var(--apple-blue); border-radius: 50%; margin-top: 4px; box-shadow: 0 0 10px var(--apple-blue); }
+        .task-dot { 
+            height: 10px; width: 10px; background: var(--apple-blue); 
+            border-radius: 50%; margin-top: 4px; 
+            box-shadow: 0 0 10px var(--apple-blue);
+            animation: pulse-task 2s infinite; 
+        }
         .task-info p { margin: 0; font-size: 14px; font-weight: 500; }
         .task-info small { color: var(--text-sec); font-size: 11px; margin-top: 5px; display: block; }
 
-        #attendance-list { display: flex; flex-direction: column; gap: 10px; }
+        #attendance-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; }
         .att-item { 
             background: rgba(255,255,255,0.05); 
             padding: 12px 16px; 
@@ -95,6 +107,7 @@
         }
         .att-name { font-size: 14px; font-weight: 600; flex: 1; }
         
+        /* WHATSAPP ACTION STYLE */
         .wa-action {
             background: rgba(34, 197, 94, 0.15);
             color: #22C55E;
@@ -109,8 +122,9 @@
         input {
             width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
             border: 1px solid var(--border); border-radius: 16px; color: white; outline: none; box-sizing: border-box;
-            font-size: 15px;
+            font-size: 15px; transition: 0.3s;
         }
+        input:focus { border-color: var(--apple-blue); background: rgba(255,255,255,0.1); }
 
         .footer-note { text-align: center; color: var(--text-sec); font-size: 11px; margin-top: 30px; opacity: 0.6; }
     </style>
@@ -158,15 +172,22 @@
 
     <div class="card">
         <h3><i class="fas fa-list-check"></i> PRIORITY TASKS</h3>
-        <div id="task-list"></div>
+        <div id="task-list">
+            <div style="text-align: center; padding: 20px; opacity: 0.4;">
+                <i class="fas fa-moon fa-2x"></i>
+                <p style="font-size: 12px; margin-top: 10px;">All caught up!</p>
+            </div>
+        </div>
     </div>
 
     <div class="card">
         <h3><i class="fas fa-paper-plane"></i> LEAD GENERATOR</h3>
         <input type="text" id="l-name" placeholder="Student Name">
         <input type="tel" id="l-phone" placeholder="WhatsApp Number">
-        <input type="text" id="l-course" placeholder="Interest">
-        <button class="btn btn-main" onclick="submitLead()">SUBMIT TO ADMIN</button>
+        <input type="text" id="l-course" placeholder="Interest (e.g. Python, AI)">
+        <button class="btn btn-main" onclick="submitLead()">
+            SUBMIT TO ADMIN <i class="fas fa-chevron-right"></i>
+        </button>
     </div>
 
     <p class="footer-note">TERMINAL V2.6 • SECURED BY BLACK TERMINAL CLOUD</p>
@@ -196,7 +217,8 @@
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
     async function initSystem() {
-        const dateStr = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
         
         db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
             if(snap.exists()) {
@@ -209,68 +231,99 @@
 
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
-            document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
-            document.getElementById('total-earning').innerText = `₹${val.salary || 0}`;
+            const rate = val.perDayWage || 500;
+            const total = val.salary || 0;
+            
+            document.getElementById('daily-rate').innerText = `₹${rate}`;
+            document.getElementById('total-earning').innerText = `₹${total}`;
             document.getElementById('streak-val').innerText = val.streak || 0;
-            const percent = Math.min(((val.salary || 0) / ((val.perDayWage || 500) * 25)) * 100, 100);
+
+            const target = rate * 25;
+            const percent = Math.min((total / target) * 100, 100);
             document.getElementById('salary-progress').style.width = percent + "%";
         });
+
+        const now = new Date();
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days left`;
 
         loadTasks();
         listenStudentAttendance(); 
     }
 
-    // UPDATED WHATSAPP LOGIC (FIXES image.png & image_2.png)
+    // FINAL ERROR-FREE WHATSAPP LOGIC
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
         const countSpan = document.getElementById('present-count');
 
-        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
+        fs.collection("attendance")
+          .where("date", "==", todayStr)
+          .onSnapshot(async (snapshot) => {
             listDiv.innerHTML = "";
             countSpan.innerText = snapshot.size;
 
             if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students today</p>';
+                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
                 return;
             }
 
-            for (const doc of snapshot.docs) {
-                const d = doc.data();
-                const studentName = d.userName || d.studentName || "Unknown";
+            for (const attDoc of snapshot.docs) {
+                const data = attDoc.data();
+                const displayName = data.userName || data.studentName || "Unknown Student";
                 
-                // Smart Phone Detection Logic
-                let rawPhone = String(d.userPhone || d.phoneNumber || "").replace(/\D/g, '');
-                if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1); 
+                // Fetch Phone Number from Profiles
+                let phone = data.userPhone || data.phoneNumber || "";
                 
-                let finalPhone = "";
-                if (rawPhone.length === 10) finalPhone = "91" + rawPhone;
-                else if (rawPhone.length > 10 && rawPhone.startsWith("91")) finalPhone = rawPhone;
+                if(!phone) {
+                    try {
+                        const studentProfile = await fs.collection("students").doc(displayName).get();
+                        if(studentProfile.exists) {
+                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
+                        }
+                    } catch(e) { console.log("Profile error", e); }
+                }
 
-                const msg = encodeURIComponent(`Hi ${studentName}, reminder regarding your pending fees at Black Terminal. Thank you!`);
-                const waLink = `https://api.whatsapp.com/send?phone=${finalPhone}&text=${msg}`;
+                const cleanPhone = phone.toString().replace(/\D/g, '');
+                let waBtnHtml = "";
+
+                if(cleanPhone.length >= 10) {
+                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
+                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                } else {
+                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('No number found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
+                }
 
                 listDiv.innerHTML += `
                     <div class="att-item">
-                        <span class="att-name">${studentName}</span>
-                        ${finalPhone.length >= 10 ? 
-                            `<div class="wa-action" onclick="window.open('${waLink}', '_blank')"><i class="fab fa-whatsapp"></i></div>` : 
-                            `<div class="wa-action" style="opacity:0.2" onclick="alert('Invalid number for ${studentName}')"><i class="fab fa-whatsapp"></i></div>`
-                        }
+                        <span class="att-name">${displayName}</span>
+                        ${waBtnHtml}
                         <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                    </div>`;
+                    </div>
+                `;
             }
         });
     }
 
     function markAttendance() {
         const dateStr = new Date().toISOString().split('T')[0];
-        db.ref(`attendance/${staffId}/${dateStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName })
-        .then(() => {
-            db.ref(`staff/${staffId}`).transaction(s => {
-                if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; }
-                return s;
+        const btn = document.getElementById('att-btn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
+
+        db.ref(`attendance/${staffId}/${dateStr}`).set({
+            time: new Date().toLocaleTimeString(),
+            status: "Present",
+            name: staffName
+        }).then(() => {
+            db.ref(`staff/${staffId}`).transaction(staff => {
+                if (staff) {
+                    staff.salary = (staff.salary || 0) + (staff.perDayWage || 500);
+                    staff.streak = (staff.streak || 0) + 1;
+                }
+                return staff;
             });
+            alert("Attendance Marked! 🔥");
             location.reload();
         });
     }
@@ -278,20 +331,38 @@
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
             const container = document.getElementById('task-list');
-            container.innerHTML = snap.exists() ? "" : '<p style="text-align:center; opacity:0.4; font-size:12px;">No tasks.</p>';
+            if(!snap.exists()) return;
+            container.innerHTML = "";
             snap.forEach(child => {
                 const t = child.val();
-                container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString()}</small></div></div>`;
+                container.innerHTML += `
+                    <div class="task-item">
+                        <div class="task-dot"></div>
+                        <div class="task-info">
+                            <p>${t.task}</p>
+                            <small>${new Date(t.date).toLocaleDateString()}</small>
+                        </div>
+                    </div>
+                `;
             });
         });
     }
 
     function submitLead() {
-        const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
-        if(n && p.length >= 10) {
-            db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() })
-            .then(() => { alert("Lead Logged!"); document.querySelectorAll('input').forEach(i => i.value = ""); });
-        } else { alert("Check details."); }
+        const n = document.getElementById('l-name').value;
+        const p = document.getElementById('l-phone').value;
+        const c = document.getElementById('l-course').value;
+
+        if(!n || p.length < 10) return alert("Please enter valid details.");
+
+        db.ref('leads').push({
+            name: n, phone: p, course: c,
+            staff: staffName, staffId: staffId,
+            timestamp: Date.now()
+        }).then(() => {
+            alert("Lead sent to Admin! 🚀");
+            document.querySelectorAll('input').forEach(i => i.value = "");
+        });
     }
 
     initSystem();
