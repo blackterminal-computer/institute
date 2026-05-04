@@ -150,7 +150,7 @@
     <div class="card">
         <h3><i class="fas fa-user-check"></i> Students Present ( <span id="present-count" style="color: var(--apple-green);">0</span> )</h3>
         <div id="attendance-list">
-            <p style="text-align:center; font-size:12px; opacity:0.4;">Syncing Logs...</p>
+            <p style="text-align:center; font-size:12px; opacity:0.4;">Loading Students...</p>
         </div>
     </div>
 
@@ -162,7 +162,7 @@
         <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right"></i></button>
     </div>
 
-    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v3.1 • FIXED WHATSAPP</p>
+    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v3.2 • WHATSAPP DIRECT</p>
 </div>
 
 <script>
@@ -188,8 +188,6 @@
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     async function initSystem() {
-        const todayStr = new Date().toISOString().split('T')[0];
-        
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
@@ -208,7 +206,6 @@
         listenStrictDays();
     }
 
-    // FIXED WHATSAPP & ATTENDANCE LOGIC
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -220,7 +217,7 @@
             countSpan.innerText = snapshot.size;
             
             if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No one checked in today</p>';
+                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">Waiting for check-ins...</p>';
                 return;
             }
 
@@ -229,7 +226,6 @@
                 const sName = data.userName || data.studentName;
                 let phone = data.userPhone || data.phoneNumber || "";
                 
-                // Number Cleaning
                 let cleanPhone = phone.toString().replace(/\D/g, '');
                 if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
                 
@@ -239,7 +235,7 @@
                     <div class="att-item" id="${rowId}">
                         <div>
                             <span class="att-name">${sName}</span>
-                            <div class="pay-info" style="font-size: 9px; font-weight: 800; margin-top: 2px;">FETCHING...</div>
+                            <div class="pay-info" style="font-size: 9px; font-weight: 800; margin-top: 2px;">SYNCING...</div>
                         </div>
                         <div style="display:flex; align-items:center; gap:12px;">
                             <div class="wa-container"></div>
@@ -247,22 +243,21 @@
                         </div>
                     </div>`;
 
-                // Real-time Payment Status for WA Message
                 fs.collection("payments").doc(sName).collection("months").doc(currentMonth)
                 .onSnapshot(pDoc => {
                     const isPaid = (pDoc.exists && pDoc.data().status === "Paid");
                     const statusText = isPaid ? "PAID" : "UNPAID";
-                    const statusColor = isPaid ? "var(--apple-green)" : "var(--apple-red)";
                     
-                    const msg = encodeURIComponent(`Hi ${sName}, this is a reminder from Black Terminal. Your fees for ${currentMonth} is currently ${statusText}. Please ignore if already paid.`);
+                    // WHATSAPP DIRECT OPEN LOGIC WITH PRESET MSG
+                    const msg = encodeURIComponent(`Hi ${sName}, this is a reminder from Black Terminal. Your fees for ${currentMonth} is currently ${statusText}. Please clear it if pending.`);
                     const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${msg}`;
                     
                     const targetRow = document.getElementById(rowId);
                     if(targetRow) {
                         targetRow.querySelector('.pay-info').innerText = `${statusText} • ${currentMonth.toUpperCase()}`;
-                        targetRow.querySelector('.pay-info').style.color = statusColor;
+                        targetRow.querySelector('.pay-info').style.color = isPaid ? "var(--apple-green)" : "var(--apple-red)";
                         targetRow.querySelector('.wa-container').innerHTML = `
-                            <a href="${waUrl}" target="_blank" style="text-decoration:none;">
+                            <a href="${waUrl}" target="_blank">
                                 <div class="wa-action" style="opacity:${isPaid ? '0.3' : '1'}">
                                     <i class="fab fa-whatsapp"></i>
                                 </div>
@@ -277,19 +272,14 @@
         const btn = document.getElementById('att-btn');
         navigator.geolocation.getCurrentPosition((pos) => {
             const todayStr = new Date().toISOString().split('T')[0];
-            db.ref(`attendance/${staffId}/${todayStr}`).set({ 
-                time: new Date().toLocaleTimeString(), 
-                status: "Present", 
-                name: staffName 
-            }).then(() => {
+            db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
                 db.ref(`staff/${staffId}`).transaction(s => { 
                     if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } 
                     return s; 
                 });
-                alert("Attendance Marked!");
                 location.reload();
             });
-        }, () => alert("Please enable GPS"));
+        }, () => alert("GPS Required"));
     }
 
     function listenStrictDays() {
@@ -314,7 +304,7 @@
         const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
         if(n && p) {
             db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() })
-            .then(() => { alert("Lead Added!"); location.reload(); });
+            .then(() => { alert("Lead Recorded!"); location.reload(); });
         }
     }
 
