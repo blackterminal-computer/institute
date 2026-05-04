@@ -73,7 +73,6 @@
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn:disabled { opacity: 0.3; filter: grayscale(1); }
 
-        /* STRICT DAYS UI */
         .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 12px; margin-top: 5px; }
         .strict-date-card {
             background: rgba(255, 59, 48, 0.08);
@@ -93,6 +92,7 @@
             margin-bottom: 10px; border: 1px solid var(--border);
         }
         .att-name { font-size: 14px; font-weight: 600; color: #efeff4; }
+        .pay-status { font-size: 9px; font-weight: 800; margin-top: 2px; text-transform: uppercase; }
 
         .wa-action {
             background: rgba(52, 199, 89, 0.12);
@@ -156,10 +156,9 @@
     <div class="card" id="strict-card" style="display: none; border-left: 4px solid var(--apple-red);">
         <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Attendance Days</h3>
         <div id="strict-days-list" class="strict-container"></div>
-        <p style="font-size: 10px; color: var(--text-sec); margin-top: 15px;">Mandatory presence to avoid ₹200 deduction.</p>
     </div>
 
-    <!-- STUDENT ATTENDANCE -->
+    <!-- STUDENT ATTENDANCE & PAYMENT -->
     <div class="card">
         <h3><i class="fas fa-user-check"></i> Students Present ( <span id="present-count" style="color: var(--apple-green);">0</span> )</h3>
         <div id="attendance-list">
@@ -243,7 +242,6 @@
         const strictCard = document.getElementById('strict-card');
         const strictList = document.getElementById('strict-days-list');
         const todayStr = new Date().toISOString().split('T')[0];
-
         db.ref('strictDays').on('value', snap => {
             if (snap.exists()) {
                 strictList.innerHTML = "";
@@ -264,9 +262,10 @@
         });
     }
 
-    // FIXED WHATSAPP REMINDER LOGIC
+    // UPDATED ATTENDANCE LIST WITH PAYMENT INTEGRATION
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
+        const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
         const listDiv = document.getElementById('attendance-list');
         const countSpan = document.getElementById('present-count');
 
@@ -277,40 +276,39 @@
                 listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
                 return;
             }
+
             for (const attDoc of snapshot.docs) {
                 const data = attDoc.data();
-                const displayName = data.userName || data.studentName || "Unknown Student";
-                
-                // Get phone from various possible fields
-                let phone = data.userPhone || data.phoneNumber || data.phone || "";
-                
-                // If phone missing, try to fetch from students collection
-                if(!phone) {
-                    try {
-                        const studentProfile = await fs.collection("students").doc(displayName).get();
-                        if(studentProfile.exists) {
-                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
-                        }
-                    } catch(e) { console.log("Profile error", e); }
-                }
+                const studentName = data.userName || data.studentName;
+                let phone = data.userPhone || data.phoneNumber || "";
+
+                // CHECK PAYMENT STATUS FROM FIRESTORE
+                let paymentStatus = "UNPAID"; 
+                try {
+                    const payDoc = await fs.collection("payments").doc(studentName).collection("months").doc(currentMonth).get();
+                    if(payDoc.exists && payDoc.data().status === "Paid") {
+                        paymentStatus = "PAID";
+                    }
+                } catch(e) { console.log("Payment status error", e); }
 
                 const cleanPhone = phone.toString().replace(/\D/g, '');
-                let waBtnHtml = "";
+                const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
                 
-                if(cleanPhone.length >= 10) {
-                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    // PRESET PAYMENT REMINDER MESSAGE
-                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
-                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
-                }
+                // WHATSAPP REMINDER LOGIC
+                const msg = encodeURIComponent(`Hi ${studentName}, this is a reminder from Black Terminal. Your fees for ${currentMonth} is currently ${paymentStatus}. Please clear it today if pending. Thank you!`);
+                const statusColor = paymentStatus === "PAID" ? "var(--apple-green)" : "var(--apple-red)";
+                const waStyle = paymentStatus === "PAID" ? "opacity:0.3" : "";
 
                 listDiv.innerHTML += `
                     <div class="att-item">
-                        <span class="att-name">${displayName}</span>
+                        <div>
+                            <span class="att-name">${studentName}</span>
+                            <div class="pay-status" style="color:${statusColor}">${paymentStatus} • ${currentMonth}</div>
+                        </div>
                         <div style="display:flex; align-items:center; gap:12px;">
-                            ${waBtnHtml}
+                            <div class="wa-action" style="${waStyle}" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
                             <span style="font-size:10px; color:var(--apple-green); font-weight:700;">PRESENT</span>
                         </div>
                     </div>`;
@@ -331,23 +329,19 @@
         if (!navigator.geolocation) return alert("Location not supported.");
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOCATING...';
         btn.disabled = true;
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-                if (dist <= 20) {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                        db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
-                        location.reload();
-                    });
-                } else {
-                    alert(`Access Denied! Distance: ${Math.round(dist)}m.`);
-                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
-                }
-            },
-            () => { alert("Enable GPS."); btn.disabled = false; }, { enableHighAccuracy: true }
-        );
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+            if (dist <= 20) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
+                    db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
+                    location.reload();
+                });
+            } else {
+                alert(`Access Denied! ${Math.round(dist)}m away.`);
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
+            }
+        }, () => { alert("Enable GPS."); btn.disabled = false; }, { enableHighAccuracy: true });
     }
 
     function loadTasks() {
