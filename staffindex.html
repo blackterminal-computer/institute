@@ -35,7 +35,6 @@
 
         .container { max-width: 450px; margin: auto; }
 
-        /* Header & Streak */
         .header { margin: 30px 0; position: relative;}
         .header h1 { font-size: 32px; margin: 0; font-weight: 700; letter-spacing: -1px; }
         .header p { color: var(--apple-blue); font-size: 14px; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
@@ -48,7 +47,6 @@
             display: flex; align-items: center; gap: 6px;
         }
 
-        /* Card System */
         .card {
             background: var(--glass);
             backdrop-filter: blur(30px);
@@ -199,13 +197,17 @@
     const staffName = localStorage.getItem('bt_staff_name') || "Staff Member";
     const todayStr = new Date().toISOString().split('T')[0];
 
+    // --- COORDINATES SETTINGS ---
+    const TARGET_LAT = 21.940573;
+    const TARGET_LON = 86.737408;
+    const RADIUS_KM = 0.3; // 300 meters range
+
     if(!staffId) window.location.href = "index.html";
 
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
     async function init() {
-        // --- NEW 200 PENALTY LOGIC START ---
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yestStr = yesterday.toISOString().split('T')[0];
@@ -229,7 +231,6 @@
             });
             alert("⚠️ Penalty: ₹200 deducted for missing Mandatory Day (" + yestStr + ")");
         }
-        // --- NEW 200 PENALTY LOGIC END ---
 
         db.ref('holidays').on('value', hSnap => {
             let isHoliday = false;
@@ -282,6 +283,18 @@
         listenStudentAttendance();
     }
 
+    // --- GEOLOCATION DISTANCE CALCULATION ---
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth Radius (km)
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
     async function markAttendance() {
         const btn = document.getElementById('att-btn');
         const hSnap = await db.ref('holidays').once('value');
@@ -290,22 +303,52 @@
 
         if(isH) return alert("Office is closed today.");
 
+        // Start Geolocation logic
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCING...';
+        btn.innerHTML = '<i class="fas fa-location-arrow fa-spin"></i> VERIFYING LOCATION...';
 
-        db.ref(`attendance/${staffId}/${todayStr}`).set({
-            time: new Date().toLocaleTimeString(),
-            status: "Present",
-            name: staffName
-        }).then(() => {
-            db.ref(`staff/${staffId}`).transaction(s => {
-                if (s) {
-                    s.salary = (parseInt(s.salary) || 0) + (parseInt(s.perDayWage) || 500);
-                    s.streak = (parseInt(s.streak) || 0) + 1;
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLon = position.coords.longitude;
+                const distance = getDistance(TARGET_LAT, TARGET_LON, userLat, userLon);
+
+                if (distance <= RADIUS_KM) {
+                    // Success: Staff is within 300 meters
+                    db.ref(`attendance/${staffId}/${todayStr}`).set({
+                        time: new Date().toLocaleTimeString(),
+                        status: "Present",
+                        name: staffName,
+                        verified: true
+                    }).then(() => {
+                        db.ref(`staff/${staffId}`).transaction(s => {
+                            if (s) {
+                                s.salary = (parseInt(s.salary) || 0) + (parseInt(s.perDayWage) || 500);
+                                s.streak = (parseInt(s.streak) || 0) + 1;
+                            }
+                            return s;
+                        });
+                    });
+                } else {
+                    alert(`Access Denied: You are outside the office premises (${(distance).toFixed(2)} km away).`);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
                 }
-                return s;
-            });
-        });
+            },
+            (error) => {
+                alert("Location Error: Please enable GPS/Location access to punch in.");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
+            },
+            { enableHighAccuracy: true }
+        );
     }
 
     function listenStudentAttendance() {
