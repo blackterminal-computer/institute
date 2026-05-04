@@ -200,7 +200,7 @@
     // --- COORDINATES SETTINGS ---
     const TARGET_LAT = 21.940573;
     const TARGET_LON = 86.737408;
-    const RADIUS_KM = 0.3; // 300 meters range
+    const RADIUS_KM = 0.3; 
 
     if(!staffId) window.location.href = "index.html";
 
@@ -283,9 +283,8 @@
         listenStudentAttendance();
     }
 
-    // --- GEOLOCATION DISTANCE CALCULATION ---
     function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371; // Earth Radius (km)
+        const R = 6371; 
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -303,7 +302,6 @@
 
         if(isH) return alert("Office is closed today.");
 
-        // Start Geolocation logic
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-location-arrow fa-spin"></i> VERIFYING LOCATION...';
 
@@ -321,7 +319,6 @@
                 const distance = getDistance(TARGET_LAT, TARGET_LON, userLat, userLon);
 
                 if (distance <= RADIUS_KM) {
-                    // Success: Staff is within 300 meters
                     db.ref(`attendance/${staffId}/${todayStr}`).set({
                         time: new Date().toLocaleTimeString(),
                         status: "Present",
@@ -337,13 +334,13 @@
                         });
                     });
                 } else {
-                    alert(`Access Denied: You are outside the office premises (${(distance).toFixed(2)} km away).`);
+                    alert(`Access Denied: Outside office premises (${(distance).toFixed(2)} km away).`);
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
                 }
             },
             (error) => {
-                alert("Location Error: Please enable GPS/Location access to punch in.");
+                alert("Location Error: Please enable GPS access.");
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
             },
@@ -358,11 +355,13 @@
             list.innerHTML = snap.empty ? '<p style="text-align:center; font-size:12px; opacity:0.3;">No entries today</p>' : '';
             snap.forEach(doc => {
                 const d = doc.data();
+                const reminderMsg = encodeURIComponent(`Hi ${d.userName}, This is a reminder regarding your pending fees at Black Terminal. Please clear it soon. Thank you!`);
+                
                 list.innerHTML += `
                     <div class="att-item">
                         <span><b>${d.userName}</b></span>
                         <div style="display:flex; align-items:center; gap:10px">
-                            <i class="fab fa-whatsapp" style="color:var(--apple-green)" onclick="window.open('https://wa.me/91${d.userPhone}')"></i>
+                            <i class="fab fa-whatsapp" style="color:var(--apple-green); cursor:pointer;" onclick="window.open('https://wa.me/91${d.userPhone}?text=${reminderMsg}')"></i>
                             <span style="font-size:11px; color:var(--apple-green)">● PRESENT</span>
                         </div>
                     </div>`;
