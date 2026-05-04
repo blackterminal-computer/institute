@@ -19,6 +19,7 @@
             --glass: rgba(28, 28, 30, 0.6);
             --border: rgba(255, 255, 255, 0.1);
             --text-sec: #8E8E93;
+            --accent: #ff3e3e;
         }
 
         body {
@@ -107,7 +108,6 @@
         }
         .att-name { font-size: 14px; font-weight: 600; flex: 1; }
         
-        /* WHATSAPP ACTION STYLE */
         .wa-action {
             background: rgba(34, 197, 94, 0.15);
             color: #22C55E;
@@ -127,6 +127,15 @@
         input:focus { border-color: var(--apple-blue); background: rgba(255,255,255,0.1); }
 
         .footer-note { text-align: center; color: var(--text-sec); font-size: 11px; margin-top: 30px; opacity: 0.6; }
+
+        /* Strict Day Tags Style */
+        .strict-tag {
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 62, 62, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -161,6 +170,13 @@
         <button id="att-btn" class="btn btn-punch" onclick="markAttendance()">
             <i class="fas fa-fingerprint"></i> PUNCH IN
         </button>
+    </div>
+
+    <!-- STRICT DAYS SECTION -->
+    <div class="card" id="strict-card" style="display: none; border: 1px solid rgba(255, 62, 62, 0.3);">
+        <h3 style="color: #ff3e3e;"><i class="fas fa-exclamation-triangle"></i> STRICT DAYS (Penalty Risk)</h3>
+        <div id="strict-days-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+        <p style="font-size: 10px; color: var(--text-sec); margin-top: 10px;">Note: Being absent on these days results in a ₹200 deduction.</p>
     </div>
 
     <div class="card">
@@ -249,9 +265,37 @@
 
         loadTasks();
         listenStudentAttendance(); 
+        listenStrictDays();
     }
 
-    // FINAL ERROR-FREE WHATSAPP LOGIC
+    function listenStrictDays() {
+        const strictCard = document.getElementById('strict-card');
+        const strictList = document.getElementById('strict-days-list');
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        db.ref('strictDays').on('value', snap => {
+            if (snap.exists()) {
+                strictList.innerHTML = "";
+                let hasUpcoming = false;
+                snap.forEach(child => {
+                    const dateVal = child.val();
+                    if (dateVal >= todayStr) {
+                        hasUpcoming = true;
+                        const isToday = dateVal === todayStr;
+                        strictList.innerHTML += `
+                            <span class="strict-tag" style="background: ${isToday ? 'var(--accent)' : 'rgba(255, 62, 62, 0.1)'}; color: ${isToday ? 'white' : '#ff3e3e'};">
+                                ${isToday ? 'TODAY' : dateVal}
+                            </span>
+                        `;
+                    }
+                });
+                strictCard.style.display = hasUpcoming ? "block" : "none";
+            } else {
+                strictCard.style.display = "none";
+            }
+        });
+    }
+
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -271,8 +315,6 @@
             for (const attDoc of snapshot.docs) {
                 const data = attDoc.data();
                 const displayName = data.userName || data.studentName || "Unknown Student";
-                
-                // Fetch Phone Number from Profiles
                 let phone = data.userPhone || data.phoneNumber || "";
                 
                 if(!phone) {
@@ -286,7 +328,6 @@
 
                 const cleanPhone = phone.toString().replace(/\D/g, '');
                 let waBtnHtml = "";
-
                 if(cleanPhone.length >= 10) {
                     const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
                     const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
@@ -306,27 +347,22 @@
         });
     }
 
-    // --- Location Based Logic Start ---
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; // Earth radius in meters
+        const R = 6371e3; 
         const φ1 = lat1 * Math.PI / 180;
         const φ2 = lat2 * Math.PI / 180;
         const Δφ = (lat2 - lat1) * Math.PI / 180;
         const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return R * c; // Distance in meters
+        return R * c; 
     }
 
     function markAttendance() {
         const btn = document.getElementById('att-btn');
         const officeLat = 21.9403651;
         const officeLon = 86.7376570;
-        const maxRadius = 20; // 20 meters
+        const maxRadius = 20; 
 
         if (!navigator.geolocation) {
             return alert("Geolocation is not supported by your browser.");
@@ -342,7 +378,6 @@
                 const distance = calculateDistance(userLat, userLon, officeLat, officeLon);
 
                 if (distance <= maxRadius) {
-                    // User is in range - Proceed with original punch in logic
                     proceedWithPunchIn();
                 } else {
                     alert(`Access Denied! You are ${Math.round(distance)}m away from the office. Please be within 20m of the office location to punch in.`);
@@ -380,7 +415,6 @@
             location.reload();
         });
     }
-    // --- Location Based Logic End ---
 
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
@@ -406,9 +440,7 @@
         const n = document.getElementById('l-name').value;
         const p = document.getElementById('l-phone').value;
         const c = document.getElementById('l-course').value;
-
         if(!n || p.length < 10) return alert("Please enter valid details.");
-
         db.ref('leads').push({
             name: n, phone: p, course: c,
             staff: staffName, staffId: staffId,
