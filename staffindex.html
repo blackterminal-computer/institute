@@ -73,6 +73,7 @@
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn:disabled { opacity: 0.3; filter: grayscale(1); }
 
+        /* STRICT DAYS UI */
         .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 12px; margin-top: 5px; }
         .strict-date-card {
             background: rgba(255, 59, 48, 0.08);
@@ -101,10 +102,18 @@
         }
         .wa-action:active { background: #34C759; color: #fff; transform: scale(0.9); }
 
+        .task-item {
+            background: rgba(255,255,255,0.04);
+            padding: 18px; border-radius: 22px; margin-top: 12px;
+            border: 1px solid var(--border);
+            display: flex; align-items: center; gap: 15px;
+        }
+        .task-dot { height: 8px; width: 8px; background: var(--apple-blue); border-radius: 50%; }
+
         input {
             width: 100%; padding: 18px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
             border: 1px solid var(--border); border-radius: 18px; color: white; outline: none; box-sizing: border-box;
-            font-size: 15px;
+            font-size: 15px; transition: 0.3s;
         }
     </style>
 </head>
@@ -117,6 +126,7 @@
         <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> DAYS</div>
     </div>
 
+    <!-- EARNINGS -->
     <div class="card">
         <h3><i class="fas fa-chart-pie"></i> Earnings & Stats</h3>
         <div class="stat-grid">
@@ -142,18 +152,30 @@
         </button>
     </div>
 
+    <!-- STRICT DAYS -->
     <div class="card" id="strict-card" style="display: none; border-left: 4px solid var(--apple-red);">
         <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Attendance Days</h3>
         <div id="strict-days-list" class="strict-container"></div>
+        <p style="font-size: 10px; color: var(--text-sec); margin-top: 15px;">Mandatory presence to avoid ₹200 deduction.</p>
     </div>
 
+    <!-- STUDENT ATTENDANCE -->
     <div class="card">
         <h3><i class="fas fa-user-check"></i> Students Present ( <span id="present-count" style="color: var(--apple-green);">0</span> )</h3>
         <div id="attendance-list">
-            <p style="text-align:center; font-size:12px; opacity:0.4;">Loading Students...</p>
+            <p style="text-align:center; font-size:12px; opacity:0.4;">Syncing...</p>
         </div>
     </div>
 
+    <!-- TASKS -->
+    <div class="card">
+        <h3><i class="fas fa-bolt"></i> Priority Assignments</h3>
+        <div id="task-list">
+            <div style="text-align: center; padding: 20px; opacity: 0.4;"><p style="font-size: 12px;">No active tasks</p></div>
+        </div>
+    </div>
+
+    <!-- LEAD ENTRY -->
     <div class="card">
         <h3><i class="fas fa-paper-plane"></i> Quick Lead Entry</h3>
         <input type="text" id="l-name" placeholder="Full Name">
@@ -162,7 +184,7 @@
         <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right"></i></button>
     </div>
 
-    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v3.2 • WHATSAPP DIRECT</p>
+    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v2.8 • ENCRYPTED</p>
 </div>
 
 <script>
@@ -188,6 +210,16 @@
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     async function initSystem() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+            if(snap.exists()) {
+                const btn = document.getElementById('att-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> ATTENDANCE MARKED';
+                btn.style.background = "var(--apple-green)";
+            }
+        });
+
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
@@ -200,112 +232,140 @@
 
         const now = new Date();
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days left`;
+        document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days remaining`;
 
-        listenStudentAttendance();
+        loadTasks();
+        listenStudentAttendance(); 
         listenStrictDays();
     }
 
+    function listenStrictDays() {
+        const strictCard = document.getElementById('strict-card');
+        const strictList = document.getElementById('strict-days-list');
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        db.ref('strictDays').on('value', snap => {
+            if (snap.exists()) {
+                strictList.innerHTML = "";
+                let count = 0;
+                snap.forEach(child => {
+                    const dateVal = child.val();
+                    if (dateVal >= todayStr) {
+                        count++;
+                        const isToday = dateVal === todayStr;
+                        const d = new Date(dateVal);
+                        const mon = d.toLocaleDateString('en-GB', { month: 'short' });
+                        const day = d.toLocaleDateString('en-GB', { day: 'numeric' });
+                        strictList.innerHTML += `<div class="strict-date-card ${isToday ? 'today' : ''}"><span class="mon">${isToday ? 'NOW' : mon}</span><span class="day">${day}</span></div>`;
+                    }
+                });
+                strictCard.style.display = count > 0 ? "block" : "none";
+            }
+        });
+    }
+
+    // FIXED WHATSAPP REMINDER LOGIC
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
-        const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
         const listDiv = document.getElementById('attendance-list');
         const countSpan = document.getElementById('present-count');
 
-        fs.collection("attendance").where("date", "==", todayStr).onSnapshot((snapshot) => {
+        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
             listDiv.innerHTML = "";
             countSpan.innerText = snapshot.size;
-            
             if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">Waiting for check-ins...</p>';
+                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
                 return;
             }
-
-            snapshot.docs.forEach(attDoc => {
+            for (const attDoc of snapshot.docs) {
                 const data = attDoc.data();
-                const sName = data.userName || data.studentName;
-                let phone = data.userPhone || data.phoneNumber || "";
+                const displayName = data.userName || data.studentName || "Unknown Student";
                 
-                let cleanPhone = phone.toString().replace(/\D/g, '');
-                if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+                // Get phone from various possible fields
+                let phone = data.userPhone || data.phoneNumber || data.phone || "";
                 
-                const rowId = `row-${sName.replace(/\s+/g, '')}`;
+                // If phone missing, try to fetch from students collection
+                if(!phone) {
+                    try {
+                        const studentProfile = await fs.collection("students").doc(displayName).get();
+                        if(studentProfile.exists) {
+                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
+                        }
+                    } catch(e) { console.log("Profile error", e); }
+                }
+
+                const cleanPhone = phone.toString().replace(/\D/g, '');
+                let waBtnHtml = "";
                 
+                if(cleanPhone.length >= 10) {
+                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                    // PRESET PAYMENT REMINDER MESSAGE
+                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
+                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                } else {
+                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
+                }
+
                 listDiv.innerHTML += `
-                    <div class="att-item" id="${rowId}">
-                        <div>
-                            <span class="att-name">${sName}</span>
-                            <div class="pay-info" style="font-size: 9px; font-weight: 800; margin-top: 2px;">SYNCING...</div>
-                        </div>
+                    <div class="att-item">
+                        <span class="att-name">${displayName}</span>
                         <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="wa-container"></div>
+                            ${waBtnHtml}
                             <span style="font-size:10px; color:var(--apple-green); font-weight:700;">PRESENT</span>
                         </div>
                     </div>`;
-
-                fs.collection("payments").doc(sName).collection("months").doc(currentMonth)
-                .onSnapshot(pDoc => {
-                    const isPaid = (pDoc.exists && pDoc.data().status === "Paid");
-                    const statusText = isPaid ? "PAID" : "UNPAID";
-                    
-                    // WHATSAPP DIRECT OPEN LOGIC WITH PRESET MSG
-                    const msg = encodeURIComponent(`Hi ${sName}, this is a reminder from Black Terminal. Your fees for ${currentMonth} is currently ${statusText}. Please clear it if pending.`);
-                    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${msg}`;
-                    
-                    const targetRow = document.getElementById(rowId);
-                    if(targetRow) {
-                        targetRow.querySelector('.pay-info').innerText = `${statusText} • ${currentMonth.toUpperCase()}`;
-                        targetRow.querySelector('.pay-info').style.color = isPaid ? "var(--apple-green)" : "var(--apple-red)";
-                        targetRow.querySelector('.wa-container').innerHTML = `
-                            <a href="${waUrl}" target="_blank">
-                                <div class="wa-action" style="opacity:${isPaid ? '0.3' : '1'}">
-                                    <i class="fab fa-whatsapp"></i>
-                                </div>
-                            </a>`;
-                    }
-                });
-            });
+            }
         });
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; 
+        const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
     function markAttendance() {
         const btn = document.getElementById('att-btn');
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const todayStr = new Date().toISOString().split('T')[0];
-            db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                db.ref(`staff/${staffId}`).transaction(s => { 
-                    if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } 
-                    return s; 
-                });
-                location.reload();
-            });
-        }, () => alert("GPS Required"));
+        if (!navigator.geolocation) return alert("Location not supported.");
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOCATING...';
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+                if (dist <= 20) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
+                        db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
+                        location.reload();
+                    });
+                } else {
+                    alert(`Access Denied! Distance: ${Math.round(dist)}m.`);
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
+                }
+            },
+            () => { alert("Enable GPS."); btn.disabled = false; }, { enableHighAccuracy: true }
+        );
     }
 
-    function listenStrictDays() {
-        db.ref('strictDays').on('value', snap => {
-            const list = document.getElementById('strict-days-list');
-            const todayStr = new Date().toISOString().split('T')[0];
-            if(snap.exists()) {
-                list.innerHTML = "";
-                document.getElementById('strict-card').style.display = "block";
-                snap.forEach(c => {
-                    const d = new Date(c.val());
-                    list.innerHTML += `<div class="strict-date-card ${c.val() === todayStr ? 'today' : ''}">
-                        <span class="mon">${d.toLocaleString('default', {month:'short'})}</span>
-                        <span class="day">${d.getDate()}</span>
-                    </div>`;
-                });
-            }
+    function loadTasks() {
+        db.ref(`tasks/${staffId}`).on('value', snap => {
+            const container = document.getElementById('task-list');
+            if(!snap.exists()) return;
+            container.innerHTML = "";
+            snap.forEach(child => {
+                const t = child.val();
+                container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
+            });
         });
     }
 
     function submitLead() {
         const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
-        if(n && p) {
-            db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() })
-            .then(() => { alert("Lead Recorded!"); location.reload(); });
-        }
+        if(!n || p.length < 10) return alert("Check details");
+        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { alert("Success!"); location.reload(); });
     }
 
     initSystem();
