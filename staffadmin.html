@@ -47,9 +47,12 @@
         h2 { font-size: 0.95rem; color: #fff; margin-top: 0; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
 
         .table-container { overflow-x: auto; border-radius: 12px; background: rgba(0,0,0,0.2); }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th { text-align: left; font-size: 0.65rem; text-transform: uppercase; opacity: 0.5; padding: 12px; border-bottom: 1px solid var(--border); }
-        td { padding: 12px; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.02); vertical-align: middle; }
+        /* NEW: Vertical Scroll for Payment */
+        .scroll-box { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th { text-align: left; font-size: 0.6rem; text-transform: uppercase; opacity: 0.5; padding: 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #0a0a0a; z-index: 10; }
+        td { padding: 8px 10px; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.02); vertical-align: middle; }
 
         input, select, textarea { 
             background: rgba(255,255,255,0.05); border: 1px solid var(--border); 
@@ -88,12 +91,12 @@
             border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--success);
         }
 
-        /* Toggle Button for Payment */
+        /* Status Badges */
         .status-badge {
-            padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; cursor: pointer; border: none;
+            padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase;
         }
-        .status-paid { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-        .status-unpaid { background: rgba(255, 62, 62, 0.2); color: #ff3e3e; }
+        .status-paid { background: #2ecc71; color: #000; }
+        .status-unpaid { background: #ff3e3e; color: #fff; }
 
         @media (min-width: 768px) {
             .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
@@ -133,21 +136,20 @@
                 </div>
             </div>
 
-            <!-- Student Payment Management -->
+            <!-- Student Payment Management (Updated for Scroll & Space) -->
             <div class="card">
                 <h2><i class="fas fa-wallet"></i> Student Fees (<span id="cur-month">--</span>)</h2>
-                <div class="table-container">
+                <div class="scroll-box">
                     <table>
                         <thead>
                             <tr>
                                 <th>Student Name</th>
-                                <th>Phone</th>
                                 <th>Status</th>
-                                <th>Action</th>
+                                <th style="text-align:right">Toggle</th>
                             </tr>
                         </thead>
                         <tbody id="payment-body">
-                            <tr><td colspan="4" style="text-align:center; opacity:0.5; padding:20px;">Loading Students...</td></tr>
+                            <tr><td colspan="3" style="text-align:center; padding:20px; opacity:0.5;">Loading Students...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -184,7 +186,6 @@
             <!-- Date Controls -->
             <div class="card">
                 <h2><i class="fas fa-calendar-alt"></i> Date Controls</h2>
-                
                 <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
                     <p style="font-size: 0.7rem; opacity: 0.6; margin-bottom: 8px;">SET HOLIDAY</p>
                     <div style="display: flex; gap: 8px;">
@@ -193,7 +194,6 @@
                     </div>
                     <div id="holiday-list" class="holiday-list"></div>
                 </div>
-
                 <div>
                     <p style="font-size: 0.7rem; color: var(--accent); font-weight: bold; margin-bottom: 8px;">STRICT DAYS</p>
                     <div style="display: flex; gap: 8px;">
@@ -234,66 +234,62 @@
 
     let staffData = {};
 
-    // Staff & Payroll Listener
+    // Staff Listener
     db.ref('staff').on('value', snap => {
         const tbody = document.getElementById('staff-body');
         const select = document.getElementById('task-staff-select');
         tbody.innerHTML = "";
         select.innerHTML = "<option>Select Staff</option>";
         staffData = {}; 
-
         snap.forEach(child => {
             const user = child.val();
             staffData[child.key] = user.name;
-            tbody.innerHTML += `
-                <tr>
-                    <td><b>${user.name}</b></td>
-                    <td><input type="number" id="wage-${child.key}" value="${user.perDayWage || 500}" style="width:70px; margin:0; padding:5px; background:none; border:1px solid rgba(255,255,255,0.1); color:white;"></td>
-                    <td><span style="color:var(--success); font-weight:700;">₹${user.salary || 0}</span></td>
-                    <td><span style="color:var(--warning)"><i class="fas fa-fire"></i> ${user.streak || 0}</span></td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn btn-update" onclick="updateWage('${child.key}')"><i class="fas fa-save"></i></button>
-                            <button class="btn btn-remove" onclick="removeStaff('${child.key}', '${user.name}')"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML += `<tr><td><b>${user.name}</b></td><td><input type="number" id="wage-${child.key}" value="${user.perDayWage || 500}" style="width:60px; margin:0; padding:5px; background:none; border:1px solid rgba(255,255,255,0.1); color:white; font-size:11px;"></td><td><span style="color:var(--success); font-weight:700;">₹${user.salary || 0}</span></td><td><span style="color:var(--warning)"><i class="fas fa-fire"></i> ${user.streak || 0}</span></td><td><div class="action-btns"><button class="btn btn-update" onclick="updateWage('${child.key}')"><i class="fas fa-save"></i></button><button class="btn btn-remove" onclick="removeStaff('${child.key}', '${user.name}')"><i class="fas fa-trash"></i></button></div></td></tr>`;
             select.innerHTML += `<option value="${child.key}">${user.name}</option>`;
         });
     });
 
-    // Student Payment Logic
+    // IMPROVED: Student Payment Listener (Vertical Scroll & Correct Real-time)
     function loadStudentPayments() {
         const payBody = document.getElementById('payment-body');
-        // Fetching students from Firestore 'students' collection
-        fs.collection("students").onSnapshot(async (snapshot) => {
+        
+        // Step 1: Listen to attendance collection to get student names (as they are documents)
+        fs.collection("attendance").onSnapshot(async (snapshot) => {
+            const studentNames = [...new Set(snapshot.docs.map(doc => doc.data().userName || doc.data().studentName))].filter(Boolean);
+            
             payBody.innerHTML = "";
-            if(snapshot.empty) {
-                payBody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.5;">No students found</td></tr>';
+            if(studentNames.length === 0) {
+                payBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; opacity:0.5;">No students in logs</td></tr>';
                 return;
             }
 
-            for (const doc of snapshot.docs) {
-                const student = doc.data();
-                const name = doc.id; // Assuming Doc ID is name or studentName field
-                const phone = student.phoneNumber || student.phone || "N/A";
-                
-                // Get Payment Status
-                let status = "Unpaid";
-                const payDoc = await fs.collection("payments").doc(name).collection("months").doc(currentMonth).get();
-                if(payDoc.exists) status = payDoc.data().status;
-
-                const badgeClass = status === "Paid" ? "status-paid" : "status-unpaid";
-
-                payBody.innerHTML += `
-                    <tr>
+            for (const name of studentNames) {
+                // Get Status with real-time listener for each student
+                fs.collection("payments").doc(name).collection("months").doc(currentMonth)
+                .onSnapshot((pDoc) => {
+                    const status = (pDoc.exists && pDoc.data().status === "Paid") ? "Paid" : "Unpaid";
+                    const badgeClass = status === "Paid" ? "status-paid" : "status-unpaid";
+                    
+                    // Check if row already exists
+                    let row = document.getElementById(`row-${name.replace(/\s+/g, '')}`);
+                    const rowHtml = `
                         <td><b>${name}</b></td>
-                        <td>${phone}</td>
-                        <td><button class="status-badge ${badgeClass}" onclick="togglePayment('${name}', '${status}')">${status.toUpperCase()}</button></td>
-                        <td><button class="btn btn-update" style="padding:5px 10px;" onclick="togglePayment('${name}', '${status}')"><i class="fas fa-sync"></i></button></td>
-                    </tr>
-                `;
+                        <td><span class="status-badge ${badgeClass}">${status}</span></td>
+                        <td style="text-align:right">
+                            <button class="btn btn-update" style="padding:4px 8px; font-size:10px;" onclick="togglePayment('${name}', '${status}')">
+                                <i class="fas fa-sync"></i> SWITCH
+                            </button>
+                        </td>`;
+
+                    if(row) {
+                        row.innerHTML = rowHtml;
+                    } else {
+                        const tr = document.createElement('tr');
+                        tr.id = `row-${name.replace(/\s+/g, '')}`;
+                        tr.innerHTML = rowHtml;
+                        payBody.appendChild(tr);
+                    }
+                });
             }
         });
     }
@@ -305,81 +301,51 @@
                 status: newStatus,
                 updatedAt: Date.now()
             }, { merge: true });
-        } catch(e) { alert("Error updating payment"); }
+        } catch(e) { console.error("Error updating", e); }
     }
 
-    // Today's Attendance Listener
+    // Attendance Listener
     const today = new Date().toISOString().split('T')[0];
     db.ref('attendance').on('value', snap => {
         const attList = document.getElementById('attendance-list');
         const attCountDisplay = document.getElementById('att-count');
         attList.innerHTML = "";
         let count = 0;
-
         snap.forEach(staffChild => {
             const staffId = staffChild.key;
             const dates = staffChild.val();
             if(dates && dates[today]) {
                 count++;
-                attList.innerHTML += `
-                    <div class="att-item">
-                        <div>
-                            <b>${staffData[staffId] || 'Staff'}</b><br>
-                            <small style="font-size:9px; opacity:0.6;"><i class="fas fa-location-dot"></i> Location Verified</small>
-                        </div>
-                        <span style="color:var(--success); font-weight:bold;">${dates[today].time}</span>
-                    </div>`;
+                attList.innerHTML += `<div class="att-item"><div><b>${staffData[staffId] || 'Staff'}</b><br><small style="font-size:9px; opacity:0.6;"><i class="fas fa-location-dot"></i> Verified</small></div><span style="color:var(--success); font-weight:bold;">${dates[today].time}</span></div>`;
             }
         });
-        if(count === 0) attList.innerHTML = '<p style="opacity: 0.5; text-align: center; padding:20px;">No one present yet</p>';
+        if(count === 0) attList.innerHTML = '<p style="opacity: 0.5; text-align: center; padding:20px;">No one present</p>';
         attCountDisplay.innerText = "PRESENT: " + count;
     });
 
-    // Holiday & Strict Day Functions
-    function addHoliday() {
-        const d = document.getElementById('holiday-date').value;
-        if(d) db.ref('holidays').push(d).then(() => document.getElementById('holiday-date').value = "");
-    }
-
+    // Date Functions
+    function addHoliday() { const d = document.getElementById('holiday-date').value; if(d) db.ref('holidays').push(d).then(() => document.getElementById('holiday-date').value = ""); }
     db.ref('holidays').on('value', snap => {
         const list = document.getElementById('holiday-list');
         list.innerHTML = "";
-        snap.forEach(child => {
-            list.innerHTML += `<span class="holiday-tag" onclick="removeDate('holidays', '${child.key}')">${child.val()} <i class="fas fa-times" style="margin-left:5px; opacity:0.5"></i></span>`;
-        });
+        snap.forEach(child => { list.innerHTML += `<span class="holiday-tag" onclick="removeDate('holidays', '${child.key}')">${child.val()} <i class="fas fa-times" style="margin-left:5px; opacity:0.5"></i></span>`; });
     });
 
-    function addStrictDay() {
-        const d = document.getElementById('strict-date').value;
-        if(d) db.ref('strictDays').push(d).then(() => document.getElementById('strict-date').value = "");
-    }
-
+    function addStrictDay() { const d = document.getElementById('strict-date').value; if(d) db.ref('strictDays').push(d).then(() => document.getElementById('strict-date').value = ""); }
     db.ref('strictDays').on('value', snap => {
         const list = document.getElementById('strict-list');
         list.innerHTML = "";
-        snap.forEach(child => {
-            list.innerHTML += `<span class="strict-tag" onclick="removeDate('strictDays', '${child.key}')">${child.val()} <i class="fas fa-times" style="margin-left:5px; opacity:0.5"></i></span>`;
-        });
+        snap.forEach(child => { list.innerHTML += `<span class="strict-tag" onclick="removeDate('strictDays', '${child.key}')">${child.val()} <i class="fas fa-times" style="margin-left:5px; opacity:0.5"></i></span>`; });
     });
 
-    function removeDate(node, key) {
-        if(confirm("Remove this date?")) db.ref(`${node}/${key}`).remove();
-    }
-
-    function updateWage(id) {
-        const val = document.getElementById('wage-'+id).value;
-        db.ref(`staff/${id}/perDayWage`).set(parseInt(val)).then(() => alert("Wage Updated!"));
-    }
+    function removeDate(node, key) { if(confirm("Remove?")) db.ref(`${node}/${key}`).remove(); }
+    function updateWage(id) { const val = document.getElementById('wage-'+id).value; db.ref(`staff/${id}/perDayWage`).set(parseInt(val)).then(() => alert("Saved!")); }
 
     function sendTask() {
         const sid = document.getElementById('task-staff-select').value;
         const desc = document.getElementById('task-desc').value;
         if(sid !== "Select Staff" && desc) {
-            db.ref(`tasks/${sid}`).push({ task: desc, date: Date.now() })
-            .then(() => {
-                alert("Task Sent!");
-                document.getElementById('task-desc').value = "";
-            });
+            db.ref(`tasks/${sid}`).push({ task: desc, date: Date.now() }).then(() => { alert("Sent!"); document.getElementById('task-desc').value = ""; });
         }
     }
 
@@ -387,39 +353,18 @@
     db.ref('leads').on('value', snap => {
         const tbody = document.getElementById('lead-body');
         tbody.innerHTML = "";
-        if(!snap.exists()) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.5; padding:20px;">No leads yet</td></tr>';
-            return;
-        }
+        if(!snap.exists()) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.5; padding:20px;">No leads</td></tr>'; return; }
         snap.forEach(child => {
             const lead = child.val();
-            let cleanPhone = lead.phone.toString().replace(/\D/g, '');
-            let waLink = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-
-            tbody.innerHTML += `
-                <tr>
-                    <td><b>${lead.name}</b></td>
-                    <td><span style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:5px; font-size:10px;">${lead.course}</span></td>
-                    <td>${lead.phone}</td>
-                    <td>
-                        <div style="display:flex; gap:5px;">
-                            <a href="https://wa.me/${waLink}" target="_blank" class="btn btn-wa"><i class="fab fa-whatsapp"></i></a>
-                            <button class="btn btn-lead-del" onclick="deleteLead('${child.key}')"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>`;
+            let waLink = lead.phone.toString().replace(/\D/g, '');
+            if(waLink.length === 10) waLink = '91' + waLink;
+            tbody.innerHTML += `<tr><td><b>${lead.name}</b></td><td><span style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:5px; font-size:10px;">${lead.course}</span></td><td>${lead.phone}</td><td><div style="display:flex; gap:5px;"><a href="https://wa.me/${waLink}" target="_blank" class="btn btn-wa"><i class="fab fa-whatsapp"></i></a><button class="btn btn-lead-del" onclick="deleteLead('${child.key}')"><i class="fas fa-trash"></i></button></div></td></tr>`;
         });
     });
 
-    function deleteLead(key) {
-        if(confirm("Delete this lead?")) db.ref(`leads/${key}`).remove();
-    }
+    function deleteLead(key) { if(confirm("Delete lead?")) db.ref(`leads/${key}`).remove(); }
+    function removeStaff(id, name) { if(confirm("Delete " + name + "?")) db.ref(`staff/${id}`).remove(); }
 
-    function removeStaff(id, name) {
-        if(confirm("Permanently delete " + name + "?")) db.ref(`staff/${id}`).remove();
-    }
-
-    // Init Student List
     loadStudentPayments();
 </script>
 </body>
