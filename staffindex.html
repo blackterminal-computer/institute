@@ -73,7 +73,6 @@
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn:disabled { opacity: 0.3; filter: grayscale(1); }
 
-        /* STRICT DAYS UI */
         .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 12px; margin-top: 5px; }
         .strict-date-card {
             background: rgba(255, 59, 48, 0.08);
@@ -110,10 +109,14 @@
         }
         .task-dot { height: 8px; width: 8px; background: var(--apple-blue); border-radius: 50%; }
 
+        .pay-tag {
+            font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 8px;
+        }
+
         input {
             width: 100%; padding: 18px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
             border: 1px solid var(--border); border-radius: 18px; color: white; outline: none; box-sizing: border-box;
-            font-size: 15px; transition: 0.3s;
+            font-size: 15px;
         }
     </style>
 </head>
@@ -126,7 +129,6 @@
         <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> DAYS</div>
     </div>
 
-    <!-- EARNINGS -->
     <div class="card">
         <h3><i class="fas fa-chart-pie"></i> Earnings & Stats</h3>
         <div class="stat-grid">
@@ -152,14 +154,11 @@
         </button>
     </div>
 
-    <!-- STRICT DAYS -->
     <div class="card" id="strict-card" style="display: none; border-left: 4px solid var(--apple-red);">
         <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Attendance Days</h3>
         <div id="strict-days-list" class="strict-container"></div>
-        <p style="font-size: 10px; color: var(--text-sec); margin-top: 15px;">Mandatory presence to avoid ₹200 deduction.</p>
     </div>
 
-    <!-- STUDENT ATTENDANCE -->
     <div class="card">
         <h3><i class="fas fa-user-check"></i> Students Present ( <span id="present-count" style="color: var(--apple-green);">0</span> )</h3>
         <div id="attendance-list">
@@ -167,7 +166,6 @@
         </div>
     </div>
 
-    <!-- TASKS -->
     <div class="card">
         <h3><i class="fas fa-bolt"></i> Priority Assignments</h3>
         <div id="task-list">
@@ -175,7 +173,6 @@
         </div>
     </div>
 
-    <!-- LEAD ENTRY -->
     <div class="card">
         <h3><i class="fas fa-paper-plane"></i> Quick Lead Entry</h3>
         <input type="text" id="l-name" placeholder="Full Name">
@@ -184,7 +181,7 @@
         <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right"></i></button>
     </div>
 
-    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v2.8 • ENCRYPTED</p>
+    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v2.9 • PAYMENT SYNC</p>
 </div>
 
 <script>
@@ -239,34 +236,9 @@
         listenStrictDays();
     }
 
-    function listenStrictDays() {
-        const strictCard = document.getElementById('strict-card');
-        const strictList = document.getElementById('strict-days-list');
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        db.ref('strictDays').on('value', snap => {
-            if (snap.exists()) {
-                strictList.innerHTML = "";
-                let count = 0;
-                snap.forEach(child => {
-                    const dateVal = child.val();
-                    if (dateVal >= todayStr) {
-                        count++;
-                        const isToday = dateVal === todayStr;
-                        const d = new Date(dateVal);
-                        const mon = d.toLocaleDateString('en-GB', { month: 'short' });
-                        const day = d.toLocaleDateString('en-GB', { day: 'numeric' });
-                        strictList.innerHTML += `<div class="strict-date-card ${isToday ? 'today' : ''}"><span class="mon">${isToday ? 'NOW' : mon}</span><span class="day">${day}</span></div>`;
-                    }
-                });
-                strictCard.style.display = count > 0 ? "block" : "none";
-            }
-        });
-    }
-
-    // FIXED WHATSAPP REMINDER LOGIC
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
+        const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
         const listDiv = document.getElementById('attendance-list');
         const countSpan = document.getElementById('present-count');
 
@@ -277,45 +249,70 @@
                 listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
                 return;
             }
+
             for (const attDoc of snapshot.docs) {
                 const data = attDoc.data();
-                const displayName = data.userName || data.studentName || "Unknown Student";
+                const displayName = data.userName || data.studentName || "Unknown";
+                const rowId = `student-${displayName.replace(/\s+/g, '')}`;
                 
-                // Get phone from various possible fields
-                let phone = data.userPhone || data.phoneNumber || data.phone || "";
-                
-                // If phone missing, try to fetch from students collection
-                if(!phone) {
-                    try {
-                        const studentProfile = await fs.collection("students").doc(displayName).get();
-                        if(studentProfile.exists) {
-                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
-                        }
-                    } catch(e) { console.log("Profile error", e); }
-                }
-
-                const cleanPhone = phone.toString().replace(/\D/g, '');
-                let waBtnHtml = "";
-                
-                if(cleanPhone.length >= 10) {
-                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    // PRESET PAYMENT REMINDER MESSAGE
-                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
-                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
-                }
-
+                // Add initial row
                 listDiv.innerHTML += `
-                    <div class="att-item">
-                        <span class="att-name">${displayName}</span>
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            ${waBtnHtml}
-                            <span style="font-size:10px; color:var(--apple-green); font-weight:700;">PRESENT</span>
+                    <div class="att-item" id="${rowId}">
+                        <div style="display:flex; align-items:center;">
+                            <span class="att-name">${displayName}</span>
+                            <span class="pay-tag" id="tag-${rowId}" style="background:rgba(255,255,255,0.1); color:#888;">...</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px;" id="actions-${rowId}">
+                            <i class="fas fa-circle-notch fa-spin" style="font-size:10px; opacity:0.5;"></i>
                         </div>
                     </div>`;
+
+                // Fetch Phone & Payment Status for this student
+                updateStudentStatus(displayName, rowId, currentMonth);
             }
         });
+    }
+
+    async function updateStudentStatus(name, rowId, month) {
+        let phone = "";
+        let isPaid = false;
+
+        try {
+            // 1. Get Payment Status
+            const payDoc = await fs.collection("payments").doc(name).collection("months").doc(month).get();
+            if(payDoc.exists && payDoc.data().status === "Paid") isPaid = true;
+
+            // 2. Get Phone Number
+            const studentProfile = await fs.collection("students").doc(name).get();
+            if(studentProfile.exists) {
+                phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
+            }
+
+            // 3. UI Updates
+            const tag = document.getElementById(`tag-${rowId}`);
+            const actionArea = document.getElementById(`actions-${rowId}`);
+
+            if(tag) {
+                tag.innerText = isPaid ? "PAID" : "UNPAID";
+                tag.style.background = isPaid ? "rgba(52, 199, 89, 0.2)" : "rgba(255, 59, 48, 0.2)";
+                tag.style.color = isPaid ? "var(--apple-green)" : "var(--apple-red)";
+            }
+
+            const cleanPhone = phone.toString().replace(/\D/g, '');
+            let waBtn = "";
+            if(cleanPhone.length >= 10) {
+                const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                const msg = encodeURIComponent(`Hi ${name}, your fees for ${month} is currently ${isPaid ? 'Paid' : 'Unpaid'}. Please ignore if already cleared.`);
+                waBtn = `<div class="wa-action" onclick="window.open('https://api.whatsapp.com/send?phone=${finalNum}&text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+            } else {
+                waBtn = `<div class="wa-action" style="opacity:0.2" onclick="alert('No phone found')"><i class="fab fa-whatsapp"></i></div>`;
+            }
+
+            if(actionArea) {
+                actionArea.innerHTML = `${waBtn} <span style="font-size:10px; color:var(--apple-green); font-weight:700;">PRESENT</span>`;
+            }
+
+        } catch(e) { console.log(e); }
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -335,14 +332,14 @@
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-                if (dist <= 20) {
+                if (dist <= 40) { // Accuracy buffer
                     const todayStr = new Date().toISOString().split('T')[0];
                     db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
                         db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
                         location.reload();
                     });
                 } else {
-                    alert(`Access Denied! Distance: ${Math.round(dist)}m.`);
+                    alert(`Access Denied! You are ${Math.round(dist)}m away from Center.`);
                     btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
                 }
             },
@@ -359,6 +356,27 @@
                 const t = child.val();
                 container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
             });
+        });
+    }
+
+    function listenStrictDays() {
+        const strictList = document.getElementById('strict-days-list');
+        const todayStr = new Date().toISOString().split('T')[0];
+        db.ref('strictDays').on('value', snap => {
+            if (snap.exists()) {
+                strictList.innerHTML = "";
+                let count = 0;
+                snap.forEach(child => {
+                    const dateVal = child.val();
+                    if (dateVal >= todayStr) {
+                        count++;
+                        const isToday = dateVal === todayStr;
+                        const d = new Date(dateVal);
+                        strictList.innerHTML += `<div class="strict-date-card ${isToday ? 'today' : ''}"><span class="mon">${isToday ? 'NOW' : d.toLocaleDateString('en-GB', {month:'short'})}</span><span class="day">${d.getDate()}</span></div>`;
+                    }
+                });
+                document.getElementById('strict-card').style.display = count > 0 ? "block" : "none";
+            }
         });
     }
 
