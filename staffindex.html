@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Staff Terminal | Black Terminal</title>
-    <!-- Firebase Compat Libraries -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -15,8 +15,10 @@
         :root {
             --apple-blue: #007AFF;
             --apple-green: #34C759;
+            --danger: #FF3B30;
+            --warning: #FF9F0A;
             --bg: #000000;
-            --glass: rgba(28, 28, 30, 0.6);
+            --glass: rgba(28, 28, 30, 0.7);
             --border: rgba(255, 255, 255, 0.1);
             --text-sec: #8E8E93;
         }
@@ -24,7 +26,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             background: var(--bg);
-            background-image: radial-gradient(circle at 0% 0%, #1c1c1e 0%, #000 50%);
+            background-image: radial-gradient(circle at 20% 20%, #1c1c1e 0%, #000 60%);
             color: white;
             margin: 0;
             padding: env(safe-area-inset-top) 20px 40px 20px;
@@ -33,100 +35,80 @@
 
         .container { max-width: 450px; margin: auto; }
 
-        .header { margin: 30px 0; padding-left: 5px; position: relative;}
-        .header h1 { font-size: 28px; margin: 0; font-weight: 700; letter-spacing: -0.5px; }
-        .header p { color: var(--apple-blue); font-size: 14px; margin: 5px 0; font-weight: 600; text-transform: uppercase; }
+        /* Header & Streak */
+        .header { margin: 30px 0; position: relative;}
+        .header h1 { font-size: 32px; margin: 0; font-weight: 700; letter-spacing: -1px; }
+        .header p { color: var(--apple-blue); font-size: 14px; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
         
         .streak-badge {
-            position: absolute; right: 0; top: 10px;
+            position: absolute; right: 0; top: 5px;
             background: rgba(255, 159, 10, 0.15);
-            color: #FF9F0A; padding: 6px 12px; border-radius: 20px;
+            color: #FF9F0A; padding: 8px 15px; border-radius: 25px;
             font-size: 13px; font-weight: 700; border: 1px solid rgba(255, 159, 10, 0.3);
+            display: flex; align-items: center; gap: 6px;
         }
 
+        /* Card System */
         .card {
             background: var(--glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 24px;
-            padding: 22px;
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 28px;
+            padding: 24px;
             margin-bottom: 20px;
             border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         }
 
-        h3 { font-size: 13px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.5px; }
+        h3 { font-size: 12px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 1px; text-transform: uppercase; }
+
+        /* Strict Days Modern UI */
+        .strict-scroll-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 10px;
+            scroll-snap-type: x mandatory;
+        }
+        .strict-scroll-container::-webkit-scrollbar { display: none; }
+
+        .strict-card-mini {
+            flex: 0 0 90px;
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            border-radius: 20px;
+            padding: 15px 5px;
+            text-align: center;
+            scroll-snap-align: start;
+        }
+        .strict-card-mini i { color: var(--danger); font-size: 18px; margin-bottom: 5px; display: block; }
+        .strict-day-num { font-size: 24px; font-weight: 800; display: block; }
+        .strict-month-name { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--danger); }
+
+        /* Stats & Buttons */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat-box b { font-size: 24px; font-weight: 800; display: block; }
+        .stat-box small { color: var(--text-sec); font-size: 10px; }
 
         .progress-container { background: rgba(255,255,255,0.05); height: 6px; border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--apple-blue); width: 0%; transition: 1s ease-out; }
-
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
-        .stat-box small { display: block; font-size: 10px; color: var(--text-sec); margin-bottom: 4px; }
-        .stat-box b { font-size: 22px; font-weight: 700; }
+        .progress-bar { height: 100%; background: var(--apple-blue); width: 0%; transition: 1.5s cubic-bezier(0.1, 0, 0, 1); }
 
         .btn {
-            width: 100%; padding: 18px; border-radius: 18px; border: none;
-            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%; padding: 18px; border-radius: 20px; border: none;
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s;
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
-        .btn-main { background: #fff; color: #000; }
-        .btn-main:active { transform: scale(0.97); opacity: 0.8; }
-        .btn-punch { background: var(--apple-blue); color: white; }
-        .btn:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+        .btn-punch { background: var(--apple-blue); color: white; box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3); }
+        .btn-main { background: white; color: black; }
+        .btn:disabled { opacity: 0.4; filter: grayscale(1); }
 
-        @keyframes pulse-task {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
-        }
+        /* Attendance & Tasks */
+        .att-item { background: rgba(255,255,255,0.05); padding: 14px 18px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid var(--border); }
+        .task-item { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 20px; margin-top: 10px; display: flex; gap: 15px; border: 1px solid var(--border); }
+        .task-dot { width: 8px; height: 8px; background: var(--apple-blue); border-radius: 50%; margin-top: 6px; box-shadow: 0 0 10px var(--apple-blue); }
 
-        .task-item {
-            background: rgba(255,255,255,0.03);
-            padding: 16px; border-radius: 20px; margin-top: 12px;
-            border: 1px solid rgba(255,255,255,0.05);
-            display: flex; align-items: flex-start; gap: 12px;
-        }
-        .task-dot { 
-            height: 10px; width: 10px; background: var(--apple-blue); 
-            border-radius: 50%; margin-top: 4px; 
-            box-shadow: 0 0 10px var(--apple-blue);
-            animation: pulse-task 2s infinite; 
-        }
-        .task-info p { margin: 0; font-size: 14px; font-weight: 500; }
-        .task-info small { color: var(--text-sec); font-size: 11px; margin-top: 5px; display: block; }
-
-        #attendance-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; }
-        .att-item { 
-            background: rgba(255,255,255,0.05); 
-            padding: 12px 16px; 
-            border-radius: 15px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .att-name { font-size: 14px; font-weight: 600; flex: 1; }
-        
-        /* WHATSAPP ACTION STYLE */
-        .wa-action {
-            background: rgba(34, 197, 94, 0.15);
-            color: #22C55E;
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            margin-right: 12px; cursor: pointer; transition: 0.2s;
-        }
-        .wa-action:active { transform: scale(0.9); background: #22C55E; color: #fff; }
-        .att-tag { font-size: 11px; color: var(--apple-green); font-weight: 700; display: flex; align-items: center; gap: 4px; }
-
-        input {
-            width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border); border-radius: 16px; color: white; outline: none; box-sizing: border-box;
-            font-size: 15px; transition: 0.3s;
-        }
-        input:focus { border-color: var(--apple-blue); background: rgba(255,255,255,0.1); }
-
-        .footer-note { text-align: center; color: var(--text-sec); font-size: 11px; margin-top: 30px; opacity: 0.6; }
+        input { width: 100%; padding: 16px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 18px; color: white; box-sizing: border-box; font-size: 15px; outline: none; }
+        .footer-note { text-align: center; color: var(--text-sec); font-size: 10px; margin-top: 40px; text-transform: uppercase; letter-spacing: 2px; }
     </style>
 </head>
 <body>
@@ -134,19 +116,31 @@
 <div class="container">
     <div class="header">
         <p id="current-date">--</p>
-        <h1 id="user-display">Staff Terminal</h1>
+        <h1 id="user-display">Hi, Staff</h1>
         <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> Day Streak</div>
     </div>
 
+    <!-- STRICT DAYS SECTION (Modern Calendar Style) -->
+    <div class="card" id="strict-card" style="display:none; border-color: rgba(255,59,48,0.3);">
+        <h3 style="color: var(--danger);"><i class="fas fa-shield-halved"></i> Strict Work Days</h3>
+        <div id="strict-days-list" class="strict-scroll-container">
+            <!-- JS updates this -->
+        </div>
+        <p style="font-size: 10px; color: var(--text-sec); margin-top: 10px; text-align: center;">
+            <i class="fas fa-info-circle"></i> Mandatory attendance. Penalty: ₹200
+        </p>
+    </div>
+
+    <!-- MAIN PERFORMANCE CARD -->
     <div class="card">
-        <h3><i class="fas fa-chart-line"></i> PERFORMANCE & WAGES</h3>
+        <h3><i class="fas fa-chart-pie"></i> Activity & Earnings</h3>
         <div class="stat-grid">
             <div class="stat-box">
-                <small>TODAY'S RATE</small>
+                <small>DAILY RATE</small>
                 <b id="daily-rate">₹0</b>
             </div>
             <div class="stat-box" style="text-align: right;">
-                <small>TOTAL EARNED</small>
+                <small>NET EARNED</small>
                 <b id="total-earning">₹0</b>
             </div>
         </div>
@@ -154,43 +148,38 @@
             <div id="salary-progress" class="progress-bar"></div>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sec);">
-            <span>Cycle Progress</span>
             <span id="cycle-days">-- days left</span>
+            <span>Target: 25 Days</span>
         </div>
         <br>
         <button id="att-btn" class="btn btn-punch" onclick="markAttendance()">
             <i class="fas fa-fingerprint"></i> PUNCH IN
         </button>
+        <p id="strict-warning" style="display:none; color: var(--danger); font-size: 11px; text-align: center; margin-top: 12px; font-weight: 700; animation: pulse 2s infinite;">
+            ⚠️ ATTENDANCE IS COMPULSORY TODAY
+        </p>
+    </div>
+
+    <!-- OTHER SECTIONS -->
+    <div class="card">
+        <h3><i class="fas fa-users"></i> Student Tracker ( <span id="present-count">0</span> )</h3>
+        <div id="attendance-list"></div>
     </div>
 
     <div class="card">
-        <h3><i class="fas fa-users"></i> STUDENT ATTENDANCE ( <span id="present-count">0</span> )</h3>
-        <div id="attendance-list">
-            <p style="text-align:center; font-size:12px; opacity:0.4;">Loading attendance...</p>
-        </div>
+        <h3><i class="fas fa-tasks"></i> Pending Tasks</h3>
+        <div id="task-list"></div>
     </div>
 
     <div class="card">
-        <h3><i class="fas fa-list-check"></i> PRIORITY TASKS</h3>
-        <div id="task-list">
-            <div style="text-align: center; padding: 20px; opacity: 0.4;">
-                <i class="fas fa-moon fa-2x"></i>
-                <p style="font-size: 12px; margin-top: 10px;">All caught up!</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3><i class="fas fa-paper-plane"></i> LEAD GENERATOR</h3>
-        <input type="text" id="l-name" placeholder="Student Name">
+        <h3><i class="fas fa-user-plus"></i> Lead Drop</h3>
+        <input type="text" id="l-name" placeholder="Name">
         <input type="tel" id="l-phone" placeholder="WhatsApp Number">
-        <input type="text" id="l-course" placeholder="Interest (e.g. Python, AI)">
-        <button class="btn btn-main" onclick="submitLead()">
-            SUBMIT TO ADMIN <i class="fas fa-chevron-right"></i>
-        </button>
+        <input type="text" id="l-course" placeholder="Interest">
+        <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD</button>
     </div>
 
-    <p class="footer-note">TERMINAL V2.6 • SECURED BY BLACK TERMINAL CLOUD</p>
+    <p class="footer-note">Black Terminal Cloud • V2.8</p>
 </div>
 
 <script>
@@ -209,163 +198,144 @@
     const fs = firebase.firestore(); 
 
     const staffId = localStorage.getItem('bt_staff_id');
-    const staffName = localStorage.getItem('bt_staff_name') || "Staff";
+    const staffName = localStorage.getItem('bt_staff_name') || "Staff Member";
+    const todayStr = new Date().toISOString().split('T')[0];
 
     if(!staffId) window.location.href = "index.html";
 
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
-    async function initSystem() {
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
-        
-        db.ref(`attendance/${staffId}/${dateStr}`).once('value', snap => {
-            if(snap.exists()) {
+    function init() {
+        // 1. Check Attendance & Holiday
+        db.ref('holidays').on('value', hSnap => {
+            let isHoliday = false;
+            hSnap.forEach(h => { if(h.val() === todayStr) isHoliday = true; });
+
+            db.ref(`attendance/${staffId}/${todayStr}`).on('value', snap => {
                 const btn = document.getElementById('att-btn');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> PUNCHED IN';
-                btn.style.background = "var(--apple-green)";
+                if(isHoliday) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-umbrella-beach"></i> OFFICE CLOSED';
+                    btn.style.background = "#333";
+                } else if(snap.exists()) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> PUNCHED IN';
+                    btn.style.background = "var(--apple-green)";
+                }
+            });
+        });
+
+        // 2. Load Strict Days (Horizontal UI)
+        db.ref('strictDays').on('value', snap => {
+            const list = document.getElementById('strict-days-list');
+            const card = document.getElementById('strict-card');
+            const warning = document.getElementById('strict-warning');
+            list.innerHTML = "";
+            
+            if(snap.exists()) {
+                card.style.display = "block";
+                snap.forEach(child => {
+                    const d = child.val();
+                    const dObj = new Date(d);
+                    if(d === todayStr) warning.style.display = "block";
+                    
+                    list.innerHTML += `
+                        <div class="strict-card-mini">
+                            <i class="fas fa-calendar-day"></i>
+                            <span class="strict-day-num">${dObj.getDate()}</span>
+                            <span class="strict-month-name">${dObj.toLocaleDateString('en-US', {month:'short'})}</span>
+                        </div>`;
+                });
             }
         });
 
+        // 3. Stats
         db.ref(`staff/${staffId}`).on('value', snap => {
-            const val = snap.val() || {};
-            const rate = val.perDayWage || 500;
-            const total = val.salary || 0;
-            
-            document.getElementById('daily-rate').innerText = `₹${rate}`;
-            document.getElementById('total-earning').innerText = `₹${total}`;
-            document.getElementById('streak-val').innerText = val.streak || 0;
-
-            const target = rate * 25;
-            const percent = Math.min((total / target) * 100, 100);
-            document.getElementById('salary-progress').style.width = percent + "%";
+            const v = snap.val() || {};
+            document.getElementById('daily-rate').innerText = `₹${v.perDayWage || 500}`;
+            document.getElementById('total-earning').innerText = `₹${v.salary || 0}`;
+            document.getElementById('streak-val').innerText = v.streak || 0;
+            const progress = ((v.salary || 0) / ((v.perDayWage || 500) * 25)) * 100;
+            document.getElementById('salary-progress').style.width = Math.min(progress, 100) + "%";
         });
 
+        // Time Remaining
         const now = new Date();
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days left`;
+        const daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+        document.getElementById('cycle-days').innerText = `${daysLeft} days left`;
 
         loadTasks();
-        listenStudentAttendance(); 
+        listenStudentAttendance();
     }
 
-    // FINAL ERROR-FREE WHATSAPP LOGIC
-    function listenStudentAttendance() {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const listDiv = document.getElementById('attendance-list');
-        const countSpan = document.getElementById('present-count');
-
-        fs.collection("attendance")
-          .where("date", "==", todayStr)
-          .onSnapshot(async (snapshot) => {
-            listDiv.innerHTML = "";
-            countSpan.innerText = snapshot.size;
-
-            if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">No students present yet</p>';
-                return;
-            }
-
-            for (const attDoc of snapshot.docs) {
-                const data = attDoc.data();
-                const displayName = data.userName || data.studentName || "Unknown Student";
-                
-                // Fetch Phone Number from Profiles
-                let phone = data.userPhone || data.phoneNumber || "";
-                
-                if(!phone) {
-                    try {
-                        const studentProfile = await fs.collection("students").doc(displayName).get();
-                        if(studentProfile.exists) {
-                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
-                        }
-                    } catch(e) { console.log("Profile error", e); }
-                }
-
-                const cleanPhone = phone.toString().replace(/\D/g, '');
-                let waBtnHtml = "";
-
-                if(cleanPhone.length >= 10) {
-                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
-                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('No number found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
-                }
-
-                listDiv.innerHTML += `
-                    <div class="att-item">
-                        <span class="att-name">${displayName}</span>
-                        ${waBtnHtml}
-                        <span class="att-tag"><i class="fas fa-check-circle"></i> PRESENT</span>
-                    </div>
-                `;
-            }
-        });
-    }
-
-    function markAttendance() {
-        const dateStr = new Date().toISOString().split('T')[0];
+    async function markAttendance() {
         const btn = document.getElementById('att-btn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
+        const hSnap = await db.ref('holidays').once('value');
+        let isH = false;
+        hSnap.forEach(h => { if(h.val() === todayStr) isH = true; });
 
-        db.ref(`attendance/${staffId}/${dateStr}`).set({
+        if(isH) return alert("Office is closed today.");
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCING...';
+
+        db.ref(`attendance/${staffId}/${todayStr}`).set({
             time: new Date().toLocaleTimeString(),
             status: "Present",
             name: staffName
         }).then(() => {
-            db.ref(`staff/${staffId}`).transaction(staff => {
-                if (staff) {
-                    staff.salary = (staff.salary || 0) + (staff.perDayWage || 500);
-                    staff.streak = (staff.streak || 0) + 1;
+            db.ref(`staff/${staffId}`).transaction(s => {
+                if (s) {
+                    s.salary = (parseInt(s.salary) || 0) + (parseInt(s.perDayWage) || 500);
+                    s.streak = (parseInt(s.streak) || 0) + 1;
                 }
-                return staff;
+                return s;
             });
-            alert("Attendance Marked! 🔥");
-            location.reload();
+        });
+    }
+
+    function listenStudentAttendance() {
+        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(snap => {
+            const list = document.getElementById('attendance-list');
+            document.getElementById('present-count').innerText = snap.size;
+            list.innerHTML = snap.empty ? '<p style="text-align:center; font-size:12px; opacity:0.3;">No entries today</p>' : '';
+            snap.forEach(doc => {
+                const d = doc.data();
+                list.innerHTML += `
+                    <div class="att-item">
+                        <span><b>${d.userName}</b></span>
+                        <div style="display:flex; align-items:center; gap:10px">
+                            <i class="fab fa-whatsapp" style="color:var(--apple-green)" onclick="window.open('https://wa.me/91${d.userPhone}')"></i>
+                            <span style="font-size:11px; color:var(--apple-green)">● PRESENT</span>
+                        </div>
+                    </div>`;
+            });
         });
     }
 
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
-            const container = document.getElementById('task-list');
-            if(!snap.exists()) return;
-            container.innerHTML = "";
+            const list = document.getElementById('task-list');
+            list.innerHTML = snap.exists() ? '' : '<p style="text-align:center; opacity:0.3; font-size:12px;">All caught up!</p>';
             snap.forEach(child => {
                 const t = child.val();
-                container.innerHTML += `
-                    <div class="task-item">
-                        <div class="task-dot"></div>
-                        <div class="task-info">
-                            <p>${t.task}</p>
-                            <small>${new Date(t.date).toLocaleDateString()}</small>
-                        </div>
-                    </div>
-                `;
+                list.innerHTML += `<div class="task-item"><div class="task-dot"></div><div><p style="margin:0; font-size:14px">${t.task}</p><small style="color:var(--text-sec); font-size:11px">${new Date(t.date).toLocaleDateString()}</small></div></div>`;
             });
         });
     }
 
     function submitLead() {
-        const n = document.getElementById('l-name').value;
-        const p = document.getElementById('l-phone').value;
-        const c = document.getElementById('l-course').value;
-
-        if(!n || p.length < 10) return alert("Please enter valid details.");
-
-        db.ref('leads').push({
-            name: n, phone: p, course: c,
-            staff: staffName, staffId: staffId,
-            timestamp: Date.now()
-        }).then(() => {
-            alert("Lead sent to Admin! 🚀");
-            document.querySelectorAll('input').forEach(i => i.value = "");
-        });
+        const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
+        if(n && p) {
+            db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => {
+                alert("Lead Logged!");
+                document.querySelectorAll('input').forEach(i => i.value = "");
+            });
+        }
     }
 
-    initSystem();
+    init();
 </script>
 </body>
 </html>
