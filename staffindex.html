@@ -197,7 +197,6 @@
     const staffName = localStorage.getItem('bt_staff_name') || "Staff Member";
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // --- COORDINATES SETTINGS ---
     const TARGET_LAT = 21.940573;
     const TARGET_LON = 86.737408;
     const RADIUS_KM = 0.3; 
@@ -355,13 +354,20 @@
             list.innerHTML = snap.empty ? '<p style="text-align:center; font-size:12px; opacity:0.3;">No entries today</p>' : '';
             snap.forEach(doc => {
                 const d = doc.data();
-                const reminderMsg = encodeURIComponent(`Hi ${d.userName}, This is a reminder regarding your pending fees at Black Terminal. Please clear it soon. Thank you!`);
                 
+                // image.png error solution: Clean phone & update API format
+                const cleanPhone = String(d.userPhone).replace(/\D/g, ''); 
+                const reminderMsg = encodeURIComponent(`Hi ${d.userName}, This is a reminder regarding your pending fees at Black Terminal. Please clear it soon. Thank you!`);
+                const waLink = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${reminderMsg}`;
+
                 list.innerHTML += `
                     <div class="att-item">
                         <span><b>${d.userName}</b></span>
                         <div style="display:flex; align-items:center; gap:10px">
-                            <i class="fab fa-whatsapp" style="color:var(--apple-green); cursor:pointer;" onclick="window.open('https://wa.me/91${d.userPhone}?text=${reminderMsg}')"></i>
+                            <i class="fab fa-whatsapp" 
+                               style="color:var(--apple-green); cursor:pointer; font-size:20px;" 
+                               onclick="window.open('${waLink}', '_blank')">
+                            </i>
                             <span style="font-size:11px; color:var(--apple-green)">● PRESENT</span>
                         </div>
                     </div>`;
