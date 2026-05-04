@@ -306,7 +306,60 @@
         });
     }
 
+    // --- Location Based Logic Start ---
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; // Earth radius in meters
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c; // Distance in meters
+    }
+
     function markAttendance() {
+        const btn = document.getElementById('att-btn');
+        const officeLat = 21.9403651;
+        const officeLon = 86.7376570;
+        const maxRadius = 20; // 20 meters
+
+        if (!navigator.geolocation) {
+            return alert("Geolocation is not supported by your browser.");
+        }
+
+        btn.innerHTML = '<i class="fas fa-location-crosshairs fa-spin"></i> VERIFYING LOCATION...';
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLon = position.coords.longitude;
+                const distance = calculateDistance(userLat, userLon, officeLat, officeLon);
+
+                if (distance <= maxRadius) {
+                    // User is in range - Proceed with original punch in logic
+                    proceedWithPunchIn();
+                } else {
+                    alert(`Access Denied! You are ${Math.round(distance)}m away from the office. Please be within 20m of the office location to punch in.`);
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
+                    btn.disabled = false;
+                }
+            },
+            (error) => {
+                alert("Location Error: Please enable GPS/Location access to punch in.");
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN';
+                btn.disabled = false;
+            },
+            { enableHighAccuracy: true }
+        );
+    }
+
+    function proceedWithPunchIn() {
         const dateStr = new Date().toISOString().split('T')[0];
         const btn = document.getElementById('att-btn');
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
@@ -323,10 +376,11 @@
                 }
                 return staff;
             });
-            alert("Attendance Marked! 🔥");
+            alert("Attendance Marked! Location Verified 🔥");
             location.reload();
         });
     }
+    // --- Location Based Logic End ---
 
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
