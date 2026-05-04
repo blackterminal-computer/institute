@@ -6,6 +6,7 @@
     <title>Admin | Black Terminal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -87,6 +88,13 @@
             border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--success);
         }
 
+        /* Toggle Button for Payment */
+        .status-badge {
+            padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; cursor: pointer; border: none;
+        }
+        .status-paid { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .status-unpaid { background: rgba(255, 62, 62, 0.2); color: #ff3e3e; }
+
         @media (min-width: 768px) {
             .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
             .header-flex { flex-direction: row; justify-content: space-between; text-align: left; }
@@ -121,6 +129,26 @@
                             </tr>
                         </thead>
                         <tbody id="staff-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Payment Management -->
+            <div class="card">
+                <h2><i class="fas fa-wallet"></i> Student Fees (<span id="cur-month">--</span>)</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payment-body">
+                            <tr><td colspan="4" style="text-align:center; opacity:0.5; padding:20px;">Loading Students...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -199,6 +227,10 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const fs = firebase.firestore();
+
+    const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    document.getElementById('cur-month').innerText = currentMonth;
 
     let staffData = {};
 
@@ -230,6 +262,51 @@
             select.innerHTML += `<option value="${child.key}">${user.name}</option>`;
         });
     });
+
+    // Student Payment Logic
+    function loadStudentPayments() {
+        const payBody = document.getElementById('payment-body');
+        // Fetching students from Firestore 'students' collection
+        fs.collection("students").onSnapshot(async (snapshot) => {
+            payBody.innerHTML = "";
+            if(snapshot.empty) {
+                payBody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.5;">No students found</td></tr>';
+                return;
+            }
+
+            for (const doc of snapshot.docs) {
+                const student = doc.data();
+                const name = doc.id; // Assuming Doc ID is name or studentName field
+                const phone = student.phoneNumber || student.phone || "N/A";
+                
+                // Get Payment Status
+                let status = "Unpaid";
+                const payDoc = await fs.collection("payments").doc(name).collection("months").doc(currentMonth).get();
+                if(payDoc.exists) status = payDoc.data().status;
+
+                const badgeClass = status === "Paid" ? "status-paid" : "status-unpaid";
+
+                payBody.innerHTML += `
+                    <tr>
+                        <td><b>${name}</b></td>
+                        <td>${phone}</td>
+                        <td><button class="status-badge ${badgeClass}" onclick="togglePayment('${name}', '${status}')">${status.toUpperCase()}</button></td>
+                        <td><button class="btn btn-update" style="padding:5px 10px;" onclick="togglePayment('${name}', '${status}')"><i class="fas fa-sync"></i></button></td>
+                    </tr>
+                `;
+            }
+        });
+    }
+
+    async function togglePayment(name, currentStatus) {
+        const newStatus = currentStatus === "Paid" ? "Unpaid" : "Paid";
+        try {
+            await fs.collection("payments").doc(name).collection("months").doc(currentMonth).set({
+                status: newStatus,
+                updatedAt: Date.now()
+            }, { merge: true });
+        } catch(e) { alert("Error updating payment"); }
+    }
 
     // Today's Attendance Listener
     const today = new Date().toISOString().split('T')[0];
@@ -341,6 +418,9 @@
     function removeStaff(id, name) {
         if(confirm("Permanently delete " + name + "?")) db.ref(`staff/${id}`).remove();
     }
+
+    // Init Student List
+    loadStudentPayments();
 </script>
 </body>
 </html>
