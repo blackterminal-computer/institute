@@ -355,10 +355,18 @@
             snap.forEach(doc => {
                 const d = doc.data();
                 
-                // image.png error solution: Clean phone & update API format
-                const cleanPhone = String(d.userPhone).replace(/\D/g, ''); 
+                // image_2.png error solution: Smart number validation
+                let rawPhone = String(d.userPhone || "").replace(/\D/g, '');
+                let finalPhone = rawPhone;
+                
+                if (rawPhone.length === 10) {
+                    finalPhone = "91" + rawPhone;
+                } else if (rawPhone.length > 10 && rawPhone.startsWith("91")) {
+                    finalPhone = rawPhone;
+                }
+
                 const reminderMsg = encodeURIComponent(`Hi ${d.userName}, This is a reminder regarding your pending fees at Black Terminal. Please clear it soon. Thank you!`);
-                const waLink = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${reminderMsg}`;
+                const waLink = `https://api.whatsapp.com/send?phone=${finalPhone}&text=${reminderMsg}`;
 
                 list.innerHTML += `
                     <div class="att-item">
@@ -366,7 +374,7 @@
                         <div style="display:flex; align-items:center; gap:10px">
                             <i class="fab fa-whatsapp" 
                                style="color:var(--apple-green); cursor:pointer; font-size:20px;" 
-                               onclick="window.open('${waLink}', '_blank')">
+                               onclick="if('${finalPhone}'.length >= 10) { window.open('${waLink}', '_blank'); } else { alert('Error: Student phone number is invalid or too short.'); }">
                             </i>
                             <span style="font-size:11px; color:var(--apple-green)">● PRESENT</span>
                         </div>
