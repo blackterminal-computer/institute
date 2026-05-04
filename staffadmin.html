@@ -47,7 +47,6 @@
         h2 { font-size: 0.95rem; color: #fff; margin-top: 0; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
 
         .table-container { overflow-x: auto; border-radius: 12px; background: rgba(0,0,0,0.2); }
-        /* NEW: Vertical Scroll for Payment */
         .scroll-box { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; }
         
         table { width: 100%; border-collapse: collapse; min-width: 400px; }
@@ -91,7 +90,6 @@
             border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--success);
         }
 
-        /* Status Badges */
         .status-badge {
             padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase;
         }
@@ -117,7 +115,6 @@
 
     <div class="grid">
         <div class="left-col">
-            <!-- Staff Table -->
             <div class="card">
                 <h2><i class="fas fa-users"></i> Staff Payroll & Performance</h2>
                 <div class="table-container">
@@ -136,9 +133,12 @@
                 </div>
             </div>
 
-            <!-- Student Payment Management (Updated for Scroll & Space) -->
+            <!-- Student Fees with TOTAL COUNT -->
             <div class="card">
-                <h2><i class="fas fa-wallet"></i> Student Fees (<span id="cur-month">--</span>)</h2>
+                <h2>
+                    <i class="fas fa-wallet"></i> Student Fees (<span id="cur-month">--</span>) 
+                    <span style="font-size: 0.7rem; margin-left: auto; opacity: 0.7; font-weight: 400;">Total: <span id="total-students" style="font-weight: 800; color: var(--info);">0</span></span>
+                </h2>
                 <div class="scroll-box">
                     <table>
                         <thead>
@@ -155,7 +155,6 @@
                 </div>
             </div>
 
-            <!-- Leads Table -->
             <div class="card">
                 <h2><i class="fas fa-headset"></i> Recent Leads</h2>
                 <div class="table-container">
@@ -175,7 +174,6 @@
         </div>
 
         <div class="right-col">
-            <!-- Attendance List -->
             <div class="card">
                 <h2><i class="fas fa-fingerprint"></i> Today's Attendance</h2>
                 <div id="attendance-list" style="max-height: 250px; overflow-y: auto;">
@@ -183,7 +181,6 @@
                 </div>
             </div>
 
-            <!-- Date Controls -->
             <div class="card">
                 <h2><i class="fas fa-calendar-alt"></i> Date Controls</h2>
                 <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
@@ -204,7 +201,6 @@
                 </div>
             </div>
 
-            <!-- Task Assign -->
             <div class="card">
                 <h2><i class="fas fa-bolt"></i> Task Assign</h2>
                 <select id="task-staff-select"></select>
@@ -234,7 +230,6 @@
 
     let staffData = {};
 
-    // Staff Listener
     db.ref('staff').on('value', snap => {
         const tbody = document.getElementById('staff-body');
         const select = document.getElementById('task-staff-select');
@@ -249,14 +244,16 @@
         });
     });
 
-    // IMPROVED: Student Payment Listener (Vertical Scroll & Correct Real-time)
     function loadStudentPayments() {
         const payBody = document.getElementById('payment-body');
+        const totalCountSpan = document.getElementById('total-students');
         
-        // Step 1: Listen to attendance collection to get student names (as they are documents)
         fs.collection("attendance").onSnapshot(async (snapshot) => {
             const studentNames = [...new Set(snapshot.docs.map(doc => doc.data().userName || doc.data().studentName))].filter(Boolean);
             
+            // Update Total Count Display
+            totalCountSpan.innerText = studentNames.length;
+
             payBody.innerHTML = "";
             if(studentNames.length === 0) {
                 payBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; opacity:0.5;">No students in logs</td></tr>';
@@ -264,13 +261,11 @@
             }
 
             for (const name of studentNames) {
-                // Get Status with real-time listener for each student
                 fs.collection("payments").doc(name).collection("months").doc(currentMonth)
                 .onSnapshot((pDoc) => {
                     const status = (pDoc.exists && pDoc.data().status === "Paid") ? "Paid" : "Unpaid";
                     const badgeClass = status === "Paid" ? "status-paid" : "status-unpaid";
                     
-                    // Check if row already exists
                     let row = document.getElementById(`row-${name.replace(/\s+/g, '')}`);
                     const rowHtml = `
                         <td><b>${name}</b></td>
@@ -304,7 +299,6 @@
         } catch(e) { console.error("Error updating", e); }
     }
 
-    // Attendance Listener
     const today = new Date().toISOString().split('T')[0];
     db.ref('attendance').on('value', snap => {
         const attList = document.getElementById('attendance-list');
@@ -323,7 +317,6 @@
         attCountDisplay.innerText = "PRESENT: " + count;
     });
 
-    // Date Functions
     function addHoliday() { const d = document.getElementById('holiday-date').value; if(d) db.ref('holidays').push(d).then(() => document.getElementById('holiday-date').value = ""); }
     db.ref('holidays').on('value', snap => {
         const list = document.getElementById('holiday-list');
@@ -349,7 +342,6 @@
         }
     }
 
-    // Leads Listener
     db.ref('leads').on('value', snap => {
         const tbody = document.getElementById('lead-body');
         tbody.innerHTML = "";
