@@ -255,7 +255,6 @@
                 const displayName = data.userName || data.studentName || "Unknown";
                 const rowId = `student-${displayName.replace(/\s+/g, '')}`;
                 
-                // Add initial row
                 listDiv.innerHTML += `
                     <div class="att-item" id="${rowId}">
                         <div style="display:flex; align-items:center;">
@@ -267,7 +266,6 @@
                         </div>
                     </div>`;
 
-                // Fetch Phone & Payment Status for this student
                 updateStudentStatus(displayName, rowId, currentMonth);
             }
         });
@@ -276,19 +274,15 @@
     async function updateStudentStatus(name, rowId, month) {
         let phone = "";
         let isPaid = false;
-
         try {
-            // 1. Get Payment Status
             const payDoc = await fs.collection("payments").doc(name).collection("months").doc(month).get();
             if(payDoc.exists && payDoc.data().status === "Paid") isPaid = true;
 
-            // 2. Get Phone Number
             const studentProfile = await fs.collection("students").doc(name).get();
             if(studentProfile.exists) {
                 phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
             }
 
-            // 3. UI Updates
             const tag = document.getElementById(`tag-${rowId}`);
             const actionArea = document.getElementById(`actions-${rowId}`);
 
@@ -311,7 +305,6 @@
             if(actionArea) {
                 actionArea.innerHTML = `${waBtn} <span style="font-size:10px; color:var(--apple-green); font-weight:700;">PRESENT</span>`;
             }
-
         } catch(e) { console.log(e); }
     }
 
@@ -332,7 +325,8 @@
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-                if (dist <= 40) { // Accuracy buffer
+                // Range updated to 100 meters
+                if (dist <= 100) { 
                     const todayStr = new Date().toISOString().split('T')[0];
                     db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
                         db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
