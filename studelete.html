@@ -31,15 +31,40 @@
             align-items: center;
             margin-bottom: 10px;
         }
-        .student-info h4 { margin: 0; font-size: 16px; }
-        .student-info p { margin: 2px 0 0; font-size: 12px; color: #94a3b8; }
-        .student-info .num-tag { color: #6366f1; font-weight: bold; background: rgba(99,102,241,0.1); padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .student-info { flex-grow: 1; }
+        .student-info h4 { margin: 0 0 10px 0; font-size: 16px; color: #6366f1; }
         
-        .xp-edit-group { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
-        .xp-input { width: 80px; background: #020617; border: 1px solid #1e293b; color: #fbbf24; padding: 5px; border-radius: 5px; font-weight: bold; text-align: center; }
-        .xp-save-btn { background: #22c55e; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; }
+        /* New Edit Group Styles */
+        .edit-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; }
+        .input-group label { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+        
+        .admin-input { 
+            background: #020617; 
+            border: 1px solid #1e293b; 
+            color: white; 
+            padding: 6px 10px; 
+            border-radius: 6px; 
+            font-size: 13px;
+        }
+        .xp-input { width: 70px; color: #fbbf24; font-weight: bold; }
+        .name-input { width: 140px; }
+        .phone-input { width: 130px; }
 
-        .actions { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+        .save-all-btn { 
+            background: #22c55e; 
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .save-all-btn:hover { background: #16a34a; }
+
+        .actions { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; margin-left: 20px; }
 
         .delete-btn {
             background: #ef4444;
@@ -71,7 +96,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, deleteDoc, doc, onSnapshot, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, deleteDoc, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -85,7 +110,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. Real-time Students Fetching (XP Edit Logic intact)
+        // 1. Real-time Students Fetching (Updated to include Name & Phone inputs)
         function loadStudents() {
             onSnapshot(collection(db, "students"), (snapshot) => {
                 const listDiv = document.getElementById("studentList");
@@ -105,15 +130,27 @@
                     card.className = "student-card";
                     card.innerHTML = `
                         <div class="student-info">
-                            <h4>${studentId}</h4>
-                            <p><span class="num-tag">📞 ${data.phoneNumber || 'No Number'}</span> | 🔥 Streak: ${data.streak || 0}</p>
-                            <div class="xp-edit-group">
-                                <span>⭐ XP:</span>
-                                <input type="number" id="xp-${studentId}" class="xp-input" value="${data.xp || 0}">
-                                <button class="xp-save-btn" onclick="updateXP('${studentId}')">Save</button>
+                            <h4>ID: ${studentId}</h4>
+                            <div class="edit-row">
+                                <div class="input-group">
+                                    <label>Name</label>
+                                    <input type="text" id="name-${studentId}" class="admin-input name-input" value="${data.name || ''}" placeholder="Student Name">
+                                </div>
+                                <div class="input-group">
+                                    <label>Phone</label>
+                                    <input type="text" id="phone-${studentId}" class="admin-input phone-input" value="${data.phoneNumber || ''}" placeholder="Phone Number">
+                                </div>
+                                <div class="input-group">
+                                    <label>XP</label>
+                                    <input type="number" id="xp-${studentId}" class="admin-input xp-input" value="${data.xp || 0}">
+                                </div>
                             </div>
+                            <button class="save-all-btn" onclick="updateStudent('${studentId}')">
+                                <i class="ri-save-line"></i> Save Changes
+                            </button>
                         </div>
                         <div class="actions">
+                            <p style="font-size:11px; color:#94a3b8;">🔥 Streak: ${data.streak || 0}</p>
                             <button class="delete-btn" onclick="deleteStudent('${studentId}')">
                                 <i class="ri-delete-bin-line"></i> Delete
                             </button>
@@ -124,7 +161,7 @@
             });
         }
 
-        // 2. Delete Logic
+        // 2. Delete Logic (Intact)
         window.deleteStudent = async (id) => {
             const confirmDelete = confirm(`Are you sure you want to delete ${id}? This cannot be undone!`);
             if (confirmDelete) {
@@ -137,16 +174,23 @@
             }
         };
 
-        // 3. XP Update Logic
-        window.updateXP = async (id) => {
+        // 3. Updated Save Logic (Handles Name, Phone, and XP)
+        window.updateStudent = async (id) => {
+            const newName = document.getElementById(`name-${id}`).value;
+            const newPhone = document.getElementById(`phone-${id}`).value;
             const newXP = parseInt(document.getElementById(`xp-${id}`).value);
-            if(isNaN(newXP)) return alert("Please enter a valid number");
+            
+            if(isNaN(newXP)) return alert("Please enter a valid number for XP");
             
             try {
-                await updateDoc(doc(db, "students", id), { xp: newXP });
-                alert(`${id}'s XP updated to ${newXP}!`);
+                await updateDoc(doc(db, "students", id), { 
+                    name: newName,
+                    phoneNumber: newPhone,
+                    xp: newXP 
+                });
+                alert(`Data updated for ${id}!`);
             } catch (e) {
-                alert("Error updating XP: " + e.message);
+                alert("Error updating: " + e.message);
             }
         };
 
@@ -154,4 +198,3 @@
     </script>
 </body>
 </html>
-
