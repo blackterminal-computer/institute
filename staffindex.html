@@ -73,7 +73,6 @@
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn:disabled { opacity: 0.3; filter: grayscale(1); }
 
-        /* STRICT DAYS UI */
         .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 12px; margin-top: 5px; }
         .strict-date-card {
             background: rgba(255, 59, 48, 0.08);
@@ -264,7 +263,6 @@
         });
     }
 
-    // FIXED WHATSAPP REMINDER LOGIC
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
@@ -281,10 +279,8 @@
                 const data = attDoc.data();
                 const displayName = data.userName || data.studentName || "Unknown Student";
                 
-                // Get phone from various possible fields
                 let phone = data.userPhone || data.phoneNumber || data.phone || "";
                 
-                // If phone missing, try to fetch from students collection
                 if(!phone) {
                     try {
                         const studentProfile = await fs.collection("students").doc(displayName).get();
@@ -299,7 +295,6 @@
                 
                 if(cleanPhone.length >= 10) {
                     const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    // PRESET PAYMENT REMINDER MESSAGE
                     const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
                     waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
                 } else {
@@ -334,15 +329,16 @@
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
+                // RADIUS UPDATED TO 100 METERS
                 const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-                if (dist <= 20) {
+                if (dist <= 100) { 
                     const todayStr = new Date().toISOString().split('T')[0];
                     db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
                         db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
                         location.reload();
                     });
                 } else {
-                    alert(`Access Denied! Distance: ${Math.round(dist)}m.`);
+                    alert(`Access Denied! Distance: ${Math.round(dist)}m. You must be within 100m.`);
                     btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
                 }
             },
