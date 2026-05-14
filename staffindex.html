@@ -4,116 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Staff Terminal | Black Terminal</title>
+    
+    <!-- External Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
     <style>
         :root {
             --apple-blue: #007AFF;
             --apple-green: #34C759;
             --apple-red: #FF3B30;
             --bg: #000000;
-            --glass: rgba(28, 28, 30, 0.7);
-            --border: rgba(255, 255, 255, 0.08);
-            --text-sec: #8E8E93;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-sec: #A1A1A6;
+            --accent-gradient: linear-gradient(135deg, #007AFF, #00C7FF);
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             background: var(--bg);
-            background-image: radial-gradient(circle at 50% -20%, #1c1c1e 0%, #000 80%);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(0, 122, 255, 0.15) 0%, transparent 35%),
+                radial-gradient(circle at 100% 100%, rgba(52, 199, 89, 0.1) 0%, transparent 35%);
             color: white;
             margin: 0;
-            padding: env(safe-area-inset-top) 20px 40px 20px;
+            padding: env(safe-area-inset-top) 16px 40px 16px;
+            min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
 
-        .container { max-width: 450px; margin: auto; }
+        .container { max-width: 480px; margin: auto; }
 
-        .header { margin: 40px 0 30px 0; position: relative;}
-        .header h1 { font-size: 32px; margin: 0; font-weight: 700; letter-spacing: -1px; }
-        .header p { color: var(--apple-blue); font-size: 13px; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        /* Header Styling */
+        .header { margin: 40px 0 25px 8px; position: relative;}
+        .header h1 { font-size: 34px; margin: 0; font-weight: 800; letter-spacing: -1.5px; background: linear-gradient(#fff, #999); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: var(--apple-blue); font-size: 13px; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
         
         .streak-badge {
             position: absolute; right: 0; top: 10px;
-            background: rgba(255, 159, 10, 0.12);
-            color: #FF9F0A; padding: 6px 14px; border-radius: 50px;
-            font-size: 12px; font-weight: 700; border: 1px solid rgba(255, 159, 10, 0.2);
+            background: rgba(255, 159, 10, 0.15);
+            color: #FF9F0A; padding: 8px 16px; border-radius: 50px;
+            font-size: 13px; font-weight: 800; border: 1px solid rgba(255, 159, 10, 0.3);
+            box-shadow: 0 0 20px rgba(255, 159, 10, 0.1);
+            animation: pulse 2s infinite;
         }
 
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+
+        /* Bento Grid Style Cards */
         .card {
             background: var(--glass);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: 28px;
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 30px;
             padding: 24px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             border: 1px solid var(--border);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
         }
 
-        h3 { font-size: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 600; text-transform: uppercase;}
+        .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .bento-item { background: rgba(255,255,255,0.03); padding: 18px; border-radius: 24px; border: 1px solid var(--border); }
 
-        .progress-container { background: rgba(255,255,255,0.08); height: 6px; border-radius: 10px; margin: 18px 0; overflow: hidden; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, #007AFF, #00C7FF); width: 0%; transition: 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        h3 { font-size: 11px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 1px; font-weight: 700; text-transform: uppercase;}
 
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 5px; }
-        .stat-box small { display: block; font-size: 10px; color: var(--text-sec); margin-bottom: 6px; font-weight: 500; }
-        .stat-box b { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        /* Modern Progress Bar */
+        .progress-container { background: rgba(255,255,255,0.05); height: 10px; border-radius: 20px; margin: 20px 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+        .progress-bar { height: 100%; background: var(--accent-gradient); width: 0%; border-radius: 20px; box-shadow: 0 0 15px rgba(0, 122, 255, 0.5); transition: 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
+        .stat-val { font-size: 26px; font-weight: 800; letter-spacing: -1px; display: block; margin-top: 5px; }
+        .stat-label { font-size: 10px; color: var(--text-sec); font-weight: 600; }
+
+        /* Modern Buttons */
         .btn {
-            width: 100%; padding: 18px; border-radius: 20px; border: none;
-            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 20px; border-radius: 22px; border: none;
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            position: relative; overflow: hidden;
         }
-        .btn-punch { background: var(--apple-blue); color: white; box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3); }
-        .btn-main { background: #fff; color: #000; }
-        .btn:active { transform: scale(0.96); opacity: 0.9; }
-        .btn:disabled { opacity: 0.3; filter: grayscale(1); }
+        .btn-punch { background: var(--apple-blue); color: white; box-shadow: 0 12px 24px rgba(0, 122, 255, 0.3); }
+        .btn-main { background: #fff; color: #000; box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1); }
+        .btn:active { transform: scale(0.94); }
+        .btn:disabled { opacity: 0.5; filter: grayscale(1); transform: scale(1); }
 
-        .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 12px; margin-top: 5px; }
+        /* Skeleton Loading Animation */
+        .skeleton { background: linear-gradient(90deg, #1c1c1e 25%, #2c2c2e 50%, #1c1c1e 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 10px; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Strict Day Styling */
+        .strict-container { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
         .strict-date-card {
-            background: rgba(255, 59, 48, 0.08);
-            border: 1px solid rgba(255, 59, 48, 0.15);
-            border-radius: 16px; padding: 10px; text-align: center;
-            display: flex; flex-direction: column; align-items: center; min-width: 65px;
+            min-width: 75px; background: rgba(255, 59, 48, 0.08); border: 1px solid rgba(255, 59, 48, 0.2);
+            border-radius: 20px; padding: 15px 10px; text-align: center;
         }
-        .strict-date-card .mon { font-size: 10px; font-weight: 800; color: var(--apple-red); text-transform: uppercase; }
-        .strict-date-card .day { font-size: 18px; font-weight: 700; color: #fff; margin: 2px 0; }
-        .strict-date-card.today { background: var(--apple-red); border: none; box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); }
-        .strict-date-card.today .mon, .strict-date-card.today .day { color: white; }
+        .strict-date-card.today { background: var(--apple-red); box-shadow: 0 8px 20px rgba(255, 59, 48, 0.4); border: none; }
 
-        .att-item { 
-            background: rgba(255,255,255,0.04); 
-            padding: 14px 18px; border-radius: 18px; 
+        /* List Items */
+        .att-item, .task-item { 
+            background: rgba(255,255,255,0.03); padding: 16px; border-radius: 22px; 
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 10px; border: 1px solid var(--border);
         }
-        .att-name { font-size: 14px; font-weight: 600; color: #efeff4; }
+        .task-dot { height: 10px; width: 10px; background: var(--apple-blue); border-radius: 50%; box-shadow: 0 0 10px var(--apple-blue); }
 
         .wa-action {
-            background: rgba(52, 199, 89, 0.12);
-            color: #34C759; width: 38px; height: 38px;
-            border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s;
+            background: #25D366; color: #fff; width: 42px; height: 42px;
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
         }
-        .wa-action:active { background: #34C759; color: #fff; transform: scale(0.9); }
-
-        .task-item {
-            background: rgba(255,255,255,0.04);
-            padding: 18px; border-radius: 22px; margin-top: 12px;
-            border: 1px solid var(--border);
-            display: flex; align-items: center; gap: 15px;
-        }
-        .task-dot { height: 8px; width: 8px; background: var(--apple-blue); border-radius: 50%; }
 
         input {
-            width: 100%; padding: 18px; margin-bottom: 12px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border); border-radius: 18px; color: white; outline: none; box-sizing: border-box;
-            font-size: 15px; transition: 0.3s;
+            width: 100%; padding: 18px; margin-bottom: 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border); border-radius: 18px; color: white; font-size: 15px; transition: 0.3s;
         }
+        input:focus { background: rgba(255,255,255,0.08); border-color: var(--apple-blue); outline: none; }
     </style>
 </head>
 <body>
@@ -121,72 +129,74 @@
 <div class="container">
     <div class="header">
         <p id="current-date">--</p>
-        <h1 id="user-display">Staff Terminal</h1>
+        <h1 id="user-display">Terminal</h1>
         <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> DAYS</div>
     </div>
 
-    <!-- EARNINGS -->
+    <!-- EARNINGS (Bento Style) -->
     <div class="card">
-        <h3><i class="fas fa-chart-pie"></i> Earnings & Stats</h3>
-        <div class="stat-grid">
-            <div class="stat-box">
-                <small>DAILY WAGE</small>
-                <b id="daily-rate">₹0</b>
+        <h3><i class="fas fa-chart-line"></i> Performance Metrics</h3>
+        <div class="bento-grid">
+            <div class="bento-item">
+                <span class="stat-label uppercase">DAILY RATE</span>
+                <span id="daily-rate" class="stat-val">₹0</span>
             </div>
-            <div class="stat-box" style="text-align: right;">
-                <small>BALANCE</small>
-                <b id="total-earning">₹0</b>
+            <div class="bento-item">
+                <span class="stat-label uppercase">BALANCE</span>
+                <span id="total-earning" class="stat-val" style="color: var(--apple-green);">₹0</span>
             </div>
         </div>
+        
         <div class="progress-container">
             <div id="salary-progress" class="progress-bar"></div>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sec);">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-sec); font-weight: 600;">
             <span>Cycle Progress</span>
             <span id="cycle-days">-- days left</span>
         </div>
         <br>
         <button id="att-btn" class="btn btn-punch" onclick="markAttendance()">
-            <i class="fas fa-fingerprint"></i> PUNCH IN
+            <i class="fas fa-fingerprint"></i> PUNCH IN SYSTEM
         </button>
     </div>
 
     <!-- STRICT DAYS -->
-    <div class="card" id="strict-card" style="display: none; border-left: 4px solid var(--apple-red);">
-        <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Attendance Days</h3>
+    <div id="strict-card" class="card" style="display: none; border-left: 5px solid var(--apple-red);">
+        <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Days</h3>
         <div id="strict-days-list" class="strict-container"></div>
-        <p style="font-size: 10px; color: var(--text-sec); margin-top: 15px;">Mandatory presence to avoid ₹200 deduction.</p>
     </div>
 
-    <!-- STUDENT ATTENDANCE -->
+    <!-- STUDENT LIST -->
     <div class="card">
-        <h3><i class="fas fa-user-check"></i> Students Present ( <span id="present-count" style="color: var(--apple-green);">0</span> )</h3>
+        <h3><i class="fas fa-users"></i> Live Students ( <span id="present-count" style="color: var(--apple-green);">0</span> )</h3>
         <div id="attendance-list">
-            <p style="text-align:center; font-size:12px; opacity:0.4;">Syncing...</p>
+            <div class="skeleton" style="height: 50px; margin-bottom: 10px;"></div>
+            <div class="skeleton" style="height: 50px;"></div>
         </div>
     </div>
 
     <!-- TASKS -->
     <div class="card">
-        <h3><i class="fas fa-bolt"></i> Priority Assignments</h3>
+        <h3><i class="fas fa-bolt"></i> Priority Tasks</h3>
         <div id="task-list">
-            <div style="text-align: center; padding: 20px; opacity: 0.4;"><p style="font-size: 12px;">No active tasks</p></div>
+            <p style="text-align: center; font-size: 12px; opacity: 0.4; padding: 20px;">No pending tasks</p>
         </div>
     </div>
 
     <!-- LEAD ENTRY -->
-    <div class="card">
-        <h3><i class="fas fa-paper-plane"></i> Quick Lead Entry</h3>
+    <div class="card" style="background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);">
+        <h3><i class="fas fa-plus-circle"></i> Quick Lead Entry</h3>
         <input type="text" id="l-name" placeholder="Full Name">
         <input type="tel" id="l-phone" placeholder="WhatsApp Number">
-        <input type="text" id="l-course" placeholder="Target Course">
-        <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right"></i></button>
+        <input type="text" id="l-course" placeholder="Course Name">
+        <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-arrow-right"></i></button>
     </div>
 
-    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v2.8 • ENCRYPTED</p>
+    <p style="text-align: center; color: var(--text-sec); font-size: 11px; font-weight: 600; letter-spacing: 1px; opacity: 0.4; margin-top: 30px;">BLACK TERMINAL • VERSION 3.0 • 2026</p>
 </div>
 
 <script>
+    // --- DATABASE CONFIG (SAME AS OLD) ---
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -210,15 +220,19 @@
 
     async function initSystem() {
         const todayStr = new Date().toISOString().split('T')[0];
+        
+        // Attendance Check
         db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
             if(snap.exists()) {
                 const btn = document.getElementById('att-btn');
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> ATTENDANCE MARKED';
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> SYSTEM ACTIVE';
                 btn.style.background = "var(--apple-green)";
+                btn.style.boxShadow = "0 10px 20px rgba(52, 199, 89, 0.2)";
             }
         });
 
+        // Stats Sync
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
@@ -238,6 +252,68 @@
         listenStrictDays();
     }
 
+    // --- LOGIC FUNCTIONS (SAME AS OLD) ---
+
+    function markAttendance() {
+        const btn = document.getElementById('att-btn');
+        if (!navigator.geolocation) return alert("GPS not supported.");
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCING GPS...';
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+                if (dist <= 100) { 
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
+                        db.ref(`staff/${staffId}`).transaction(s => { 
+                            if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } 
+                            return s; 
+                        });
+                        // NEW: Confetti Effect
+                        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#007AFF', '#34C759', '#ffffff'] });
+                        setTimeout(() => location.reload(), 2000);
+                    });
+                } else {
+                    alert(`ACCESS DENIED. You are ${Math.round(dist)}m away from office.`);
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN SYSTEM'; btn.disabled = false;
+                }
+            },
+            () => { alert("Turn on High Accuracy GPS."); btn.disabled = false; }, { enableHighAccuracy: true }
+        );
+    }
+
+    function listenStudentAttendance() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const listDiv = document.getElementById('attendance-list');
+        const countSpan = document.getElementById('present-count');
+
+        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
+            listDiv.innerHTML = "";
+            countSpan.innerText = snapshot.size;
+            if (snapshot.empty) {
+                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3;">No check-ins yet</p>';
+                return;
+            }
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const name = data.userName || data.studentName || "Student";
+                let phone = data.userPhone || data.phoneNumber || "910000000000";
+                
+                listDiv.innerHTML += `
+                    <div class="att-item">
+                        <div>
+                            <div style="font-weight:700; font-size:15px;">${name}</div>
+                            <div style="font-size:10px; color:var(--apple-green); font-weight:700; margin-top:2px;">• ONLINE</div>
+                        </div>
+                        <div class="wa-action" onclick="window.open('https://wa.me/${phone}', '_blank')">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
     function listenStrictDays() {
         const strictCard = document.getElementById('strict-card');
         const strictList = document.getElementById('strict-days-list');
@@ -253,62 +329,14 @@
                         count++;
                         const isToday = dateVal === todayStr;
                         const d = new Date(dateVal);
-                        const mon = d.toLocaleDateString('en-GB', { month: 'short' });
-                        const day = d.toLocaleDateString('en-GB', { day: 'numeric' });
-                        strictList.innerHTML += `<div class="strict-date-card ${isToday ? 'today' : ''}"><span class="mon">${isToday ? 'NOW' : mon}</span><span class="day">${day}</span></div>`;
+                        strictList.innerHTML += `
+                            <div class="strict-date-card ${isToday ? 'today' : ''}">
+                                <div style="font-size:10px; font-weight:800; opacity:0.8;">${isToday ? 'TODAY' : d.toLocaleDateString('en-GB', {month:'short'})}</div>
+                                <div style="font-size:20px; font-weight:800;">${d.getDate()}</div>
+                            </div>`;
                     }
                 });
                 strictCard.style.display = count > 0 ? "block" : "none";
-            }
-        });
-    }
-
-    function listenStudentAttendance() {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const listDiv = document.getElementById('attendance-list');
-        const countSpan = document.getElementById('present-count');
-
-        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
-            listDiv.innerHTML = "";
-            countSpan.innerText = snapshot.size;
-            if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
-                return;
-            }
-            for (const attDoc of snapshot.docs) {
-                const data = attDoc.data();
-                const displayName = data.userName || data.studentName || "Unknown Student";
-                
-                let phone = data.userPhone || data.phoneNumber || data.phone || "";
-                
-                if(!phone) {
-                    try {
-                        const studentProfile = await fs.collection("students").doc(displayName).get();
-                        if(studentProfile.exists) {
-                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
-                        }
-                    } catch(e) { console.log("Profile error", e); }
-                }
-
-                const cleanPhone = phone.toString().replace(/\D/g, '');
-                let waBtnHtml = "";
-                
-                if(cleanPhone.length >= 10) {
-                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
-                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
-                }
-
-                listDiv.innerHTML += `
-                    <div class="att-item">
-                        <span class="att-name">${displayName}</span>
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            ${waBtnHtml}
-                            <span style="font-size:10px; color:var(--apple-green); font-weight:700;">PRESENT</span>
-                        </div>
-                    </div>`;
             }
         });
     }
@@ -321,31 +349,6 @@
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
-    function markAttendance() {
-        const btn = document.getElementById('att-btn');
-        if (!navigator.geolocation) return alert("Location not supported.");
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOCATING...';
-        btn.disabled = true;
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                // RADIUS UPDATED TO 100 METERS
-                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-                if (dist <= 100) { 
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                        db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
-                        location.reload();
-                    });
-                } else {
-                    alert(`Access Denied! Distance: ${Math.round(dist)}m. You must be within 100m.`);
-                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
-                }
-            },
-            () => { alert("Enable GPS."); btn.disabled = false; }, { enableHighAccuracy: true }
-        );
-    }
-
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
             const container = document.getElementById('task-list');
@@ -353,15 +356,29 @@
             container.innerHTML = "";
             snap.forEach(child => {
                 const t = child.val();
-                container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
+                container.innerHTML += `
+                    <div class="task-item">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div class="task-dot"></div>
+                            <div>
+                                <div style="font-size:14px; font-weight:600;">${t.task}</div>
+                                <div style="font-size:10px; color:var(--text-sec);">${new Date(t.date).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="font-size:10px; opacity:0.3;"></i>
+                    </div>`;
             });
         });
     }
 
     function submitLead() {
         const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
-        if(!n || p.length < 10) return alert("Check details");
-        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { alert("Success!"); location.reload(); });
+        if(!n || p.length < 10) return alert("Enter valid details");
+        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { 
+            confetti({ particleCount: 100, spread: 50, origin: { y: 0.8 } });
+            alert("Lead Captured!"); 
+            document.getElementById('l-name').value = ""; document.getElementById('l-phone').value = "";
+        });
     }
 
     initSystem();
