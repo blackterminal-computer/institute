@@ -56,7 +56,6 @@
 
         h3 { font-size: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 600; text-transform: uppercase;}
 
-        /* New Style for Toggle Button */
         .toggle-btn {
             margin-left: auto;
             background: rgba(255,255,255,0.1);
@@ -224,7 +223,6 @@
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // NEW: Toggle Function
     function toggleStudentList() {
         const listDiv = document.getElementById('attendance-list');
         const btn = document.getElementById('toggle-list-btn');
@@ -300,10 +298,13 @@
         fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
             listDiv.innerHTML = "";
             countSpan.innerText = snapshot.size;
+            
             if (snapshot.empty) {
                 listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
                 return;
             }
+
+            let i = 1; // Counter for numbering
             for (const attDoc of snapshot.docs) {
                 const data = attDoc.data();
                 const displayName = data.userName || data.studentName || "Unknown Student";
@@ -332,12 +333,13 @@
 
                 listDiv.innerHTML += `
                     <div class="att-item">
-                        <span class="att-name">${displayName}</span>
+                        <span class="att-name">${i}. ${displayName}</span>
                         <div style="display:flex; align-items:center; gap:12px;">
                             ${waBtnHtml}
                             <span style="font-size:10px; color:var(--apple-green); font-weight:700;">PRESENT</span>
                         </div>
                     </div>`;
+                i++;
             }
         });
     }
