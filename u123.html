@@ -2,295 +2,501 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Cyber Titan Assessment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Assessment Console - Live Cloud Network</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+        
         :root {
-            --primary: #6366f1; --bg: #020617; --card: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --danger: #f43f5e; --zen: #38bdf8;
+            --bg-gradient: radial-gradient(circle at 0% 0%, #111424 0%, #060814 100%);
+            --glass-panel: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.06);
+            --neon-blue: #3b82f6;
+            --neon-purple: #a855f7;
+            --neon-mint: #10b981;
+            --neon-rose: #f43f5e;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
         }
-        body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
-        
-        /* Animations */
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-        @keyframes floatUp { 0% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, -100px); opacity: 0; } }
-        @keyframes streakPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 
-        .shake { animation: shake 0.3s ease-in-out; }
-        .sad-emoji { position: absolute; font-size: 50px; left: 50%; top: 20%; animation: floatUp 1.2s forwards; pointer-events: none; z-index: 100; }
-        .streak-msg { position: fixed; top: 40%; font-size: 40px; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.5); z-index: 4000; animation: streakPop 1s forwards; pointer-events: none; }
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            padding: 30px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+        }
 
-        /* Intro & Overlay */
-        #intro-overlay { position: fixed; inset: 0; z-index: 6000; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
-        .intro-text { font-size: 20px; font-weight: 700; color: var(--zen); margin-bottom: 20px; display: none; }
-        #countdown-box { font-size: 120px; font-weight: 900; color: var(--primary); display: none; }
+        .workspace-grid {
+            width: 100%;
+            max-width: 1240px;
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 30px;
+        }
 
-        /* Milestone Tracker */
-        .milestone-wrap { width: 100%; max-width: 650px; background: rgba(255,255,255,0.05); height: 12px; border-radius: 20px; position: fixed; top: 0; z-index: 3000; display:none; }
-        #ms-correct-bar { height: 100%; width: 0%; background: linear-gradient(to right, #6366f1, #38bdf8); border-radius: 20px; transition: 0.5s; box-shadow: 0 0 15px var(--primary); }
-        #ms-time-dot { position: absolute; top: -4px; left: 0%; width: 20px; height: 20px; background: var(--danger); border: 3px solid var(--bg); border-radius: 50%; transition: 1s linear; }
+        @media (max-width: 968px) {
+            .workspace-grid { grid-template-columns: 1fr; }
+        }
 
-        /* UI Components */
-        #auth-screen { position: fixed; inset: 0; z-index: 5000; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .auth-card { max-width: 400px; width: 100%; padding: 40px 30px; border-radius: 28px; background: var(--card); border: 1px solid var(--border); text-align: center; }
-        .terminal-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 18px; border-radius: 15px; color: var(--zen); text-align: center; margin: 25px 0; outline: none; font-size: 16px; }
-        .container { width: 100%; max-width: 650px; margin-top: 30px; }
-        .header-card { background: var(--card); border: 1px solid var(--border); padding: 15px 20px; border-radius: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 25px; z-index: 1000; backdrop-filter: blur(20px); }
-        .q-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 25px; margin-bottom: 15px; position: relative; overflow: hidden; }
-        .opt-label { display: flex; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 16px; border-radius: 14px; margin-top: 10px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-        .opt-label.locked { pointer-events: none; opacity: 0.6; }
-        .opt-label.correct-glow { border-color: var(--success) !important; background: rgba(16, 185, 129, 0.2) !important; font-weight: 700; }
-        .opt-label.wrong-glow { border-color: var(--danger) !important; background: rgba(244, 63, 94, 0.2) !important; }
-        
-        .btn-submit { width: 100%; padding: 20px; background: var(--primary); border: none; border-radius: 20px; color: #fff; font-weight: 800; cursor: pointer; font-size: 16px; margin-bottom: 10px; }
-        .rank-tag { display: inline-block; padding: 5px 15px; border-radius: 50px; background: var(--primary); font-size: 12px; font-weight: 800; margin-bottom: 10px; }
+        .glass-card {
+            background: var(--glass-panel);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 35px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .intro-hero {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+        .intro-hero:hover {
+            transform: translateY(-4px);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 20px 40px rgba(168, 85, 247, 0.1);
+        }
+
+        .accent-orb {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(168,85,247,0.3) 0%, rgba(0,0,0,0) 70%);
+            top: -50px;
+            right: -50px;
+            pointer-events: none;
+        }
+
+        .fancy-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            padding: 16px 20px;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        .fancy-input:focus {
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .leaderboard-title-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .board-scroll {
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .board-scroll::-webkit-scrollbar { width: 5px; }
+        .board-scroll::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
+        .leader-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            margin-bottom: 12px;
+            transition: 0.2s;
+        }
+        .leader-item:hover { background: rgba(255, 255, 255, 0.04); }
+
+        .rank-badge {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            width: 35px;
+        }
+        .rank-badge.top-1 { color: #f59e0b; }
+        .rank-badge.top-2 { color: #94a3b8; }
+        .rank-badge.top-3 { color: #b45309; }
+
+        .player-info { flex-grow: 1; margin-left: 10px; font-weight: 600; }
+        .score-pill {
+            font-family: 'Space Grotesk', sans-serif;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--neon-blue);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-sub);
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+
+        .question-card {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .option-node {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+        .option-node:hover { background: rgba(255, 255, 255, 0.03); border-color: rgba(255,255,255,0.15); }
+        .option-node.disabled { pointer-events: none; opacity: 0.6; }
+        .option-node.success-state { background: rgba(16, 185, 129, 0.15) !important; border-color: var(--neon-mint) !important; color: #10b981; font-weight: 700; }
+        .option-node.failure-state { background: rgba(244, 63, 94, 0.15) !important; border-color: var(--neon-rose) !important; color: #f43f5e; }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple)); transition: width 0.3s ease; }
     </style>
 </head>
 <body>
 
-<div id="intro-overlay">
-    <div id="p1" class="intro-text">🚀 Welcome to the Future of Learning.</div>
-    <div id="p2" class="intro-text">🔥 Speed, Accuracy, and Focus.</div>
-    <div id="p3" class="intro-text">💻 Show them who's the real Cyber Titan!</div>
-    <div id="countdown-box">10</div>
-</div>
+<div class="workspace-grid">
 
-<div id="auth-screen">
-    <div class="auth-card">
-        <i class="ri-user-star-line" style="font-size: 50px; color: var(--primary);"></i>
-        <h2>IDENTITY VERIFICATION</h2>
-        <input type="text" id="agent-callsign" class="terminal-input" placeholder="AGENT NAME..." maxlength="15">
-        <button class="btn-submit" onclick="startCountdown()">I'M READY. START MISSION</button>
+    <!-- LEFT SIDE: RUNTIME WORKSPACE -->
+    <div id="runtime-viewstack">
+        
+        <!-- INTRO HERO DECK -->
+        <div class="glass-card intro-hero" id="view-intro" onclick="transitionToAuth()">
+            <div class="accent-orb"></div>
+            <i class="ri-cloud-line" style="font-size: 40px; color: var(--neon-blue);"></i>
+            <h1 style="font-family: 'Space Grotesk'; font-size: 34px; margin: 20px 0 10px 0; font-weight: 700; letter-spacing: -1px;">Live Distributed Network Assessment</h1>
+            <p style="color: var(--text-sub); font-size: 15px; line-height: 1.6; margin-bottom: 40px;">
+                Authenticate your student profile to connect to the cloud terminal. Results and ranks will sync instantly across all computers via cloud matrix. Evaluates 40 genuine data parameters.
+            </p>
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: var(--neon-purple);">
+                <span>Establish Secure Cloud Session</span>
+                <i class="ri-arrow-right-up-line"></i>
+            </div>
+        </div>
+
+        <!-- PROFILE CONFIGURATION PANEL -->
+        <div class="glass-card" id="view-auth" style="display: none;">
+            <h2 style="font-family: 'Space Grotesk'; font-size: 24px; margin-top: 0;">Cloud Node Registration</h2>
+            <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 30px;">Input your actual name to map cloud performance logs.</p>
+            <input type="text" id="input-username" class="fancy-input" placeholder="Enter Student Full Name..." maxlength="20">
+            <button class="action-btn" onclick="launchOperationalModule()">Initialize Assessment Matrix</button>
+        </div>
+
+        <!-- OPERATIONAL ASSESSMENT UNIT -->
+        <div class="glass-card" id="view-assessment" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <div style="font-size: 11px; color: var(--text-sub); font-weight: 700; text-transform: uppercase;">Operator Node</div>
+                    <div id="lbl-username" style="font-weight: 700; font-size: 16px; color: var(--neon-blue);">Unknown Student</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; color: var(--text-sub); font-weight: 700; text-transform: uppercase;">Session Countdown</div>
+                    <div id="lbl-timer" style="font-family: 'Space Grotesk'; font-weight: 700; font-size: 18px; color: var(--neon-rose);">40:00</div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="assessment-progress"></div>
+            </div>
+
+            <div id="deck-wrapper" style="max-height: 480px; overflow-y: auto; padding-right: 8px; margin-bottom: 25px;"></div>
+            
+            <button class="action-btn" id="finish-trigger" onclick="haltModuleSession()">Finalize & Broadcast To Cloud Ledger</button>
+        </div>
+
+        <!-- POST MODULE BREAKDOWN REPORT -->
+        <div class="glass-card" id="view-report" style="display: none; text-align: center;">
+            <div style="font-size: 12px; font-weight: 800; color: var(--neon-purple); letter-spacing: 1px; text-transform: uppercase;" id="lbl-status-tier">Processing...</div>
+            <h1 id="lbl-final-score" style="font-family: 'Space Grotesk'; font-size: 72px; margin: 15px 0 5px 0; background: linear-gradient(90deg, #fff, #9ca3af); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">00/40</h1>
+            <p id="lbl-accuracy" style="color: var(--text-sub); font-weight: 600; margin-top: 0; font-size: 15px;"></p>
+            
+            <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 40px;">
+                <button class="action-btn" onclick="reviewCorrectAnswers()"><i class="ri-eye-line"></i> Inspect Diagnostic Logs</button>
+            </div>
+        </div>
+
     </div>
-</div>
 
-<div id="ms-container" class="milestone-wrap">
-    <div id="ms-correct-bar"></div>
-    <div id="ms-time-dot"></div>
-</div>
+    <!-- RIGHT SIDE: REAL-TIME CLOUD LEDGER -->
+    <div class="glass-card">
+        <div class="leaderboard-title-area">
+            <div>
+                <h3 style="font-family: 'Space Grotesk'; margin: 0; font-size: 20px; font-weight: 700;"><i class="ri-global-line" style="color:var(--neon-blue)"></i> Realtime Cloud Ledger</h3>
+                <p style="margin: 3px 0 0 0; color: var(--text-sub); font-size: 12px;">Synced across all examination computers instantly.</p>
+            </div>
+        </div>
 
-<div class="container" id="exam-screen" style="display:none;">
-    <div class="header-card">
-        <div id="display-name" style="font-weight: 800; color: var(--zen);">Agent</div>
-        <div style="font-weight:800; color: var(--danger);"><i class="ri-flashlight-line"></i> <span id="time-left">40:00</span></div>
+        <div class="board-scroll" id="leaderboard-render-target">
+            <div class="empty-state">Connecting to Realtime Data Arrays...</div>
+        </div>
     </div>
-    <div id="questions-box"></div>
-    <button class="btn-submit" id="final-btn" onclick="finishExam()">UPLOAD FINAL DATA</button>
+
 </div>
 
-<div class="container" id="result-screen" style="display:none; text-align:center; padding:40px 15px;">
-    <div id="rank-display" class="rank-tag">SECURITY TRAINEE</div>
-    <h1 id="final-score" style="font-size: 70px; margin: 10px 0; color: var(--primary);">0/40</h1>
-    <p id="accuracy-stat" style="font-weight: 800; color: var(--zen);"></p>
-    
-    <button class="btn-submit" style="background:#22c55e" onclick="shareScore()"><i class="ri-whatsapp-line"></i> SHARE WITH FRIENDS</button>
-    <button class="btn-submit" style="background:#334155" onclick="showReview()"><i class="ri-book-open-line"></i> REVIEW SESSION</button>
+<!-- FIREBASE SDK APP & REALTIME DATABASE CORE MODULE IMPORTS -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    <div class="leaderboard-card" style="background:rgba(255,255,255,0.03); padding:20px; border-radius:20px; margin-top:30px; text-align:left;">
-        <h3 style="margin:0 0 15px 0;"><i class="ri-medal-fill" style="color:#fbbf24"></i> TOP AGENTS</h3>
-        <div id="lb-body"></div>
-    </div>
-</div>
-
-<script>
-    const questions = [
-        { q: "Octal (74) to Hexadecimal:", a: "3C", o: ["3C", "4D", "3B", "4C"] },
-        { q: "Octal (127) to Hexadecimal:", a: "57", o: ["57", "67", "A7", "5F"] },
-        { q: "Hexadecimal (1A) to Octal:", a: "32", o: ["32", "26", "42", "30"] },
-        { q: "Hexadecimal (FF) to Octal:", a: "377", o: ["377", "255", "400", "366"] },
-        { q: "Decimal (45) to Binary:", a: "101101", o: ["101101", "110011", "101010", "111001"] },
-        { q: "Decimal (10) to Binary:", a: "1010", o: ["1010", "1100", "1001", "1011"] },
-        { q: "Decimal (25) to Binary:", a: "11001", o: ["11001", "10101", "11100", "11011"] },
-        { q: "Decimal (64) to Octal:", a: "100", o: ["100", "70", "110", "64"] },
-        { q: "Decimal (92) to Octal:", a: "134", o: ["134", "124", "144", "114"] },
-        { q: "Decimal (255) to Hexadecimal:", a: "FF", o: ["FF", "FE", "EF", "F0"] },
-        { q: "Decimal (165) to Hexadecimal:", a: "A5", o: ["A5", "B5", "A6", "95"] },
-        { q: "Binary (111000) to Octal:", a: "70", o: ["70", "60", "77", "50"] },
-        { q: "Binary (101011) to Octal:", a: "53", o: ["53", "43", "63", "55"] },
-        { q: "Binary (11011110) to Hexadecimal:", a: "DE", o: ["DE", "BE", "CE", "FE"] },
-        { q: "Binary (10101010) to Hexadecimal:", a: "AA", o: ["AA", "BB", "A1", "A0"] },
-        { q: "CMD: Command to change color?", a: "color", o: ["color", "setcolor", "paint", "chr"] },
-        { q: "CMD: Command to create folder?", a: "mkdir", o: ["mkdir", "newdir", "create", "folder"] },
-        { q: "CMD: Command to rename folder?", a: "ren", o: ["ren", "rename", "move", "name"] },
-        { q: "CMD: Command to delete folder?", a: "rd", o: ["rd", "del", "remove", "erase"] },
-        { q: "CMD: Command to delete file?", a: "del", o: ["del", "remove", "erase", "kill"] },
-        { q: "CMD: Command to shutdown?", a: "shutdown /s", o: ["shutdown /s", "stop", "exit", "off"] },
-        { q: "CMD: Command to copy file?", a: "copy", o: ["copy", "cp", "move", "duplicate"] },
-        { q: "CMD: Command to move file?", a: "move", o: ["move", "mv", "transfer", "shift"] },
-        { q: "CMD: Command system information?", a: "systeminfo", o: ["systeminfo", "sysconfig", "specs", "about"] },
-        { q: "CMD: Command check IP?", a: "ipconfig", o: ["ipconfig", "ifconfig", "myip", "netstat"] },
-        { q: "CMD: Command clear screen?", a: "cls", o: ["cls", "clear", "clean", "reset"] },
-        { q: "CMD: Command list files?", a: "dir", o: ["dir", "ls", "list", "show"] },
-        { q: "CMD: Command ping server?", a: "ping", o: ["ping", "connect", "trace", "link"] },
-        { q: "What is a Computer?", a: "An electronic device that processes data", o: ["An electronic device that processes data", "A mechanical machine", "A typing tool", "None"] },
-        { q: "Full Form of COMPUTER?", a: "Commonly Operated Machine Particularly Used for Technical and Educational Research", o: ["Commonly Operated Machine Particularly Used for Technical and Educational Research", "Central Operating Machine", "None"] },
-        { q: "Full Form of ASCII?", a: "American Standard Code for Information Interchange", o: ["American Standard Code for Information Interchange", "All Standard Code", "None"] },
-        { q: "Father of Computer?", a: "Charles Babbage", o: ["Charles Babbage", "Alan Turing", "Bill Gates", "Tesla"] },
-        { q: "Smallest unit of data?", a: "Bit", o: ["Bit", "Byte", "KB", "Nibble"] },
-        { q: "1 Byte is equal to?", a: "8 Bits", o: ["8 Bits", "4 Bits", "1024 Bits", "16 Bits"] },
-        { q: "Brain of Computer?", a: "CPU", o: ["CPU", "RAM", "HDD", "Monitor"] },
-        { q: "Binary system base?", a: "2", o: ["2", "10", "8", "16"] },
-        { q: "Octal system base?", a: "8", o: ["8", "10", "2", "16"] },
-        { q: "Hexadecimal system base?", a: "16", o: ["16", "8", "10", "2"] },
-        { q: "CMD exit command?", a: "exit", o: ["exit", "close", "bye", "quit"] },
-        { q: "Full form of CPU:", a: "Central Processing Unit", o: ["Central Processing Unit", "Central Power Unit", "Computer Unit", "None"] }
-    ];
-
-    // UPDATED: timeLeft to 2400 (40 minutes * 60 seconds)
-    let timer, timeLeft = 2400, correctCount = 0, currentAgent = "", answered = new Set(), streak = 0;
-
-    window.onload = () => {
-        const pArr = ["p1", "p2", "p3"];
-        pArr.forEach((id, i) => {
-            setTimeout(() => {
-                if(i > 0) document.getElementById(pArr[i-1]).style.display = 'none';
-                document.getElementById(id).style.display = 'block';
-            }, i * 2000);
-        });
-        setTimeout(() => {
-            document.getElementById('intro-overlay').style.display = 'none';
-            document.getElementById('auth-screen').style.display = 'flex';
-        }, 6000);
+    // Your Exact Provided Firebase Configuration Object
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.firebasestorage.app",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
 
-    function startCountdown() {
-        currentAgent = document.getElementById('agent-callsign').value.trim();
-        if(!currentAgent) return alert("Enter Agent Name!");
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('intro-overlay').style.display = 'flex';
-        document.getElementById('p3').style.display = 'none';
-        let box = document.getElementById('countdown-box');
-        box.style.display = 'block';
-        let count = 10;
-        let intv = setInterval(() => {
-            count--; box.innerText = count;
-            if(count <= 0) { clearInterval(intv); initExam(); }
-        }, 1000);
-    }
+    // Initialize Firebase Services
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const scoresRef = ref(db, "quantum_scores");
 
-    function initExam() {
-        document.getElementById('intro-overlay').style.display = 'none';
-        document.getElementById('exam-screen').style.display = 'block';
-        document.getElementById('ms-container').style.display = 'block';
-        document.getElementById('display-name').innerText = "AGENT: " + currentAgent.toUpperCase();
-        renderQuestions();
-        timer = setInterval(updateProgress, 1000);
-    }
+    // Pure 40 Core Structural Questions Database Array
+    const evaluationMatrix = [
+        { q: "Convert Octal (74) to Hexadecimal format architecture:", a: "3C", o: ["3C", "4D", "3B", "4C"] },
+        { q: "Convert Octal (127) to Hexadecimal format architecture:", a: "57", o: ["57", "67", "A7", "5F"] },
+        { q: "Convert Hexadecimal (1A) to Octal format architecture:", a: "32", o: ["32", "26", "42", "30"] },
+        { q: "Convert Hexadecimal (FF) to Octal format architecture:", a: "377", o: ["377", "255", "400", "366"] },
+        { q: "Convert Decimal (45) to Binary format architecture:", a: "101101", o: ["101101", "110011", "101010", "111001"] },
+        { q: "Convert Decimal (10) to Binary format architecture:", a: "1010", o: ["1010", "1100", "1001", "1011"] },
+        { q: "Convert Decimal (25) to Binary format architecture:", a: "11001", o: ["11001", "10101", "11100", "11011"] },
+        { q: "Convert Decimal (64) to Octal format architecture:", a: "100", o: ["100", "70", "110", "64"] },
+        { q: "Convert Decimal (92) to Octal format architecture:", a: "134", o: ["134", "124", "144", "114"] },
+        { q: "Convert Decimal (255) to Hexadecimal format architecture:", a: "FF", o: ["FF", "FE", "EF", "F0"] },
+        { q: "Convert Decimal (165) to Hexadecimal format architecture:", a: "A5", o: ["A5", "B5", "A6", "95"] },
+        { q: "Convert Binary (111000) to Octal format architecture:", a: "70", o: ["70", "60", "77", "50"] },
+        { q: "Convert Binary (101011) to Octal format architecture:", a: "53", o: ["53", "43", "63", "55"] },
+        { q: "Convert Binary (11011110) to Hexadecimal format architecture:", a: "DE", o: ["DE", "BE", "CE", "FE"] },
+        { q: "Convert Binary (10101010) to Hexadecimal format architecture:", a: "AA", o: ["AA", "BB", "A1", "A0"] },
+        { q: "Command Line Shell: Which parameter updates script background/font hue styling?", a: "color", o: ["color", "setcolor", "paint", "chr"] },
+        { q: "Command Line Shell: System instruction set to generate a brand new directory structure?", a: "mkdir", o: ["mkdir", "newdir", "create", "folder"] },
+        { q: "Command Line Shell: Operational argument sequence to rename a target folder resource?", a: "ren", o: ["ren", "rename", "move", "name"] },
+        { q: "Command Line Shell: Sequence call utilized to strip away an entire empty directory tree?", a: "rd", o: ["rd", "del", "remove", "erase"] },
+        { q: "Command Line Shell: Specific routine execution needed to completely delete standard file variables?", a: "del", o: ["del", "remove", "erase", "kill"] },
+        { q: "Command Line Shell: Identify the baseline argument mapping for a targeted terminal hardware power cutoff:", a: "shutdown /s", o: ["shutdown /s", "stop", "exit", "off"] },
+        { q: "Command Line Shell: System file transfer clone sequence parameter execution map:", a: "copy", o: ["copy", "cp", "move", "duplicate"] },
+        { q: "Command Line Shell: Relocate absolute structural elements or document routes within the registry:", a: "move", o: ["move", "mv", "transfer", "shift"] },
+        { q: "Command Line Shell: Extract detailed host parameters, motherboard layout metrics and operating configs:", a: "systeminfo", o: ["systeminfo", "sysconfig", "specs", "about"] },
+        { q: "Command Line Shell: Prompt parsing structural check interface for network hardware adapter profiles:", a: "ipconfig", o: ["ipconfig", "ifconfig", "myip", "netstat"] },
+        { q: "Command Line Shell: Completely purge the visible terminal stream history buffer context:", a: "cls", o: ["cls", "clear", "clean", "reset"] },
+        { q: "Command Line Shell: List all localized nested directory child objects and files visually inside target route:", a: "dir", o: ["dir", "ls", "list", "show"] },
+        { q: "Command Line Shell: Trace target response latency profiles directly across network routing steps:", a: "ping", o: ["ping", "connect", "trace", "link"] },
+        { q: "Define the fundamental mechanical baseline of a standard computation architecture system unit:", a: "An electronic device that processes data", o: ["An electronic device that processes data", "A mechanical machine", "A typing tool", "None"] },
+        { q: "Identify the absolute semantic breakdown syntax meaning behind the word descriptor 'COMPUTER':", a: "Commonly Operated Machine Particularly Used for Technical and Educational Research", o: ["Commonly Operated Machine Particularly Used for Technical and Educational Research", "Central Operating Machine", "None"] },
+        { q: "Identify the programmatic naming convention syntax for 'ASCII':", a: "American Standard Code for Information Interchange", o: ["American Standard Code for Information Interchange", "All Standard Code", "None"] },
+        { q: "Identify the classical engineer historically credited as the Father of Computing Systems:", a: "Charles Babbage", o: ["Charles Babbage", "Alan Turing", "Bill Gates", "Tesla"] },
+        { q: "Identify the single lowest atomic resolution volume scale unit of data parsing architecture:", a: "Bit", o: ["Bit", "Byte", "KB", "Nibble"] },
+        { q: "A single complete standard Byte structural profile aggregates directly to how many raw Bit tracks?", a: "8 Bits", o: ["8 Bits", "4 Bits", "1024 Bits", "16 Bits"] },
+        { q: "Identify the centralized operational processing Core node serving as the functional engine brain:", a: "CPU", o: ["CPU", "RAM", "HDD", "Monitor"] },
+        { q: "The base logic of a standard structural Binary indexing notation counts values in multipliers of:", a: "2", o: ["2", "10", "8", "16"] },
+        { q: "The base logic of a standard structural Octal indexing notation counts values in multipliers of:", a: "8", o: ["8", "10", "2", "16"] },
+        { q: "The base logic of a standard structural Hexadecimal indexing notation counts values in multipliers of:", a: "16", o: ["16", "8", "10", "2"] },
+        { q: "Command Line Shell: Standard logical instruction token phrase execution to kill active terminal sessions:", a: "exit", o: ["exit", "close", "bye", "quit"] },
+        { q: "Identify the naming string assigned directly to represent CPU component architecture functionality:", a: "Central Processing Unit", o: ["Central Processing Unit", "Central Power Unit", "Computer Unit", "None"] }
+    ];
 
-    function renderQuestions() {
-        const box = document.getElementById('questions-box');
-        questions.forEach((q, i) => {
-            const shuffled = [...q.o].sort(() => Math.random() - 0.5);
-            box.innerHTML += `
-                <div class="q-card" id="qb-${i}">
-                    <p style="font-size:10px; color:var(--primary); font-weight:800;">DATA_NODE_${i+1}</p>
-                    <p style="font-weight:700; margin:10px 0;">${q.q}</p>
-                    <div id="opts-${i}">
-                        ${shuffled.map(opt => `<label class="opt-label" onclick="handleSel(this, ${i}, '${opt}')">${opt}</label>`).join('')}
+    let chronologicalClock, dynamicCountdown = 2400, calculatedCorrect = 0, assignedName = "", trackingLogs = new Set();
+
+    // Attach function targets to standard global window layout context
+    window.transitionToAuth = function() {
+        document.getElementById('view-intro').style.display = 'none';
+        document.getElementById('view-auth').style.display = 'block';
+    };
+
+    window.launchOperationalModule = function() {
+        assignedName = document.getElementById('input-username').value.trim();
+        if(!assignedName) return alert("System requires a valid student profile registration name.");
+        
+        document.getElementById('view-auth').style.display = 'none';
+        document.getElementById('view-assessment').style.display = 'block';
+        document.getElementById('lbl-username').innerText = assignedName;
+        
+        compileAssessmentInterface();
+        chronologicalClock = setInterval(processClockTicks, 1000);
+    };
+
+    function compileAssessmentInterface() {
+        const wrapper = document.getElementById('deck-wrapper');
+        wrapper.innerHTML = "";
+        
+        evaluationMatrix.forEach((element, indexing) => {
+            const variantOptions = [...element.o].sort(() => Math.random() - 0.5);
+            wrapper.innerHTML += `
+                <div class="question-card" id="card-wrapper-${indexing}">
+                    <div style="font-size:10px; color: var(--neon-purple); font-weight:700; font-family:'Space Grotesk';">MODULE_NODE_0${indexing+1}</div>
+                    <p style="font-weight:600; margin:12px 0; font-size:15px; line-height:1.5;">${element.q}</p>
+                    <div id="choices-grid-${indexing}">
+                        ${variantOptions.map(optionItem => `<div class="option-node" onclick="validateNodeSelection(this, ${indexing}, '${optionItem}')">${optionItem}</div>`).join('')}
                     </div>
                 </div>`;
         });
     }
 
-    function handleSel(el, i, sel) {
-        if(answered.has(i)) return;
-        answered.add(i);
-        const correct = questions[i].a;
-        const qCard = document.getElementById(`qb-${i}`);
-        document.getElementById(`opts-${i}`).querySelectorAll('.opt-label').forEach(l => l.classList.add('locked'));
+    window.validateNodeSelection = function(clickedObject, indexKey, choiceString) {
+        if(trackingLogs.has(indexKey)) return;
+        trackingLogs.add(indexKey);
         
-        if(sel === correct) {
-            correctCount++; streak++;
-            el.classList.add('correct-glow');
-            confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 }, colors:['#6366f1', '#38bdf8'] });
-            if(streak === 3) showStreak("🔥 TRIPLE KILL!");
-            if(streak === 5) showStreak("⚡ UNSTOPPABLE!");
+        const strictMatch = evaluationMatrix[indexKey].a;
+        document.getElementById(`choices-grid-${indexKey}`).querySelectorAll('.option-node').forEach(item => item.classList.add('disabled'));
+        
+        if(choiceString === strictMatch) {
+            calculatedCorrect++;
+            clickedObject.classList.add('success-state');
+            confetti({ particleCount: 20, spread: 40, origin: { y: 0.9 }, colors: ['#3b82f6', '#a855f7'] });
         } else {
-            streak = 0;
-            el.classList.add('wrong-glow');
-            qCard.classList.add('shake');
-            const sad = document.createElement('div'); sad.className = "sad-emoji"; sad.innerText = "😢";
-            qCard.appendChild(sad);
-            setTimeout(() => sad.remove(), 1200);
+            clickedObject.classList.add('failure-state');
         }
-        document.getElementById('ms-correct-bar').style.width = (correctCount / 40 * 100) + "%";
-    }
-
-    function showStreak(msg) {
-        const div = document.createElement('div'); div.className = "streak-msg"; div.innerText = msg;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 1000);
-    }
-
-    function updateProgress() {
-        if(timeLeft <= 0) finishExam();
-        let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
-        document.getElementById('time-left').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        // UPDATED: Progress dot calculation based on 2400 seconds
-        document.getElementById('ms-time-dot').style.left = `calc(${((2400-timeLeft)/2400)*100}% - 10px)`;
-        timeLeft--;
-    }
-
-    function finishExam() {
-        clearInterval(timer);
-        document.getElementById('exam-screen').style.display = 'none';
-        document.getElementById('ms-container').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'block';
         
-        const score = correctCount;
-        document.getElementById('final-score').innerText = `${score}/40`;
-        document.getElementById('accuracy-stat').innerText = `SYSTEM ACCURACY: ${Math.round(score/40*100)}%`;
-        
-        // Rank Assignment
-        let rank = "SECURITY TRAINEE";
-        if(score >= 35) rank = "🛡️ CYBER OVERLORD";
-        else if(score >= 25) rank = "⚡ DATA NINJA";
-        else if(score >= 15) rank = "👨‍💻 CODE APPRENTICE";
-        document.getElementById('rank-display').innerText = rank;
+        document.getElementById('assessment-progress').style.width = (trackingLogs.size / 40 * 100) + "%";
+    };
 
-        saveScore(); showLeaderboard(); window.scrollTo(0,0);
+    function processClockTicks() {
+        if(dynamicCountdown <= 0) haltModuleSession();
+        let computedMin = Math.floor(dynamicCountdown / 60), computedSec = dynamicCountdown % 60;
+        document.getElementById('lbl-timer').innerText = `${computedMin}:${computedSec < 10 ? '0' : ''}${computedSec}`;
+        dynamicCountdown--;
     }
 
-    function showReview() {
-        document.getElementById('result-screen').style.display = 'none';
-        document.getElementById('exam-screen').style.display = 'block';
-        document.getElementById('final-btn').style.display = 'none';
-        questions.forEach((q, i) => {
-            const labels = document.getElementById(`opts-${i}`).querySelectorAll('.opt-label');
-            labels.forEach(l => {
-                l.classList.add('locked');
-                if(l.innerText.trim() === q.a) {
-                    l.style.borderColor = "var(--success)";
-                    l.style.background = "rgba(16, 185, 129, 0.1)";
-                    l.innerHTML += ' <i class="ri-check-double-line"></i>';
+    window.haltModuleSession = async function() {
+        clearInterval(chronologicalClock);
+        document.getElementById('view-assessment').style.display = 'none';
+        document.getElementById('view-report').style.display = 'block';
+        
+        document.getElementById('lbl-final-score').innerText = `${calculatedCorrect}/40`;
+        document.getElementById('lbl-accuracy').innerText = `Cloud Database Verification Sync: ${Math.round(calculatedCorrect/40*100)}%`;
+        
+        let rankPerformance = "Junior Associate";
+        if(calculatedCorrect >= 36) rankPerformance = "Elite Systems Director";
+        else if(calculatedCorrect >= 26) rankPerformance = "Advanced Operations Technician";
+        else if(calculatedCorrect >= 16) rankPerformance = "Field Systems Operator";
+        document.getElementById('lbl-status-tier').innerText = rankPerformance;
+
+        // Push data to Firebase Realtime Database instantly
+        try {
+            await push(scoresRef, {
+                user: assignedName,
+                score: calculatedCorrect,
+                timestamp: Date.now(),
+                clockString: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+        } catch (error) {
+            console.error("Cloud Write Error: ", error);
+            alert("Submission error. Please ensure your Firebase RTDB Rules allow read/write setup.");
+        }
+    };
+
+    window.reviewCorrectAnswers = function() {
+        document.getElementById('view-report').style.display = 'none';
+        document.getElementById('view-assessment').style.display = 'block';
+        document.getElementById('finish-trigger').style.display = 'none';
+        
+        evaluationMatrix.forEach((element, indexing) => {
+            const targets = document.getElementById(`choices-grid-${indexing}`).querySelectorAll('.option-node');
+            targets.forEach(node => {
+                node.classList.add('disabled');
+                if(node.innerText.trim() === element.a) {
+                    node.style.borderColor = "var(--neon-mint)";
+                    node.style.background = "rgba(16, 185, 129, 0.08)";
                 }
             });
         });
-    }
+    };
 
-    function saveScore() {
-        let s = JSON.parse(localStorage.getItem('ct_scores') || '[]');
-        s.push({name: currentAgent, score: correctCount});
-        s.sort((a,b) => b.score - a.score);
-        localStorage.setItem('ct_scores', JSON.stringify(s.slice(0,5)));
-    }
+    // 🔥 Real-time Cloud Leaderboard Stream Listener for Realtime Database
+    // Sorts by score descending using client side logic since RTDB sorts ascending by default
+    const cloudQuery = query(scoresRef, orderByChild("score"));
+    onValue(cloudQuery, (snapshot) => {
+        const structuralBox = document.getElementById('leaderboard-render-target');
+        
+        if(!snapshot.exists()) {
+            structuralBox.innerHTML = `<div class="empty-state"><i class="ri-cloud-off-line" style="font-size: 24px; display:block; margin-bottom:10px; color:var(--text-sub);"></i>No records found inside Database tree branch yet.</div>`;
+            return;
+        }
+        
+        let entries = [];
+        snapshot.forEach((childSnapshot) => {
+            entries.push(childSnapshot.val());
+        });
 
-    function showLeaderboard() {
-        const s = JSON.parse(localStorage.getItem('ct_scores') || '[]');
-        document.getElementById('lb-body').innerHTML = s.map((x, i) => `
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                <span>${i+1}. ${x.name}</span><span style="color:var(--zen); font-weight:800;">${x.score}/40</span>
-            </div>`).join('');
-    }
-
-    function shareScore() {
-        const text = `🏆 MISSION ACCOMPLISHED!\n👤 Agent: ${currentAgent}\n✅ Score: ${correctCount}/40\n🎖️ Rank: ${document.getElementById('rank-display').innerText}\nCan you beat my score?`;
-        navigator.clipboard.writeText(text);
-        alert("Result Copied! Paste on WhatsApp.");
-    }
+        // Rank Highest Score -> Lowest Score, then oldest timestamp first for ties
+        entries.sort((x, y) => {
+            if(y.score !== x.score) return y.score - x.score;
+            return x.timestamp - y.timestamp;
+        });
+        
+        let index = 0;
+        structuralBox.innerHTML = entries.slice(0, 50).map((entry) => {
+            let rankClass = "";
+            if (index === 0) rankClass = "top-1";
+            else if (index === 1) rankClass = "top-2";
+            else if (index === 2) rankClass = "top-3";
+            
+            index++;
+            return `
+            <div class="leader-item">
+                <div class="rank-badge ${rankClass}">#${index < 10 ? '0' + index : index}</div>
+                <div class="player-info">
+                    <div style="color: #fff; font-size:14px;">${entry.user}</div>
+                    <div style="font-size:10px; color: var(--text-sub); font-weight:400;">Logged via network at ${entry.clockString || 'Live'}</div>
+                </div>
+                <div class="score-pill">${entry.score} / 40</div>
+            </div>`;
+        }).join('');
+    });
 </script>
 </body>
 </html>
