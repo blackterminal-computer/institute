@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700;800&display=swap');
 
         :root { 
             --accent: #ff3e3e; 
@@ -20,6 +20,7 @@
             --success: #2ecc71;
             --info: #3498db;
             --warning: #f1c40f;
+            --orange: #ff9f0a;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -49,7 +50,7 @@
         .table-container { overflow-x: auto; border-radius: 12px; background: rgba(0,0,0,0.2); }
         .scroll-box { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; }
         
-        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
         th { text-align: left; font-size: 0.6rem; text-transform: uppercase; opacity: 0.5; padding: 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #0a0a0a; z-index: 10; }
         td { padding: 8px 10px; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.02); vertical-align: middle; }
 
@@ -89,6 +90,7 @@
             padding: 12px; background: rgba(255,255,255,0.02);
             border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--success);
         }
+        .att-item.late { border-left: 3px solid var(--orange); }
 
         .status-badge {
             padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase;
@@ -125,6 +127,8 @@
                                 <th>Rate (₹)</th>
                                 <th>Earned</th>
                                 <th>Streak</th>
+                                <th style="color:var(--orange)">Late Days</th>
+                                <th style="color:var(--accent)">Fines</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -133,7 +137,6 @@
                 </div>
             </div>
 
-            <!-- Student Fees with TOTAL COUNT -->
             <div class="card">
                 <h2>
                     <i class="fas fa-wallet"></i> Student Fees (<span id="cur-month">--</span>) 
@@ -210,7 +213,6 @@
         </div>
     </div>
 </div>
-
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -230,17 +232,47 @@
 
     let staffData = {};
 
+    // UPGRADED: Dynamic Late-counter and Fine logic inside Staff Table
     db.ref('staff').on('value', snap => {
         const tbody = document.getElementById('staff-body');
         const select = document.getElementById('task-staff-select');
         tbody.innerHTML = "";
         select.innerHTML = "<option>Select Staff</option>";
         staffData = {}; 
+        
         snap.forEach(child => {
             const user = child.val();
-            staffData[child.key] = user.name;
-            tbody.innerHTML += `<tr><td><b>${user.name}</b></td><td><input type="number" id="wage-${child.key}" value="${user.perDayWage || 500}" style="width:60px; margin:0; padding:5px; background:none; border:1px solid rgba(255,255,255,0.1); color:white; font-size:11px;"></td><td><span style="color:var(--success); font-weight:700;">₹${user.salary || 0}</span></td><td><span style="color:var(--warning)"><i class="fas fa-fire"></i> ${user.streak || 0}</span></td><td><div class="action-btns"><button class="btn btn-update" onclick="updateWage('${child.key}')"><i class="fas fa-save"></i></button><button class="btn btn-remove" onclick="removeStaff('${child.key}', '${user.name}')"><i class="fas fa-trash"></i></button></div></td></tr>`;
-            select.innerHTML += `<option value="${child.key}">${user.name}</option>`;
+            const staffId = child.key;
+            staffData[staffId] = user.name;
+            
+            tbody.innerHTML += `
+                <tr id="row-staff-${staffId}">
+                    <td><b>${user.name}</b></td>
+                    <td><input type="number" id="wage-${staffId}" value="${user.perDayWage || 500}" style="width:60px; margin:0; padding:5px; background:none; border:1px solid rgba(255,255,255,0.1); color:white; font-size:11px;"></td>
+                    <td><span style="color:var(--success); font-weight:700;">₹${user.salary || 0}</span></td>
+                    <td><span style="color:var(--warning)"><i class="fas fa-fire"></i> ${user.streak || 0}</span></td>
+                    <td><span id="late-count-${staffId}" style="color:var(--orange); font-weight:600;">0</span></td>
+                    <td><span id="fine-count-${staffId}" style="color:var(--accent); font-weight:700;">₹0</span></td>
+                    <td><div class="action-btns"><button class="btn btn-update" onclick="updateWage('${staffId}')"><i class="fas fa-save"></i></button><button class="btn btn-remove" onclick="removeStaff('${staffId}', '${user.name}')"><i class="fas fa-trash"></i></button></div></td>
+                </tr>`;
+            
+            select.innerHTML += `<option value="${staffId}">${user.name}</option>`;
+
+            // Live fine loop trace
+            db.ref(`attendance/${staffId}`).on('value', attSnap => {
+                let lateCount = 0;
+                if(attSnap.exists()){
+                    attSnap.forEach(daySnap => {
+                        if(daySnap.val().isLate === true) {
+                            lateCount++;
+                        }
+                    });
+                }
+                const elementLate = document.getElementById(`late-count-${staffId}`);
+                const elementFine = document.getElementById(`fine-count-${staffId}`);
+                if(elementLate) elementLate.innerText = lateCount;
+                if(elementFine) elementFine.innerText = `₹${lateCount * 200}`;
+            });
         });
     });
 
@@ -251,10 +283,9 @@
         fs.collection("attendance").onSnapshot(async (snapshot) => {
             const studentNames = [...new Set(snapshot.docs.map(doc => doc.data().userName || doc.data().studentName))].filter(Boolean);
             
-            // Update Total Count Display
             totalCountSpan.innerText = studentNames.length;
-
             payBody.innerHTML = "";
+            
             if(studentNames.length === 0) {
                 payBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; opacity:0.5;">No students in logs</td></tr>';
                 return;
@@ -300,17 +331,34 @@
     }
 
     const today = new Date().toISOString().split('T')[0];
+    
+    // UPGRADED: Live tracking container that adds LATE badges
     db.ref('attendance').on('value', snap => {
         const attList = document.getElementById('attendance-list');
         const attCountDisplay = document.getElementById('att-count');
         attList.innerHTML = "";
         let count = 0;
+        
         snap.forEach(staffChild => {
             const staffId = staffChild.key;
             const dates = staffChild.val();
             if(dates && dates[today]) {
                 count++;
-                attList.innerHTML += `<div class="att-item"><div><b>${staffData[staffId] || 'Staff'}</b><br><small style="font-size:9px; opacity:0.6;"><i class="fas fa-location-dot"></i> Verified</small></div><span style="color:var(--success); font-weight:bold;">${dates[today].time}</span></div>`;
+                const log = dates[today];
+                const isLate = log.isLate === true;
+                
+                attList.innerHTML += `
+                    <div class="att-item ${isLate ? 'late' : ''}">
+                        <div>
+                            <b>${staffData[staffId] || 'Staff'}</b>
+                            <br>
+                            <small style="font-size:9px; opacity:0.6;"><i class="fas fa-location-dot"></i> Verified</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="color:${isLate ? 'var(--orange)' : 'var(--success)'}; font-weight:bold; display:block;">${log.time}</span>
+                            ${isLate ? '<span style="font-size:8px; background:rgba(255,159,10,0.15); color:var(--orange); padding:2px 6px; border-radius:4px; font-weight:800;">LATE (₹200 CUT)</span>' : ''}
+                        </div>
+                    </div>`;
             }
         });
         if(count === 0) attList.innerHTML = '<p style="opacity: 0.5; text-align: center; padding:20px;">No one present</p>';
