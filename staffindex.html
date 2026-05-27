@@ -95,6 +95,8 @@
 
         .btn-main { width: 100%; padding: 18px; border-radius: 20px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-main:active { transform: scale(0.97); }
+        
+        .btn-advance { background: linear-gradient(135deg, #FF9F0A, #FF3B30); color: white; margin-top: 15px; box-shadow: 0 8px 20px rgba(255, 159, 10, 0.25); border: none; }
 
         .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 12px; margin-top: 5px; }
         .strict-date-card {
@@ -132,10 +134,19 @@
         }
         @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
         .penalty-card { border-left: 4px solid var(--apple-orange) !important; }
+
+        .advance-log-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 12px;
+            margin-top: 8px; border: 1px solid rgba(255,255,255,0.04); font-size: 12px;
+        }
+        .badge-status { padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+        .status-pending { background: rgba(255, 159, 10, 0.15); color: var(--apple-orange); }
+        .status-approved { background: rgba(52, 199, 89, 0.15); color: var(--apple-green); }
+        .status-rejected { background: rgba(255, 59, 48, 0.15); color: var(--apple-red); }
     </style>
 </head>
 <body>
-
 <div class="container">
     <div class="header">
         <div class="header-meta">
@@ -187,6 +198,17 @@
             <div class="slider-handle" id="swipe-drag-handle"><i class="fas fa-chevron-right"></i></div>
             <span class="slider-text" id="swipe-inner-text">SLIDE TO PUNCH IN</span>
         </div>
+
+        <button class="btn btn-main btn-advance" onclick="launchAdvanceRequest()">
+            <i class="fas fa-hand-holding-usd"></i> REQUEST SALARY ADVANCE
+        </button>
+    </div>
+
+    <div class="card" id="advance-history-card" style="display: none;">
+        <h3><i class="fas fa-history"></i> Advance Pay Requests</h3>
+        <div id="advance-requests-list">
+            <p style="text-align:center; font-size:11px; opacity:0.4;">No requests logged in current cycle</p>
+        </div>
     </div>
 
     <div class="card penalty-card" id="penalty-section" style="display: none;">
@@ -237,7 +259,7 @@
         <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right"></i></button>
     </div>
 
-    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v3.0 • SECURE APP GATEWAY</p>
+    <p style="text-align: center; color: var(--text-sec); font-size: 10px; opacity: 0.5;">TERMINAL v3.2 • SECURE ADVANCE GATEWAY</p>
 </div>
 <script>
     const firebaseConfig = {
@@ -267,6 +289,7 @@
     let dutyInterval;
     let currentShiftStatus = "IDLE"; 
     let activeShiftWindow = "NONE";  
+    let currentGlobalSalaryBalance = 0; // Live tracker allocation lock register
 
     function toggleStudentList() {
         const listDiv = document.getElementById('attendance-list');
@@ -407,23 +430,20 @@
 
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
+            currentGlobalSalaryBalance = val.salary || 0; 
             document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
-            document.getElementById('total-earning').innerText = `₹${val.salary || 0}`;
+            document.getElementById('total-earning').innerText = `₹${currentGlobalSalaryBalance}`;
             document.getElementById('streak-val').innerText = val.streak || 0;
             
             const target = (val.perDayWage || 500) * 25;
-            const percent = Math.min(((val.salary || 0) / target) * 100, 100);
+            const percent = Math.min((currentGlobalSalaryBalance / target) * 100, 100);
             document.getElementById('salary-progress').style.width = percent + "%";
         });
 
         db.ref(`attendance/${staffId}`).on('value', snap => {
             if(snap.exists()) {
                 let lateCount = 0;
-                snap.forEach(daySnap => {
-                    if(daySnap.val().isLate === true) {
-                        lateCount++;
-                    }
-                });
+                snap.forEach(daySnap => { if(daySnap.val().isLate === true) lateCount++; });
                 if(lateCount > 0) {
                     document.getElementById('penalty-section').style.display = "block";
                     document.getElementById('late-days-count').innerText = lateCount;
@@ -439,7 +459,85 @@
         loadTasks();
         listenStudentAttendance(); 
         listenStrictDays();
+        listenAdvanceRequests(); 
     }
+    // NEW: Real-time Advance Request Submission Launcher Matrix Control
+    function launchAdvanceRequest() {
+        if(currentGlobalSalaryBalance <= 200) {
+            alert(`⚠️ Advance Access Denied: Aapka current salary pool kam hai. Request process karne ke liye balance hona zaroori hai.`);
+            return;
+        }
+
+        const maxEligible = Math.floor(currentGlobalSalaryBalance * 0.5); // 50% Safety Boundary Cap
+        const userInput = prompt(`💰 SALARY ADVANCE PORTAL\n\nYour Current Balance: ₹${currentGlobalSalaryBalance}\nMaximum Eligible Advance (50% Cap): ₹${maxEligible}\n\nEnter advance amount required:`, maxEligible);
+        
+        if (userInput === null) return; 
+        
+        const reqAmount = parseInt(userInput);
+        if (isNaN(reqAmount) || reqAmount <= 0) {
+            alert("❌ Invalid Amount Error: Kripya sahi sakhya/rakam darj karein.");
+            return;
+        }
+        
+        if (reqAmount > maxEligible) {
+            alert(`🚫 Access Restriction: Safety limits ke hisab se aap maximum ₹${maxEligible} hi advance request kar sakte hain.`);
+            return;
+        }
+
+        const reason = prompt("📝 Advance lene ka mukhya kaaran (Reason) darj karein:");
+        if (!reason) {
+            alert("❌ Reason Needed: Security reasons ki wajah se reason field mandatory hai.");
+            return;
+        }
+
+        if(confirm(`Confirm request submission for ₹${reqAmount}?\n\n* Note: Approval hote hi yeh amount aapke main balance se auto-deduct ho jayega.`)) {
+            db.ref(`advance_requests/${staffId}`).push({
+                staffName: staffName,
+                requestedAmount: reqAmount,
+                reason: reason,
+                status: "pending",
+                timestamp: Date.now(),
+                dateString: new Date().toLocaleDateString('en-GB')
+            }).then(() => {
+                alert("🚀 Request Transmitted: Aapki request direct manager panel verification ke liye bhej di gayi hai.");
+            }).catch(err => {
+                alert("Database Sync Error: " + err.message);
+            });
+        }
+    }
+
+    // NEW: Live Listener for Realtime Advance Request Ledger Updates
+    function listenAdvanceRequests() {
+        const historyCard = document.getElementById('advance-history-card');
+        const requestsList = document.getElementById('advance-requests-list');
+
+        db.ref(`advance_requests/${staffId}`).on('value', snap => {
+            if(snap.exists()) {
+                historyCard.style.display = "block";
+                requestsList.innerHTML = "";
+                let htmlContent = "";
+                snap.forEach(child => {
+                    const data = child.val();
+                    let statusBadgeHtml = `<span class="badge-status status-pending">Pending</span>`;
+                    if(data.status === "approved") statusBadgeHtml = `<span class="badge-status status-approved">Approved</span>`;
+                    else if(data.status === "rejected") statusBadgeHtml = `<span class="badge-status status-rejected">Rejected</span>`;
+
+                    htmlContent += `
+                        <div class="advance-log-item">
+                            <div>
+                                <strong style="color:#fff; font-size:13px;">₹${data.requestedAmount}</strong>
+                                <div style="color:var(--text-sec); font-size:10px; margin-top:2px;">${data.dateString} - ${data.reason}</div>
+                            </div>
+                            <div>${statusBadgeHtml}</div>
+                        </div>`;
+                });
+                requestsList.innerHTML = htmlContent;
+            } else {
+                historyCard.style.display = "none";
+            }
+        });
+    }
+
     function initSliderGesture() {
         const handle = document.getElementById('swipe-drag-handle');
         const container = document.getElementById('swipe-track-container');
@@ -448,22 +546,18 @@
         
         if(!handle || currentShiftStatus === "PUNCHED_OUT") return;
 
-        let isDragging = false;
-        let startX = 0;
-        let maxDrag = container.clientWidth - handle.clientWidth - 8;
+        let isDragging = false, startX = 0, maxDrag = container.clientWidth - handle.clientWidth - 8;
 
         function startDrag(e) {
             isDragging = true;
             startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-            handle.style.transition = 'none';
-            bg.style.transition = 'none';
+            handle.style.transition = 'none'; bg.style.transition = 'none';
         }
 
         function doDrag(e) {
             if (!isDragging) return;
             const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
             let moveX = currentX - startX;
-            
             if (moveX < 0) moveX = 0;
             if (moveX > maxDrag) moveX = maxDrag;
             
@@ -477,227 +571,116 @@
             isDragging = false;
             handle.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
             bg.style.transition = 'width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-            
             const currentX = parseInt(handle.style.transform.replace(/[^0-9.]/g, '')) || 0;
             
             if (currentX >= maxDrag * 0.85) {
-                handle.style.transform = `translateX(${maxDrag}px)`;
-                bg.style.width = '100%';
-                text.style.opacity = '1';
+                handle.style.transform = `translateX(${maxDrag}px)`; bg.style.width = '100%'; text.style.opacity = '1';
                 executePunchAction();
             } else {
-                handle.style.transform = 'translateX(0px)';
-                bg.style.width = '0px';
-                text.style.opacity = '1';
+                handle.style.transform = 'translateX(0px)'; bg.style.width = '0px'; text.style.opacity = '1';
             }
         }
 
         handle.addEventListener('mousedown', startDrag);
         window.addEventListener('mousemove', doDrag);
         window.addEventListener('mouseup', endDrag);
-
         handle.addEventListener('touchstart', startDrag);
         window.addEventListener('touchmove', doDrag, { passive: true });
         window.addEventListener('touchend', endDrag);
     }
 
     function executePunchAction() {
-        if(currentShiftStatus === "IDLE") {
-            markAttendance(); 
-        } else if(currentShiftStatus === "PUNCHED_IN") {
-            processPunchOut(); 
-        }
+        if(currentShiftStatus === "IDLE") markAttendance(); 
+        else if(currentShiftStatus === "PUNCHED_IN") processPunchOut();
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371e3; 
         const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
         const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
 
     function markAttendance() {
         if (!navigator.geolocation) return alert("Location not supported.");
-        
         updateShiftWindow();
-        if (activeShiftWindow === "OUTSIDE") {
-            alert("Punch Error: Standard operating windows are closed. (Morning 9-1 | Evening 5-10)");
-            resetSliderUI();
-            return;
-        }
+        if (activeShiftWindow === "OUTSIDE") { alert("Punch Error: Shift windows are closed."); resetSliderUI(); return; }
 
         document.getElementById('swipe-inner-text').innerText = "LOCATING POSITION...";
 
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-                if (dist <= 100) { 
-                    const now = new Date();
-                    const todayStr = now.toISOString().split('T')[0];
-                    const timeString = now.toLocaleTimeString();
-                    
-                    const staffSnap = await db.ref(`staff/${staffId}`).once('value');
-                    const staffProfile = staffSnap.val() || {};
-                    const baseDailyWage = staffProfile.perDayWage || 500;
-                    const halfShiftWage = Math.round(baseDailyWage / 2); 
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+            if (dist <= 100) { 
+                const now = new Date(), todayStr = now.toISOString().split('T')[0], timeString = now.toLocaleTimeString();
+                const staffSnap = await db.ref(`staff/${staffId}`).once('value');
+                const staffProfile = staffSnap.val() || {}, baseDailyWage = staffProfile.perDayWage || 500, halfShiftWage = Math.round(baseDailyWage / 2);
+                const existingAtt = (await db.ref(`attendance/${staffId}/${todayStr}`).once('value')).val() || {};
 
-                    const attSnap = await db.ref(`attendance/${staffId}/${todayStr}`).once('value');
-                    const existingAtt = attSnap.val() || {};
+                let updateData = { name: staffName, status: "Present" }, earnedAmount = 0;
 
-                    let updateData = {
-                        name: staffName,
-                        status: "Present"
-                    };
+                if (activeShiftWindow === "MORNING") {
+                    if (existingAtt.morningPaid) { alert("Split wage already loaded."); resetSliderUI(); return; }
+                    let isLateToday = now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() >= 30);
+                    if (isLateToday && !confirm("🚨 TIME EXCEEDED! Deductions apply. Proceed?")) { resetSliderUI(); return; }
 
-                    let earnedAmount = 0;
-
-                    if (activeShiftWindow === "MORNING") {
-                        if (existingAtt.morningPaid) {
-                            alert("Security Bypass Blocked: Morning split wage already loaded.");
-                            resetSliderUI();
-                            return;
-                        }
-                        
-                        let isLateToday = false;
-                        const hours = now.getHours();
-                        const minutes = now.getMinutes();
-                        if (hours > 8 || (hours === 8 && minutes >= 30)) {
-                            isLateToday = true;
-                        }
-
-                        if (isLateToday) {
-                            const proceed = confirm("🚨 TIME EXCEEDED! Past 08:30 AM. Punching in now will deduct ₹200 penalty from morning payout. Click OK to accept.");
-                            if (!proceed) { resetSliderUI(); return; }
-                        }
-
-                        updateData.punchInTime_mng = timeString;
-                        updateData.time = timeString; 
-                        updateData.morningPaid = true;
-                        updateData.isLate = isLateToday;
-                        
-                        earnedAmount = isLateToday ? (halfShiftWage - 200) : halfShiftWage;
-
-                    } else if (activeShiftWindow === "EVENING") {
-                        if (existingAtt.eveningPaid) {
-                            alert("Security Bypass Blocked: Evening split wage already loaded.");
-                            resetSliderUI();
-                            return;
-                        }
-
-                        updateData.punchInTime_evn = timeString;
-                        updateData.eveningPaid = true;
-                        earnedAmount = halfShiftWage;
-                    }
-
-                    await db.ref(`attendance/${staffId}/${todayStr}`).update(updateData);
-                    
-                    await db.ref(`staff/${staffId}`).transaction(s => {
-                        if (s) {
-                            s.salary = (s.salary || 0) + earnedAmount;
-                            if (activeShiftWindow === "MORNING") {
-                                s.streak = (s.streak || 0) + 1;
-                            }
-                        }
-                        return s;
-                    });
-
-                    location.reload();
+                    updateData.punchInTime_mng = timeString; updateData.time = timeString; updateData.morningPaid = true; updateData.isLate = isLateToday;
+                    earnedAmount = isLateToday ? (halfShiftWage - 200) : halfShiftWage;
                 } else {
-                    alert(`Access Denied! Distance: ${Math.round(dist)}m. Must be within 100m range.`);
-                    resetSliderUI();
+                    if (existingAtt.eveningPaid) { alert("Split wage already loaded."); resetSliderUI(); return; }
+                    updateData.punchInTime_evn = timeString; updateData.eveningPaid = true; earnedAmount = halfShiftWage;
                 }
-            },
-            () => { alert("Enable GPS tracking authorization."); resetSliderUI(); }, { enableHighAccuracy: true }
-        );
+
+                await db.ref(`attendance/${staffId}/${todayStr}`).update(updateData);
+                await db.ref(`staff/${staffId}`).transaction(s => { if(s) { s.salary = (s.salary || 0) + earnedAmount; if(activeShiftWindow==="MORNING") s.streak = (s.streak || 0)+1; } return s; });
+                location.reload();
+            } else { alert(`Access Denied! Outside range.`); resetSliderUI(); }
+        }, () => { alert("Enable GPS authorization."); resetSliderUI(); }, { enableHighAccuracy: true });
     }
 
     function processPunchOut() {
-        updateShiftWindow();
-        if(!confirm(`Are you sure you want to Punch Out of your current shift?`)) {
-            resetSliderUI();
-            return;
-        }
-        
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
-        const timeString = now.toLocaleTimeString();
+        if(!confirm(`Are you sure you want to Punch Out?`)) return resetSliderUI();
+        const todayStr = new Date().toISOString().split('T')[0], timeString = new Date().toLocaleTimeString();
 
         db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
             if(!snap.exists()) return resetSliderUI();
-            const data = snap.val();
             let closureData = {};
-
-            if (data.punchInTime_mng && !data.punchOutTime_mng) {
-                closureData.punchOutTime_mng = timeString;
-                closureData.punchOutTime = timeString; 
-            } else if (data.punchInTime_evn && !data.punchOutTime_evn) {
-                closureData.punchOutTime_evn = timeString;
-            }
-
-            db.ref(`attendance/${staffId}/${todayStr}`).update(closureData).then(() => {
-                alert("Shift window checked out safely. Goodbye!");
-                location.reload();
-            });
+            if (snap.val().punchInTime_mng && !snap.val().punchOutTime_mng) { closureData.punchOutTime_mng = timeString; closureData.punchOutTime = timeString; }
+            else if (snap.val().punchInTime_evn && !snap.val().punchOutTime_evn) { closureData.punchOutTime_evn = timeString; }
+            db.ref(`attendance/${staffId}/${todayStr}`).update(closureData).then(() => { location.reload(); });
         });
     }
 
     function resetSliderUI() {
-        const handle = document.getElementById('swipe-drag-handle');
-        const bg = document.getElementById('swipe-bg-overlay');
-        const text = document.getElementById('swipe-inner-text');
-        
-        handle.style.transform = 'translateX(0px)';
-        bg.style.width = '0px';
-        text.style.opacity = '1';
-        
-        if (currentShiftStatus === "PUNCHED_IN") {
-            text.innerText = "SLIDE TO PUNCH OUT";
-            initSliderGesture();
-        } else {
-            text.innerText = "SLIDE TO PUNCH IN";
-            initSliderGesture();
-        }
+        document.getElementById('swipe-drag-handle').style.transform = 'translateX(0px)';
+        document.getElementById('swipe-bg-overlay').style.width = '0px';
+        document.getElementById('swipe-inner-text').innerText = currentShiftStatus === "PUNCHED_IN" ? "SLIDE TO PUNCH OUT" : "SLIDE TO PUNCH IN";
+        initSliderGesture();
     }
 
     function listenStrictDays() {
-        const strictCard = document.getElementById('strict-card');
-        const strictList = document.getElementById('strict-days-list');
         const todayStr = new Date().toISOString().split('T')[0];
-
         db.ref('strictDays').on('value', snap => {
             if (snap.exists()) {
-                strictList.innerHTML = "";
-                let count = 0;
+                const list = document.getElementById('strict-days-list'); list.innerHTML = ""; let count = 0;
                 snap.forEach(child => {
-                    const dateVal = child.val();
-                    if (dateVal >= todayStr) {
-                        count++;
-                        const isToday = dateVal === todayStr;
-                        const d = new Date(dateVal);
-                        const mon = d.toLocaleDateString('en-GB', { month: 'short' });
-                        const day = d.toLocaleDateString('en-GB', { day: 'numeric' });
-                        strictList.innerHTML += `<div class="strict-date-card ${isToday ? 'today' : ''}"><span class="mon">${isToday ? 'NOW' : mon}</span><span class="day">${day}</span></div>`;
+                    if (child.val() >= todayStr) {
+                        count++; const isToday = child.val() === todayStr, d = new Date(child.val());
+                        list.innerHTML += `<div class="strict-date-card ${isToday?'today':''}"><span class="mon">${isToday?'NOW':d.toLocaleDateString('en-GB',{month:'short'})}</span><span class="day">${d.toLocaleDateString('en-GB',{day:'numeric'})}</span></div>`;
                     }
                 });
-                strictCard.style.display = count > 0 ? "block" : "none";
+                document.getElementById('strict-card').style.display = count > 0 ? "block" : "none";
             }
         });
     }
 
+    // STUDENT ATTENDANCE LOOKUP CORE (FIXED: Auto Fallback Number Verification)
     function listenStudentAttendance() {
         const todayStr = new Date().toISOString().split('T')[0];
-        const listDiv = document.getElementById('attendance-list');
-        const countSpan = document.getElementById('present-count');
-
         fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
-            listDiv.innerHTML = "";
-            countSpan.innerText = snapshot.size;
-            
-            if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
-                return;
-            }
+            const listDiv = document.getElementById('attendance-list'); listDiv.innerHTML = "";
+            document.getElementById('present-count').innerText = snapshot.size;
+            if (snapshot.empty) { listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>'; return; }
 
             let i = 1; 
             for (const attDoc of snapshot.docs) {
@@ -708,9 +691,7 @@
                 if(!phone) {
                     try {
                         const studentProfile = await fs.collection("students").doc(displayName).get();
-                        if(studentProfile.exists) {
-                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
-                        }
+                        if(studentProfile.exists) { phone = studentProfile.data().phoneNumber || studentProfile.data().phone || ""; }
                     } catch(e) {}
                 }
 
@@ -722,7 +703,7 @@
                     const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
                     waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
                 } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
+                    waBtnHtml = `<div class="wa-action" style="opacity:0.25; background:rgba(255,59,48,0.1);" onclick="alert('Phone mapping parameters not found for ${displayName}')"><i class="fas fa-phone-slash" style="color:var(--apple-red);"></i></div>`;
                 }
 
                 listDiv.innerHTML += `
@@ -740,13 +721,9 @@
 
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
-            const container = document.getElementById('task-list');
             if(!snap.exists()) return;
-            container.innerHTML = "";
-            snap.forEach(child => {
-                const t = child.val();
-                container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
-            });
+            const container = document.getElementById('task-list'); container.innerHTML = "";
+            snap.forEach(child => { container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${child.val().task}</p><small>${new Date(child.val().date).toLocaleDateString('en-GB')}</small></div></div>`; });
         });
     }
 
