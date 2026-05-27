@@ -165,18 +165,18 @@
     h2 { font-size: 0.95rem; color: #fff; margin-top: 0; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
 
     .card { background: var(--card); padding: 18px; border-radius: 22px; border: 1px solid var(--border); margin-bottom: 20px; width: 100%; }
-    .table-container { overflow-x: auto; border-radius: 12px; background: rgba(0,0,0,0.2); }
+    .table-container { overflow-x: auto; border-radius: 12px; background: rgba(0,0,0,0.2); -webkit-overflow-scrolling: touch; }
     .scroll-box { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; }
     .scroll-container-height { max-height: 250px; overflow-y: auto; }
     .empty-msg { opacity: 0.5; text-align: center; padding: 15px; font-size: 12px; }
     .control-box { margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
     .sub-label { font-size: 0.7rem; opacity: 0.6; margin-bottom: 8px; }
     
-    table { width: 100%; border-collapse: collapse; min-width: 750px; }
+    table { width: 100%; border-collapse: collapse; min-width: 850px; }
     th { text-align: left; font-size: 0.6rem; text-transform: uppercase; opacity: 0.5; padding: 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #0a0a0a; z-index: 10; }
     td { padding: 8px 10px; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.02); vertical-align: middle; }
 
-    input, select, textarea { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 10px; width: 100%; font-size: 14px; margin-bottom: 10px; outline: none; }
+    input, select, textarea { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; padding: 8px; border-radius: 10px; width: 100%; font-size: 13px; margin-bottom: 0; outline: none; }
 
     .btn { padding: 10px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
     .btn-update { background: var(--success); color: black; }
@@ -237,7 +237,7 @@
 
     let staffData = {};
 
-    // 1. Staff Listener Node (Dual Salary Logic Active)
+    // 1. Staff Listener Node (Auto Safe Calculation Engine)
     db.ref('staff').on('value', snap => {
         const tbody = document.getElementById('staff-body');
         const select = document.getElementById('task-staff-select');
@@ -250,22 +250,23 @@
             const staffId = child.key;
             staffData[staffId] = user.name;
             
-            const advancedPaid = user.advanceDeducted || 0;
-            const totalFixedSalary = user.totalSalary || 0;
+            // Force dynamic type conversion fallback to bypass empty snapshot node errors
+            const advancedPaid = parseInt(user.advanceDeducted) || 0;
+            const totalFixedSalary = parseInt(user.totalSalary) || 0;
             const netPayable = totalFixedSalary - advancedPaid;
             
             tbody.innerHTML += `
                 <tr id="row-staff-${staffId}">
                     <td><b>${user.name}</b></td>
-                    <td><input type="number" id="wage-${staffId}" value="${user.perDayWage || 500}" style="width:45px; margin:0; padding:4px; background:none; border:1px solid rgba(255,255,255,0.1); color:white; font-size:11px;"></td>
+                    <td><input type="number" id="wage-${staffId}" value="${user.perDayWage || 500}" style="width:45px; background:none; border:1px solid rgba(255,255,255,0.1); color:white; font-size:11px; padding:4px;"></td>
                     <td><span style="color:#e0e0e0; font-weight:600;">₹${user.salary || 0}</span></td>
-                    <td><input type="number" id="totalsal-${staffId}" value="${totalFixedSalary}" placeholder="Set Fix" style="width:60px; margin:0; padding:4px; background:none; border:1px solid rgba(255,255,255,0.1); color:white; font-size:11px;"></td>
-                    <td><span style="color:var(--orange); font-weight:700;">₹${advancedPaid}</span></td>
-                    <td><span style="color:var(--success); font-weight:800;">₹${netPayable}</span></td>
+                    <td><input type="number" id="totalsal-${staffId}" value="${totalFixedSalary}" placeholder="Set Fix" style="width:55px; background:none; border:1px solid rgba(255,255,255,0.1); color:white; font-size:11px; padding:4px;"></td>
+                    <td><input type="number" id="advpaid-${staffId}" value="${advancedPaid}" placeholder="0" style="width:50px; background:none; border:1px solid rgba(255,159,10,0.2); color:var(--orange); font-size:11px; font-weight:700; padding:4px;"></td>
+                    <td><span style="color:var(--success); font-weight:800; font-size:12px;">₹${netPayable}</span></td>
                     <td><span style="color:var(--warning)"><i class="fas fa-fire"></i> ${user.streak || 0}</span></td>
                     <td><span id="late-count-${staffId}" style="color:var(--orange); font-weight:600;">0</span></td>
                     <td><span id="fine-count-${staffId}" style="color:var(--accent); font-weight:700;">₹0</span></td>
-                    <td><div class="action-btns"><button class="btn btn-update" onclick="updateWage('${staffId}')" title="Save All"><i class="fas fa-save"></i></button><button class="btn btn-remove" onclick="removeStaff('${staffId}', '${user.name}')"><i class="fas fa-trash"></i></button></div></td>
+                    <td><div class="action-btns"><button class="btn btn-update" onclick="updateWage('${staffId}')" title="Save Entry Data"><i class="fas fa-save"></i></button><button class="btn btn-remove" onclick="removeStaff('${staffId}', '${user.name}')"><i class="fas fa-trash"></i></button></div></td>
                 </tr>`;
             
             select.innerHTML += `<option value="${staffId}">${user.name}</option>`;
@@ -283,15 +284,13 @@
         });
     });
 
-    // 2. Student Cloud Firestore Ledger (Direct Status Click Option Implemented)
+    // 2. Student Cloud Firestore Ledger
     function loadStudentPayments() {
         const payBody = document.getElementById('payment-body');
         const totalCountSpan = document.getElementById('total-students');
         
         fs.collection("attendance").onSnapshot(async (snapshot) => {
             const studentDocs = snapshot.docs.map(doc => doc.data());
-            
-            // Extracting unique names and dynamic profiles mapping
             const studentNames = [...new Set(studentDocs.map(d => d.userName || d.studentName))].filter(Boolean);
             totalCountSpan.innerText = studentNames.length;
             payBody.innerHTML = "";
@@ -302,7 +301,6 @@
             }
 
             studentNames.forEach(name => {
-                // Fetch dynamic fields or fallback values for user profile logs
                 const profile = studentDocs.find(d => (d.userName === name || d.studentName === name)) || {};
                 const rawPhone = profile.userPhone || profile.studentPhone || "";
                 let waLink = rawPhone.toString().replace(/\D/g, '');
@@ -322,7 +320,7 @@
                             </span>
                         </td>
                         <td style="text-align:right">
-                            ${waLink ? `<a href="https://wa.me/${waLink}?text=Hello ${name}, your fee for ${currentMonth} is currently pending/due. Please settle it soon." target="_blank" class="btn btn-wa" style="background:${status==='Paid'?'rgba(255,255,255,0.03)':'#25d366'}; color:${status==='Paid'?'#666':'#000'}; pointer-events:${status==='Paid'?'none':''};"><i class="fab fa-whatsapp"></i> Ping</a>` : `<small style="opacity:0.3;">No Num</small>`}
+                            ${waLink ? `<a href="https://wa.me/${waLink}?text=Hello ${name}, your fee for ${currentMonth} is pending. Please settle it soon." target="_blank" class="btn btn-wa" style="background:${status==='Paid'?'rgba(255,255,255,0.03)':'#25d366'}; color:${status==='Paid'?'#666':'#000'}; pointer-events:${status==='Paid'?'none':''};"><i class="fab fa-whatsapp"></i> Ping</a>` : `<small style="opacity:0.3;">No Num</small>`}
                         </td>`;
 
                     if(row) row.innerHTML = rowHtml;
@@ -435,7 +433,7 @@
         if(finalStatus === 'approved') {
             db.ref(`staff/${staffId}`).transaction(currentProfile => {
                 if(currentProfile) {
-                    const totalAdvanceTaken = currentProfile.advanceDeducted || 0;
+                    const totalAdvanceTaken = parseInt(currentProfile.advanceDeducted) || 0;
                     currentProfile.advanceDeducted = totalAdvanceTaken + amount;
                 }
                 return currentProfile;
@@ -464,15 +462,17 @@
         }
     }
 
-    // 7. Integrated Save Handler (Rate + Fixed Salary)
+    // 7. Dynamic Triple-Save Handler (Rate + Fixed Salary + Direct Advance Override)
     function updateWage(id) { 
         const rateVal = document.getElementById('wage-'+id).value; 
         const totalSalVal = document.getElementById('totalsal-'+id).value; 
+        const advanceVal = document.getElementById('advpaid-'+id).value; 
         
         db.ref(`staff/${id}`).update({
             perDayWage: parseInt(rateVal) || 0,
-            totalSalary: parseInt(totalSalVal) || 0
-        }).then(() => alert("✨ Rate & Total Fixed Salary Dono Save Ho Gye!")); 
+            totalSalary: parseInt(totalSalVal) || 0,
+            advanceDeducted: parseInt(advanceVal) || 0
+        }).then(() => alert("✨ Rate, Total Fixed, aur Advanced Payment Teeno Data Save Ho Gye!")); 
     }
 
     // 8. Miscellaneous Operations Utilities
