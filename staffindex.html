@@ -69,14 +69,12 @@
         .stat-box small { display: block; font-size: 10px; color: var(--text-sec); margin-bottom: 6px; font-weight: 500; }
         .stat-box b { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
-        /* LIVE TIMER COUNTER DESIGN */
         .live-counter-panel {
             background: rgba(52, 199, 89, 0.06); border: 1px solid rgba(52, 199, 89, 0.15);
             border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
         }
         .timer-digits { font-family: monospace; font-size: 22px; font-weight: 700; color: var(--apple-green); letter-spacing: 1px; }
 
-        /* INTERACTIVE SLIDE TO UNLOCK PUNCH SYSTEM */
         .slider-wrapper {
             position: relative; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
             height: 64px; border-radius: 22px; display: flex; align-items: center; justify-content: center;
@@ -261,14 +259,14 @@
 
     if(!staffId) window.location.href = "index.html";
     
-    // UI Initials setup
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     const initials = staffName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
     document.getElementById('avatar-initials').innerText = initials;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     let dutyInterval;
-    let currentShiftStatus = "IDLE"; // IDLE, PUNCHED_IN, PUNCHED_OUT
+    let currentShiftStatus = "IDLE"; 
+    let activeShiftWindow = "NONE";  
 
     function toggleStudentList() {
         const listDiv = document.getElementById('attendance-list');
@@ -282,29 +280,41 @@
         }
     }
 
-    // FIXED: Corrected cutoff check parameters for 08:30 AM sharp
-    function checkLiveTimeWarning() {
-        if(currentShiftStatus !== "IDLE") return;
+    function updateShiftWindow() {
         const now = new Date();
         const hours = now.getHours();
-        const minutes = now.getMinutes();
         
-        if (hours > 8 || (hours === 8 && minutes >= 30)) {
-            const warningBanner = document.getElementById('late-warning');
-            if(warningBanner) warningBanner.style.display = "block";
+        if (hours >= 9 && hours < 13) {
+            activeShiftWindow = "MORNING";
+        } else if (hours >= 17 && hours < 22) {
+            activeShiftWindow = "EVENING";
+        } else {
+            activeShiftWindow = "OUTSIDE";
         }
     }
 
-    // NEW: Real-time working duration stop-watch logic
+    function checkLiveTimeWarning() {
+        updateShiftWindow();
+        if(currentShiftStatus !== "IDLE") return;
+        
+        if (activeShiftWindow === "MORNING") {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            if (hours > 8 || (hours === 8 && minutes >= 30)) {
+                const warningBanner = document.getElementById('late-warning');
+                if(warningBanner) warningBanner.style.display = "block";
+                return;
+            }
+        }
+        document.getElementById('late-warning').style.display = "none";
+    }
+
     function runLiveDutyClock(startTimeStr) {
         document.getElementById('duty-radar-panel').style.display = "block";
-        const todayStr = new Date().toISOString().split('T')[0];
         
-        // Convert time string to real date object
         const parts = startTimeStr.split(':');
         let shiftDate = new Date();
-        
-        // Clean AM/PM markers if present
         let hrs = parseInt(parts[0]);
         if(startTimeStr.toLowerCase().includes('pm') && hrs < 12) hrs += 12;
         if(startTimeStr.toLowerCase().includes('am') && hrs === 12) hrs = 0;
@@ -325,47 +335,72 @@
         }
         
         refreshTimer();
+        clearInterval(dutyInterval);
         dutyInterval = setInterval(refreshTimer, 1000);
     }
 
     async function initSystem() {
         const todayStr = new Date().toISOString().split('T')[0];
         
+        updateShiftWindow();
         checkLiveTimeWarning();
         setInterval(checkLiveTimeWarning, 30000);
 
-        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+        db.ref(`attendance/${staffId}/${todayStr}`).on('value', snap => {
             const sliderTrack = document.getElementById('swipe-track-container');
             const sliderText = document.getElementById('swipe-inner-text');
             const sliderHandle = document.getElementById('swipe-drag-handle');
             
+            sliderTrack.className = "slider-wrapper"; 
+            sliderHandle.innerHTML = '<i class="fas fa-chevron-right"></i>';
+
             if(snap.exists()) {
                 const attData = snap.val();
-                
-                if(attData.punchOutTime) {
-                    // Shift full complete state
-                    currentShiftStatus = "PUNCHED_OUT";
-                    sliderTrack.classList.add('disabled', 'out-state');
-                    sliderText.innerText = `SHIFT ENDED (${attData.punchOutTime})`;
-                    sliderHandle.innerHTML = '<i class="fas fa-lock"></i>';
-                    document.getElementById('late-warning').style.display = "none";
-                    
-                    if(attData.punchInTime || attData.time) {
-                        runLiveDutyClock(attData.punchInTime || attData.time);
-                        clearInterval(dutyInterval); // Freeze stopwatch at final state
-                    }
-                } else {
-                    // Punched in state -> ready to punch out
+                updateShiftWindow();
+
+                if(attData.punchInTime_mng && !attData.punchOutTime_mng) {
                     currentShiftStatus = "PUNCHED_IN";
                     sliderTrack.classList.add('out-state');
-                    sliderText.innerText = "SLIDE TO PUNCH OUT";
+                    sliderText.innerText = "SLIDE TO PUNCH OUT (MORNING)";
                     sliderHandle.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
-                    document.getElementById('late-warning').style.display = "none";
-                    
-                    runLiveDutyClock(attData.punchInTime || attData.time);
+                    runLiveDutyClock(attData.punchInTime_mng);
+                } 
+                else if (attData.punchInTime_evn && !attData.punchOutTime_evn) {
+                    currentShiftStatus = "PUNCHED_IN";
+                    sliderTrack.classList.add('out-state');
+                    sliderText.innerText = "SLIDE TO PUNCH OUT (EVENING)";
+                    sliderHandle.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
+                    runLiveDutyClock(attData.punchInTime_evn);
+                }
+                else if (attData.punchOutTime_mng && !attData.punchInTime_evn && activeShiftWindow === "EVENING") {
+                    currentShiftStatus = "IDLE";
+                    sliderText.innerText = "SLIDE TO PUNCH IN (EVENING)";
+                    document.getElementById('duty-radar-panel').style.display = "none";
+                    initSliderGesture();
+                }
+                else if (attData.punchOutTime_mng && attData.punchOutTime_evn) {
+                    currentShiftStatus = "PUNCHED_OUT";
+                    sliderTrack.classList.add('disabled', 'out-state');
+                    sliderText.innerText = `ALL SHIFTS CLOSED FOR TODAY`;
+                    sliderHandle.innerHTML = '<i class="fas fa-lock"></i>';
+                    runLiveDutyClock(attData.punchInTime_evn);
+                    clearInterval(dutyInterval);
+                }
+                else if (attData.punchOutTime_mng && !attData.punchInTime_evn && activeShiftWindow !== "EVENING") {
+                    currentShiftStatus = "PUNCHED_OUT";
+                    sliderTrack.classList.add('disabled', 'success-state');
+                    sliderText.innerText = `MORNING OVER. EVENING SHIFT OPEN AT 05 PM`;
+                    sliderHandle.innerHTML = '<i class="fas fa-clock"></i>';
+                    document.getElementById('duty-radar-panel').style.display = "none";
+                }
+                else {
+                    currentShiftStatus = "IDLE";
+                    sliderText.innerText = "SLIDE TO PUNCH IN";
+                    initSliderGesture();
                 }
             } else {
                 currentShiftStatus = "IDLE";
+                sliderText.innerText = "SLIDE TO PUNCH IN";
                 initSliderGesture();
             }
         });
@@ -405,8 +440,6 @@
         listenStudentAttendance(); 
         listenStrictDays();
     }
-
-    // NEW: Gestures Engine for Swipe Bar tracking
     function initSliderGesture() {
         const handle = document.getElementById('swipe-drag-handle');
         const container = document.getElementById('swipe-track-container');
@@ -436,8 +469,6 @@
             
             handle.style.transform = `translateX(${moveX}px)`;
             bg.style.width = `${moveX + 28}px`;
-            
-            // Fade text out as slider moves right
             text.style.opacity = 1 - (moveX / maxDrag);
         }
 
@@ -450,25 +481,21 @@
             const currentX = parseInt(handle.style.transform.replace(/[^0-9.]/g, '')) || 0;
             
             if (currentX >= maxDrag * 0.85) {
-                // Success trigger limit reached
                 handle.style.transform = `translateX(${maxDrag}px)`;
                 bg.style.width = '100%';
                 text.style.opacity = '1';
                 executePunchAction();
             } else {
-                // Snap back to default state
                 handle.style.transform = 'translateX(0px)';
                 bg.style.width = '0px';
                 text.style.opacity = '1';
             }
         }
 
-        // Desktop Events
         handle.addEventListener('mousedown', startDrag);
         window.addEventListener('mousemove', doDrag);
         window.addEventListener('mouseup', endDrag);
 
-        // Mobile Smart Touch Events
         handle.addEventListener('touchstart', startDrag);
         window.addEventListener('touchmove', doDrag, { passive: true });
         window.addEventListener('touchend', endDrag);
@@ -476,9 +503,9 @@
 
     function executePunchAction() {
         if(currentShiftStatus === "IDLE") {
-            markAttendance(); // Process Punch In
+            markAttendance(); 
         } else if(currentShiftStatus === "PUNCHED_IN") {
-            processPunchOut(); // Process Punch Out
+            processPunchOut(); 
         }
     }
 
@@ -492,45 +519,90 @@
 
     function markAttendance() {
         if (!navigator.geolocation) return alert("Location not supported.");
+        
+        updateShiftWindow();
+        if (activeShiftWindow === "OUTSIDE") {
+            alert("Punch Error: Standard operating windows are closed. (Morning 9-1 | Evening 5-10)");
+            resetSliderUI();
+            return;
+        }
+
         document.getElementById('swipe-inner-text').innerText = "LOCATING POSITION...";
 
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
+            async (pos) => {
                 const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
                 if (dist <= 100) { 
                     const now = new Date();
                     const todayStr = now.toISOString().split('T')[0];
-                    const hours = now.getHours();
-                    const minutes = now.getMinutes();
+                    const timeString = now.toLocaleTimeString();
                     
-                    let isLateToday = false;
-                    if (hours > 8 || (hours === 8 && minutes >= 30)) {
-                        isLateToday = true;
-                    }
+                    const staffSnap = await db.ref(`staff/${staffId}`).once('value');
+                    const staffProfile = staffSnap.val() || {};
+                    const baseDailyWage = staffProfile.perDayWage || 500;
+                    const halfShiftWage = Math.round(baseDailyWage / 2); 
 
-                    if (isLateToday) {
-                        const proceed = confirm("🚨 TIME EXCEEDED! Past 08:30 AM. Punching in now will deduct ₹200 penalty. Click OK to accept.");
-                        if (!proceed) { resetSliderUI(); return; }
-                    }
+                    const attSnap = await db.ref(`attendance/${staffId}/${todayStr}`).once('value');
+                    const existingAtt = attSnap.val() || {};
 
-                    db.ref(`attendance/${staffId}/${todayStr}`).set({ 
-                        time: now.toLocaleTimeString(),
-                        punchInTime: now.toLocaleTimeString(),
-                        status: "Present", 
+                    let updateData = {
                         name: staffName,
-                        isLate: isLateToday
-                    }).then(() => {
-                        db.ref(`staff/${staffId}`).transaction(s => { 
-                            if (s) { 
-                                const baseWage = s.perDayWage || 500;
-                                const netDailyEarn = isLateToday ? (baseWage - 200) : baseWage;
-                                s.salary = (s.salary || 0) + netDailyEarn; 
-                                s.streak = (s.streak || 0) + 1; 
-                            } 
-                            return s; 
-                        });
-                        location.reload();
+                        status: "Present"
+                    };
+
+                    let earnedAmount = 0;
+
+                    if (activeShiftWindow === "MORNING") {
+                        if (existingAtt.morningPaid) {
+                            alert("Security Bypass Blocked: Morning split wage already loaded.");
+                            resetSliderUI();
+                            return;
+                        }
+                        
+                        let isLateToday = false;
+                        const hours = now.getHours();
+                        const minutes = now.getMinutes();
+                        if (hours > 8 || (hours === 8 && minutes >= 30)) {
+                            isLateToday = true;
+                        }
+
+                        if (isLateToday) {
+                            const proceed = confirm("🚨 TIME EXCEEDED! Past 08:30 AM. Punching in now will deduct ₹200 penalty from morning payout. Click OK to accept.");
+                            if (!proceed) { resetSliderUI(); return; }
+                        }
+
+                        updateData.punchInTime_mng = timeString;
+                        updateData.time = timeString; 
+                        updateData.morningPaid = true;
+                        updateData.isLate = isLateToday;
+                        
+                        earnedAmount = isLateToday ? (halfShiftWage - 200) : halfShiftWage;
+
+                    } else if (activeShiftWindow === "EVENING") {
+                        if (existingAtt.eveningPaid) {
+                            alert("Security Bypass Blocked: Evening split wage already loaded.");
+                            resetSliderUI();
+                            return;
+                        }
+
+                        updateData.punchInTime_evn = timeString;
+                        updateData.eveningPaid = true;
+                        earnedAmount = halfShiftWage;
+                    }
+
+                    await db.ref(`attendance/${staffId}/${todayStr}`).update(updateData);
+                    
+                    await db.ref(`staff/${staffId}`).transaction(s => {
+                        if (s) {
+                            s.salary = (s.salary || 0) + earnedAmount;
+                            if (activeShiftWindow === "MORNING") {
+                                s.streak = (s.streak || 0) + 1;
+                            }
+                        }
+                        return s;
                     });
+
+                    location.reload();
                 } else {
                     alert(`Access Denied! Distance: ${Math.round(dist)}m. Must be within 100m range.`);
                     resetSliderUI();
@@ -540,24 +612,33 @@
         );
     }
 
-    // NEW SHIFT FEATURE: Process Punch Out Closure
     function processPunchOut() {
-        if(!confirm("Are you sure you want to Punch Out and close your today's shift?")) {
+        updateShiftWindow();
+        if(!confirm(`Are you sure you want to Punch Out of your current shift?`)) {
             resetSliderUI();
             return;
         }
         
         const now = new Date();
         const todayStr = now.toISOString().split('T')[0];
-        
-        db.ref(`attendance/${staffId}/${todayStr}`).update({
-            punchOutTime: now.toLocaleTimeString()
-        }).then(() => {
-            alert("Shift ended successfully. Have a great evening!");
-            location.reload();
-        }).catch(err => {
-            alert("Error logging punch out.");
-            resetSliderUI();
+        const timeString = now.toLocaleTimeString();
+
+        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+            if(!snap.exists()) return resetSliderUI();
+            const data = snap.val();
+            let closureData = {};
+
+            if (data.punchInTime_mng && !data.punchOutTime_mng) {
+                closureData.punchOutTime_mng = timeString;
+                closureData.punchOutTime = timeString; 
+            } else if (data.punchInTime_evn && !data.punchOutTime_evn) {
+                closureData.punchOutTime_evn = timeString;
+            }
+
+            db.ref(`attendance/${staffId}/${todayStr}`).update(closureData).then(() => {
+                alert("Shift window checked out safely. Goodbye!");
+                location.reload();
+            });
         });
     }
 
@@ -569,9 +650,12 @@
         handle.style.transform = 'translateX(0px)';
         bg.style.width = '0px';
         text.style.opacity = '1';
-        text.innerText = currentShiftStatus === "PUNCHED_IN" ? "SLIDE TO PUNCH OUT" : "SLIDE TO PUNCH IN";
         
-        if(currentShiftStatus === "PUNCHED_IN") {
+        if (currentShiftStatus === "PUNCHED_IN") {
+            text.innerText = "SLIDE TO PUNCH OUT";
+            initSliderGesture();
+        } else {
+            text.innerText = "SLIDE TO PUNCH IN";
             initSliderGesture();
         }
     }
@@ -673,7 +757,6 @@
     }
 
     initSystem();
-    // Re-attach slider touch points fallback listeners
     setTimeout(resetSliderUI, 1200);
 </script>
 </body>
