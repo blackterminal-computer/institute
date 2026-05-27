@@ -108,10 +108,10 @@
         .btn-approve { background: var(--success); color: #000; width: 100%; padding: 8px; font-size: 11px; }
         .btn-reject { background: rgba(255,62,62,0.15); color: var(--accent); width: 100%; padding: 8px; font-size: 11px; border: 1px solid rgba(255,62,62,0.2); }
 
-        /* NEW History Badge Styles */
-        .badge-history { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-        .history-approved { background: rgba(46, 204, 113, 0.15); color: var(--success); border: 1px solid rgba(46, 204, 113, 0.3); }
-        .history-rejected { background: rgba(255, 62, 62, 0.15); color: var(--accent); border: 1px solid rgba(255, 62, 62, 0.3); }
+        /* NEW History Ledger Utility Styles */
+        .badge-history { padding: 3px 8px; border-radius: 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; display: inline-block; }
+        .history-approved { background: rgba(46, 204, 113, 0.12); color: var(--success); border: 1px solid rgba(46, 204, 113, 0.25); }
+        .history-rejected { background: rgba(255, 62, 62, 0.12); color: var(--accent); border: 1px solid rgba(255, 62, 62, 0.25); }
 
         @media (min-width: 768px) {
             .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
@@ -198,10 +198,10 @@
                 </div>
             </div>
 
-            <div class="card" id="advance-history-card">
-                <h2><i class="fas fa-history" style="color:var(--info);"></i> Advance History (<span id="hist-month">--</span>)</h2>
+            <div class="card">
+                <h2><i class="fas fa-history" style="color:var(--info);"></i> Advance History Ledger (<span id="hist-month">--</span>)</h2>
                 <div id="advance-history-container" style="max-height: 250px; overflow-y: auto;">
-                    <p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No logs for this month</p>
+                    <p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">Loading transaction history...</p>
                 </div>
             </div>
 
@@ -390,7 +390,7 @@
         attCountDisplay.innerText = "PRESENT: " + count;
     });
 
-    // Real-time Pending Advance Request Engine
+    // Real-time Active Advance Requests Monitor
     db.ref('advance_requests').on('value', snap => {
         const container = document.getElementById('advance-requests-container');
         container.innerHTML = "";
@@ -402,6 +402,23 @@
                 staffChild.forEach(requestChild => {
                     const reqId = requestChild.key;
                     const reqData = requestChild.val();
+
+                    // Agar dashboard par status automatic approve/rejected ho chuka hai, toh directly data history ledger me push karega
+                    if(reqData.status === "approved" || reqData.status === "rejected") {
+                        const directLog = {
+                            staffId: staffId,
+                            staffName: reqData.staffName || "Staff Member",
+                            amount: reqData.requestedAmount || 0,
+                            reason: reqData.reason || "Not specified",
+                            status: reqData.status,
+                            actionDate: reqData.dateString || new Date().toLocaleDateString('en-GB'),
+                            timestamp: reqData.timestamp || Date.now()
+                        };
+                        db.ref(`advance_history/${currentMonth}/${reqId}`).set(directLog).then(() => {
+                            db.ref(`advance_requests/${staffId}/${reqId}`).remove();
+                        });
+                        return;
+                    }
 
                     if(reqData.status === "pending") {
                         hasPending = true;
@@ -430,41 +447,45 @@
                 });
             });
         }
+
         if(!hasPending) {
             container.innerHTML = '<p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No active requests from staff</p>';
         }
     });
 
-    // NEW: Month-End Advance History Real-time Listener Engine
+    // NEW REAL-TIME HISTORY LEDGER: Month-End Tak Store Karega 
     db.ref(`advance_history/${currentMonth}`).on('value', snap => {
-        const historyContainer = document.getElementById('advance-history-container');
-        historyContainer.innerHTML = "";
+        const histContainer = document.getElementById('advance-history-container');
+        histContainer.innerHTML = "";
         
         if(snap.exists()) {
             snap.forEach(child => {
                 const item = child.val();
-                const badgeClass = item.status === "approved" ? "history-approved" : "history-rejected";
+                const badgeStyle = item.status === "approved" ? "history-approved" : "history-rejected";
                 
-                historyContainer.innerHTML += `
-                    <div class="advance-item" style="border-left: 3px solid ${item.status === 'approved' ? 'var(--success)' : 'var(--accent)'}; padding: 10px 14px;">
-                        <div class="adv-meta" style="margin:0;">
+                histContainer.innerHTML += `
+                    <div class="advance-item" style="border-left:3px solid ${item.status === 'approved' ? 'var(--success)' : 'var(--accent)'}; padding:10px 14px;">
+                        <div class="adv-meta" style="margin:0; align-items: center;">
                             <div>
-                                <b style="font-size:12px; color:#fff;">${item.staffName}</b>
-                                <div style="font-size:9px; opacity:0.4; margin-top:1px;">Resolved: ${item.actionDate || 'N/A'}</div>
+                                <b style="font-size:12.5px; color:#fff;">${item.staffName}</b>
+                                <div style="font-size:10px; color:#aaa; opacity:0.8; margin-top:2px;">
+                                    <i class="fas fa-receipt" style="font-size:9px; color:var(--orange)"></i> ${item.reason || 'No Reason'}
+                                </div>
+                                <div style="font-size:8.5px; opacity:0.4; margin-top:3px;">Date: ${item.actionDate}</div>
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:13px; font-weight:800; color:${item.status === 'approved' ? 'var(--success)' : '#777'};">₹${item.amount}</div>
-                                <span class="badge-history ${badgeClass}">${item.status}</span>
+                                <div style="font-size:14px; font-weight:800; color:${item.status === 'approved' ? 'var(--success)' : '#777'};">₹${item.amount}</div>
+                                <span class="badge-history ${badgeStyle}">${item.status}</span>
                             </div>
                         </div>
                     </div>`;
             });
         } else {
-            historyContainer.innerHTML = '<p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No logs for this month</p>';
+            histContainer.innerHTML = '<p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No logs for this month</p>';
         }
     });
 
-    // UPDATED TRANSACTION MANAGER: With Automated History Logger
+    // ADVANCED ENGINE TRANSACTION CONTROLLER 
     function resolveAdvance(staffId, requestId, finalStatus, amount) {
         const msg = finalStatus === 'approved' 
             ? `Confirm Approval? ₹${amount} staff ke main wallet balance se auto-deduct ho jayega.` 
@@ -472,15 +493,15 @@
 
         if(!confirm(msg)) return;
 
-        // Fetch direct current snapshot reference point once
         db.ref(`advance_requests/${staffId}/${requestId}`).once('value').then(snapshot => {
             if(!snapshot.exists()) return;
-            const reqData = snapshot.val();
+            const data = snapshot.val();
 
-            const historyLogData = {
+            const recordHistoryLog = {
                 staffId: staffId,
-                staffName: reqData.staffName,
-                amount: reqData.requestedAmount,
+                staffName: data.staffName,
+                amount: data.requestedAmount,
+                reason: data.reason || "Not specified",
                 status: finalStatus,
                 actionDate: new Date().toLocaleDateString('en-GB'),
                 timestamp: Date.now()
@@ -493,28 +514,25 @@
                         if(currentBalance >= amount) {
                             currentProfile.salary = currentBalance - amount;
                         } else {
-                            alert("Transaction Error: Staff ke paas sufficient balance nahi hai!");
+                            alert("Transaction Error: Staff ke paas par पर्याप्त (sufficient) balance nahi hai!");
                             return; 
                         }
                     }
                     return currentProfile;
                 }, (error, committed) => {
                     if(committed) {
-                        // Delete node trigger and record log history reference concurrently
-                        db.ref(`advance_requests/${staffId}/${requestId}`).remove()
-                        .then(() => {
-                            db.ref(`advance_history/${currentMonth}`).push(historyLogData);
-                            alert("🚀 Advance Request Approved & Wallet Balance Deducted Successfully!");
+                        db.ref(`advance_requests/${staffId}/${requestId}`).remove().then(() => {
+                            db.ref(`advance_history/${currentMonth}/${requestId}`).set(recordHistoryLog);
+                            alert("🚀 Advance Request Approved & History Log Archived!");
                         });
                     } else {
                         alert("Fatal Error: Transaction crashed or aborted.");
                     }
                 });
             } else {
-                db.ref(`advance_requests/${staffId}/${requestId}`).remove()
-                .then(() => {
-                    db.ref(`advance_history/${currentMonth}`).push(historyLogData);
-                    alert("❌ Request Rejected. Logged into history ledger.");
+                db.ref(`advance_requests/${staffId}/${requestId}`).remove().then(() => {
+                    db.ref(`advance_history/${currentMonth}/${requestId}`).set(recordHistoryLog);
+                    alert("❌ Request Rejected & Logged into history repository.");
                 });
             }
         });
