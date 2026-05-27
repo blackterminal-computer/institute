@@ -98,7 +98,6 @@
         .status-paid { background: #2ecc71; color: #000; }
         .status-unpaid { background: #ff3e3e; color: #fff; }
 
-        /* NEW: Advance Request Dashboard Custom Styles */
         .advance-item {
             background: rgba(255,255,255,0.02); padding: 14px; border-radius: 16px;
             border: 1px solid var(--border); margin-bottom: 10px;
@@ -108,6 +107,11 @@
         .adv-buttons { display: flex; gap: 8px; margin-top: 10px; }
         .btn-approve { background: var(--success); color: #000; width: 100%; padding: 8px; font-size: 11px; }
         .btn-reject { background: rgba(255,62,62,0.15); color: var(--accent); width: 100%; padding: 8px; font-size: 11px; border: 1px solid rgba(255,62,62,0.2); }
+
+        /* NEW History Badge Styles */
+        .badge-history { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+        .history-approved { background: rgba(46, 204, 113, 0.15); color: var(--success); border: 1px solid rgba(46, 204, 113, 0.3); }
+        .history-rejected { background: rgba(255, 62, 62, 0.15); color: var(--accent); border: 1px solid rgba(255, 62, 62, 0.3); }
 
         @media (min-width: 768px) {
             .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
@@ -147,7 +151,6 @@
                     </table>
                 </div>
             </div>
-
             <div class="card">
                 <h2>
                     <i class="fas fa-wallet"></i> Student Fees (<span id="cur-month">--</span>) 
@@ -190,18 +193,24 @@
         <div class="right-col">
             <div class="card" id="advance-desk-card">
                 <h2><i class="fas fa-hand-holding-usd" style="color:var(--orange);"></i> Advance Salary Requests</h2>
-                <div id="advance-requests-container" style="max-height: 300px; overflow-y: auto;">
+                <div id="advance-requests-container" style="max-height: 250px; overflow-y: auto;">
                     <p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No active requests from staff</p>
+                </div>
+            </div>
+
+            <div class="card" id="advance-history-card">
+                <h2><i class="fas fa-history" style="color:var(--info);"></i> Advance History (<span id="hist-month">--</span>)</h2>
+                <div id="advance-history-container" style="max-height: 250px; overflow-y: auto;">
+                    <p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No logs for this month</p>
                 </div>
             </div>
 
             <div class="card">
                 <h2><i class="fas fa-fingerprint"></i> Today's Attendance</h2>
-                <div id="attendance-list" style="max-height: 250px; overflow-y: auto;">
+                <div id="attendance-list" style="max-height: 200px; overflow-y: auto;">
                     <p style="opacity: 0.5; text-align: center; padding: 20px;">Fetching logs...</p>
                 </div>
             </div>
-
             <div class="card">
                 <h2><i class="fas fa-calendar-alt"></i> Date Controls</h2>
                 <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
@@ -231,6 +240,7 @@
         </div>
     </div>
 </div>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -247,6 +257,7 @@
 
     const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
     document.getElementById('cur-month').innerText = currentMonth;
+    document.getElementById('hist-month').innerText = currentMonth;
 
     let staffData = {};
 
@@ -347,7 +358,6 @@
     }
 
     const today = new Date().toISOString().split('T')[0];
-    
     db.ref('attendance').on('value', snap => {
         const attList = document.getElementById('attendance-list');
         const attCountDisplay = document.getElementById('att-count');
@@ -379,7 +389,8 @@
         if(count === 0) attList.innerHTML = '<p style="opacity: 0.5; text-align: center; padding:20px;">No one present</p>';
         attCountDisplay.innerText = "PRESENT: " + count;
     });
-    // NEW CONTROLLER: Real-time Advance Request Engine & Balance Auto-Deduction Logics
+
+    // Real-time Pending Advance Request Engine
     db.ref('advance_requests').on('value', snap => {
         const container = document.getElementById('advance-requests-container');
         container.innerHTML = "";
@@ -392,7 +403,6 @@
                     const reqId = requestChild.key;
                     const reqData = requestChild.val();
 
-                    // Sirf hum pending requests hi display monitor panel par load karenge
                     if(reqData.status === "pending") {
                         hasPending = true;
                         container.innerHTML += `
@@ -420,13 +430,41 @@
                 });
             });
         }
-
         if(!hasPending) {
             container.innerHTML = '<p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No active requests from staff</p>';
         }
     });
 
-    // NEW TRANSACTION MANAGER: Modifies safe values & auto deducts cash flow counters
+    // NEW: Month-End Advance History Real-time Listener Engine
+    db.ref(`advance_history/${currentMonth}`).on('value', snap => {
+        const historyContainer = document.getElementById('advance-history-container');
+        historyContainer.innerHTML = "";
+        
+        if(snap.exists()) {
+            snap.forEach(child => {
+                const item = child.val();
+                const badgeClass = item.status === "approved" ? "history-approved" : "history-rejected";
+                
+                historyContainer.innerHTML += `
+                    <div class="advance-item" style="border-left: 3px solid ${item.status === 'approved' ? 'var(--success)' : 'var(--accent)'}; padding: 10px 14px;">
+                        <div class="adv-meta" style="margin:0;">
+                            <div>
+                                <b style="font-size:12px; color:#fff;">${item.staffName}</b>
+                                <div style="font-size:9px; opacity:0.4; margin-top:1px;">Resolved: ${item.actionDate || 'N/A'}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:13px; font-weight:800; color:${item.status === 'approved' ? 'var(--success)' : '#777'};">₹${item.amount}</div>
+                                <span class="badge-history ${badgeClass}">${item.status}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        } else {
+            historyContainer.innerHTML = '<p style="opacity: 0.5; text-align: center; padding: 15px; font-size: 12px;">No logs for this month</p>';
+        }
+    });
+
+    // UPDATED TRANSACTION MANAGER: With Automated History Logger
     function resolveAdvance(staffId, requestId, finalStatus, amount) {
         const msg = finalStatus === 'approved' 
             ? `Confirm Approval? ₹${amount} staff ke main wallet balance se auto-deduct ho jayega.` 
@@ -434,33 +472,52 @@
 
         if(!confirm(msg)) return;
 
-        if(finalStatus === 'approved') {
-            // Firebase single database atomicity transaction trigger
-            db.ref(`staff/${staffId}`).transaction(currentProfile => {
-                if(currentProfile) {
-                    const currentBalance = currentProfile.salary || 0;
-                    if(currentBalance >= amount) {
-                        currentProfile.salary = currentBalance - amount;
-                    } else {
-                        alert("Transaction Error: Staff ke paas par पर्याप्त (sufficient) balance nahi hai!");
-                        return; // Operations skip boundary
+        // Fetch direct current snapshot reference point once
+        db.ref(`advance_requests/${staffId}/${requestId}`).once('value').then(snapshot => {
+            if(!snapshot.exists()) return;
+            const reqData = snapshot.val();
+
+            const historyLogData = {
+                staffId: staffId,
+                staffName: reqData.staffName,
+                amount: reqData.requestedAmount,
+                status: finalStatus,
+                actionDate: new Date().toLocaleDateString('en-GB'),
+                timestamp: Date.now()
+            };
+
+            if(finalStatus === 'approved') {
+                db.ref(`staff/${staffId}`).transaction(currentProfile => {
+                    if(currentProfile) {
+                        const currentBalance = currentProfile.salary || 0;
+                        if(currentBalance >= amount) {
+                            currentProfile.salary = currentBalance - amount;
+                        } else {
+                            alert("Transaction Error: Staff ke paas sufficient balance nahi hai!");
+                            return; 
+                        }
                     }
-                }
-                return currentProfile;
-            }, (error, committed) => {
-                if(committed) {
-                    // Update advance ledger node tree data points
-                    db.ref(`advance_requests/${staffId}/${requestId}`).update({ status: "approved" })
-                    .then(() => alert("🚀 Advance Request Approved & Wallet Balance Deducted Successfully!"));
-                } else {
-                    alert("Fatal Error: Transaction crashed or aborted.");
-                }
-            });
-        } else {
-            // Reject condition logic node tracking parameters modification only
-            db.ref(`advance_requests/${staffId}/${requestId}`).update({ status: "rejected" })
-            .then(() => alert("❌ Request Rejected. No changes made to wallet balance."));
-        }
+                    return currentProfile;
+                }, (error, committed) => {
+                    if(committed) {
+                        // Delete node trigger and record log history reference concurrently
+                        db.ref(`advance_requests/${staffId}/${requestId}`).remove()
+                        .then(() => {
+                            db.ref(`advance_history/${currentMonth}`).push(historyLogData);
+                            alert("🚀 Advance Request Approved & Wallet Balance Deducted Successfully!");
+                        });
+                    } else {
+                        alert("Fatal Error: Transaction crashed or aborted.");
+                    }
+                });
+            } else {
+                db.ref(`advance_requests/${staffId}/${requestId}`).remove()
+                .then(() => {
+                    db.ref(`advance_history/${currentMonth}`).push(historyLogData);
+                    alert("❌ Request Rejected. Logged into history ledger.");
+                });
+            }
+        });
     }
 
     function addHoliday() { const d = document.getElementById('holiday-date').value; if(d) db.ref('holidays').push(d).then(() => document.getElementById('holiday-date').value = ""); }
