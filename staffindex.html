@@ -417,7 +417,6 @@
     const staffId = localStorage.getItem('bt_staff_id');
     const staffName = localStorage.getItem('bt_staff_name') || "Staff";
 
-    // Redirect restriction if identifier is absent
     if(!staffId) {
         window.location.href = "index.html";
     }
@@ -440,7 +439,6 @@
     async function initSystem() {
         const todayStr = new Date().toISOString().split('T')[0];
         
-        // Check current lock status for daily attendance check
         db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
             if(snap.exists()) {
                 const btn = document.getElementById('att-btn');
@@ -451,7 +449,6 @@
             }
         });
 
-        // Real-time metadata listeners
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
@@ -469,7 +466,7 @@
         loadTasks();
         listenStudentAttendance(); 
         listenStrictDays();
-        generateDefaultersList(); // Invoke the 2-day absenteeism scan engine
+        generateDefaultersList(); 
     }
 
     function listenStrictDays() {
@@ -497,12 +494,11 @@
         });
     }
 
-    // 2-DAY ABSENTEE ANALYTICS ENGINE
+    // 🔥 DYNAMIC 48HR ABSENT SCAN ENGINE
     async function generateDefaultersList() {
         const listContainer = document.getElementById('defaulter-list');
         const countSpan = document.getElementById('defaulter-count');
         
-        // Generate ISO string format dates for yesterday and the day before yesterday
         const d1 = new Date(); d1.setDate(d1.getDate() - 1);
         const yesterdayStr = d1.toISOString().split('T')[0];
 
@@ -510,18 +506,15 @@
         const dayBeforeStr = d2.toISOString().split('T')[0];
 
         try {
-            // Get all registered students profiles
             const allStudentsSnap = await fs.collection("students").get();
             if(allStudentsSnap.empty) {
-                listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No student records found</p>';
+                listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No student profiles found.</p>';
                 return;
             }
 
-            // Get attendance maps for yesterday and dayBefore
             const yesterdayAttSnap = await fs.collection("attendance").where("date", "==", yesterdayStr).get();
             const dayBeforeAttSnap = await fs.collection("attendance").where("date", "==", dayBeforeStr).get();
 
-            // Store maps of present student identities
             const presentYesterday = new Set();
             const presentDayBefore = new Set();
 
@@ -540,168 +533,7 @@
             let defaulterCount = 0;
             listContainer.innerHTML = "";
 
-            // Evaluate mapping intersection (Student must be absent on BOTH dates)
             for (const studentDoc of allStudentsSnap.docs) {
-                const sName = studentDoc.id; // Document path identifier as name
+                const sName = studentDoc.id; 
                 const sData = studentDoc.data();
                 const normalizedName = sName.trim().toLowerCase();
-
-                // If student is NOT present in yesterday's list AND NOT present in dayBefore's list
-                if (!presentYesterday.has(normalizedName) && !presentDayBefore.has(normalizedName)) {
-                    defaulterCount++;
-
-                    let rawPhone = sData.phoneNumber || sData.phone || "";
-                    const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-                    
-                    let callHtml = "";
-                    let waHtml = "";
-
-                    if(cleanPhone.length >= 10) {
-                        const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                        const msg = encodeURIComponent(`Hi ${sName}, you have been continuously absent from Black Terminal for the last 2 days. Please contact the management immediately.`);
-                        
-                        callHtml = `<a href="tel:${cleanPhone}" class="phone-action"><i class="fas fa-phone"></i></a>`;
-                        waHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                    } else {
-                        callHtml = `<div class="phone-action" style="opacity:0.2" onclick="alert('No phone record')"><i class="fas fa-phone"></i></div>`;
-                        waHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('No phone record')"><i class="fab fa-whatsapp"></i></div>`;
-                    }
-
-                    listContainer.innerHTML += `
-                        <div class="att-item" style="background: rgba(255, 159, 10, 0.02); border-color: rgba(255, 159, 10, 0.1);">
-                            <span class="att-name" style="color: #F2F2F7;"><i class="fas fa-user-slash" style="color:var(--apple-orange); font-size:11px; margin-right:6px;"></i>${sName}</span>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                ${callHtml}
-                                ${waHtml}
-                                <span style="font-size:10px; color:var(--apple-orange); font-weight:700; letter-spacing:0.5px; background:rgba(255,159,10,0.1); padding:4px 8px; border-radius:8px;">ABSENT 48H</span>
-                            </div>
-                        </div>`;
-                }
-            }
-
-            countSpan.innerText = defaulterCount;
-            if(defaulterCount === 0) {
-                listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px; color:var(--apple-green);">All students are track-synchronized.</p>';
-            }
-
-        } catch (error) {
-            console.error("Defaulters parsing loop failed:", error);
-            listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; color:var(--apple-red);">Data sync failed.</p>';
-        }
-    }
-
-    function listenStudentAttendance() {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const listDiv = document.getElementById('attendance-list');
-        const countSpan = document.getElementById('present-count');
-
-        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
-            listDiv.innerHTML = "";
-            countSpan.innerText = snapshot.size;
-            
-            if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
-                return;
-            }
-
-            let i = 1; 
-            for (const attDoc of snapshot.docs) {
-                const data = attDoc.data();
-                const displayName = data.userName || data.studentName || "Unknown Student";
-                
-                let phone = data.userPhone || data.phoneNumber || data.phone || "";
-                
-                if(!phone) {
-                    try {
-                        const studentProfile = await fs.collection("students").doc(displayName).get();
-                        if(studentProfile.exists) {
-                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
-                        }
-                    } catch(e) { console.log("Profile sync error", e); }
-                }
-
-                const cleanPhone = phone.toString().replace(/\D/g, '');
-                let waBtnHtml = "";
-                
-                if(cleanPhone.length >= 10) {
-                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
-                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
-                } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
-                }
-
-                listDiv.innerHTML += `
-                    <div class="att-item">
-                        <span class="att-name">${i}. ${displayName}</span>
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            ${waBtnHtml}
-                            <span style="font-size:11px; color:var(--apple-green); font-weight:700; letter-spacing:0.5px;">PRESENT</span>
-                        </div>
-                    </div>`;
-                i++;
-            }
-        });
-    }
-
-    // Haversine formula implementation for geolocation validation
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; 
-        const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-        const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-    }
-
-    function markAttendance() {
-        const btn = document.getElementById('att-btn');
-        if (!navigator.geolocation) return alert("Location not supported.");
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOCATING...';
-        btn.disabled = true;
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-                if (dist <= 100) { 
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                        db.ref(`staff/${staffId}`).transaction(s => { 
-                            if (s) { 
-                                s.salary = (s.salary || 0) + (s.perDayWage || 500); 
-                                s.streak = (s.streak || 0) + 1; 
-                            } 
-                            return s; 
-                        });
-                        location.reload();
-                    });
-                } else {
-                    alert(`Access Denied! Distance: ${Math.round(dist)}m. You must be within 100m.`);
-                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
-                }
-            },
-            () => { alert("Enable GPS precision."); btn.disabled = false; }, { enableHighAccuracy: true }
-        );
-    }
-
-    function loadTasks() {
-        db.ref(`tasks/${staffId}`).on('value', snap => {
-            const container = document.getElementById('task-list');
-            if(!snap.exists()) return;
-            container.innerHTML = "";
-            snap.forEach(child => {
-                const t = child.val();
-                container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
-            });
-        });
-    }
-
-    function submitLead() {
-        const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
-        if(!n || p.length < 10) return alert("Check details");
-        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { alert("Success!"); location.reload(); });
-    }
-
-    initSystem();
-</script>
-</body>
-</html>
