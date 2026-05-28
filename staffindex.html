@@ -351,7 +351,7 @@
             <i class="fas fa-exclamation-triangle"></i> Defaulters List ( <span id="defaulter-count">0</span> )
         </h3>
         <div id="defaulter-list">
-            <p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">Scanning absence logs & profiles...</p>
+            <p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">Scanning 48hr absence logs...</p>
         </div>
     </div>
 
@@ -382,8 +382,8 @@
 
     <p class="footer-text">TERMINAL v2.9 • ENCRYPTED</p>
 </div>
+
 <script>
-    // Firebase Web App Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -394,7 +394,6 @@
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
     
-    // Initialize standard instances
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();  
     const fs = firebase.firestore(); 
@@ -409,10 +408,16 @@
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
+    // Global Visibility Tracker to prevent reset on stream snapshot updates
+    let isStudentListVisible = false;
+
     function toggleStudentList() {
         const listDiv = document.getElementById('attendance-list');
         const btn = document.getElementById('toggle-list-btn');
-        if (listDiv.style.display === "none") {
+        
+        isStudentListVisible = !isStudentListVisible;
+        
+        if (isStudentListVisible) {
             listDiv.style.display = "block";
             btn.innerText = "HIDE";
         } else {
@@ -479,7 +484,6 @@
         });
     }
 
-    // Dynamic Live Tracker (Last present date se aaj tak exact absent days counter)
     async function generateDefaultersList() {
         const listContainer = document.getElementById('defaulter-list');
         const countSpan = document.getElementById('defaulter-count');
@@ -537,7 +541,6 @@
 
                 if (presentToday.has(normalizedName)) continue;
 
-                // Threshold Check: Continuous 48 Hour Absence
                 if (!presentYesterday.has(normalizedName) && !presentDayBefore.has(normalizedName)) {
                     defaulterCount++;
 
@@ -580,7 +583,7 @@
                             }
                         }
                     } catch (err) {
-                        console.log("Deep scan routing pointer indexing fallback for:", sName, err);
+                        console.log("Scan tree fail safe triggered", err);
                     }
 
                     let rawPhone = sData.phoneNumber || sData.phone || "";
@@ -619,7 +622,6 @@
 
         } catch (error) {
             console.error("Defaulters parsing loop failed:", error);
-            listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; color:var(--apple-red);">Data tracking sync failed.</p>';
         }
     }
 
@@ -627,13 +629,15 @@
         const todayStr = new Date().toISOString().split('T')[0];
         const listDiv = document.getElementById('attendance-list');
         const countSpan = document.getElementById('present-count');
+        const btn = document.getElementById('toggle-list-btn');
 
         fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
-            listDiv.innerHTML = "";
+            let htmlContent = "";
             countSpan.innerText = snapshot.size;
             
             if (snapshot.empty) {
-                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
+                htmlContent = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
+                listDiv.innerHTML = htmlContent;
                 return;
             }
 
@@ -650,7 +654,7 @@
                         if(studentProfile.exists) {
                             phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
                         }
-                    } catch(e) { console.log("Profile sync error", e); }
+                    } catch(e) { console.log("Profile lookup error", e); }
                 }
 
                 const cleanPhone = phone.toString().replace(/\D/g, '');
@@ -661,10 +665,10 @@
                     const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
                     waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
                 } else {
-                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
+                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found')"><i class="fab fa-whatsapp"></i></div>`;
                 }
 
-                listDiv.innerHTML += `
+                htmlContent += `
                     <div class="att-item">
                         <span class="att-name">${i}. ${displayName}</span>
                         <div style="display:flex; align-items:center; gap:12px;">
@@ -674,6 +678,18 @@
                     </div>`;
                 i++;
             }
+            
+            listDiv.innerHTML = htmlContent;
+
+            // Enforce UI State Persistence Check 
+            if (isStudentListVisible) {
+                listDiv.style.display = "block";
+                btn.innerText = "HIDE";
+            } else {
+                listDiv.style.display = "none";
+                btn.innerText = "SHOW";
+            }
+
             generateDefaultersList();
         });
     }
