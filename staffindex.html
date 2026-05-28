@@ -362,10 +362,10 @@
 
     <div class="card" style="border-left: 4px solid var(--apple-orange);">
         <h3 style="color: var(--apple-orange);">
-            <i class="fas fa-exclamation-triangle"></i> 2-Day Defaulters Call List ( <span id="defaulter-count">0</span> )
+            <i class="fas fa-exclamation-triangle"></i> Defaulters List ( <span id="defaulter-count">0</span> )
         </h3>
         <div id="defaulter-list">
-            <p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">Scanning 48hr absence logs...</p>
+            <p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">Scanning absence logs & profiles...</p>
         </div>
     </div>
 
@@ -394,7 +394,7 @@
         <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right"></i></button>
     </div>
 
-    <p class="footer-text">TERMINAL v2.8 • ENCRYPTED</p>
+    <p class="footer-text">TERMINAL v2.9 • ENCRYPTED</p>
 </div>
 
 <script>
@@ -494,11 +494,15 @@
         });
     }
 
-    // 🔥 DYNAMIC 48HR ABSENT SCAN ENGINE
+    // 🔥 DYNAMIC ABSENT TRACKER ENGINE (CALCULATES DAYS ABSENT SINCE LAST ATTENDANCE)
     async function generateDefaultersList() {
         const listContainer = document.getElementById('defaulter-list');
         const countSpan = document.getElementById('defaulter-count');
         
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+
         const d1 = new Date(); d1.setDate(d1.getDate() - 1);
         const yesterdayStr = d1.toISOString().split('T')[0];
 
@@ -512,11 +516,20 @@
                 return;
             }
 
+            // Real-time collections check for baseline mapping
             const yesterdayAttSnap = await fs.collection("attendance").where("date", "==", yesterdayStr).get();
             const dayBeforeAttSnap = await fs.collection("attendance").where("date", "==", dayBeforeStr).get();
+            const todayAttSnap = await fs.collection("attendance").where("date", "==", todayStr).get();
 
+            const presentToday = new Set();
             const presentYesterday = new Set();
             const presentDayBefore = new Set();
+
+            todayAttSnap.forEach(doc => {
+                const data = doc.data();
+                const identity = data.userName || data.studentName;
+                if(identity) presentToday.add(identity.trim().toLowerCase());
+            });
 
             yesterdayAttSnap.forEach(doc => {
                 const data = doc.data();
@@ -537,3 +550,213 @@
                 const sName = studentDoc.id; 
                 const sData = studentDoc.data();
                 const normalizedName = sName.trim().toLowerCase();
+
+                // Skip if student is already present today
+                if (presentToday.has(normalizedName)) continue;
+
+                // Threshold Check: Absent for last 2 continuous days (Yesterday + Day Before Yesterday)
+                if (!presentYesterday.has(normalizedName) && !presentDayBefore.has(normalizedName)) {
+                    defaulterCount++;
+
+                    // Deep-scan past attendance history to find the exact last presentation date
+                    let totalAbsentDays = "2+"; 
+                    try {
+                        const historySnap = await fs.collection("attendance")
+                            .where("studentName", "==", sName) 
+                            .orderBy("date", "desc")
+                            .get();
+
+                        let lastPresentDateStr = "";
+                        
+                        if(!historySnap.empty) {
+                            lastPresentDateStr = historySnap.docs[0].data().date;
+                        } else {
+                            // Fallback check matching userName field
+                            const altHistorySnap = await fs.collection("attendance")
+                                .where("userName", "==", sName)
+                                .orderBy("date", "desc")
+                                .get();
+                            if(!altHistorySnap.empty) {
+                                lastPresentDateStr = altHistorySnap.docs[0].data().date;
+                            }
+                        }
+
+                        if(lastPresentDateStr) {
+                            const lastPresentDate = new Date(lastPresentDateStr);
+                            lastPresentDate.setHours(0,0,0,0);
+                            
+                            // Math tracking difference
+                            const timeDiff = today.getTime() - lastPresentDate.getTime();
+                            const dayDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                            if (dayDiff > 0) {
+                                totalAbsentDays = dayDiff;
+                            }
+                        } else {
+                            // If no record exists at all in the system, check from profile creation date if available
+                            if(sData.createdAt) {
+                                const createdDate = new Date(sData.createdAt);
+                                createdDate.setHours(0,0,0,0);
+                                const timeDiff = today.getTime() - createdDate.getTime();
+                                totalAbsentDays = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                            }
+                        }
+                    } catch (err) {
+                        console.log("Deep scan order index note or query issue for:", sName, err);
+                    }
+
+                    let rawPhone = sData.phoneNumber || sData.phone || "";
+                    const cleanPhone = rawPhone.toString().replace(/\D/g, '');
+                    
+                    let callHtml = "";
+                    let waHtml = "";
+
+                    if(cleanPhone.length >= 10) {
+                        const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                        const msg = encodeURIComponent(`Hi ${sName}, you have been continuously absent from Black Terminal for the last ${totalAbsentDays} days. Please contact the management immediately.`);
+                        
+                        callHtml = `<a href="tel:${cleanPhone}" class="phone-action"><i class="fas fa-phone"></i></a>`;
+                        waHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                    } else {
+                        callHtml = `<div class="phone-action" style="opacity:0.2" onclick="alert('No contact number found.')"><i class="fas fa-phone"></i></div>`;
+                        waHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('No contact number found.')"><i class="fab fa-whatsapp"></i></div>`;
+                    }
+
+                    listContainer.innerHTML += `
+                        <div class="att-item" style="background: rgba(255, 159, 10, 0.02); border-color: rgba(255, 159, 10, 0.1);">
+                            <span class="att-name" style="color: #F2F2F7;"><i class="fas fa-user-slash" style="color:var(--apple-orange); font-size:11px; margin-right:6px;"></i>${sName}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                ${callHtml}
+                                ${waHtml}
+                                <span style="font-size:10px; color:var(--apple-red); font-weight:700; letter-spacing:0.5px; background:rgba(255,59,48,0.1); padding:4px 8px; border-radius:8px;">${totalAbsentDays} DAYS ABSENT</span>
+                            </div>
+                        </div>`;
+                }
+            }
+
+            countSpan.innerText = defaulterCount;
+            if(defaulterCount === 0) {
+                listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px; color:var(--apple-green);">All students are track-synchronized.</p>';
+            }
+
+        } catch (error) {
+            console.error("Defaulters parsing loop failed:", error);
+            listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; color:var(--apple-red);">Data tracking sync failed.</p>';
+        }
+    }
+
+    function listenStudentAttendance() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const listDiv = document.getElementById('attendance-list');
+        const countSpan = document.getElementById('present-count');
+
+        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
+            listDiv.innerHTML = "";
+            countSpan.innerText = snapshot.size;
+            
+            if (snapshot.empty) {
+                listDiv.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No students checked in</p>';
+                return;
+            }
+
+            let i = 1; 
+            for (const attDoc of snapshot.docs) {
+                const data = attDoc.data();
+                const displayName = data.userName || data.studentName || "Unknown Student";
+                
+                let phone = data.userPhone || data.phoneNumber || data.phone || "";
+                
+                if(!phone) {
+                    try {
+                        const studentProfile = await fs.collection("students").doc(displayName).get();
+                        if(studentProfile.exists) {
+                            phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
+                        }
+                    } catch(e) { console.log("Profile sync error", e); }
+                }
+
+                const cleanPhone = phone.toString().replace(/\D/g, '');
+                let waBtnHtml = "";
+                
+                if(cleanPhone.length >= 10) {
+                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                    const msg = encodeURIComponent(`Hi ${displayName}, reminder from Black Terminal regarding your dues. Please clear them today. Thank you!`);
+                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                } else {
+                    waBtnHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('Phone number not found for ${displayName}')"><i class="fab fa-whatsapp"></i></div>`;
+                }
+
+                listDiv.innerHTML += `
+                    <div class="att-item">
+                        <span class="att-name">${i}. ${displayName}</span>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            ${waBtnHtml}
+                            <span style="font-size:11px; color:var(--apple-green); font-weight:700; letter-spacing:0.5px;">PRESENT</span>
+                        </div>
+                    </div>`;
+                i++;
+            }
+            // Trigger defaulter list refresh when today's data changes
+            generateDefaultersList();
+        });
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; 
+        const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function markAttendance() {
+        const btn = document.getElementById('att-btn');
+        if (!navigator.geolocation) return alert("Location not supported.");
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOCATING...';
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+                if (dist <= 100) { 
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
+                        db.ref(`staff/${staffId}`).transaction(s => { 
+                            if (s) { 
+                                s.salary = (s.salary || 0) + (s.perDayWage || 500); 
+                                s.streak = (s.streak || 0) + 1; 
+                            } 
+                            return s; 
+                        });
+                        location.reload();
+                    });
+                } else {
+                    alert(`Access Denied! Distance: ${Math.round(dist)}m. You must be within 100m.`);
+                    btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
+                }
+            },
+            () => { alert("Enable GPS precision."); btn.disabled = false; }, { enableHighAccuracy: true }
+        );
+    }
+
+    function loadTasks() {
+        db.ref(`tasks/${staffId}`).on('value', snap => {
+            const container = document.getElementById('task-list');
+            if(!snap.exists()) return;
+            container.innerHTML = "";
+            snap.forEach(child => {
+                const t = child.val();
+                container.innerHTML += `<div class="task-item"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
+            });
+        });
+    }
+
+    function submitLead() {
+        const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
+        if(!n || p.length < 10) return alert("Check details");
+        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { alert("Success!"); location.reload(); });
+    }
+
+    initSystem();
+</script>
+</body>
+</html>
