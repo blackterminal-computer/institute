@@ -253,6 +253,27 @@
         }
         .wa-action:active { transform: scale(0.9); }
 
+        /* PHONE ACTION BUTTON */
+        .phone-action {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--apple-blue); 
+            width: 36px; 
+            height: 36px;
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            cursor: pointer; 
+            transition: all 0.2s;
+            border: 1px solid rgba(0, 122, 255, 0.15);
+        }
+        .phone-action:hover { 
+            background: var(--apple-blue); 
+            color: #fff; 
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+        .phone-action:active { transform: scale(0.9); }
+
         /* TASK ITEMS */
         .task-item {
             background: rgba(255,255,255,0.03);
@@ -337,6 +358,15 @@
         <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Attendance Days</h3>
         <div id="strict-days-list" class="strict-container"></div>
         <p style="font-size: 11px; color: var(--text-muted); margin-top: 15px; font-weight: 500;">Mandatory presence to avoid ₹200 deduction.</p>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--apple-orange);">
+        <h3 style="color: var(--apple-orange);">
+            <i class="fas fa-exclamation-triangle"></i> 2-Day Defaulters Call List ( <span id="defaulter-count">0</span> )
+        </h3>
+        <div id="defaulter-list">
+            <p style="text-align:center; font-size:12px; opacity:0.4; padding:10px;">Scanning 48hr absence logs...</p>
+        </div>
     </div>
 
     <div class="card">
@@ -439,6 +469,7 @@
         loadTasks();
         listenStudentAttendance(); 
         listenStrictDays();
+        generateDefaultersList(); // Invoke the 2-day absenteeism scan engine
     }
 
     function listenStrictDays() {
@@ -464,6 +495,99 @@
                 strictCard.style.display = count > 0 ? "block" : "none";
             }
         });
+    }
+
+    // 2-DAY ABSENTEE ANALYTICS ENGINE
+    async function generateDefaultersList() {
+        const listContainer = document.getElementById('defaulter-list');
+        const countSpan = document.getElementById('defaulter-count');
+        
+        // Generate ISO string format dates for yesterday and the day before yesterday
+        const d1 = new Date(); d1.setDate(d1.getDate() - 1);
+        const yesterdayStr = d1.toISOString().split('T')[0];
+
+        const d2 = new Date(); d2.setDate(d2.getDate() - 2);
+        const dayBeforeStr = d2.toISOString().split('T')[0];
+
+        try {
+            // Get all registered students profiles
+            const allStudentsSnap = await fs.collection("students").get();
+            if(allStudentsSnap.empty) {
+                listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px;">No student records found</p>';
+                return;
+            }
+
+            // Get attendance maps for yesterday and dayBefore
+            const yesterdayAttSnap = await fs.collection("attendance").where("date", "==", yesterdayStr).get();
+            const dayBeforeAttSnap = await fs.collection("attendance").where("date", "==", dayBeforeStr).get();
+
+            // Store maps of present student identities
+            const presentYesterday = new Set();
+            const presentDayBefore = new Set();
+
+            yesterdayAttSnap.forEach(doc => {
+                const data = doc.data();
+                const identity = data.userName || data.studentName;
+                if(identity) presentYesterday.add(identity.trim().toLowerCase());
+            });
+
+            dayBeforeAttSnap.forEach(doc => {
+                const data = doc.data();
+                const identity = data.userName || data.studentName;
+                if(identity) presentDayBefore.add(identity.trim().toLowerCase());
+            });
+
+            let defaulterCount = 0;
+            listContainer.innerHTML = "";
+
+            // Evaluate mapping intersection (Student must be absent on BOTH dates)
+            for (const studentDoc of allStudentsSnap.docs) {
+                const sName = studentDoc.id; // Document path identifier as name
+                const sData = studentDoc.data();
+                const normalizedName = sName.trim().toLowerCase();
+
+                // If student is NOT present in yesterday's list AND NOT present in dayBefore's list
+                if (!presentYesterday.has(normalizedName) && !presentDayBefore.has(normalizedName)) {
+                    defaulterCount++;
+
+                    let rawPhone = sData.phoneNumber || sData.phone || "";
+                    const cleanPhone = rawPhone.toString().replace(/\D/g, '');
+                    
+                    let callHtml = "";
+                    let waHtml = "";
+
+                    if(cleanPhone.length >= 10) {
+                        const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                        const msg = encodeURIComponent(`Hi ${sName}, you have been continuously absent from Black Terminal for the last 2 days. Please contact the management immediately.`);
+                        
+                        callHtml = `<a href="tel:${cleanPhone}" class="phone-action"><i class="fas fa-phone"></i></a>`;
+                        waHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                    } else {
+                        callHtml = `<div class="phone-action" style="opacity:0.2" onclick="alert('No phone record')"><i class="fas fa-phone"></i></div>`;
+                        waHtml = `<div class="wa-action" style="opacity:0.2" onclick="alert('No phone record')"><i class="fab fa-whatsapp"></i></div>`;
+                    }
+
+                    listContainer.innerHTML += `
+                        <div class="att-item" style="background: rgba(255, 159, 10, 0.02); border-color: rgba(255, 159, 10, 0.1);">
+                            <span class="att-name" style="color: #F2F2F7;"><i class="fas fa-user-slash" style="color:var(--apple-orange); font-size:11px; margin-right:6px;"></i>${sName}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                ${callHtml}
+                                ${waHtml}
+                                <span style="font-size:10px; color:var(--apple-orange); font-weight:700; letter-spacing:0.5px; background:rgba(255,159,10,0.1); padding:4px 8px; border-radius:8px;">ABSENT 48H</span>
+                            </div>
+                        </div>`;
+                }
+            }
+
+            countSpan.innerText = defaulterCount;
+            if(defaulterCount === 0) {
+                listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.3; padding:10px; color:var(--apple-green);">All students are track-synchronized.</p>';
+            }
+
+        } catch (error) {
+            console.error("Defaulters parsing loop failed:", error);
+            listContainer.innerHTML = '<p style="text-align:center; font-size:12px; opacity:0.4; color:var(--apple-red);">Data sync failed.</p>';
+        }
     }
 
     function listenStudentAttendance() {
@@ -537,7 +661,6 @@
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                // Configured Center coordinate calculation
                 const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
                 if (dist <= 100) { 
                     const todayStr = new Date().toISOString().split('T')[0];
