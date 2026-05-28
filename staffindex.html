@@ -368,7 +368,7 @@
 </div>
 
 <script>
-    // --- TAMAM LOGIC PEHLE JAISA HI SAME HAI ---
+    // Firebase Web App Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -379,6 +379,7 @@
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
     
+    // Initialize standard instances
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();  
     const fs = firebase.firestore(); 
@@ -386,7 +387,11 @@
     const staffId = localStorage.getItem('bt_staff_id');
     const staffName = localStorage.getItem('bt_staff_name') || "Staff";
 
-    if(!staffId) window.location.href = "index.html";
+    // Redirect restriction if identifier is absent
+    if(!staffId) {
+        window.location.href = "index.html";
+    }
+    
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -404,6 +409,8 @@
 
     async function initSystem() {
         const todayStr = new Date().toISOString().split('T')[0];
+        
+        // Check current lock status for daily attendance check
         db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
             if(snap.exists()) {
                 const btn = document.getElementById('att-btn');
@@ -414,6 +421,7 @@
             }
         });
 
+        // Real-time metadata listeners
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
@@ -485,7 +493,7 @@
                         if(studentProfile.exists) {
                             phone = studentProfile.data().phoneNumber || studentProfile.data().phone || "";
                         }
-                    } catch(e) { console.log("Profile error", e); }
+                    } catch(e) { console.log("Profile sync error", e); }
                 }
 
                 const cleanPhone = phone.toString().replace(/\D/g, '');
@@ -512,6 +520,7 @@
         });
     }
 
+    // Haversine formula implementation for geolocation validation
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371e3; 
         const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
@@ -528,11 +537,18 @@
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
+                // Configured Center coordinate calculation
                 const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
                 if (dist <= 100) { 
                     const todayStr = new Date().toISOString().split('T')[0];
                     db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                        db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
+                        db.ref(`staff/${staffId}`).transaction(s => { 
+                            if (s) { 
+                                s.salary = (s.salary || 0) + (s.perDayWage || 500); 
+                                s.streak = (s.streak || 0) + 1; 
+                            } 
+                            return s; 
+                        });
                         location.reload();
                     });
                 } else {
@@ -540,7 +556,7 @@
                     btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false;
                 }
             },
-            () => { alert("Enable GPS."); btn.disabled = false; }, { enableHighAccuracy: true }
+            () => { alert("Enable GPS precision."); btn.disabled = false; }, { enableHighAccuracy: true }
         );
     }
 
