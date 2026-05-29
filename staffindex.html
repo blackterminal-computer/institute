@@ -135,7 +135,6 @@
         <div id="strict-days-list" class="strict-container"></div>
     </div>
 
-    <!-- UPDATED: Added Live Defaulter Count layout logic to mimic image_6.png pipeline styling -->
     <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-orange); display: flex; align-items: center; justify-content: space-between; padding: 18px 22px;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <i class="fas fa-exclamation-triangle" style="color: var(--apple-orange); font-size: 18px;"></i>
@@ -194,14 +193,16 @@
     const db = firebase.database();
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Students Present Counter (Firestore Stream)
+        // Live Students Count (Firestore)
         fs.collection("attendance").where("date", "==", new Date().toISOString().split('T')[0])
           .onSnapshot(snap => { document.getElementById('present-count').innerText = snap.size; });
 
-        // UPDATED: Dynamic Defaulters Tracker Realtime Listener Injection
+        // FIXED: Loop iteration callback mapping logic safely counts any key structure format
         db.ref('defaulters').on('value', snap => {
             if(snap.exists()) {
-                document.getElementById('defaulter-count').innerText = snap.numChildren();
+                let size = 0;
+                snap.forEach(() => { size++; });
+                document.getElementById('defaulter-count').innerText = size;
             } else {
                 document.getElementById('defaulter-count').innerText = "0";
             }
