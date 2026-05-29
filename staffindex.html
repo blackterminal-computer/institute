@@ -8,63 +8,349 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     
     <style>
         :root {
-            --apple-blue: #0A84FF; --apple-green: #30D158; --apple-red: #FF453A;
-            --apple-orange: #FF9F0A; --cyber-purple: #BF5AF2; --bg: #06060A;
-            --glass: rgba(16, 16, 24, 0.7); --border: rgba(255, 255, 255, 0.06);
-            --text-main: #FFFFFF; --text-muted: #8E8E93;
+            --apple-blue: #0A84FF;
+            --apple-green: #30D158;
+            --apple-red: #FF453A;
+            --apple-orange: #FF9F0A;
+            --cyber-purple: #BF5AF2;
+            --bg: #06060A;
+            --glass: rgba(16, 16, 24, 0.7);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.12);
+            --text-main: #FFFFFF;
+            --text-sec: #AEAEB2;
+            --text-muted: #8E8E93;
+            --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            --accent-glow: 
+                radial-gradient(circle at 15% 15%, rgba(191, 90, 242, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 25%, rgba(10, 132, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 85%, rgba(48, 209, 88, 0.05) 0%, transparent 50%);
         }
 
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px 16px; min-height: 100vh; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            background: var(--bg);
+            background-image: var(--accent-glow);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 30px) 16px;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
         .container { max-width: 455px; margin: auto; }
 
-        /* --- SALMAN KHAN BRAND AMBASSADOR BANNER --- */
-        .ambassador-banner {
-            background: linear-gradient(135deg, #101018 0%, #1a1a2e 100%);
-            border: 1px solid rgba(10, 132, 255, 0.3); border-radius: 16px;
-            padding: 12px 16px; margin-bottom: 22px; height: 85px;
-            position: relative; display: flex; align-items: center; overflow: hidden;
+        .header { margin: 15px 0 24px 0; position: relative; display: flex; flex-direction: column; }
+        .header p { color: var(--cyber-purple); font-size: 12px; margin: 0 0 4px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+        .header h1 { 
+            font-size: 34px; margin: 0; font-weight: 800; letter-spacing: -1.2px;
+            background: linear-gradient(135deg, #FFFFFF 40%, var(--apple-blue) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .banner-content { z-index: 2; width: 60%; }
-        .banner-tag { font-size: 9px; font-weight: 800; color: var(--apple-blue); text-transform: uppercase; margin-bottom: 4px; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .banner-title { font-size: 15px; font-weight: 800; color: #FFF; margin: 2px 0; animation: blink 1.5s infinite; }
-        .ambassador-img { position: absolute; right: 0; bottom: 0; height: 110%; z-index: 1; pointer-events: none; }
+        
+        .streak-badge {
+            position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+            background: rgba(255, 159, 10, 0.1); color: var(--apple-orange); 
+            padding: 8px 14px; border-radius: 18px; font-size: 12px; font-weight: 700; 
+            border: 1px solid rgba(255, 159, 10, 0.2); box-shadow: 0 4px 15px rgba(255, 159, 10, 0.15);
+            display: flex; align-items: center; gap: 6px;
+        }
 
-        /* --- EXISTING STYLES --- */
-        .header { margin: 15px 0 24px 0; position: relative; }
-        .card { background: var(--glass); border-radius: 20px; padding: 20px; margin-bottom: 18px; border: 1px solid var(--border); }
-        .btn { width: 100%; padding: 15px; border-radius: 16px; border: none; font-weight: 700; cursor: pointer; }
-        .btn-punch { background: linear-gradient(135deg, var(--apple-blue) 0%, #0056B3 100%); color: white; }
-        input { width: 100%; padding: 14px; margin-bottom: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px; color: white; box-sizing: border-box; }
+        /* --- MINIMUM HEIGHT COMPACT TEXT AD FLASH COMPONENT --- */
+        .ads-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 22px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .pro-ad-card {
+            background: rgba(16, 16, 24, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            position: relative;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 75px; /* Minimum compressed professional height */
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+        }
+        
+        /* Subtle left border neon indicators */
+        .ad-flash-green { border-left: 3px solid var(--apple-green); }
+        .ad-flash-orange { border-left: 3px solid var(--apple-orange); }
+
+        .pro-ad-card:hover {
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(22, 22, 32, 0.8);
+            transform: translateY(-1px);
+        }
+
+        .ad-header-flex { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .ad-bullet-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+        .ad-bullet-dot.green { background: var(--apple-green); box-shadow: 0 0 6px var(--apple-green); }
+        .ad-bullet-dot.orange { background: var(--apple-orange); box-shadow: 0 0 6px var(--apple-orange); }
+
+        .ad-mini-tag { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .ad-mini-tag.green { color: var(--apple-green); }
+        .ad-mini-tag.orange { color: var(--apple-orange); }
+
+        .ad-main-title { font-size: 13px; font-weight: 700; color: #FFF; margin: 0; line-height: 1.2; letter-spacing: -0.1px; }
+        .ad-sub-desc { font-size: 10px; color: var(--text-muted); margin: 2px 0 0 0; line-height: 1.2; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* --- REST SYSTEM CARDS --- */
+        .card {
+            background: var(--glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border-radius: 24px; padding: 22px; margin-bottom: 18px; border: 1px solid var(--border);
+            box-shadow: var(--card-shadow); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .card:hover { border-color: var(--border-hover); transform: translateY(-3px); }
+
+        h3 { font-size: 12px; margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 700; text-transform: uppercase; }
+
+        .toggle-btn {
+            margin-left: auto; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-main); font-size: 11px; padding: 6px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.15); }
+
+        .progress-container { background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; margin: 18px 0 12px 0; overflow: hidden; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--cyber-purple), var(--apple-blue), var(--apple-green)); width: 0%; border-radius: 10px; transition: width 1.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat-box small { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; font-weight: 700; letter-spacing: 0.8px; }
+        .stat-box b { font-size: 30px; font-weight: 800; color: #FFF; }
+
+        .btn { width: 100%; padding: 15px 20px; border-radius: 16px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; }
+        .btn-punch { background: linear-gradient(135deg, var(--apple-blue) 0%, #0056B3 100%); color: white; box-shadow: 0 8px 24px rgba(0, 122, 255, 0.25); }
+        .btn-punch:hover { background: linear-gradient(135deg, #2693FF 0%, var(--apple-blue) 100%); box-shadow: 0 12px 28px rgba(0, 122, 255, 0.4); }
+        .btn-main { background: linear-gradient(135deg, #FFFFFF 0%, #E5E5EA 100%); color: #000000; }
+        .btn:active { transform: scale(0.96); }
+        .btn:disabled { opacity: 0.4; filter: grayscale(0.6); cursor: not-allowed; }
+
+        .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 12px; }
+        .strict-date-card { background: rgba(255, 59, 48, 0.06); border: 1px solid rgba(255, 59, 48, 0.18); border-radius: 16px; padding: 12px 6px; text-align: center; }
+        .strict-date-card .mon { font-size: 10px; font-weight: 800; color: var(--apple-red); text-transform: uppercase; }
+        .strict-date-card .day { font-size: 20px; font-weight: 700; color: #fff; margin: 4px 0 0 0; }
+        .strict-date-card.today { background: linear-gradient(180deg, var(--apple-red) 0%, #C92A2A 100%); border: none; box-shadow: 0 8px 20px rgba(255, 59, 48, 0.35); }
+        .strict-date-card.today .mon, .strict-date-card.today .day { color: white; }
+
+        .task-item { background: rgba(255,255,255,0.01); padding: 14px 16px; border-radius: 16px; margin-top: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .task-dot { height: 7px; width: 7px; background: var(--cyber-purple); border-radius: 50%; box-shadow: 0 0 10px var(--cyber-purple); }
+        .task-info p { margin: 0; font-size: 14px; font-weight: 600; color: #E5E5EA; }
+        .task-info small { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block; }
+
+        input { width: 100%; padding: 14px 16px; margin-bottom: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px; color: white; outline: none; box-sizing: border-box; font-size: 14px; transition: all 0.3s; }
+        input:focus { border-color: var(--cyber-purple); box-shadow: 0 0 0 4px rgba(191, 90, 242, 0.15); }
+        .footer-text { text-align: center; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; margin-top: 35px; }
     </style>
 </head>
 <body>
 <div class="container">
-    
-    <!-- Salman Khan Banner -->
-    <div class="ambassador-banner animate__animated animate__fadeIn">
-        <div class="banner-content">
-            <div class="banner-tag"><i class="fas fa-star"></i> OFFICIAL BRAND AMBASSADOR</div>
-            <h4 class="banner-title">Swag Se Punch In Karo!</h4>
-            <p style="font-size: 10px; color: #AEAEB2; margin: 0;">Earn continuous payouts daily.</p>
-        </div>
-        <img src="https://i.ibb.co/RrHyVyr/salman-khan.png" alt="Salman Khan" class="ambassador-img">
-    </div>
-
-    <!-- Header & Original Cards remain unchanged below -->
     <div class="header animate__animated animate__fadeIn">
         <p id="current-date">--</p>
         <h1 id="user-display">Staff Terminal</h1>
+        <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> DAYS</div>
     </div>
 
-    <!-- ... (Baaki pura original code yahan rahega) ... -->
-    
-    <!-- (Note: Maine yahan place-holder rakha hai, aap apna original HTML yahan paste rakhein) -->
-    
+    <!-- MINIMUM HEIGHT COMPACT TEXT AD FLASH COMPONENT -->
+    <div class="ads-grid-container animate__animated animate__fadeIn">
+        <!-- Compact Flash Ad 1 -->
+        <div class="pro-ad-card ad-flash-green">
+            <div class="ad-header-flex">
+                <span class="ad-bullet-dot green"></span>
+                <span class="ad-mini-tag green">EARN TARGET</span>
+            </div>
+            <h4 class="ad-main-title">Up To ₹20,000 / Mo.</h4>
+            <p class="ad-sub-desc">Sync student loops daily.</p>
+        </div>
+
+        <!-- Compact Flash Ad 2 -->
+        <div class="pro-ad-card ad-flash-orange">
+            <div class="ad-header-flex">
+                <span class="ad-bullet-dot orange"></span>
+                <span class="ad-mini-tag orange">STREAK BONUS</span>
+            </div>
+            <h4 class="ad-main-title">Continuous Payouts</h4>
+            <p class="ad-sub-desc">Maintain daily consecutive loops.</p>
+        </div>
+    </div>
+
+    <div class="card animate__animated animate__fadeInUp" style="border-top: 3px solid var(--apple-blue);">
+        <h3><i class="fas fa-chart-pie"></i> Earnings & Stats</h3>
+        <div class="stat-grid">
+            <div class="stat-box"><small>DAILY WAGE</small><b id="daily-rate" style="color: var(--apple-blue);">₹0</b></div>
+            <div class="stat-box" style="text-align: right;"><small>BALANCE</small><b id="total-earning" style="color: var(--apple-green);">₹0</b></div>
+        </div>
+        <div class="progress-container"><div id="salary-progress" class="progress-bar"></div></div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-weight: 600;">
+            <span>Cycle Progress</span><span id="cycle-days">-- days left</span>
+        </div>
+        <br>
+        <button id="att-btn" class="btn btn-punch" onclick="markAttendance()"><i class="fas fa-fingerprint"></i> PUNCH IN</button>
+    </div>
+
+    <div class="card animate__animated animate__fadeInUp" id="strict-card" style="display: none; border-left: 4px solid var(--apple-red);">
+        <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Attendance Days</h3>
+        <div id="strict-days-list" class="strict-container"></div>
+    </div>
+
+    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-orange); display: flex; align-items: center; justify-content: space-between; padding: 18px 22px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-exclamation-triangle" style="color: var(--apple-orange); font-size: 18px;"></i>
+            <div>
+                <h3 style="margin: 0; font-size: 14px; color: #FFF; text-transform: none; letter-spacing: normal;">Defaulters Tracker</h3>
+                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px;">Check continuous absence logs</small>
+            </div>
+        </div>
+        <button class="toggle-btn" onclick="window.location.href='defaulters.html'" style="background: rgba(255, 159, 10, 0.12); color: var(--apple-orange); border: 1px solid rgba(255, 159, 10, 0.18); padding: 8px 14px;">
+            VIEW LIST <i class="fas fa-arrow-right" style="margin-left: 4px; font-size: 9px;"></i>
+        </button>
+    </div>
+
+    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-green); display: flex; align-items: center; justify-content: space-between; padding: 18px 22px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-user-check" style="color: var(--apple-green); font-size: 18px;"></i>
+            <div>
+                <h3 style="margin: 0; font-size: 14px; color: #FFF; text-transform: none; letter-spacing: normal;">Students Present Today</h3>
+                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px;">Live logs: <span id="present-count" style="color: var(--apple-green); font-weight: 700;">0</span> active</small>
+            </div>
+        </div>
+        <button class="toggle-btn" onclick="window.location.href='present.html'" style="background: rgba(48, 209, 88, 0.12); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.18); padding: 8px 14px;">
+            OPEN LIST <i class="fas fa-external-link-alt" style="margin-left: 5px; font-size: 9px;"></i>
+        </button>
+    </div>
+
+    <div class="card animate__animated animate__fadeInUp" style="border-top: 3px solid var(--cyber-purple);">
+        <h3 style="color: var(--cyber-purple);"><i class="fas fa-bolt"></i> Priority Assignments</h3>
+        <div id="task-list"><div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active tasks</p></div></div>
+    </div>
+
+    <div class="card animate__animated animate__fadeInUp">
+        <h3><i class="fas fa-paper-plane"></i> Quick Lead Entry</h3>
+        <input type="text" id="l-name" placeholder="Full Name">
+        <input type="tel" id="l-phone" placeholder="WhatsApp Number">
+        <input type="text" id="l-course" placeholder="Target Course">
+        <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right" style="font-size: 11px;"></i></button>
+    </div>
+
+    <p class="footer-text">TERMINAL v2.9 • ENCRYPTED</p>
 </div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.firebasestorage.app",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const fs = firebase.firestore(); 
+    const db = firebase.database();
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Live Students Count (Firestore)
+        fs.collection("attendance").where("date", "==", new Date().toISOString().split('T')[0])
+          .onSnapshot(snap => { document.getElementById('present-count').innerText = snap.size; });
+    });
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function markAttendance() {
+        const btn = document.getElementById('att-btn'); if (!navigator.geolocation) return alert("No GPS Detected.");
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOCATING...'; btn.disabled = true;
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+            if (dist <= 100) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
+                    db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
+                    location.reload();
+                });
+            } else { alert("Out of bounds threshold violation."); btn.innerHTML = '<i class="fas fa-fingerprint"></i> PUNCH IN'; btn.disabled = false; }
+        }, () => { btn.disabled = false; }, { enableHighAccuracy: true });
+    }
+
+    function loadTasks() {
+        db.ref(`tasks/${staffId}`).on('value', snap => {
+            const container = document.getElementById('task-list'); if(!snap.exists()) return; container.innerHTML = "";
+            snap.forEach(child => {
+                const t = child.val(); container.innerHTML += `<div class="task-item animate__animated animate__fadeIn"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
+            });
+        });
+    }
+
+    function submitLead() {
+        const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
+        if(!n || p.length < 10) return alert("Validation Failed.");
+        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { location.reload(); });
+    }
+
+    const staffId = localStorage.getItem('bt_staff_id');
+    const staffName = localStorage.getItem('bt_staff_name') || "Staff";
+    if(!staffId) { window.location.href = "index.html"; }
+    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+    async function initSystem() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+            if(snap.exists()) {
+                const btn = document.getElementById('att-btn'); btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> ATTENDANCE MARKED';
+                btn.style.background = "var(--apple-green)"; btn.style.boxShadow = "0 8px 24px rgba(48, 209, 88, 0.25)";
+            }
+        });
+        db.ref(`staff/${staffId}`).on('value', snap => {
+            const val = snap.val() || {};
+            document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
+            document.getElementById('total-earning').innerText = `₹${val.salary || 0}`;
+            document.getElementById('streak-val').innerText = val.streak || 0;
+            const percent = Math.min(((val.salary || 0) / ((val.perDayWage || 500) * 25)) * 100, 100);
+            document.getElementById('salary-progress').style.width = percent + "%";
+        });
+        const now = new Date(); const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days remaining`;
+        loadTasks(); listenStrictDays();
+    }
+    
+    function listenStrictDays() {
+        const strictCard = document.getElementById('strict-card'); const strictList = document.getElementById('strict-days-list');
+        db.ref('strictDays').on('value', snap => {
+            if (snap.exists()) {
+                strictList.innerHTML = ""; let count = 0; const todayStr = new Date().toISOString().split('T')[0];
+                snap.forEach(child => {
+                    const dateVal = child.val();
+                    if (dateVal >= todayStr) {
+                        count++; const isToday = dateVal === todayStr; const d = new Date(dateVal);
+                        const mon = d.toLocaleDateString('en-GB', { month: 'short' }); const day = d.toLocaleDateString('en-GB', { day: 'numeric' });
+                        strictList.innerHTML += `<div class="strict-date-card ${isToday ? 'today' : ''}"><span class="mon">${isToday ? 'NOW' : mon}</span><span class="day">${day}</span></div>`;
+                    }
+                });
+                strictCard.style.display = count > 0 ? "block" : "none";
+            }
+        });
+    }
+    initSystem();
+</script>
 </body>
 </html>
