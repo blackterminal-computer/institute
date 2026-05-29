@@ -299,6 +299,11 @@
             <div class="stat-box" style="text-align: right;"><small>BALANCE</small><b id="total-earning" style="color: var(--apple-green);">₹0</b></div>
         </div>
         <div class="progress-container"><div id="salary-progress" class="progress-bar"></div></div>
+        <!-- Salary Request Button -->
+<button id="payout-btn" class="btn" style="margin-top: 15px; background: var(--apple-blue); color: white; display: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: 700;" onclick="requestSalary()">
+    REQUEST PAYOUT <i class="fas fa-wallet" style="margin-left: 8px;"></i>
+</button>
+
         <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-weight: 600;">
             <span>Cycle Progress</span><span id="cycle-days">-- days left</span>
         </div>
@@ -554,6 +559,24 @@
         document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days remaining`;
         loadTasks(); listenStrictDays();
     }
+    
+    // --- 1. Salary Request Logic ---
+function requestSalary() {
+    const total = document.getElementById('total-earning').innerText;
+    const btn = document.getElementById('payout-btn');
+    
+    db.ref(`salaryRequests/${staffId}`).set({
+        name: staffName,
+        amount: total,
+        status: "Pending",
+        requestedAt: new Date().toISOString()
+    }).then(() => {
+        btn.innerText = "REQUEST PENDING...";
+        btn.style.background = "var(--text-muted)";
+        btn.disabled = true;
+        alert("Salary Request Sent Successfully!");
+    });
+}
     
     function listenStrictDays() {
         const strictCard = document.getElementById('strict-card'); const strictList = document.getElementById('strict-days-list');
