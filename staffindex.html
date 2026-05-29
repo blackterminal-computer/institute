@@ -571,30 +571,49 @@
         const container = document.getElementById('attendance-history-list');
         container.innerHTML = "";
         
-        if (!snap.exists()) {
-            container.innerHTML = `<div style="text-align: center; padding: 10px;"><small>No records found</small></div>`;
-            return;
+        if (!snap.exists()) return;
+
+        let logs = {};
+        snap.forEach(child => { logs[child.key] = child.val(); });
+
+        // Start date fix karein (Jis din se kaam shuru kiya, manlo 1 May)
+        let startDate = new Date("2026-05-01"); 
+        let today = new Date();
+        let holidayCount = 0;
+
+        // Loop through all dates
+        for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+            let dateStr = d.toISOString().split('T')[0];
+            
+            if (logs[dateStr]) {
+                // Present Day
+                container.insertAdjacentHTML('afterbegin', `
+                <div class="task-item">
+                    <div class="task-dot" style="background: var(--apple-green); box-shadow: 0 0 5px var(--apple-green);"></div>
+                    <div class="task-info">
+                        <p style="font-size: 13px;">${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+                        <small>Present • ${logs[dateStr].time}</small>
+                    </div>
+                </div>`);
+            } else {
+                // Missing/Holiday Day
+                holidayCount++;
+                container.insertAdjacentHTML('afterbegin', `
+                <div class="task-item" style="border: 1px solid rgba(255, 59, 48, 0.2);">
+                    <div class="task-dot" style="background: var(--apple-red); box-shadow: 0 0 5px var(--apple-red);"></div>
+                    <div class="task-info">
+                        <p style="font-size: 13px; color: var(--apple-red);">${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+                        <small style="color: var(--apple-red);">Holiday / Absent</small>
+                    </div>
+                </div>`);
+            }
         }
-
-        let logs = [];
-        snap.forEach(child => {
-            logs.push({ date: child.key, ...child.val() });
-        });
-
-        // Date ke hisab se reverse sort (latest upar)
-        logs.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        logs.forEach(log => {
-            container.innerHTML += `
-            <div class="task-item">
-                <div class="task-dot" style="background: var(--apple-green); box-shadow: 0 0 5px var(--apple-green);"></div>
-                <div class="task-info">
-                    <p style="font-size: 13px;">${new Date(log.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                    <small>Status: ${log.status} • Time: ${log.time}</small>
-                </div>
-            </div>`;
-        });
+        
+        // Agar aap chahein toh upar ek summary dikha sakte hain
+        // console.log("Total Holidays/Absents: " + holidayCount);
     });
+}
+
 }
 
     
