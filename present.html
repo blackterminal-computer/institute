@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Active Logs | Present Students</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        :root {
+            --apple-green: #30D158;
+            --apple-blue: #0A84FF;
+            --bg: #050508;
+            --glass: rgba(18, 18, 26, 0.75);
+            --border: rgba(255, 255, 255, 0.06);
+            --text-main: #FFFFFF;
+            --text-sec: #AEAEB2;
+            --text-muted: #6E6E73;
+            --accent-glow: radial-gradient(circle at 50% -10%, rgba(48, 209, 88, 0.15) 0%, transparent 70%);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            background: var(--bg); background-image: var(--accent-glow); background-attachment: fixed;
+            color: var(--text-main); margin: 0; padding: 24px 16px; -webkit-font-smoothing: antialiased;
+        }
+        .container { max-width: 450px; margin: auto; }
+        .back-nav { display: flex; align-items: center; gap: 8px; color: var(--apple-green); font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; text-decoration: none; margin-bottom: 25px; width: max-content; transition: all 0.2s ease; }
+        .back-nav:hover { opacity: 0.8; transform: translateX(-2px); }
+        .header-panel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .header-panel h1 { font-size: 28px; margin: 0; font-weight: 800; letter-spacing: -1px; }
+        .counter-pill { background: rgba(48, 209, 88, 0.12); border: 1px solid rgba(48, 209, 88, 0.25); padding: 6px 14px; border-radius: 20px; color: var(--apple-green); font-weight: 700; font-size: 14px; }
+        .list-wrapper { display: flex; flex-direction: column; gap: 12px; }
+        .att-item { 
+            background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border);
+            padding: 14px 18px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: all 0.2s ease;
+        }
+        .student-meta { display: flex; flex-direction: column; gap: 2px; }
+        .att-name { font-size: 15px; font-weight: 600; color: #FFF; }
+        .att-time { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+        .action-group { display: flex; align-items: center; gap: 10px; }
+        .wa-action {
+            width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            background: rgba(48, 209, 88, 0.1); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.15);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .wa-action:hover { background: var(--apple-green); color: #fff; box-shadow: 0 6px 16px rgba(48, 209, 88, 0.3); transform: scale(1.05); }
+        .status-badge { font-size: 11px; color: var(--apple-green); font-weight: 700; background: rgba(48, 209, 88, 0.1); padding: 5px 12px; border-radius: 10px; border: 1px solid rgba(48, 209, 88, 0.15); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back-nav"><i class="fas fa-arrow-left"></i> Terminal</a>
+    
+    <div class="header-panel">
+        <h1>Live Attendance</h1>
+        <div class="counter-pill"><span id="active-count">0</span> PRESENT</div>
+    </div>
+
+    <div id="students-log-container" class="list-wrapper">
+        <p style="text-align:center; font-size:13px; opacity:0.5; color: var(--text-sec);">Connecting to servers...</p>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+        authDomain: "black-terminal-f2c91.firebaseapp.com",
+        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+        projectId: "black-terminal-f2c91",
+        storageBucket: "black-terminal-f2c91.firebasestorage.app",
+        messagingSenderId: "552489994197",
+        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const fs = firebase.firestore(); 
+
+    // Global Registry Caching logic for instantaneous retrieval
+    let studentPhoneCache = JSON.parse(sessionStorage.getItem('bt_phone_cache') || '{}');
+
+    async function prefetchStudentRegistry() {
+        if (Object.keys(studentPhoneCache).length > 0) return;
+        try {
+            const allSnap = await fs.collection("students").get();
+            allSnap.forEach(doc => {
+                const data = doc.data();
+                const phone = data.phoneNumber || data.phone || "";
+                if (phone) studentPhoneCache[doc.id] = phone;
+            });
+            sessionStorage.setItem('bt_phone_cache', JSON.stringify(studentPhoneCache));
+        } catch (e) { console.error("Cache prefetch bypassed", e); }
+    }
+
+    function loadLivePresentLogs() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const container = document.getElementById('students-log-container');
+        const countSpan = document.getElementById('active-count');
+
+        // Parallel processing invocation
+        prefetchStudentRegistry();
+
+        fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
+            countSpan.innerText = snapshot.size;
+            if (snapshot.empty) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;"><p style="font-size:13px; color:var(--text-muted);">No logs documented for today.</p></div>';
+                return;
+            }
+
+            let htmlContent = "";
+            let i = 1;
+
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const displayName = data.userName || data.studentName || "Unknown Student";
+                const checkTime = data.time || "Logged";
+                
+                // Read straight from optimized lookups instead of individual database loops
+                let phone = data.userPhone || data.phoneNumber || data.phone || studentPhoneCache[displayName] || "";
+
+                const cleanPhone = phone.toString().replace(/\D/g, '');
+                let waBtnHtml = "";
+                if(cleanPhone.length >= 10) {
+                    const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
+                    const msg = encodeURIComponent(`Hi ${displayName}, dues update checklist.`);
+                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                } else { 
+                    waBtnHtml = `<div class="wa-action" style="opacity:0.25; cursor:not-allowed;"><i class="fab fa-whatsapp"></i></div>`; 
+                }
+
+                htmlContent += `
+                    <div class="att-item animate__animated animate__fadeIn">
+                        <div class="student-meta">
+                            <span class="att-name">${i}. ${displayName}</span>
+                            <span class="att-time"><i class="far fa-clock"></i> Punch: ${checkTime}</span>
+                        </div>
+                        <div class="action-group">
+                            ${waBtnHtml}
+                            <span class="status-badge">PRESENT</span>
+                        </div>
+                    </div>`;
+                i++;
+            });
+            container.innerHTML = htmlContent;
+        });
+    }
+
+    loadLivePresentLogs();
+</script>
+</body>
+</html>
