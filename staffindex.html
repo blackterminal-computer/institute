@@ -291,7 +291,7 @@
         input:focus { background: rgba(255,255,255,0.09); border-color: var(--apple-blue); box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.2); }
         .footer-text { text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 600; letter-spacing: 1.5px; margin-top: 40px; }
         
-        /* Advance Payment Log Styles */
+        /* Advance Payment Card Layout Configurations */
         .advance-item {
             background: rgba(255, 59, 48, 0.03);
             border: 1px solid rgba(255, 59, 48, 0.12);
@@ -458,7 +458,7 @@
         loadTasks(); listenStudentAttendance(); listenStrictDays(); loadAdvanceHistory();
     }
 
-    // Submit Advance Payment Functionality with transactional balance updates
+    // Submit Advance Payment Functionality (Writes to Realtime DB & balances via Transactions)
     function submitAdvancePayment() {
         const amountInput = document.getElementById('adv-amount');
         const reasonInput = document.getElementById('adv-reason');
@@ -466,7 +466,7 @@
         const reason = reasonInput.value.trim();
 
         if(!amt || amt <= 0 || !reason) {
-            return alert("Please fill correct amount and reason context.");
+            return alert("Please enter a valid amount and transaction reason.");
         }
 
         const advanceRef = db.ref(`advances/${staffId}`).push();
@@ -478,7 +478,7 @@
         };
 
         advanceRef.set(advanceData).then(() => {
-            // Deduct from current balance in transaction loop safely
+            // Balance adjustment loop running securely via transaction architecture
             db.ref(`staff/${staffId}`).transaction(s => {
                 if (s) {
                     s.salary = (s.salary || 0) - amt;
@@ -487,12 +487,12 @@
             }).then(() => {
                 amountInput.value = "";
                 reasonInput.value = "";
-                alert(`Advance payment of ₹${amt} tracked successfully.`);
+                alert(`Advance of ₹${amt} logged successfully.`);
             });
-        }).catch(err => alert("Error logging terminal payment: " + err.message));
+        }).catch(err => alert("Buffer error logging advanced payment: " + err.message));
     }
 
-    // Listen & sync real-time advance history logs dynamically
+    // Active continuous dynamic synchronization engine for history feed
     function loadAdvanceHistory() {
         const container = document.getElementById('advance-logs-container');
         const historyList = document.getElementById('advance-history-list');
