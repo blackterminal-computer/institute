@@ -4,27 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin | Student Fees Ledger</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700;800&display=swap');
 
         :root { 
             --accent: #ff3e3e; 
-            --bg: #030508; 
-            --card: rgba(255, 255, 255, 0.04);
-            --border: rgba(255, 255, 255, 0.08);
-            --success: #2ecc71;
-            --info: #3498db;
-            --orange: #ff9f0a;
+            --bg: #020617; 
+            --card: #0f172a;
+            --border: #1e293b;
+            --success: #22c55e;
+            --info: #6366f1;
+            --orange: #fbbf24;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Segoe UI', 'Inter', sans-serif; 
             background: var(--bg); 
             color: #e0e0e0; 
             margin: 0; 
@@ -39,10 +39,12 @@
             justify-content: space-between; 
             align-items: center; 
             margin-bottom: 25px; 
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
         }
         
-        h1 { font-size: 1.2rem; letter-spacing: 3px; font-weight: 800; margin: 0; }
-        h1 span { color: var(--accent); }
+        h1 { font-size: 1.2rem; letter-spacing: 2px; font-weight: 800; margin: 0; color: #fff; }
+        h1 span { color: var(--info); }
 
         .back-btn { 
             background: rgba(255,255,255,0.05);
@@ -57,17 +59,12 @@
             align-items: center;
             gap: 6px;
             margin-bottom: 20px;
-            transition: 0.2s;
-        }
-        .back-btn:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.2);
         }
 
         .card { 
             background: var(--card); 
             padding: 18px; 
-            border-radius: 22px; 
+            border-radius: 12px; 
             border: 1px solid var(--border); 
             width: 100%; 
         }
@@ -82,59 +79,55 @@
             gap: 8px; 
         }
 
-        .fee-list { 
-            max-height: 70vh; 
-            overflow-y: auto; 
-            padding-right: 2px;
-        }
-        
-        .fee-list::-webkit-scrollbar { width: 4px; }
-        .fee-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        .fee-list { max-height: 70vh; overflow-y: auto; }
 
-        /* Staff Attendance / Row-style Match */
         .fee-row {
             display: flex; 
             justify-content: space-between; 
             align-items: center;
             padding: 14px; 
-            background: rgba(255,255,255,0.02);
-            border-radius: 12px; 
-            margin-bottom: 8px; 
-            border: 1px solid rgba(255,255,255,0.01);
-            transition: 0.2s;
+            background: #020617;
+            border-radius: 8px; 
+            margin-bottom: 10px; 
+            border: 1px solid var(--border);
         }
         
-        /* Status Dynamic Left Border Highlights like Staff Profiles */
-        .fee-row.border-paid { border-left: 3px solid var(--success); }
-        .fee-row.border-unpaid { border-left: 3px solid var(--accent); }
-        
-        .fee-row:hover {
-            background: rgba(255,255,255,0.04);
-            transform: translateX(2px);
-        }
-        
-        .student-meta b { font-size: 0.8rem; color: #fff; display: block; }
-        .student-meta small { font-size: 0.65rem; opacity: 0.5; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
+        .fee-row.border-paid { border-left: 4px solid var(--success); }
+        .fee-row.border-unpaid { border-left: 4px solid var(--accent); }
 
-        /* Strict/Badge Button Framework Match */
+        .student-meta b { font-size: 0.85rem; color: #fff; display: block; }
+        .student-meta small { font-size: 0.7rem; opacity: 0.6; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
+
+        .actions-flex { display: flex; align-items: center; gap: 8px; }
+
         .status-badge {
             padding: 6px 14px; 
-            border-radius: 8px; 
-            font-size: 9px; 
+            border-radius: 6px; 
+            font-size: 10px; 
             font-weight: 800; 
             cursor: pointer; 
             border: none; 
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: transform 0.1s ease, box-shadow 0.2s;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
-        .status-badge:active { transform: scale(0.95); }
         
-        .status-paid { background: var(--success); color: #000; }
+        .status-paid { background: var(--success); color: #fff; }
         .status-unpaid { background: var(--accent); color: #fff; }
 
-        #loading { text-align: center; opacity: 0.5; padding: 30px; font-size: 0.75rem; letter-spacing: 1px; }
+        .invoice-btn {
+            background: #25d366;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #loading { text-align: center; color: var(--info); padding: 30px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -144,101 +137,225 @@
 
     <div class="header-flex">
         <h1>BLACK<span>TERMINAL</span> FEES</h1>
-        <div style="display:flex; gap:10px;">
-            <div id="att-count" style="font-size: 0.65rem; background: var(--info); color: white; padding: 6px 15px; border-radius: 20px; font-weight: 800; text-transform: uppercase;">TOTAL: <span id="total-count">0</span></div>
+        <div>
+            <div id="att-count" style="font-size: 0.7rem; background: var(--border); color: white; padding: 6px 15px; border-radius: 20px; font-weight: 700;">TOTAL: <span id="total-count">0</span></div>
         </div>
     </div>
 
     <div class="card">
         <h2><i class="fas fa-wallet" style="color: var(--orange);"></i> Student Fees Ledger (<span id="cur-month">--</span>)</h2>
-        
         <div id="loading"><i class="fas fa-spinner fa-spin"></i> FETCHING DATABASE LOGS...</div>
-        
-        <div class="fee-list" id="payment-body">
-            </div>
+        <div class="fee-list" id="payment-body"></div>
     </div>
 </div>
 
-<script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
-        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
         projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.firebasestorage.app",
+        storageBucket: "black-terminal-f2c91.appspot.com",
         messagingSenderId: "552489994197",
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
     
-    firebase.initializeApp(firebaseConfig);
-    const fs = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
     const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
     document.getElementById('cur-month').innerText = currentMonth;
 
+    let globalStudentDirectory = [];
+
+    // Saare special characters, dots aur spaces ko clean karne waala function
+    function cleanString(str) {
+        if (!str) return '';
+        return str.toString()
+                  .toLowerCase()
+                  .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+                  .replace(/\s+/g, "")
+                  .trim();
+    }
+
+    // Phone number format karne ka solid function (Sirf valid 10 digits rakh kar shuruat me ek baar 91 lagayega)
+    function sanitizePhoneNumber(phone) {
+        if (!phone) return "";
+        let pureDigits = phone.toString().replace(/\D/g, ""); // Remove non-numbers
+        if (pureDigits.length > 10) {
+            pureDigits = pureDigits.slice(-10); // Aakhri ke 10 digits uthayega (9191 ka jhanjhat khatam)
+        }
+        return pureDigits.length === 10 ? "91" + pureDigits : "";
+    }
+
+    // 1. Live Student Sync
+    function listenToStudentDirectory() {
+        onSnapshot(collection(db, "students"), (snapshot) => {
+            globalStudentDirectory = [];
+            snapshot.forEach((studentDoc) => {
+                const data = studentDoc.data();
+                globalStudentDirectory.push({
+                    rawDocId: studentDoc.id,
+                    rawFieldName: data.name || '',
+                    cleanDocId: cleanString(studentDoc.id),
+                    cleanFieldName: cleanString(data.name),
+                    phone: sanitizePhoneNumber(data.phoneNumber)
+                });
+            });
+            loadStudentPayments();
+        });
+    }
+
+    // 2. Fetch and render entries
     function loadStudentPayments() {
         const payBody = document.getElementById('payment-body');
         const totalCountSpan = document.getElementById('total-count');
         const loadingDiv = document.getElementById('loading');
         
-        fs.collection("attendance").onSnapshot(async (snapshot) => {
-            const studentNames = [...new Set(snapshot.docs.map(doc => doc.data().userName || doc.data().studentName))].filter(Boolean);
+        onSnapshot(collection(db, "attendance"), (snapshot) => {
+            const studentNames = [...new Set(snapshot.docs.map(docSnap => docSnap.data().userName || docSnap.data().studentName))].filter(Boolean);
             
             totalCountSpan.innerText = studentNames.length;
             loadingDiv.style.display = "none";
             
             if(studentNames.length === 0) {
-                payBody.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.4; font-size:12px;">No student logs mapped to ledger nodes.</div>';
+                payBody.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.4;">No logs found.</div>';
                 return;
             }
 
-            for (const name of studentNames) {
-                fs.collection("payments").doc(name).collection("months").doc(currentMonth)
-                .onSnapshot((pDoc) => {
-                    const status = (pDoc.exists && pDoc.data().status === "Paid") ? "Paid" : "Unpaid";
+            const getSafeId = (name) => `row-${name.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+            studentNames.forEach((name) => {
+                const rowId = getSafeId(name);
+                let row = document.getElementById(rowId);
+
+                if (!row) {
+                    row = document.createElement('div');
+                    row.id = rowId;
+                    row.className = "fee-row border-unpaid";
+                    row.innerHTML = `
+                        <div class="student-meta">
+                            <b>${name}</b>
+                            <small><i class="fas fa-shield-halved" style="color:var(--info);"></i> Secure Profile</small>
+                        </div>
+                        <div class="actions-flex" id="actions-${rowId}">
+                            <button class="status-badge status-unpaid" id="btn-${rowId}">
+                                UNPAID
+                            </button>
+                        </div>
+                    `;
+                    payBody.appendChild(row);
+                }
+
+                const docRef = doc(db, "payments", name, "months", currentMonth);
+                onSnapshot(docRef, (pDoc) => {
+                    const status = (pDoc.exists() && pDoc.data().status === "Paid") ? "Paid" : "Unpaid";
                     const badgeClass = status === "Paid" ? "status-badge status-paid" : "status-badge status-unpaid";
                     const borderClass = status === "Paid" ? "fee-row border-paid" : "fee-row border-unpaid";
                     
-                    let row = document.getElementById(`row-${name.replace(/\s+/g, '')}`);
+                    const currentRow = document.getElementById(rowId);
+                    const actionsDiv = document.getElementById(`actions-${rowId}`);
                     
-                    const rowHtml = `
-                        <div class="student-meta">
-                            <b>${name}</b>
-                            <small><i class="fas fa-shield-halved" style="color:var(--info);"></i> Secure Ledger Profile</small>
-                        </div>
-                        <button class="${badgeClass}" onclick="toggleOneTabStatus('${name}', '${status}')">
-                            ${status}
-                        </button>
-                    `;
-
-                    if(row) {
-                        row.className = borderClass;
-                        row.innerHTML = rowHtml;
-                    } else {
-                        const div = document.createElement('div');
-                        div.id = `row-${name.replace(/\s+/g, '')}`;
-                        div.className = borderClass;
-                        div.innerHTML = rowHtml;
-                        payBody.appendChild(div);
+                    if (currentRow && actionsDiv) {
+                        currentRow.className = borderClass;
+                        actionsDiv.innerHTML = ""; 
+                        
+                        if(status === "Paid") {
+                            const invBtn = document.createElement('button');
+                            invBtn.className = "invoice-btn";
+                            invBtn.innerHTML = `<i class="fab fa-whatsapp"></i> INVOICE`;
+                            invBtn.onclick = () => generateAndSendInvoice(name);
+                            actionsDiv.appendChild(invBtn);
+                        }
+                        
+                        const statusBtn = document.createElement('button');
+                        statusBtn.className = badgeClass;
+                        statusBtn.id = `btn-${rowId}`;
+                        statusBtn.innerText = status.toUpperCase();
+                        statusBtn.onclick = () => toggleStatus(name, status);
+                        
+                        actionsDiv.appendChild(statusBtn);
                     }
                 });
-            }
+            });
         });
     }
 
-    async function toggleOneTabStatus(name, currentStatus) {
+    async function toggleStatus(name, currentStatus) {
         const newStatus = currentStatus === "Paid" ? "Unpaid" : "Paid";
+        const docRef = doc(db, "payments", name, "months", currentMonth);
         try {
-            await fs.collection("payments").doc(name).collection("months").doc(currentMonth).set({
+            await setDoc(docRef, {
                 status: newStatus,
                 updatedAt: Date.now()
             }, { merge: true });
-        } catch(e) { 
-            console.error("Write execution crash:", e); 
+        } catch(e) { console.error(e); }
+    }
+
+    // 3. Smart Fuzzy Match & Whatsapp Delivery Engine
+    function generateAndSendInvoice(studentName) {
+        const attendanceClean = cleanString(studentName);
+        let phoneNum = "";
+
+        // Smart Cross Matching Loop (ID, field, substring sab check karega)
+        const match = globalStudentDirectory.find(s => 
+            s.cleanDocId === attendanceClean || 
+            s.cleanFieldName === attendanceClean ||
+            attendanceClean.includes(s.cleanDocId) ||
+            s.cleanDocId.includes(attendanceClean) ||
+            (s.cleanFieldName && attendanceClean.includes(s.cleanFieldName))
+        );
+
+        if (match && match.phone) {
+            phoneNum = match.phone;
+        } else {
+            // Safe Fallback Trigger: Agar data match na ho toh manually input le lega crash hone ki jagah!
+            let manualInput = prompt(`Database couldn't auto-map phone for "${studentName}".\nPlease type the 10-digit Mobile Number manually:`);
+            if (!manualInput) return;
+            phoneNum = sanitizePhoneNumber(manualInput);
+        }
+
+        if (!phoneNum) {
+            alert("Invalid phone number format. Action aborted.");
+            return;
+        }
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const docPdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a6" });
+
+            docPdf.setFillColor(2, 6, 23); docPdf.rect(0, 0, 105, 148, "F");
+            docPdf.setFillColor(99, 102, 241); docPdf.rect(0, 0, 105, 4, "F");
+            docPdf.setTextColor(255, 255, 255); docPdf.setFont("Helvetica", "bold"); docPdf.setFontSize(13);
+            docPdf.text("BLACKTERMINAL LOGS", 10, 18);
+            docPdf.setFontSize(7.5); docPdf.setFont("Helvetica", "normal"); docPdf.setTextColor(148, 163, 184);
+            docPdf.text("SECURE DATABASE TRANSACTION LEDGER", 10, 23);
+            docPdf.setDrawColor(30, 41, 59); docPdf.line(10, 28, 95, 28);
+            docPdf.setFontSize(10); docPdf.setTextColor(255, 255, 255);
+            docPdf.text(`Student: ${studentName}`, 10, 40);
+            
+            const txnID = `BT-${Math.floor(100000 + Math.random() * 900000)}`;
+            docPdf.setFontSize(9); docPdf.setTextColor(148, 163, 184);
+            docPdf.text(`Billing Cycle: ${currentMonth}`, 10, 48);
+            docPdf.text(`TXN Reference: #${txnID}`, 10, 55);
+            docPdf.text(`Date Issued: ${new Date().toLocaleDateString()}`, 10, 62);
+            docPdf.setFillColor(34, 197, 94); docPdf.rect(10, 72, 32, 8, "F");
+            docPdf.setTextColor(255, 255, 255); docPdf.setFont("Helvetica", "bold"); docPdf.text("STATUS: PAID", 14, 77.5);
+
+            docPdf.save(`${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_Invoice.pdf`);
+
+            const messageText = `⚡ *BLACKTERMINAL LEDGER* ⚡\n\nHello *${studentName}*,\nYour fees transaction ledger log for *${currentMonth}* has been verified!\n\n✅ *Status:* PAID\n🔒 *Txn ID:* #${txnID}\n\n📝 _Official Invoice PDF has been generated and saved locally on your device._`;
+            const whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNum}&text=${encodeURIComponent(messageText)}`;
+            window.open(whatsappUrl, '_blank');
+
+        } catch (error) {
+            alert("Error rendering receipt module layout.");
         }
     }
 
-    loadStudentPayments();
+    listenToStudentDirectory();
 </script>
 </body>
 </html>
