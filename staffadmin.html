@@ -24,17 +24,14 @@
         .card { background: var(--glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 24px; padding: 22px; margin-bottom: 18px; border: 1px solid var(--border); box-shadow: var(--card-shadow); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
         
-        /* Collapse Feature Core Engine Style */
         .collapse-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0; user-select: none; }
         .collapse-header h3 { margin: 0; font-size: 12px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 700; text-transform: uppercase; }
         .collapse-icon { font-size: 12px; color: var(--text-muted); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         .collapse-content { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin-top: 0.3s, opacity 0.3s; }
         
-        /* Active open states */
         .card.active .collapse-content { max-height: 350px; margin-top: 20px; opacity: 1; }
         .card.active .collapse-icon { transform: rotate(180deg); color: #fff; }
 
-        /* Standard static cards h3 fallbacks */
         .card > h3 { font-size: 12px; margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 700; text-transform: uppercase; }
 
         .admin-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
@@ -62,7 +59,7 @@
         .admin-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
         .admin-table th, .admin-table td { text-align: left; padding: 12px 6px; font-size: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         .admin-table th { color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
-        .inline-input { width: 55px; padding: 6px 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 12px; margin: 0; text-align: center; }
+        .inline-input { width: 45px; padding: 6px 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 11px; margin: 0; text-align: center; }
         .table-action-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; transition: transform 0.1s; }
         .btn-save-row { color: var(--apple-green); }
         .btn-delete-row { color: var(--apple-red); margin-left: 4px; }
@@ -105,10 +102,10 @@
         <div style="overflow-x: auto;">
             <table class="admin-table">
                 <thead>
-                    <tr><th>Staff Profile</th><th>Wage</th><th>Streak</th><th>Balance</th><th style="text-align: center;">Actions</th></tr>
+                    <tr><th>Staff Profile</th><th>Wage</th><th>Streak</th><th>Punch In</th><th>Balance</th><th style="text-align: center;">Actions</th></tr>
                 </thead>
                 <tbody id="payment-performance-table">
-                    <tr><td colspan="5" style="text-align:center; opacity:0.5; padding:15px;">Loading structural metrics...</td></tr>
+                    <tr><td colspan="6" style="text-align:center; opacity:0.5; padding:15px;">Loading structural metrics...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -126,23 +123,11 @@
             OPEN PANEL <i class="fas fa-arrow-right" style="margin-left: 4px; font-size: 9px;"></i>
         </button>
     </div>
+
     <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-blue);">
         <h3><i class="fas fa-filter" style="color: var(--apple-blue);"></i> Realtime Leads Sync Pipeline</h3>
         <div class="list-container" id="leads-realtime-list">
             <div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">Waiting for pipeline stream...</p></div>
-        </div>
-    </div>
-
-    <div class="card animate__animated animate__fadeInUp" style="border-top: 3px solid var(--apple-blue);" id="register-staff-card">
-        <div class="collapse-header" onclick="toggleCollapseCard('register-staff-card')">
-            <h3><i class="fas fa-user-plus" style="color: var(--apple-blue);"></i> Register New Staff Member</h3>
-            <i class="fas fa-chevron-down collapse-icon"></i>
-        </div>
-        <div class="collapse-content">
-            <input type="text" id="staff-id" placeholder="Staff ID (e.g., BT_01)">
-            <input type="text" id="staff-name" placeholder="Full Name">
-            <input type="number" id="staff-wage" placeholder="Per Day Wage" value="500">
-            <button class="btn btn-orange" onclick="registerStaff()">ADD TO SYSTEM <i class="fas fa-plus" style="font-size: 11px;"></i></button>
         </div>
     </div>
 
@@ -203,36 +188,57 @@
     }
 
     function initAdminEngine() {
-        db.ref('staff').on('value', snap => {
-            const select = document.getElementById('task-staff-select');
-            const staffCountSpan = document.getElementById('stat-staff-count');
-            const performanceTable = document.getElementById('payment-performance-table');
-            if(!select || !staffCountSpan || !performanceTable) return;
-            select.innerHTML = '<option value="">Select Target Staff</option>';
-            performanceTable.innerHTML = "";
-            if(snap.exists()){
-                const staffData = snap.val();
-                staffCountSpan.innerText = Object.keys(staffData).length;
-                Object.keys(staffData).forEach(id => {
-                    const staff = staffData[id];
-                    const option = document.createElement('option');
-                    option.value = id; option.innerText = `${staff.name || 'Unknown'} (${id})`;
-                    select.appendChild(option);
-                    performanceTable.innerHTML += `
-                        <tr>
-                            <td><b>${id}</b><br><span style="color:var(--text-sec); font-size:11px;">${staff.name || 'N/A'}</span></td>
-                            <td><input type="number" class="inline-input" id="wage-${id}" value="${staff.perDayWage || 0}"></td>
-                            <td><input type="number" class="inline-input" id="streak-${id}" value="${staff.streak || 0}"></td>
-                            <td style="color: var(--apple-green); font-weight:700;">₹${staff.salary || 0}</td>
-                            <td style="text-align: center;">
-                                <button class="table-action-btn btn-save-row" onclick="updateStaffRow('${id}')"><i class="fas fa-save"></i></button>
-                                <button class="table-action-btn btn-delete-row" onclick="deleteStaffRow('${id}', '${staff.name || ''}')"><i class="fas fa-trash-alt"></i></button>
-                            </td>
-                        </tr>`;
-                });
-            } else { staffCountSpan.innerText = "0"; performanceTable.innerHTML = `<tr><td colspan="5" style="text-align:center; opacity:0.5;">No active profiles found.</td></tr>`; }
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Realtime Staff and Punch-in Monitor Engine
+        db.ref('staff').on('value', staffSnap => {
+            db.ref(`attendance`).on('value', attendanceSnap => {
+                const select = document.getElementById('task-staff-select');
+                const staffCountSpan = document.getElementById('stat-staff-count');
+                const performanceTable = document.getElementById('payment-performance-table');
+                
+                if(!select || !staffCountSpan || !performanceTable) return;
+                select.innerHTML = '<option value="">Select Target Staff</option>';
+                performanceTable.innerHTML = "";
+                
+                if(staffSnap.exists()){
+                    const staffData = staffSnap.val();
+                    const attendanceData = attendanceSnap.exists() ? attendanceSnap.val() : {};
+                    staffCountSpan.innerText = Object.keys(staffData).length;
+                    
+                    Object.keys(staffData).forEach(id => {
+                        const staff = staffData[id];
+                        
+                        // Dropdown update
+                        const option = document.createElement('option');
+                        option.value = id; option.innerText = `${staff.name || 'Unknown'} (${id})`;
+                        select.appendChild(option);
+                        
+                        // Today's punch check logic
+                        let punchTimeDisplay = `<span style="color: var(--apple-red); font-weight:600; font-size:11px;">Absent</span>`;
+                        if(attendanceData[id] && attendanceData[id][todayStr]) {
+                            const time = attendanceData[id][todayStr].time || "Present";
+                            punchTimeDisplay = `<span style="color: var(--apple-green); font-weight:700; font-size:11px;"><i class="fas fa-clock"></i> ${time}</span>`;
+                        }
+
+                        performanceTable.innerHTML += `
+                            <tr>
+                                <td><b>${id}</b><br><span style="color:var(--text-sec); font-size:11px;">${staff.name || 'N/A'}</span></td>
+                                <td><input type="number" class="inline-input" id="wage-${id}" value="${staff.perDayWage || 0}"></td>
+                                <td><input type="number" class="inline-input" id="streak-${id}" value="${staff.streak || 0}"></td>
+                                <td>${punchTimeDisplay}</td>
+                                <td style="color: var(--apple-green); font-weight:700;">₹${staff.salary || 0}</td>
+                                <td style="text-align: center;">
+                                    <button class="table-action-btn btn-save-row" onclick="updateStaffRow('${id}')" title="Save Metrics"><i class="fas fa-save"></i></button>
+                                    <button class="table-action-btn btn-delete-row" onclick="deleteStaffRow('${id}', '${staff.name || ''}')" title="Delete Profile"><i class="fas fa-trash-alt"></i></button>
+                                </td>
+                            </tr>`;
+                    });
+                } else { staffCountSpan.innerText = "0"; performanceTable.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.5;">No active profiles found.</td></tr>`; }
+            });
         });
 
+        // Pending Payouts Pipeline Tracker
         db.ref('salaryRequests').on('value', snap => {
             const container = document.getElementById('payout-requests-list');
             const payoutCountSpan = document.getElementById('stat-payout-count');
@@ -243,11 +249,15 @@
                     const reqId = child.key; const reqData = child.val();
                     if(reqData.status === "Pending") {
                         pendingCounter++;
+                        const reqTypeBadge = reqData.requestType === "Emergency Advance" 
+                            ? `<br><span class="lead-badge" style="background: rgba(255, 159, 10, 0.15); color: var(--apple-orange); font-size:9px; margin-top:4px; display:inline-block;">Emergency Advance</span>`
+                            : `<br><span class="lead-badge" style="background: rgba(10, 132, 255, 0.15); color: var(--apple-blue); font-size:9px; margin-top:4px; display:inline-block;">Regular Payout</span>`;
+                        
                         container.innerHTML += `
                             <div class="data-item">
                                 <div class="data-info">
                                     <p>${reqData.name}</p>
-                                    <small>Amount: <b style="color: var(--apple-green);">${reqData.amount}</b></small>
+                                    <small>Amount: <b style="color: var(--apple-green);">${reqData.amount}</b>${reqTypeBadge}</small>
                                 </div>
                                 <div class="action-btn-group">
                                     <button class="sm-btn btn-approve" onclick="resolvePayout('${reqId}', true, '${reqData.amount}')">Approve</button>
@@ -261,6 +271,7 @@
             if(pendingCounter === 0) container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending requests</p></div>`;
         });
 
+        // Realtime Leads Sync Pipeline
         db.ref('leads').on('value', snap => {
             const container = document.getElementById('leads-realtime-list');
             if(!container) return; container.innerHTML = "";
@@ -308,6 +319,7 @@
             } else { container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active leads found.</p></div>`; }
         });
 
+        // Broadcast Task Pipeline Engine
         db.ref('tasks').on('value', snap => {
             const taskContainer = document.getElementById('broadcast-tasks-list');
             if(!taskContainer) return;
@@ -346,6 +358,7 @@
             }
         });
 
+        // Strict Day Protocols Registry Tracker
         db.ref('strictDays').on('value', snap => {
             const registryBox = document.getElementById('strict-days-active-registry');
             if(!registryBox) return; registryBox.innerHTML = "";
@@ -400,19 +413,6 @@
                 db.ref(`salaryRequests/${targetStaffId}`).update({ status: "Approved", processedAt: new Date().toISOString() }).then(() => { alert("Payout approved!"); });
             });
         } else { db.ref(`salaryRequests/${targetStaffId}`).remove().then(() => { alert("Request rejected."); }); }
-    }
-
-    function registerStaff() {
-        const id = document.getElementById('staff-id').value.trim();
-        const name = document.getElementById('staff-name').value.trim();
-        const wage = parseInt(document.getElementById('staff-wage').value);
-        if(!id || !name || isNaN(wage)) return alert("Fill all fields correctly.");
-        db.ref(`staff/${id}`).set({ name: name, perDayWage: wage, salary: 0, streak: 0 }).then(() => {
-            alert(`Staff [${name}] registered!`); 
-            document.getElementById('staff-id').value = ''; 
-            document.getElementById('staff-name').value = '';
-            document.getElementById('register-staff-card').classList.remove('active');
-        });
     }
 
     function assignTask() {
