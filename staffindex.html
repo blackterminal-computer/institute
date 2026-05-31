@@ -162,7 +162,7 @@
             background: rgba(48, 209, 88, 0.1) !important; border-color: var(--apple-green) !important; box-shadow: 0 0 20px rgba(48, 209, 88, 0.2);
         }
 
-        .btn { width: 100%; padding: 15px 20px; border-radius: 16px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 15px 20px; border-radius: 16px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; transition: all 0.3s ease; }
         .btn-main { background: linear-gradient(135deg, #FFFFFF 0%, #E5E5EA 100%); color: #000000; }
         .btn:active { transform: scale(0.96); }
 
@@ -210,8 +210,7 @@
         </div>
         <div class="progress-container"><div id="salary-progress" class="progress-bar"></div></div>
         
-        <!-- Payout Button Container (Default Hidden) -->
-        <button id="payout-btn" class="btn" style="margin-top: 15px; background: var(--apple-blue); color: white; display: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: 700;" onclick="requestSalary()">
+        <button id="payout-btn" class="btn" style="margin-top: 15px; color: white; display: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: 700;" onclick="requestSalary()">
             REQUEST PAYOUT <i class="fas fa-wallet" style="margin-left: 8px;"></i>
         </button>
         
@@ -301,6 +300,7 @@
     const db = firebase.database();
 
     let isAttendanceMarkedToday = false;
+    let currentSalaryBalance = 0;
 
     document.addEventListener("DOMContentLoaded", () => {
         fs.collection("attendance").where("date", "==", new Date().toISOString().split('T')[0])
@@ -461,53 +461,82 @@
             }
         });
 
-        db.ref(`staff/${staffId}`).on('value', snap => {
-            const val = snap.val() || {};
-            document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
-            document.getElementById('total-earning').innerText = `₹${val.salary || 0}`;
-            document.getElementById('streak-val').innerText = val.streak || 0;
-            const percent = Math.min(((val.salary || 0) / ((val.perDayWage || 500) * 25)) * 100, 100);
-            document.getElementById('salary-progress').style.width = percent + "%";
-        });
-
-        // CALCULATE REMAINING DAYS AND CONTROLLING PAYOUT BUTTON
         const now = new Date(); 
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const daysRemaining = lastDay - now.getDate();
-        
         document.getElementById('cycle-days').innerText = `${daysRemaining} days remaining`;
 
-        // Check if salary request already exists and is pending
-        db.ref(`salaryRequests/${staffId}`).once('value', snap => {
-            const btn = document.getElementById('payout-btn');
-            if (snap.exists() && snap.val().status === "Pending") {
-                btn.style.display = 'block'; 
-                btn.innerText = "REQUEST PENDING...";
-                btn.style.background = "var(--text-muted)";
-                btn.disabled = true;
-            } else if (daysRemaining <= 0) {
-                // If 0 days remaining and no pending request, show the button to request
-                btn.style.display = 'block';
-            }
+        db.ref(`staff/${staffId}`).on('value', snap => {
+            const val = snap.val() || {};
+            currentSalaryBalance = val.salary || 0;
+            
+            document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
+            document.getElementById('total-earning').innerText = `₹${currentSalaryBalance}`;
+            document.getElementById('streak-val').innerText = val.streak || 0;
+            const percent = Math.min((currentSalaryBalance / ((val.perDayWage || 500) * 25)) * 100, 100);
+            document.getElementById('salary-progress').style.width = percent + "%";
+
+            // Dynamic Payout/Emergency Button configuration
+            db.ref(`salaryRequests/${staffId}`).once('value', reqSnap => {
+                const btn = document.getElementById('payout-btn');
+                if (reqSnap.exists() && reqSnap.val().status === "Pending") {
+                    btn.style.display = 'block'; 
+                    btn.innerText = "REQUEST PENDING...";
+                    btn.style.background = "var(--text-muted)";
+                    btn.disabled = true;
+                } else if (currentSalaryBalance > 0) {
+                    btn.style.display = 'block';
+                    btn.disabled = false;
+                    
+                    if (daysRemaining <= 0) {
+                        // Regular monthly payout cycle complete (Green look)
+                        btn.innerText = "REQUEST PAYOUT";
+                        btn.style.background = "var(--apple-green)";
+                    } else {
+                        // Mid-cycle emergency advance requested (Orange look)
+                        btn.innerText = "REQUEST EMERGENCY ADVANCE";
+                        btn.style.background = "var(--apple-orange)";
+                    }
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
         });
 
         loadTasks(); listenStrictDays();
     }
     
     function requestSalary() {
-        const total = document.getElementById('total-earning').innerText;
         const btn = document.getElementById('payout-btn');
+        
+        if (currentSalaryBalance <= 0) {
+            alert("Error: Cannot request payout for ₹0 balance.");
+            btn.style.display = 'none';
+            return;
+        }
+        
+        const now = new Date(); 
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const daysRemaining = lastDay - now.getDate();
+        const isEmergency = daysRemaining > 0;
+
+        // Validation modal for safety
+        if (isEmergency) {
+            const confirmReq = confirm("Aapka monthly cycle abhi poora nahi hua hai.\nKya aap sach mein Emergency Advance Request bhejna chahte hain?");
+            if (!confirmReq) return;
+        }
         
         db.ref(`salaryRequests/${staffId}`).set({
             name: staffName,
-            amount: total,
+            amount: `₹${currentSalaryBalance}`,
             status: "Pending",
+            requestType: isEmergency ? "Emergency Advance" : "Regular Payout",
             requestedAt: new Date().toISOString()
         }).then(() => {
             btn.innerText = "REQUEST PENDING...";
             btn.style.background = "var(--text-muted)";
             btn.disabled = true;
-            alert("Salary Request Sent Successfully!");
+            alert(isEmergency ? "Emergency Advance Request Sent to Admin!" : "Salary Request Sent Successfully!");
         });
     }
     
