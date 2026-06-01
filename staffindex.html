@@ -520,15 +520,37 @@
         const daysRemaining = lastDay - now.getDate();
         const isEmergency = daysRemaining > 0;
 
-        // Validation modal for safety
+        let finalRequestedAmount = currentSalaryBalance;
+
+        // Validation logic updated for Emergency Advance (Max 50% hold)
         if (isEmergency) {
-            const confirmReq = confirm("Aapka monthly cycle abhi poora nahi hua hai.\nKya aap sach mein Emergency Advance Request bhejna chahte hain?");
+            const maxAllowed = Math.floor(currentSalaryBalance * 0.5);
+            const userInput = prompt(`Aapka monthly cycle complete nahi hua hai.\nMaximum limit (50%): ₹${maxAllowed}\n\nKitna Emergency Advance chahiye? Enter amount:`);
+            
+            if (userInput === null) return; // User cancelled the prompt
+            
+            const parsedAmount = parseInt(userInput.replace(/[^0-9]/g, ''));
+            
+            if (isNaN(parsedAmount) || parsedAmount <= 0) {
+                alert("Kripya ek valid amount enter karein.");
+                return;
+            }
+            
+            if (parsedAmount > maxAllowed) {
+                alert(`Aap ₹${maxAllowed} se zyada amount request nahi kar sakte (50% Hold policy active).`);
+                return;
+            }
+            
+            finalRequestedAmount = parsedAmount;
+        } else {
+            // Normal payout confirmation
+            const confirmReq = confirm(`Kya aap full payout (₹${currentSalaryBalance}) ke liye request bhejna chahte hain?`);
             if (!confirmReq) return;
         }
         
         db.ref(`salaryRequests/${staffId}`).set({
             name: staffName,
-            amount: `₹${currentSalaryBalance}`,
+            amount: `₹${finalRequestedAmount}`,
             status: "Pending",
             requestType: isEmergency ? "Emergency Advance" : "Regular Payout",
             requestedAt: new Date().toISOString()
@@ -536,7 +558,7 @@
             btn.innerText = "REQUEST PENDING...";
             btn.style.background = "var(--text-muted)";
             btn.disabled = true;
-            alert(isEmergency ? "Emergency Advance Request Sent to Admin!" : "Salary Request Sent Successfully!");
+            alert(isEmergency ? `₹${finalRequestedAmount} ki Emergency Advance Request Admin ko bhej di gayi hai!` : "Salary Request Sent Successfully!");
         });
     }
     
