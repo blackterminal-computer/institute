@@ -173,10 +173,18 @@
         .strict-date-card.today { background: linear-gradient(180deg, var(--apple-red) 0%, #C92A2A 100%); border: none; box-shadow: 0 8px 20px rgba(255, 59, 48, 0.35); }
         .strict-date-card.today .mon, .strict-date-card.today .day { color: white; }
 
-        .task-item { background: rgba(255,255,255,0.01); padding: 14px 16px; border-radius: 16px; margin-top: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-        .task-dot { height: 7px; width: 7px; background: var(--cyber-purple); border-radius: 50%; box-shadow: 0 0 10px var(--cyber-purple); }
+        /* --- New Task Item Layout updates to insert Buttons --- */
+        .task-item { background: rgba(255,255,255,0.01); padding: 14px 16px; border-radius: 16px; margin-top: 10px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .task-left-block { display: flex; align-items: center; gap: 12px; }
+        .task-dot { height: 7px; width: 7px; background: var(--cyber-purple); border-radius: 50%; box-shadow: 0 0 10px var(--cyber-purple); flex-shrink: 0; }
+        .task-dot.completed { background: var(--apple-green); box-shadow: 0 0 10px var(--apple-green); }
         .task-info p { margin: 0; font-size: 14px; font-weight: 600; color: #E5E5EA; }
+        .task-info p.done-text { text-decoration: line-through; color: var(--text-muted); }
         .task-info small { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block; }
+        
+        .task-action-btn { background: rgba(191, 90, 242, 0.12); color: var(--cyber-purple); border: 1px solid rgba(191, 90, 242, 0.2); font-size: 11px; padding: 6px 12px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; }
+        .task-action-btn:hover { background: rgba(191, 90, 242, 0.2); }
+        .task-action-btn.completed { background: rgba(48, 209, 88, 0.12); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.2); cursor: default; }
 
         input { width: 100%; padding: 14px 16px; margin-bottom: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px; color: white; outline: none; box-sizing: border-box; font-size: 14px; transition: all 0.3s; }
         input:focus { border-color: var(--cyber-purple); box-shadow: 0 0 0 4px rgba(191, 90, 242, 0.15); }
@@ -412,13 +420,48 @@
         icon.className = "fas fa-fingerprint";
     }
 
+    // Dynamic Task Loading Function with Interactive Buttons
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
-            const container = document.getElementById('task-list'); if(!snap.exists()) return; container.innerHTML = "";
+            const container = document.getElementById('task-list'); 
+            if(!snap.exists()) return; 
+            container.innerHTML = "";
+            
             snap.forEach(child => {
-                const t = child.val(); container.innerHTML += `<div class="task-item animate__animated animate__fadeIn"><div class="task-dot"></div><div class="task-info"><p>${t.task}</p><small>${new Date(t.date).toLocaleDateString('en-GB')}</small></div></div>`;
+                const taskId = child.key;
+                const t = child.val();
+                const isDone = t.status === "Completed";
+                
+                container.innerHTML += `
+                    <div class="task-item animate__animated animate__fadeIn">
+                        <div class="task-left-block">
+                            <div class="task-dot ${isDone ? 'completed' : ''}"></div>
+                            <div class="task-info">
+                                <p class="${isDone ? 'done-text' : ''}">${t.task}</p>
+                                <small>${new Date(t.date).toLocaleDateString('en-GB')}</small>
+                            </div>
+                        </div>
+                        <button class="task-action-btn ${isDone ? 'completed' : ''}" 
+                                ${isDone ? 'disabled' : `onclick="completeTask('${taskId}')"`}>
+                            ${isDone ? '<i class="fas fa-check"></i> DONE' : 'MARK DONE'}
+                        </button>
+                    </div>`;
             });
         });
+    }
+
+    // Interactive complete action handler triggering Firebase Node state update
+    function completeTask(taskId) {
+        if(confirm("Kya aapne yeh task sach me pura kar liya hai?")) {
+            db.ref(`tasks/${staffId}/${taskId}`).update({
+                status: "Completed",
+                completedAt: Date.now()
+            }).then(() => {
+                alert("Task status synced: Marked Completed!");
+            }).catch(err => {
+                alert("Error synchronizing task: " + err.message);
+            });
+        }
     }
 
     function submitLead() {
@@ -476,7 +519,6 @@
             const percent = Math.min((currentSalaryBalance / ((val.perDayWage || 500) * 25)) * 100, 100);
             document.getElementById('salary-progress').style.width = percent + "%";
 
-            // Updated Config: Dynamic Payout/Emergency Button logic based on dates
             db.ref(`salaryRequests/${staffId}`).once('value', reqSnap => {
                 const btn = document.getElementById('payout-btn');
                 
@@ -486,22 +528,19 @@
                     btn.style.background = "var(--text-muted)";
                     btn.disabled = true;
                 } else if (currentSalaryBalance > 0) {
-                    const currentDayOfMonth = now.getDate(); // Current date of the month (1-31)
+                    const currentDayOfMonth = now.getDate(); 
                     
                     if (daysRemaining <= 0) {
-                        // Regular monthly payout cycle complete (Last day of month)
                         btn.style.display = 'block';
                         btn.disabled = false;
                         btn.innerText = "REQUEST PAYOUT";
                         btn.style.background = "var(--apple-green)";
                     } else if (currentDayOfMonth >= 20) {
-                        // SHOW ONLY IF 20 DAYS HAVE PASSED IN THE CURRENT CYCLE
                         btn.style.display = 'block';
                         btn.disabled = false;
                         btn.innerText = "REQUEST EMERGENCY ADVANCE";
                         btn.style.background = "var(--apple-orange)";
                     } else {
-                        // Hide button if it's before the 20th day of the cycle
                         btn.style.display = 'none';
                     }
                 } else {
@@ -529,12 +568,11 @@
 
         let finalRequestedAmount = currentSalaryBalance;
 
-        // Validation logic for Emergency Advance (Max 50% hold)
         if (isEmergency) {
             const maxAllowed = Math.floor(currentSalaryBalance * 0.5);
             const userInput = prompt(`Aapka monthly cycle complete nahi hua hai.\nMaximum limit (50%): ₹${maxAllowed}\n\nKitna Emergency Advance chahiye? Enter amount:`);
             
-            if (userInput === null) return; // User cancelled the prompt
+            if (userInput === null) return; 
             
             const parsedAmount = parseInt(userInput.replace(/[^0-9]/g, ''));
             
@@ -550,7 +588,6 @@
             
             finalRequestedAmount = parsedAmount;
         } else {
-            // Normal payout confirmation
             const confirmReq = confirm(`Kya aap full payout (₹${currentSalaryBalance}) ke liye request bhejna chahte hain?`);
             if (!confirmReq) return;
         }
