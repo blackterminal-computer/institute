@@ -476,26 +476,33 @@
             const percent = Math.min((currentSalaryBalance / ((val.perDayWage || 500) * 25)) * 100, 100);
             document.getElementById('salary-progress').style.width = percent + "%";
 
-            // Dynamic Payout/Emergency Button configuration
+            // Updated Config: Dynamic Payout/Emergency Button logic based on dates
             db.ref(`salaryRequests/${staffId}`).once('value', reqSnap => {
                 const btn = document.getElementById('payout-btn');
+                
                 if (reqSnap.exists() && reqSnap.val().status === "Pending") {
                     btn.style.display = 'block'; 
                     btn.innerText = "REQUEST PENDING...";
                     btn.style.background = "var(--text-muted)";
                     btn.disabled = true;
                 } else if (currentSalaryBalance > 0) {
-                    btn.style.display = 'block';
-                    btn.disabled = false;
+                    const currentDayOfMonth = now.getDate(); // Current date of the month (1-31)
                     
                     if (daysRemaining <= 0) {
-                        // Regular monthly payout cycle complete (Green look)
+                        // Regular monthly payout cycle complete (Last day of month)
+                        btn.style.display = 'block';
+                        btn.disabled = false;
                         btn.innerText = "REQUEST PAYOUT";
                         btn.style.background = "var(--apple-green)";
-                    } else {
-                        // Mid-cycle emergency advance requested (Orange look)
+                    } else if (currentDayOfMonth >= 20) {
+                        // SHOW ONLY IF 20 DAYS HAVE PASSED IN THE CURRENT CYCLE
+                        btn.style.display = 'block';
+                        btn.disabled = false;
                         btn.innerText = "REQUEST EMERGENCY ADVANCE";
                         btn.style.background = "var(--apple-orange)";
+                    } else {
+                        // Hide button if it's before the 20th day of the cycle
+                        btn.style.display = 'none';
                     }
                 } else {
                     btn.style.display = 'none';
@@ -522,7 +529,7 @@
 
         let finalRequestedAmount = currentSalaryBalance;
 
-        // Validation logic updated for Emergency Advance (Max 50% hold)
+        // Validation logic for Emergency Advance (Max 50% hold)
         if (isEmergency) {
             const maxAllowed = Math.floor(currentSalaryBalance * 0.5);
             const userInput = prompt(`Aapka monthly cycle complete nahi hua hai.\nMaximum limit (50%): ₹${maxAllowed}\n\nKitna Emergency Advance chahiye? Enter amount:`);
