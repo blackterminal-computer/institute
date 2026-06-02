@@ -129,7 +129,6 @@
 
         #loading { text-align: center; color: var(--info); padding: 30px; font-size: 0.85rem; }
 
-        /* Search input active state outline effect */
         #student-search:focus {
             border-color: var(--info) !important;
         }
@@ -181,7 +180,6 @@
 
     let globalStudentDirectory = [];
 
-    // Saare special characters, dots aur spaces ko clean karne waala function
     function cleanString(str) {
         if (!str) return '';
         return str.toString()
@@ -191,17 +189,15 @@
                   .trim();
     }
 
-    // Phone number format karne ka solid function (Sirf valid 10 digits rakh kar shuruat me ek baar 91 lagayega)
     function sanitizePhoneNumber(phone) {
         if (!phone) return "";
-        let pureDigits = phone.toString().replace(/\D/g, ""); // Remove non-numbers
+        let pureDigits = phone.toString().replace(/\D/g, "");
         if (pureDigits.length > 10) {
-            pureDigits = pureDigits.slice(-10); // Aakhri ke 10 digits uthayega (9191 ka jhanjhat khatam)
+            pureDigits = pureDigits.slice(-10);
         }
         return pureDigits.length === 10 ? "91" + pureDigits : "";
     }
 
-    // 1. Live Student Sync
     function listenToStudentDirectory() {
         onSnapshot(collection(db, "students"), (snapshot) => {
             globalStudentDirectory = [];
@@ -219,7 +215,6 @@
         });
     }
 
-    // 2. Fetch and render entries
     function loadStudentPayments() {
         const payBody = document.getElementById('payment-body');
         const totalCountSpan = document.getElementById('total-count');
@@ -292,7 +287,6 @@
                 });
             });
 
-            // Naya Search Filter Event Listener Logic
             const searchInput = document.getElementById('student-search');
             searchInput.addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase().trim();
@@ -323,12 +317,10 @@
         } catch(e) { console.error(e); }
     }
 
-    // 3. Smart Fuzzy Match & Whatsapp Delivery Engine
     function generateAndSendInvoice(studentName) {
         const attendanceClean = cleanString(studentName);
         let phoneNum = "";
 
-        // Smart Cross Matching Loop (ID, field, substring sab check karega)
         const match = globalStudentDirectory.find(s => 
             s.cleanDocId === attendanceClean || 
             s.cleanFieldName === attendanceClean ||
@@ -340,7 +332,6 @@
         if (match && match.phone) {
             phoneNum = match.phone;
         } else {
-            // Safe Fallback Trigger: Agar data match na ho toh manually input le lega crash hone ki jagah!
             let manualInput = prompt(`Database couldn't auto-map phone for "${studentName}".\nPlease type the 10-digit Mobile Number manually:`);
             if (!manualInput) return;
             phoneNum = sanitizePhoneNumber(manualInput);
@@ -363,7 +354,7 @@
             docPdf.text("SECURE DATABASE TRANSACTION LEDGER", 10, 23);
             docPdf.setDrawColor(30, 41, 59); docPdf.line(10, 28, 95, 28);
             docPdf.setFontSize(10); docPdf.setTextColor(255, 255, 255);
-                        docPdf.text(`Student: ${studentName}`, 10, 40);
+            docPdf.text(`Student: ${studentName}`, 10, 40);
             
             const txnID = `BT-${Math.floor(100000 + Math.random() * 900000)}`;
             const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -372,22 +363,19 @@
             docPdf.text(`Billing Cycle: ${currentMonth}`, 10, 47);
             docPdf.text(`TXN Reference: #${txnID}`, 10, 53);
             docPdf.text(`Date Issued: ${new Date().toLocaleDateString()}`, 10, 59);
-            docPdf.text(`Time Issued: ${currentTime}`, 10, 65); // Added Time
+            docPdf.text(`Time Issued: ${currentTime}`, 10, 65);
             
             docPdf.setFillColor(34, 197, 94); docPdf.rect(10, 73, 32, 8, "F");
             docPdf.setTextColor(255, 255, 255); docPdf.setFont("Helvetica", "bold"); docPdf.text("STATUS: PAID", 14, 78.5);
 
-            // Red warning note at bottom of PDF
-            docPdf.setFontSize(7); docPdf.setFont("Helvetica", "bold"); docPdf.setTextColor(255, 62, 62);
-            docPdf.text("NOTE: Har mahine ki 10 tarik ke andar fees dena hota hai.", 10, 92);
+            docPdf.setFontSize(6.8); docPdf.setFont("Helvetica", "bold"); docPdf.setTextColor(255, 62, 62);
+            docPdf.text("NOTE: Fees must be paid before the 10th of every month.", 10, 92);
 
             docPdf.save(`${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_Invoice.pdf`);
 
-
-                        const currentTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const messageText = `⚡ *BLACKTERMINAL LEDGER* ⚡\n\nHello *${studentName}*,\nYour fees transaction ledger log for *${currentMonth}* has been verified!\n\n✅ *Status:* PAID\n🔒 *Txn ID:* #${txnID}\n📅 *Date:* ${new Date().toLocaleDateString()}\n🕒 *Time:* ${currentTimeStr}\n\n⚠️ ⚠️ *Important Reminder:* Please note, fees must be paid before the 10th of every month.
-
-
+            const currentTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const messageText = `⚡ *BLACKTERMINAL LEDGER* ⚡\n\nHello *${studentName}*,\nYour fees transaction ledger log for *${currentMonth}* has been verified!\n\n✅ *Status:* PAID\n🔒 *Txn ID:* #${txnID}\n📅 *Date:* ${new Date().toLocaleDateString()}\n🕒 *Time:* ${currentTimeStr}\n\n⚠️ *Important Reminder:* Please note, fees must be paid before the 10th of every month.\n\n📝 _Official Invoice PDF has been generated and saved locally on your device._`;
+            
             const whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNum}&text=${encodeURIComponent(messageText)}`;
             window.open(whatsappUrl, '_blank');
 
