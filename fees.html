@@ -60,7 +60,6 @@
             margin-bottom: 20px;
         }
 
-        /* Summary Dashboard Grid Layout */
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -101,6 +100,7 @@
             border-radius: 12px; 
             border: 1px solid var(--border); 
             width: 100%; 
+            margin-bottom: 20px;
         }
 
         h2 { 
@@ -113,7 +113,7 @@
             gap: 8px; 
         }
 
-        .fee-list { max-height: 70vh; overflow-y: auto; }
+        .fee-list { max-height: 50vh; overflow-y: auto; }
 
         .fee-row {
             display: flex; 
@@ -161,6 +161,49 @@
             gap: 4px;
         }
 
+        /* Naya Paid Table Styling */
+        .paid-table-wrapper {
+            max-height: 40vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .paid-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            background: #020617;
+            font-size: 0.8rem;
+        }
+
+        .paid-table th {
+            background: rgba(255, 255, 255, 0.03);
+            color: #94a3b8;
+            padding: 10px 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .paid-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: #e0e0e0;
+        }
+
+        .paid-table tr:last-child td { border-bottom: none; }
+        .date-badge {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.7rem;
+        }
+
         #loading { text-align: center; color: var(--info); padding: 30px; font-size: 0.85rem; }
         #student-search:focus { border-color: var(--info) !important; }
     </style>
@@ -200,8 +243,26 @@
         <div id="loading"><i class="fas fa-spinner fa-spin"></i> FETCHING DATABASE LOGS...</div>
         <div class="fee-list" id="payment-body"></div>
     </div>
-</div>
 
+    <div class="card">
+        <h2><i class="fas fa-circle-check" style="color: var(--success);"></i> Paid Students Log</h2>
+        <div class="paid-table-wrapper">
+            <table class="paid-table">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th style="text-align: right;">Payment Date</th>
+                    </tr>
+                </thead>
+                <tbody id="paid-students-table-body">
+                    <tr>
+                        <td colspan="2" style="text-align: center; opacity: 0.4; padding: 20px;">No payment records found for this month.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -223,6 +284,7 @@
 
     let globalStudentDirectory = [];
     let currentPaymentStatuses = {}; 
+    let paymentDates = {}; // Paid dates tracking object
 
     function cleanString(str) {
         if (!str) return '';
@@ -235,13 +297,31 @@
         if (pureDigits.length > 10) pureDigits = pureDigits.slice(-10);
         return pureDigits.length === 10 ? "91" + pureDigits : "";
     }
-    // Live automatic calculations function
+
+    // Date ko "5 June" format me lane ka function
+    function formatPaymentDate(timestamp) {
+        if (!timestamp) return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+
+    // Calculations aur dynamic Paid Table update karne wala function
     function updateFeeCalculations(totalStudentsCount) {
         const totalStudents = totalStudentsCount;
         let paidCount = 0;
+        let tableRowsHtml = "";
 
-        Object.values(currentPaymentStatuses).forEach(status => {
-            if (status === "Paid") paidCount++;
+        // Alphasort ke mutabik Paid students ki list array banana
+        const paidStudentsList = [];
+
+        Object.keys(currentPaymentStatuses).forEach(name => {
+            if (currentPaymentStatuses[name] === "Paid") {
+                paidCount++;
+                paidStudentsList.push({
+                    name: name,
+                    dateStr: paymentDates[name] || formatPaymentDate(null)
+                });
+            }
         });
 
         const totalAmountCollected = paidCount * 500;
@@ -249,8 +329,24 @@
         document.getElementById('total-count').innerText = totalStudents;
         document.getElementById('paid-ratio').innerText = `${paidCount}/${totalStudents}`;
         document.getElementById('total-amount').innerText = `₹${totalAmountCollected}`;
-    }
 
+        // Table update UI render logic
+        const tableBody = document.getElementById('paid-students-table-body');
+        if (paidStudentsList.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="2" style="text-align: center; opacity: 0.4; padding: 20px;">No payment records found for this month.</td></tr>`;
+        } else {
+            // Newest payment upar dikhane ke liye sort kiya gaya hai
+            paidStudentsList.forEach(student => {
+                tableRowsHtml += `
+                    <tr>
+                        <td style="font-weight: 600; color: #fff;">${student.name}</td>
+                        <td style="text-align: right;"><span class="date-badge">${student.dateStr}</span></td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = tableRowsHtml;
+        }
+    }
     function listenToStudentDirectory() {
         onSnapshot(collection(db, "students"), (snapshot) => {
             globalStudentDirectory = [];
@@ -309,6 +405,12 @@
                     const status = (pDoc.exists() && pDoc.data().status === "Paid") ? "Paid" : "Unpaid";
                     
                     currentPaymentStatuses[name] = status;
+                    if(pDoc.exists() && pDoc.data().updatedAt) {
+                        paymentDates[name] = formatPaymentDate(pDoc.data().updatedAt);
+                    } else {
+                        paymentDates[name] = formatPaymentDate(null);
+                    }
+                    
                     updateFeeCalculations(studentNames.length);
 
                     const badgeClass = status === "Paid" ? "status-badge status-paid" : "status-badge status-unpaid";
