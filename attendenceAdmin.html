@@ -25,7 +25,6 @@
 
         .container { max-width: 450px; margin: 0 auto; }
         
-        /* Header & Refresh Styling */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
@@ -41,16 +40,10 @@
         .spinning { animation: spin 0.8s linear; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* Floating Indicator Animation */
         .floating-indicator {
-            position: fixed;
-            pointer-events: none;
-            font-weight: 800;
-            font-size: 20px;
-            z-index: 10000;
+            position: fixed; pointer-events: none; font-weight: 800; font-size: 20px; z-index: 10000;
             animation: floatUp 0.8s ease-out forwards;
         }
-
         @keyframes floatUp {
             0% { transform: translateY(0); opacity: 1; }
             100% { transform: translateY(-60px); opacity: 0; }
@@ -62,7 +55,6 @@
             outline: none; box-sizing: border-box; transition: 0.3s;
         }
 
-        /* Requests Section Styles */
         .section-title { font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--warning); margin: 15px 0 10px; display: flex; align-items: center; gap: 6px; }
         
         .request-card {
@@ -74,13 +66,10 @@
         .req-reason { font-size: 12px; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; margin: 8px 0; color: #cbd5e1; border: 1px solid var(--border); }
         .req-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 
-        /* Student Card Styles */
         .student-card {
             background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 24px; padding: 20px; margin-bottom: 16px;
-            backdrop-filter: blur(10px);
+            border-radius: 24px; padding: 20px; margin-bottom: 16px; backdrop-filter: blur(10px);
         }
-
         .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .name { font-size: 18px; font-weight: 800; margin: 0; }
         .perc-badge { font-size: 18px; font-weight: 800; }
@@ -92,13 +81,13 @@
         .progress-fill { height: 100%; border-radius: 10px; transition: 0.8s ease; }
 
         .controls { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; 
-            margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border);
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
+            margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);
         }
 
         .btn {
             border: none; padding: 12px 5px; border-radius: 14px; 
-            font-weight: 800; cursor: pointer; font-size: 12px;
+            font-weight: 800; cursor: pointer; font-size: 11px;
             display: flex; align-items: center; justify-content: center; gap: 5px; color: #fff;
             transition: 0.2s;
         }
@@ -133,7 +122,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc, updateDoc, addDoc, getDocs, query, where, deleteDoc, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc, updateDoc, getDocs, query, where, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -150,7 +139,6 @@
     let unsubscribeStudents = null;
     let unsubscribeRequests = null;
 
-    // --- REFRESH LOGIC ---
     window.manualRefresh = () => {
         const icon = document.getElementById("refreshIcon");
         icon.classList.add("spinning");
@@ -160,20 +148,15 @@
         setTimeout(() => icon.classList.remove("spinning"), 800);
     };
 
-    // --- FLOATING INDICATOR ENGINE ---
     window.showFloatingText = (e, text, color) => {
         const el = document.createElement("span");
-        el.innerText = text;
-        el.className = "floating-indicator";
-        el.style.left = `${e.clientX}px`;
-        el.style.top = `${e.clientY}px`;
-        el.style.color = color;
+        el.innerText = text; el.className = "floating-indicator";
+        el.style.left = `${e.clientX}px`; el.style.top = `${e.clientY}px`; el.style.color = color;
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 800);
     };
 
     function startAdminSync() {
-        // 1. Sync Requests real-time
         unsubscribeRequests = onSnapshot(collection(db, "attendance_requests"), (snap) => {
             const reqContainer = document.getElementById("requestsContainer");
             const reqList = document.getElementById("requestsList");
@@ -184,9 +167,7 @@
             } else {
                 reqContainer.style.display = "block";
                 snap.docs.forEach(rDoc => {
-                    const rData = rDoc.data();
-                    const rId = rDoc.id;
-                    
+                    const rData = rDoc.data(); const rId = rDoc.id;
                     const div = document.createElement("div");
                     div.className = "request-card";
                     div.innerHTML = `
@@ -205,149 +186,147 @@
             }
         });
 
-        // 2. Sync Student Profiles real-time
+        // FAST LOAD MECHANISM: Parallel fetch requests using Promise.all
         unsubscribeStudents = onSnapshot(collection(db, "students"), async (snap) => {
-            studentsData = [];
-            const listEl = document.getElementById("studentList");
-            listEl.innerHTML = "";
-
-            for (const sDoc of snap.docs) {
-                const data = sDoc.data();
-                const id = sDoc.id;
-                const attSnap = await getDocs(query(collection(db, "attendance"), where("userName", "==", id)));
-                const count = attSnap.size;
-
-                studentsData.push({ id, ...data, attCount: count });
-                renderStudentUI(id, data, count);
-            }
             document.getElementById("countDisplay").innerText = `${snap.size} AGENTS REGISTERED`;
+            
+            const fetchPromises = snap.docs.map(async (sDoc) => {
+                const data = sDoc.data(); const id = sDoc.id;
+                const attSnap = await getDocs(query(collection(db, "attendance"), where("userName", "==", id)));
+                return { id, ...data, attCount: attSnap.size };
+            });
+
+            studentsData = await Promise.all(fetchPromises);
+            renderFilteredUI();
         });
     }
 
-    function renderStudentUI(id, data, count) {
-        // Direct conversion bina kisi multiplier (* 30) ke
-        const totalDays = parseInt(data.courseDuration) || 365; 
-        const perc = Math.min(Math.round((count / totalDays) * 100), 100);
-        const color = perc < 70 ? 'var(--danger)' : (perc < 85 ? 'var(--warning)' : 'var(--success)');
+    function renderFilteredUI() {
+        const listEl = document.getElementById("studentList");
+        listEl.innerHTML = "";
+        const term = document.getElementById("search").value.toLowerCase();
+        
+        const filtered = studentsData.filter(s => s.id.toLowerCase().includes(term));
+        if(filtered.length === 0) {
+            listEl.innerHTML = `<p style="text-align:center; opacity:0.5; padding:50px;">No matching records found.</p>`;
+            return;
+        }
 
-        const card = document.createElement("div");
-        card.className = "student-card";
-        card.innerHTML = `
-            <div class="card-top">
-                <div><h3 class="name">${id}</h3><p style="font-size:10px; opacity:0.4; margin:0;">${data.currentCourse || 'N/A'}</p></div>
-                <div class="perc-badge" style="color:${color}">${perc}%</div>
-            </div>
-            <div class="progress-container"><div class="progress-fill" style="width:${perc}%; background:${color}"></div></div>
-            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; opacity:0.7;">
-                <span>DAYS: ${count} / ${totalDays}</span>
-                <span>XP: ${data.xp || 0}</span>
-            </div>
-            <div class="controls">
-                <button class="btn" style="background:var(--success)" onclick="window.updateTotalDays(event, '${id}')"><i class="ri-calendar-event-line"></i> Update Total Days</button>
-                <button class="btn" style="background:var(--primary)" onclick="window.handleXP(event, '${id}')"><i class="ri-flashlight-fill"></i> Update XP</button>
-            </div>
-        `;
-        document.getElementById("studentList").appendChild(card);
+        filtered.forEach(student => {
+            const totalDays = parseInt(student.courseDuration) || 365; 
+            const perc = Math.min(Math.round((student.attCount / totalDays) * 100), 100);
+            const color = perc < 70 ? 'var(--danger)' : (perc < 85 ? 'var(--warning)' : 'var(--success)');
+            const totalPaid = student.totalPaidAmount || 0;
+
+            const card = document.createElement("div");
+            card.className = "student-card";
+            card.innerHTML = `
+                <div class="card-top">
+                    <div><h3 class="name">${student.id}</h3><p style="font-size:10px; opacity:0.4; margin:0;">${student.currentCourse || 'N/A'}</p></div>
+                    <div class="perc-badge" style="color:${color}">${perc}%</div>
+                </div>
+                <div class="progress-container"><div class="progress-fill" style="width:${perc}%; background:${color}"></div></div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; font-size:11px; font-weight:700; opacity:0.8;">
+                    <div>DAYS: <span style="color:#fff">${student.attCount} / ${totalDays}</span></div>
+                    <div style="text-align:right;">XP: <span style="color:#fff">${student.xp || 0}</span></div>
+                    <div style="grid-column: span 2; margin-top:4px; color:var(--success);">PAID AMOUNT: ₹${totalPaid}</div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn" style="background:var(--success)" onclick="window.updateTotalDays(event, '${student.id}')"><i class="ri-calendar-event-line"></i> Total Days</button>
+                    <button class="btn" style="background:var(--primary)" onclick="window.handleXP(event, '${student.id}')"><i class="ri-flashlight-fill"></i> Update XP</button>
+                    <button class="btn" style="background:var(--warning); color:#000;" onclick="window.updatePaidAmount(event, '${student.id}')"><i class="ri-money-dollar-circle-line"></i> Update Paid</button>
+                    <button class="btn" style="background:var(--danger)" onclick="window.deleteStudent('${student.id}')"><i class="ri-delete-bin-6-line"></i> Delete Agent</button>
+                </div>
+            `;
+            listEl.appendChild(card);
+        });
     }
 
-    // --- REQUEST PROCESS ENGINE ---
     window.processRequest = async (e, reqId, studentName, dateStr, decision) => {
-        const targetBtn = e.currentTarget;
-        targetBtn.disabled = true;
-
+        const targetBtn = e.currentTarget; targetBtn.disabled = true;
         try {
             if (decision === 'accept') {
                 window.showFloatingText(e, "Approved", "var(--success)");
-                
                 await setDoc(doc(db, "attendance", `${studentName}_${dateStr}`), { 
-                    studentName: studentName, 
-                    userName: studentName, 
-                    date: dateStr, 
-                    timestamp: serverTimestamp() 
+                    studentName: studentName, userName: studentName, date: dateStr, timestamp: serverTimestamp() 
                 });
 
-                const sRef = doc(db, "students", studentName);
-                const sSnap = await getDoc(sRef);
+                const sRef = doc(db, "students", studentName); const sSnap = await getDoc(sRef);
                 let newStreak = 1;
-                
                 if (sSnap.exists()) {
-                    const d = sSnap.data();
-                    const last = d.lastAttendanceDate;
+                    const d = sSnap.data(); const last = d.lastAttendanceDate;
                     if (last) {
-                        const t = new Date(dateStr);
-                        const lDate = new Date(last);
-                        const yest = new Date(t);
-                        yest.setDate(t.getDate() - 1);
-                        
+                        const t = new Date(dateStr); const lDate = new Date(last);
+                        const yest = new Date(t); yest.setDate(t.getDate() - 1);
                         if (lDate.toDateString() === yest.toDateString()) newStreak = (d.streak || 0) + 1;
                         else if (lDate.toDateString() === t.toDateString()) newStreak = d.streak;
                     }
                     await updateDoc(sRef, { streak: newStreak, lastAttendanceDate: dateStr });
                 }
-            } else {
-                window.showFloatingText(e, "Rejected", "var(--danger)");
-            }
-
+            } else { window.showFloatingText(e, "Rejected", "var(--danger)"); }
             await deleteDoc(doc(db, "attendance_requests", reqId));
-
-        } catch (err) {
-            alert("Error processing request!");
-            targetBtn.disabled = false;
-        }
+        } catch (err) { alert("Error processing request!"); targetBtn.disabled = false; }
     };
 
-    // --- DIRECTLY UPDATE TOTAL DAYS FIELD ---
     window.updateTotalDays = async (e, id) => {
         const currentStudent = studentsData.find(s => s.id === id);
         const currentTotalDays = currentStudent ? (parseInt(currentStudent.courseDuration) || 365) : 365;
-        
-        const newTotalDaysInput = prompt(`Agent: ${id}\nCurrent Total Days Target: ${currentTotalDays}\nEnter NEW Target Total Days:`, currentTotalDays);
-        if (newTotalDaysInput === null || newTotalDaysInput === "") return;
-        
+        const newTotalDaysInput = prompt(`Agent: ${id}\nCurrent Days: ${currentTotalDays}\nEnter NEW Days Target:`, currentTotalDays);
+        if (!newTotalDaysInput) return;
         const targetDaysValue = parseInt(newTotalDaysInput);
-        if (isNaN(targetDaysValue) || targetDaysValue <= 0) {
-            alert("Invalid entry! Please enter a number greater than 0.");
-            return;
-        }
+        if (isNaN(targetDaysValue) || targetDaysValue <= 0) return alert("Invalid Input!");
 
         try {
-            window.showFloatingText(e, "Saving Days...", "var(--warning)");
+            window.showFloatingText(e, "Saving...", "var(--warning)");
             await updateDoc(doc(db, "students", id), { courseDuration: targetDaysValue });
-            window.showFloatingText(e, `Total Days: ${targetDaysValue}`, "var(--success)");
-        } catch (err) {
-            console.error("Total Days update failed: ", err);
-            alert("Database write error while updating Total Days.");
-        }
+            window.showFloatingText(e, `Saved!`, "var(--success)");
+        } catch (err) { alert("Database error!"); }
     };
 
-    // --- DIRECTLY UPDATE TOTAL XP FIELD ---
     window.handleXP = async (e, id) => {
         const currentStudent = studentsData.find(s => s.id === id);
         const currentXP = currentStudent ? (currentStudent.xp || 0) : 0;
-        
         const newXPInput = prompt(`Agent: ${id}\nCurrent XP: ${currentXP}\nEnter NEW Total XP:`, currentXP);
         if (newXPInput === null || newXPInput === "") return;
-        
         const targetXPValue = parseInt(newXPInput);
-        if (isNaN(targetXPValue) || targetXPValue < 0) {
-            alert("Invalid entry! Please enter a valid number.");
-            return;
-        }
+        if (isNaN(targetXPValue) || targetXPValue < 0) return alert("Invalid Input!");
 
         try {
-            window.showFloatingText(e, "Saving XP...", "var(--warning)");
+            window.showFloatingText(e, "Saving...", "var(--warning)");
             await updateDoc(doc(db, "students", id), { xp: targetXPValue });
-            window.showFloatingText(e, `XP Set to ${targetXPValue}`, "var(--success)");
-        } catch (err) {
-            console.error("XP update failed: ", err);
-            alert("Database write error while updating XP.");
-        }
+            window.showFloatingText(e, `XP Updated`, "var(--success)");
+        } catch (err) { alert("Database error!"); }
+    };
+
+    window.updatePaidAmount = async (e, id) => {
+        const currentStudent = studentsData.find(s => s.id === id);
+        const currentPaid = currentStudent ? (currentStudent.totalPaidAmount || 0) : 0;
+        const newPaidInput = prompt(`Agent: ${id}\nCurrent Total Paid: ₹${currentPaid}\nEnter NEW Total Paid Amount (₹):`, currentPaid);
+        if (newPaidInput === null || newPaidInput === "") return;
+        const targetPaidValue = parseInt(newPaidInput);
+        if (isNaN(targetPaidValue) || targetPaidValue < 0) return alert("Invalid Amount!");
+
+        try {
+            window.showFloatingText(e, "Updating Balance...", "var(--warning)");
+            await updateDoc(doc(db, "students", id), { totalPaidAmount: targetPaidValue });
+            window.showFloatingText(e, `₹${targetPaidValue} Saved`, "var(--success)");
+        } catch (err) { alert("Database write error!"); }
+    };
+
+    window.deleteStudent = async (id) => {
+        const confirmation = confirm(`🚨 CRITICAL ACTION!\nAre you completely sure you want to permanently delete Agent "${id}" from Black Terminal? This cannot be undone.`);
+        if (!confirmation) return;
+        
+        try {
+            await deleteDoc(doc(db, "students", id));
+            alert(`Agent "${id}" successfully terminated.`);
+        } catch (err) { alert("Error trying to delete student document."); }
     };
 
     window.filterItems = () => {
-        const term = document.getElementById("search").value.toLowerCase();
-        document.getElementById("studentList").innerHTML = "";
-        studentsData.filter(s => s.id.toLowerCase().includes(term)).forEach(s => renderStudentUI(s.id, s, s.attCount));
+        renderFilteredUI();
     };
 
     startAdminSync();
