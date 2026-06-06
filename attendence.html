@@ -9,18 +9,53 @@
     <style>
         :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --card: #0f172a; --glass: rgba(255, 255, 255, 0.03); }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .att-container { width: 100%; max-width: 400px; background: var(--card); padding: 40px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        body { background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; position: relative; overflow-x: hidden; }
+        .att-container { width: 100%; max-width: 400px; background: var(--card); padding: 40px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); text-align: center; z-index: 1; }
         .loc-icon { width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 20px; border: 2px dashed var(--primary); }
         .status-box { background: var(--glass); padding: 15px; border-radius: 18px; margin-bottom: 25px; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
         #checkin-btn { width: 100%; padding: 18px; border: none; border-radius: 18px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 800; cursor: pointer; transition: 0.3s; margin-bottom: 12px; }
         #checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; }
         
-        /* New Request Button Styling */
-        #request-btn { width: 100%; padding: 14px; border: 1px solid #ef4444; border-radius: 18px; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 700; cursor: pointer; transition: 0.3s; display: none; }
-        #request-btn:hover { background: rgba(239, 68, 68, 0.2); }
+        /* Request Button Styling */
+        #request-trigger-btn { width: 100%; padding: 14px; border: 1px solid #ef4444; border-radius: 18px; background: rgba(239, 68, 68, 0.05); color: #ef4444; font-weight: 700; cursor: pointer; transition: 0.3s; display: none; }
+        #request-trigger-btn:hover { background: rgba(239, 68, 68, 0.15); }
         
         .back-home { margin-top: 20px; display: inline-block; font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 700; }
+
+        /* Custom Modal Backdrop */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s ease; padding: 20px; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        /* Modal Window */
+        .modal-card { width: 100%; max-width: 360px; background: #1e293b; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); padding: 25px; text-align: left; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: translateY(20px); transition: 0.3s ease; }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-card h3 { font-size: 18px; margin-bottom: 8px; font-weight: 800; }
+        .modal-card p { font-size: 13px; opacity: 0.7; margin-bottom: 20px; line-height: 1.4; }
+        
+        /* Colorful Badges */
+        .badge-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .reason-badge { padding: 8px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+        
+        .badge-online { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .badge-online:hover, .badge-online.selected { background: #10b981; color: #020617; }
+        
+        .badge-gps { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .badge-gps:hover, .badge-gps.selected { background: #f59e0b; color: #020617; }
+        
+        .badge-network { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+        .badge-network:hover, .badge-network.selected { background: #3b82f6; color: #020617; }
+        
+        /* Custom input inside modal */
+        .modal-input { width: 100%; padding: 12px 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; font-size: 13px; outline: none; margin-bottom: 20px; transition: 0.3s; }
+        .modal-input:focus { border-color: var(--primary); }
+        
+        /* Action buttons inside modal */
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; }
+        .btn-cancel { background: rgba(255,255,255,0.05); color: #94a3b8; }
+        .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+        .btn-submit { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
+        .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -32,9 +67,31 @@
         
         <button id="checkin-btn" onclick="markAttendance()" disabled>MARK ATTENDANCE <i class="ri-fingerprint-line"></i></button>
         
-        <button id="request-btn" onclick="requestAttendance()">REQUEST ATTENDANCE <i class="ri-mail-send-line"></i></button>
+        <!-- Native Trigger Button for Custom Modal -->
+        <button id="request-trigger-btn" onclick="toggleModal(true)">REQUEST ATTENDANCE <i class="ri-mail-send-line"></i></button>
         
         <a href="index.html" class="back-home"><i class="ri-arrow-left-line"></i> Back to Dashboard</a>
+    </div>
+
+    <!-- Beautiful Native Modal Overlay -->
+    <div id="request-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>Attendance Request</h3>
+            <p>Please select a pre-set reason or type a custom message below to send to your administrator.</p>
+            
+            <div class="badge-container">
+                <div class="reason-badge badge-online" onclick="selectBadge(this, 'Online Class')">Online Class</div>
+                <div class="reason-badge badge-gps" onclick="selectBadge(this, 'GPS Error')">GPS Error</div>
+                <div class="reason-badge badge-network" onclick="selectBadge(this, 'Network Error')">Network Error</div>
+            </div>
+            
+            <input type="text" id="custom-reason" class="modal-input" placeholder="Or type a custom reason here..." oninput="clearBadgeSelection()">
+            
+            <div class="modal-actions">
+                <button class="modal-btn btn-cancel" onclick="toggleModal(false)">Cancel</button>
+                <button id="submit-request-btn" class="modal-btn btn-submit" onclick="submitAttendanceRequest()">Submit Request</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -44,8 +101,10 @@
         const app = initializeApp(firebaseConfig); const db = getFirestore(app);
         const INST_LAT = 21.940550; const INST_LON = 86.737409; const ALLOWED_RANGE = 0.05;
         const statusBox = document.getElementById('status'); const btn = document.getElementById('checkin-btn');
-        const reqBtn = document.getElementById('request-btn'); // Request button reference
+        const reqTriggerBtn = document.getElementById('request-trigger-btn');
         const student = localStorage.getItem('studentName');
+
+        let selectedReasonStr = "";
 
         function initLocation() {
             if (!student || student === "Guest") { statusBox.innerHTML = "⚠️ Update Name in Profile"; return; }
@@ -55,18 +114,19 @@
                     statusBox.style.color = "#22c55e"; 
                     statusBox.innerHTML = 'Verified: At Center'; 
                     btn.disabled = false; 
-                    reqBtn.style.display = "none"; // Range me hone par request button hide rahega
+                    reqTriggerBtn.style.display = "none";
                 }
                 else { 
                     statusBox.style.color = "#ef4444"; 
                     statusBox.innerHTML = `Out of Range (${(dist*1000).toFixed(0)}m)`; 
-                    reqBtn.style.display = "block"; // Out of range hone par request button dikhega
+                    reqTriggerBtn.style.display = "block";
                 }
             }, e => {
                 statusBox.innerHTML = "⚠️ Enable GPS";
-                reqBtn.style.display = "block"; // GPS error hone par bhi request option milega
+                reqTriggerBtn.style.display = "block";
             }, { enableHighAccuracy: true });
         }
+        
         function calculateDistance(la1, lo1, la2, lo2) { const R = 6371; const dLa = (la2-la1)*Math.PI/180; const dLo = (lo2-lo1)*Math.PI/180; const a = Math.sin(dLa/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2; return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 
         window.markAttendance = async () => {
@@ -94,29 +154,61 @@
             } catch (e) { alert("Error!"); btn.disabled = false; }
         };
 
-        // Naya Function: Request Attendance handle karne ke liye
-        window.requestAttendance = async () => {
-            const reason = prompt("Center se attendance na de pane ka karan likhein (Reason):");
-            if (reason === null) return; // Agar user cancel kar de
-            if (reason.trim() === "") { alert("Reason likhna zaroori hai!"); return; }
+        /* Custom Modal Controller Functions */
+        window.toggleModal = (show) => {
+            const modal = document.getElementById('request-modal');
+            if(show) {
+                modal.classList.add('active');
+            } else {
+                modal.classList.remove('active');
+                // reset state on close
+                document.getElementById('custom-reason').value = "";
+                clearBadgeSelection();
+            }
+        };
 
-            reqBtn.disabled = true; reqBtn.innerHTML = 'Sending Request...';
+        window.selectBadge = (element, reasonValue) => {
+            clearBadgeSelection();
+            element.classList.add('selected');
+            document.getElementById('custom-reason').value = ""; // clear typed input if user picks a badge
+            selectedReasonStr = reasonValue;
+        };
+
+        window.clearBadgeSelection = () => {
+            document.querySelectorAll('.reason-badge').forEach(b => b.classList.remove('selected'));
+            selectedReasonStr = "";
+        };
+
+        window.submitAttendanceRequest = async () => {
+            const typedReason = document.getElementById('custom-reason').value.trim();
+            const finalReason = typedReason || selectedReasonStr;
+
+            if (!finalReason) { 
+                alert("Please select a badge or write a custom reason!"); 
+                return; 
+            }
+
+            const submitBtn = document.getElementById('submit-request-btn');
+            submitBtn.disabled = true; 
+            submitBtn.innerHTML = 'Sending...';
+            
             const t = new Date(); const tStr = t.toISOString().split('T')[0];
 
             try {
-                // Yeh data "attendance_requests" naam ke ek naye collection me save hoga
                 await setDoc(doc(db, "attendance_requests", `${student}_${tStr}`), {
                     studentName: student,
                     date: tStr,
-                    reason: reason,
-                    status: "Pending", // Admin ise baad me "Approved" ya "Rejected" kar sakta hai
+                    reason: finalReason,
+                    status: "Pending",
                     timestamp: serverTimestamp()
                 });
-                alert("Attendance Request sent successfully! Admin ke approval ka wait karein.");
+                alert("Attendance Request submitted successfully!");
+                toggleModal(false);
                 location.href = "index.html";
             } catch (e) {
-                alert("Request bhejne me error aaya!");
-                reqBtn.disabled = false; reqBtn.innerHTML = 'REQUEST ATTENDANCE <i class="ri-mail-send-line"></i>';
+                alert("Failed to submit request. Please try again.");
+                submitBtn.disabled = false; 
+                submitBtn.innerHTML = 'Submit Request';
             }
         };
 
