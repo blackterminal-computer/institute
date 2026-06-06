@@ -78,7 +78,6 @@
         .strict-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,59,48,0.05); border: 1px solid rgba(255,59,48,0.15); padding: 10px 14px; border-radius: 12px; margin-top: 8px; font-size: 13px; font-weight: 600; }
         .footer-text { text-align: center; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; margin-top: 35px; }
 
-        /* Status Badges for Realtime Assignment Audit */
         .status-badge { font-size: 9px; padding: 4px 8px; border-radius: 8px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 4px; }
         .status-pending { background: rgba(191, 90, 242, 0.15); color: var(--cyber-purple); }
         .status-completed { background: rgba(48, 209, 88, 0.15); color: var(--apple-green); }
@@ -129,13 +128,13 @@
             OPEN PANEL <i class="fas fa-arrow-right" style="margin-left: 4px; font-size: 9px;"></i>
         </button>
     </div>
-        <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--cyber-purple);">
+
+    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--cyber-purple);">
         <h3><i class="fas fa-user-graduate" style="color: var(--cyber-purple);"></i> Pending Student Requests</h3>
         <div class="list-container" id="student-requests-list">
             <div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending student requests</p></div>
         </div>
     </div>
-
 
     <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-blue);">
         <h3><i class="fas fa-filter" style="color: var(--apple-blue);"></i> Realtime Leads Sync Pipeline</h3>
@@ -222,12 +221,10 @@
                     Object.keys(staffData).forEach(id => {
                         const staff = staffData[id];
                         
-                        // Dropdown update
                         const option = document.createElement('option');
                         option.value = id; option.innerText = `${staff.name || 'Unknown'} (${id})`;
                         select.appendChild(option);
                         
-                        // Today's punch check logic
                         let punchTimeDisplay = `<span style="color: var(--apple-red); font-weight:600; font-size:11px;">Absent</span>`;
                         if(attendanceData[id] && attendanceData[id][todayStr]) {
                             const time = attendanceData[id][todayStr].time || "Present";
@@ -240,8 +237,7 @@
                                 <td><input type="number" class="inline-input" id="wage-${id}" value="${staff.perDayWage || 0}"></td>
                                 <td><input type="number" class="inline-input" id="streak-${id}" value="${staff.streak || 0}"></td>
                                 <td>${punchTimeDisplay}</td>
-                              <td><input type="number" class="inline-input" id="salary-${id}" value="${staff.salary || 0}" style="color: var(--apple-green); font-weight:700; width: 65px;"></td>
-
+                                <td><input type="number" class="inline-input" id="salary-${id}" value="${staff.salary || 0}" style="color: var(--apple-green); font-weight:700; width: 65px;"></td>
                                 <td style="text-align: center;">
                                     <button class="table-action-btn btn-save-row" onclick="updateStaffRow('${id}')" title="Save Metrics"><i class="fas fa-save"></i></button>
                                     <button class="table-action-btn btn-delete-row" onclick="deleteStaffRow('${id}', '${staff.name || ''}')" title="Delete Profile"><i class="fas fa-trash-alt"></i></button>
@@ -333,7 +329,7 @@
             } else { container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active leads found.</p></div>`; }
         });
 
-        // Broadcast Task Pipeline Engine WITH ENHANCED STAGE TRACKING
+        // Broadcast Task Pipeline Engine
         db.ref('tasks').on('value', snap => {
             const taskContainer = document.getElementById('broadcast-tasks-list');
             if(!taskContainer) return;
@@ -347,8 +343,6 @@
                     Object.keys(staffTasksNode).forEach(taskKey => {
                         taskCounter++;
                         const taskData = staffTasksNode[taskKey];
-                        
-                        // Checking completion parameters
                         const isDone = taskData.status === "Completed";
                         
                         let formattedDate = 'Recent Deploy';
@@ -356,7 +350,6 @@
                             try { formattedDate = new Date(taskData.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " | " + new Date(taskData.date).toLocaleDateString([], {month: 'short', day: 'numeric'}); } catch(e){}
                         }
 
-                        // Completed exact execution metrics generator
                         let trackingMetaHtml = `<span class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> Pending</span>`;
                         if(isDone && taskData.completedAt) {
                             try {
@@ -405,96 +398,6 @@
                 });
             } else { registryBox.innerHTML = `<p style="font-size:11px; color:var(--text-muted); text-align:center;">No strict schedules locked.</p>`; }
         });
-    }
-
-    function updateStaffRow(id) {
-    const targetWage = parseInt(document.getElementById(`wage-${id}`).value);
-    const targetStreak = parseInt(document.getElementById(`streak-${id}`).value);
-    const targetSalary = parseInt(document.getElementById(`salary-${id}`).value);
-    if(isNaN(targetWage) || isNaN(targetStreak) || isNaN(targetSalary)) return alert("Invalid inputs.");
-    db.ref(`staff/${id}`).update({ perDayWage: targetWage, streak: targetStreak, salary: targetSalary }).then(() => { alert("Staff metrics updated!"); });
-}
-
-
-    function deleteStaffRow(id, name) {
-        if(!confirm(`Delete profile [${name || id}]?`)) return;
-        db.ref(`staff/${id}`).remove().then(() => { alert("Staff removed."); });
-    }
-
-    function deleteLeadRecord(key, clientName) {
-        if(!confirm(`Are you sure you want to delete lead: [${clientName}] permanently?`)) return;
-        db.ref(`leads/${key}`).remove().then(() => {
-            alert("Lead successfully deleted from pipeline!");
-        }).catch(err => alert("Error deleting lead: " + err.message));
-    }
-
-    function deleteBroadcastTask(staffId, taskKey) {
-        if(!confirm("Are you sure you want to revoke/delete this assignment?")) return;
-        db.ref(`tasks/${staffId}/${taskKey}`).remove().then(() => {
-            alert("Assignment successfully deleted from system!");
-        }).catch(err => alert("Error deleting task: " + err.message));
-    }
-
-    function removeStrictDay(nodeKey, dateStr) {
-        if(!confirm(`Unlock strict timeline for [${dateStr}]?`)) return;
-        db.ref(`strictDays/${nodeKey}`).remove().then(() => { alert("Date policy cleared."); });
-    }
-
-    function resolvePayout(targetStaffId, isApproved, amountString) {
-        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE' : 'REJECT'} payout?`)) return;
-        if(isApproved) {
-            db.ref(`staff/${targetStaffId}`).transaction(profile => { if(profile) profile.salary = 0; return profile; }).then(() => {
-                db.ref(`salaryRequests/${targetStaffId}`).update({ status: "Approved", processedAt: new Date().toISOString() }).then(() => { alert("Payout approved!"); });
-            });
-        } else { db.ref(`salaryRequests/${targetStaffId}`).remove().then(() => { alert("Request rejected."); }); }
-    }
-
-    function assignTask() {
-        const targetId = document.getElementById('task-staff-select').value;
-        const desc = document.getElementById('task-desc').value.trim();
-        if(!targetId || !desc) return alert("Select staff and provide task details.");
-        
-        // Added 'Pending' default state status on deploy initialization
-        db.ref(`tasks/${targetId}`).push({ 
-            task: desc, 
-            date: new Date().toISOString(),
-            status: "Pending" 
-        }).then(() => { 
-            alert("Task deployed!"); 
-            document.getElementById('task-desc').value = ''; 
-            document.getElementById('broadcast-form-card').classList.remove('active');
-        });
-    }
-
-        function setStrictDay() {
-        const targetDate = document.getElementById('strict-date-input').value;
-        if(!targetDate) return alert("Select a date first.");
-        db.ref('strictDays').push(targetDate).then(() => { 
-            alert(`Date [${targetDate}] locked!`); 
-            document.getElementById('strict-date-input').value = ''; 
-            document.getElementById('strict-days-card').classList.remove('active');
-        });
-    }
-
-    // Student Request Approval / Dismissal Controller Engine
-    function resolveStudentRequest(reqId, isApproved) {
-        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE/GRANT' : 'REJECT/DISMISS'} this student request?`)) return;
-        
-        const targetStatus = isApproved ? "Approved" : "Rejected";
-        db.ref(`studentRequests/${reqId}`).update({
-            status: targetStatus,
-            resolvedAt: new Date().toISOString()
-        }).then(() => {
-            alert(`Request successfully ${targetStatus.toLowerCase()}!`);
-        }).catch(err => alert("Error updating request: " + err.message));
-    }
-
-
-        
-                    if(reqCounter === 0) {
-                container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active punch-in verification requests.</p></div>`;
-            }
-        });
 
         // Student Requests Realtime Monitor Pipeline Integration
         db.ref('studentRequests').on('value', snap => {
@@ -536,7 +439,85 @@
                 container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending student requests</p></div>`;
             }
         });
+    }
 
+    function updateStaffRow(id) {
+        const targetWage = parseInt(document.getElementById(`wage-${id}`).value);
+        const targetStreak = parseInt(document.getElementById(`streak-${id}`).value);
+        const targetSalary = parseInt(document.getElementById(`salary-${id}`).value);
+        if(isNaN(targetWage) || isNaN(targetStreak) || isNaN(targetSalary)) return alert("Invalid inputs.");
+        db.ref(`staff/${id}`).update({ perDayWage: targetWage, streak: targetStreak, salary: targetSalary }).then(() => { alert("Staff metrics updated!"); });
+    }
+
+    function deleteStaffRow(id, name) {
+        if(!confirm(`Delete profile [${name || id}]?`)) return;
+        db.ref(`staff/${id}`).remove().then(() => { alert("Staff removed."); });
+    }
+
+    function deleteLeadRecord(key, clientName) {
+        if(!confirm(`Are you sure you want to delete lead: [${clientName}] permanently?`)) return;
+        db.ref(`leads/${key}`).remove().then(() => {
+            alert("Lead successfully deleted from pipeline!");
+        }).catch(err => alert("Error deleting lead: " + err.message));
+    }
+
+    function deleteBroadcastTask(staffId, taskKey) {
+        if(!confirm("Are you sure you want to revoke/delete this assignment?")) return;
+        db.ref(`tasks/${staffId}/${taskKey}`).remove().then(() => {
+            alert("Assignment successfully deleted from system!");
+        }).catch(err => alert("Error deleting task: " + err.message));
+    }
+
+    function removeStrictDay(nodeKey, dateStr) {
+        if(!confirm(`Unlock strict timeline for [${dateStr}]?`)) return;
+        db.ref(`strictDays/${nodeKey}`).remove().then(() => { alert("Date policy cleared."); });
+    }
+
+    function resolvePayout(targetStaffId, isApproved, amountString) {
+        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE' : 'REJECT'} payout?`)) return;
+        if(isApproved) {
+            db.ref(`staff/${targetStaffId}`).transaction(profile => { if(profile) profile.salary = 0; return profile; }).then(() => {
+                db.ref(`salaryRequests/${targetStaffId}`).update({ status: "Approved", processedAt: new Date().toISOString() }).then(() => { alert("Payout approved!"); });
+            });
+        } else { db.ref(`salaryRequests/${targetStaffId}`).remove().then(() => { alert("Request rejected."); }); }
+    }
+
+    function assignTask() {
+        const targetId = document.getElementById('task-staff-select').value;
+        const desc = document.getElementById('task-desc').value.trim();
+        if(!targetId || !desc) return alert("Select staff and provide task details.");
+        
+        db.ref(`tasks/${targetId}`).push({ 
+            task: desc, 
+            date: new Date().toISOString(),
+            status: "Pending" 
+        }).then(() => { 
+            alert("Task deployed!"); 
+            document.getElementById('task-desc').value = ''; 
+            document.getElementById('broadcast-form-card').classList.remove('active');
+        });
+    }
+
+    function setStrictDay() {
+        const targetDate = document.getElementById('strict-date-input').value;
+        if(!targetDate) return alert("Select a date first.");
+        db.ref('strictDays').push(targetDate).then(() => { 
+            alert(`Date [${targetDate}] locked!`); 
+            document.getElementById('strict-date-input').value = ''; 
+            document.getElementById('strict-days-card').classList.remove('active');
+        });
+    }
+
+    function resolveStudentRequest(reqId, isApproved) {
+        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE/GRANT' : 'REJECT/DISMISS'} this student request?`)) return;
+        
+        const targetStatus = isApproved ? "Approved" : "Rejected";
+        db.ref(`studentRequests/${reqId}`).update({
+            status: targetStatus,
+            resolvedAt: new Date().toISOString()
+        }).then(() => {
+            alert(`Request successfully ${targetStatus.toLowerCase()}!`);
+        }).catch(err => alert("Error updating request: " + err.message));
     }
 </script>
 </body>
