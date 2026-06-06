@@ -92,13 +92,13 @@
         .progress-fill { height: 100%; border-radius: 10px; transition: 0.8s ease; }
 
         .controls { 
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; 
             margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border);
         }
 
         .btn {
             border: none; padding: 12px 5px; border-radius: 14px; 
-            font-weight: 800; cursor: pointer; font-size: 11px;
+            font-weight: 800; cursor: pointer; font-size: 12px;
             display: flex; align-items: center; justify-content: center; gap: 5px; color: #fff;
             transition: 0.2s;
         }
@@ -225,7 +225,8 @@
     }
 
     function renderStudentUI(id, data, count) {
-        const totalDays = (parseInt(data.courseDuration) || 1) * 30;
+        // Direct conversion bina kisi multiplier (* 30) ke
+        const totalDays = parseInt(data.courseDuration) || 365; 
         const perc = Math.min(Math.round((count / totalDays) * 100), 100);
         const color = perc < 70 ? 'var(--danger)' : (perc < 85 ? 'var(--warning)' : 'var(--success)');
 
@@ -242,9 +243,8 @@
                 <span>XP: ${data.xp || 0}</span>
             </div>
             <div class="controls">
-                <button class="btn" style="background:var(--success)" onclick="window.handleAtt(event, '${id}', 'plus')"><i class="ri-add-line"></i> Present</button>
-                <button class="btn" style="background:var(--danger)" onclick="window.handleAtt(event, '${id}', 'minus')"><i class="ri-subtract-line"></i> Absent</button>
-                <button class="btn" style="background:var(--primary)" onclick="window.handleXP('${id}')"><i class="ri-flashlight-fill"></i> XP</button>
+                <button class="btn" style="background:var(--success)" onclick="window.updateTotalDays(event, '${id}')"><i class="ri-calendar-event-line"></i> Update Total Days</button>
+                <button class="btn" style="background:var(--primary)" onclick="window.handleXP(event, '${id}')"><i class="ri-flashlight-fill"></i> Update XP</button>
             </div>
         `;
         document.getElementById("studentList").appendChild(card);
@@ -259,7 +259,6 @@
             if (decision === 'accept') {
                 window.showFloatingText(e, "Approved", "var(--success)");
                 
-                // 1. Add to official attendance
                 await setDoc(doc(db, "attendance", `${studentName}_${dateStr}`), { 
                     studentName: studentName, 
                     userName: studentName, 
@@ -267,7 +266,6 @@
                     timestamp: serverTimestamp() 
                 });
 
-                // 2. Adjust Streak on Student Profile
                 const sRef = doc(db, "students", studentName);
                 const sSnap = await getDoc(sRef);
                 let newStreak = 1;
@@ -290,7 +288,6 @@
                 window.showFloatingText(e, "Rejected", "var(--danger)");
             }
 
-            // Remove the processed request from Firestore
             await deleteDoc(doc(db, "attendance_requests", reqId));
 
         } catch (err) {
@@ -299,24 +296,52 @@
         }
     };
 
-    window.handleAtt = async (e, name, mode) => {
-        if (mode === 'plus') {
-            window.showFloatingText(e, "+1 Day", "var(--success)");
-            const tStr = new Date().toISOString().split('T')[0];
-            await setDoc(doc(db, "attendance", `${name}_${tStr}`), { userName: name, studentName: name, date: tStr, timestamp: serverTimestamp() });
-        } else {
-            window.showFloatingText(e, "-1 Day", "var(--danger)");
-            const q = query(collection(db, "attendance"), where("userName", "==", name), limit(1));
-            const snap = await getDocs(q);
-            if (!snap.empty) await deleteDoc(doc(db, "attendance", snap.docs[0].id));
+    // --- DIRECTLY UPDATE TOTAL DAYS FIELD ---
+    window.updateTotalDays = async (e, id) => {
+        const currentStudent = studentsData.find(s => s.id === id);
+        const currentTotalDays = currentStudent ? (parseInt(currentStudent.courseDuration) || 365) : 365;
+        
+        const newTotalDaysInput = prompt(`Agent: ${id}\nCurrent Total Days Target: ${currentTotalDays}\nEnter NEW Target Total Days:`, currentTotalDays);
+        if (newTotalDaysInput === null || newTotalDaysInput === "") return;
+        
+        const targetDaysValue = parseInt(newTotalDaysInput);
+        if (isNaN(targetDaysValue) || targetDaysValue <= 0) {
+            alert("Invalid entry! Please enter a number greater than 0.");
+            return;
+        }
+
+        try {
+            window.showFloatingText(e, "Saving Days...", "var(--warning)");
+            await updateDoc(doc(db, "students", id), { courseDuration: targetDaysValue });
+            window.showFloatingText(e, `Total Days: ${targetDaysValue}`, "var(--success)");
+        } catch (err) {
+            console.error("Total Days update failed: ", err);
+            alert("Database write error while updating Total Days.");
         }
     };
 
-    window.handleXP = async (id) => {
-        const amount = prompt("Enter XP:");
-        if (!amount) return;
-        const currentXP = studentsData.find(s => s.id === id).xp || 0;
-        await updateDoc(doc(db, "students", id), { xp: parseInt(currentXP) + parseInt(amount) });
+    // --- DIRECTLY UPDATE TOTAL XP FIELD ---
+    window.handleXP = async (e, id) => {
+        const currentStudent = studentsData.find(s => s.id === id);
+        const currentXP = currentStudent ? (currentStudent.xp || 0) : 0;
+        
+        const newXPInput = prompt(`Agent: ${id}\nCurrent XP: ${currentXP}\nEnter NEW Total XP:`, currentXP);
+        if (newXPInput === null || newXPInput === "") return;
+        
+        const targetXPValue = parseInt(newXPInput);
+        if (isNaN(targetXPValue) || targetXPValue < 0) {
+            alert("Invalid entry! Please enter a valid number.");
+            return;
+        }
+
+        try {
+            window.showFloatingText(e, "Saving XP...", "var(--warning)");
+            await updateDoc(doc(db, "students", id), { xp: targetXPValue });
+            window.showFloatingText(e, `XP Set to ${targetXPValue}`, "var(--success)");
+        } catch (err) {
+            console.error("XP update failed: ", err);
+            alert("Database write error while updating XP.");
+        }
     };
 
     window.filterItems = () => {
