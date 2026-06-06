@@ -129,6 +129,13 @@
             OPEN PANEL <i class="fas fa-arrow-right" style="margin-left: 4px; font-size: 9px;"></i>
         </button>
     </div>
+        <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--cyber-purple);">
+        <h3><i class="fas fa-user-graduate" style="color: var(--cyber-purple);"></i> Pending Student Requests</h3>
+        <div class="list-container" id="student-requests-list">
+            <div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending student requests</p></div>
+        </div>
+    </div>
+
 
     <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-blue);">
         <h3><i class="fas fa-filter" style="color: var(--apple-blue);"></i> Realtime Leads Sync Pipeline</h3>
@@ -459,7 +466,7 @@
         });
     }
 
-    function setStrictDay() {
+        function setStrictDay() {
         const targetDate = document.getElementById('strict-date-input').value;
         if(!targetDate) return alert("Select a date first.");
         db.ref('strictDays').push(targetDate).then(() => { 
@@ -467,6 +474,69 @@
             document.getElementById('strict-date-input').value = ''; 
             document.getElementById('strict-days-card').classList.remove('active');
         });
+    }
+
+    // Student Request Approval / Dismissal Controller Engine
+    function resolveStudentRequest(reqId, isApproved) {
+        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE/GRANT' : 'REJECT/DISMISS'} this student request?`)) return;
+        
+        const targetStatus = isApproved ? "Approved" : "Rejected";
+        db.ref(`studentRequests/${reqId}`).update({
+            status: targetStatus,
+            resolvedAt: new Date().toISOString()
+        }).then(() => {
+            alert(`Request successfully ${targetStatus.toLowerCase()}!`);
+        }).catch(err => alert("Error updating request: " + err.message));
+    }
+
+
+        
+                    if(reqCounter === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active punch-in verification requests.</p></div>`;
+            }
+        });
+
+        // Student Requests Realtime Monitor Pipeline Integration
+        db.ref('studentRequests').on('value', snap => {
+            const container = document.getElementById('student-requests-list');
+            if(!container) return;
+            container.innerHTML = "";
+            let studentReqCounter = 0;
+
+            if(snap.exists()) {
+                const studentReqs = snap.val();
+                Object.keys(studentReqs).forEach(reqId => {
+                    const reqData = studentReqs[reqId];
+                    if(reqData.status === "Pending") {
+                        studentReqCounter++;
+                        
+                        let typeColor = 'var(--apple-blue)';
+                        if(reqData.type === 'Leave' || reqData.type === 'Urgent') typeColor = 'var(--apple-red)';
+                        if(reqData.type === 'Admission' || reqData.type === 'Fee Submission') typeColor = 'var(--apple-green)';
+                        
+                        container.innerHTML += `
+                            <div class="data-item" style="border-left: 3px solid ${typeColor};">
+                                <div class="data-info" style="max-width: 70%;">
+                                    <p>${reqData.studentName || 'Unknown Student'}</p>
+                                    <small>ID: <b>${reqData.studentId || 'N/A'}</b></small>
+                                    <small style="color: var(--text-muted); font-size: 12px; display: block; margin-top: 4px; background: rgba(255,255,255,0.02); padding: 6px; border-radius: 8px;">
+                                        ${reqData.message || 'No description provided.'}
+                                    </small>
+                                    <span class="lead-badge" style="background: rgba(255,255,255,0.05); color: ${typeColor}; display: inline-block; margin-top: 6px;">${reqData.type || 'Request'}</span>
+                                </div>
+                                <div class="action-btn-group" style="flex-direction: column; gap: 4px;">
+                                    <button class="sm-btn btn-approve" onclick="resolveStudentRequest('${reqId}', true)" style="width: 75px; text-align: center;">Grant</button>
+                                    <button class="sm-btn btn-reject" onclick="resolveStudentRequest('${reqId}', false)" style="width: 75px; text-align: center;">Dismiss</button>
+                                </div>
+                            </div>`;
+                    }
+                });
+            }
+            if(studentReqCounter === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending student requests</p></div>`;
+            }
+        });
+
     }
 </script>
 </body>
