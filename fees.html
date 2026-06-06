@@ -7,7 +7,6 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700;800&display=swap');
 
@@ -59,6 +58,41 @@
             align-items: center;
             gap: 6px;
             margin-bottom: 20px;
+        }
+
+        /* Summary Dashboard Grid Layout */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .summary-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 10px;
+            text-align: center;
+        }
+
+        .summary-box small {
+            display: block;
+            font-size: 0.65rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .summary-box span {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .summary-box.highlight span {
+            color: var(--success);
         }
 
         .card { 
@@ -128,10 +162,7 @@
         }
 
         #loading { text-align: center; color: var(--info); padding: 30px; font-size: 0.85rem; }
-
-        #student-search:focus {
-            border-color: var(--info) !important;
-        }
+        #student-search:focus { border-color: var(--info) !important; }
     </style>
 </head>
 <body>
@@ -141,8 +172,20 @@
 
     <div class="header-flex">
         <h1>BLACK<span>TERMINAL</span> FEES</h1>
-        <div>
-            <div id="att-count" style="font-size: 0.7rem; background: var(--border); color: white; padding: 6px 15px; border-radius: 20px; font-weight: 700;">TOTAL: <span id="total-count">0</span></div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-box">
+            <small>Total Students</small>
+            <span id="total-count">0</span>
+        </div>
+        <div class="summary-box">
+            <small>Paid Ratio</small>
+            <span id="paid-ratio">0/0</span>
+        </div>
+        <div class="summary-box highlight">
+            <small>Total Received</small>
+            <span id="total-amount">₹0</span>
         </div>
     </div>
 
@@ -179,23 +222,33 @@
     document.getElementById('cur-month').innerText = currentMonth;
 
     let globalStudentDirectory = [];
+    let currentPaymentStatuses = {}; 
 
     function cleanString(str) {
         if (!str) return '';
-        return str.toString()
-                  .toLowerCase()
-                  .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
-                  .replace(/\s+/g, "")
-                  .trim();
+        return str.toString().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").replace(/\s+/g, "").trim();
     }
 
     function sanitizePhoneNumber(phone) {
         if (!phone) return "";
         let pureDigits = phone.toString().replace(/\D/g, "");
-        if (pureDigits.length > 10) {
-            pureDigits = pureDigits.slice(-10);
-        }
+        if (pureDigits.length > 10) pureDigits = pureDigits.slice(-10);
         return pureDigits.length === 10 ? "91" + pureDigits : "";
+    }
+    // Live automatic calculations function
+    function updateFeeCalculations(totalStudentsCount) {
+        const totalStudents = totalStudentsCount;
+        let paidCount = 0;
+
+        Object.values(currentPaymentStatuses).forEach(status => {
+            if (status === "Paid") paidCount++;
+        });
+
+        const totalAmountCollected = paidCount * 500;
+
+        document.getElementById('total-count').innerText = totalStudents;
+        document.getElementById('paid-ratio').innerText = `${paidCount}/${totalStudents}`;
+        document.getElementById('total-amount').innerText = `₹${totalAmountCollected}`;
     }
 
     function listenToStudentDirectory() {
@@ -217,17 +270,15 @@
 
     function loadStudentPayments() {
         const payBody = document.getElementById('payment-body');
-        const totalCountSpan = document.getElementById('total-count');
         const loadingDiv = document.getElementById('loading');
         
         onSnapshot(collection(db, "attendance"), (snapshot) => {
             const studentNames = [...new Set(snapshot.docs.map(docSnap => docSnap.data().userName || docSnap.data().studentName))].filter(Boolean);
-            
-            totalCountSpan.innerText = studentNames.length;
             loadingDiv.style.display = "none";
             
             if(studentNames.length === 0) {
                 payBody.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.4;">No logs found.</div>';
+                updateFeeCalculations(0);
                 return;
             }
 
@@ -247,9 +298,7 @@
                             <small><i class="fas fa-shield-halved" style="color:var(--info);"></i> Secure Profile</small>
                         </div>
                         <div class="actions-flex" id="actions-${rowId}">
-                            <button class="status-badge status-unpaid" id="btn-${rowId}">
-                                UNPAID
-                            </button>
+                            <button class="status-badge status-unpaid" id="btn-${rowId}">UNPAID</button>
                         </div>
                     `;
                     payBody.appendChild(row);
@@ -258,6 +307,10 @@
                 const docRef = doc(db, "payments", name, "months", currentMonth);
                 onSnapshot(docRef, (pDoc) => {
                     const status = (pDoc.exists() && pDoc.data().status === "Paid") ? "Paid" : "Unpaid";
+                    
+                    currentPaymentStatuses[name] = status;
+                    updateFeeCalculations(studentNames.length);
+
                     const badgeClass = status === "Paid" ? "status-badge status-paid" : "status-badge status-unpaid";
                     const borderClass = status === "Paid" ? "fee-row border-paid" : "fee-row border-unpaid";
                     
@@ -281,7 +334,6 @@
                         statusBtn.id = `btn-${rowId}`;
                         statusBtn.innerText = status.toUpperCase();
                         statusBtn.onclick = () => toggleStatus(name, status);
-                        
                         actionsDiv.appendChild(statusBtn);
                     }
                 });
@@ -294,15 +346,10 @@
                     const rowId = getSafeId(name);
                     const rowElement = document.getElementById(rowId);
                     if (rowElement) {
-                        if (name.toLowerCase().includes(term)) {
-                            rowElement.style.display = "flex";
-                        } else {
-                            rowElement.style.display = "none";
-                        }
+                        rowElement.style.display = name.toLowerCase().includes(term) ? "flex" : "none";
                     }
                 });
             });
-
         });
     }
 
@@ -310,10 +357,7 @@
         const newStatus = currentStatus === "Paid" ? "Unpaid" : "Paid";
         const docRef = doc(db, "payments", name, "months", currentMonth);
         try {
-            await setDoc(docRef, {
-                status: newStatus,
-                updatedAt: Date.now()
-            }, { merge: true });
+            await setDoc(docRef, { status: newStatus, updatedAt: Date.now() }, { merge: true });
         } catch(e) { console.error(e); }
     }
 
@@ -322,11 +366,8 @@
         let phoneNum = "";
 
         const match = globalStudentDirectory.find(s => 
-            s.cleanDocId === attendanceClean || 
-            s.cleanFieldName === attendanceClean ||
-            attendanceClean.includes(s.cleanDocId) ||
-            s.cleanDocId.includes(attendanceClean) ||
-            (s.cleanFieldName && attendanceClean.includes(s.cleanFieldName))
+            s.cleanDocId === attendanceClean || s.cleanFieldName === attendanceClean ||
+            attendanceClean.includes(s.cleanDocId) || s.cleanDocId.includes(attendanceClean)
         );
 
         if (match && match.phone) {
@@ -374,11 +415,10 @@
             docPdf.save(`${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_Invoice.pdf`);
 
             const currentTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const messageText = `⚡ *BLACKTERMINAL LEDGER* ⚡\n\nHello *${studentName}*,\nYour fees transaction ledger log for *${currentMonth}* has been verified!\n\n✅ *Status:* PAID\n🔒 *Txn ID:* #${txnID}\n📅 *Date:* ${new Date().toLocaleDateString()}\n🕒 *Time:* ${currentTimeStr}\n\n⚠️ *Important Reminder:* Please note, fees must be paid before the 10th of every month.\n\n📝 _Official Invoice PDF has been generated and saved locally on your device._`;
+            const messageText = `⚡ *BLACKTERMINAL LEDGER* ⚡\n\nHello *${studentName}*,\nYour fees transaction ledger log for *${currentMonth}* has been verified!\n\n✅ *Status:* PAID\n🔒 *Txn ID:* #${txnID}\n📅 *Date:* ${new Date().toLocaleDateString()}\n🕒 *Time:* ${currentTimeStr}\n\n⚠️ *Important Reminder:* Please note, fees must be paid before the 10th of every month.`;
             
             const whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNum}&text=${encodeURIComponent(messageText)}`;
             window.open(whatsappUrl, '_blank');
-
         } catch (error) {
             alert("Error rendering receipt module layout.");
         }
