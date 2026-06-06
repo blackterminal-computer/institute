@@ -62,6 +62,19 @@
             outline: none; box-sizing: border-box; transition: 0.3s;
         }
 
+        /* Requests Section Styles */
+        .section-title { font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--warning); margin: 15px 0 10px; display: flex; align-items: center; gap: 6px; }
+        
+        .request-card {
+            background: rgba(245, 158, 11, 0.03); border: 1px dashed rgba(245, 158, 11, 0.2);
+            border-radius: 20px; padding: 16px; margin-bottom: 12px;
+        }
+        .req-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .req-name { font-size: 15px; font-weight: 800; margin: 0; color: #fff; }
+        .req-reason { font-size: 12px; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; margin: 8px 0; color: #cbd5e1; border: 1px solid var(--border); }
+        .req-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+
+        /* Student Card Styles */
         .student-card {
             background: var(--card-bg); border: 1px solid var(--border);
             border-radius: 24px; padding: 20px; margin-bottom: 16px;
@@ -87,7 +100,9 @@
             border: none; padding: 12px 5px; border-radius: 14px; 
             font-weight: 800; cursor: pointer; font-size: 11px;
             display: flex; align-items: center; justify-content: center; gap: 5px; color: #fff;
+            transition: 0.2s;
         }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -103,6 +118,12 @@
         </button>
     </div>
 
+    <div id="requestsContainer" style="display: none;">
+        <div class="section-title"><i class="ri-git-pull-request-line"></i> PENDING REQUESTS</div>
+        <div id="requestsList"></div>
+    </div>
+
+    <div class="section-title" style="color: var(--primary); margin-top: 25px;"><i class="ri-team-line"></i> AGENT ROSTER</div>
     <input type="text" id="search" class="search-box" placeholder="Search agent name..." oninput="window.filterItems()">
 
     <div id="studentList">
@@ -112,7 +133,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, getDocs, query, where, deleteDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc, updateDoc, addDoc, getDocs, query, where, deleteDoc, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -126,13 +147,15 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     let studentsData = [];
-    let unsubscribe = null;
+    let unsubscribeStudents = null;
+    let unsubscribeRequests = null;
 
     // --- REFRESH LOGIC ---
     window.manualRefresh = () => {
         const icon = document.getElementById("refreshIcon");
         icon.classList.add("spinning");
-        if(unsubscribe) unsubscribe();
+        if(unsubscribeStudents) unsubscribeStudents();
+        if(unsubscribeRequests) unsubscribeRequests();
         startAdminSync();
         setTimeout(() => icon.classList.remove("spinning"), 800);
     };
@@ -150,7 +173,40 @@
     };
 
     function startAdminSync() {
-        unsubscribe = onSnapshot(collection(db, "students"), async (snap) => {
+        // 1. Sync Requests real-time
+        unsubscribeRequests = onSnapshot(collection(db, "attendance_requests"), (snap) => {
+            const reqContainer = document.getElementById("requestsContainer");
+            const reqList = document.getElementById("requestsList");
+            reqList.innerHTML = "";
+
+            if(snap.empty) {
+                reqContainer.style.display = "none";
+            } else {
+                reqContainer.style.display = "block";
+                snap.docs.forEach(rDoc => {
+                    const rData = rDoc.data();
+                    const rId = rDoc.id;
+                    
+                    const div = document.createElement("div");
+                    div.className = "request-card";
+                    div.innerHTML = `
+                        <div class="req-top">
+                            <h4 class="req-name">${rData.studentName}</h4>
+                            <span style="font-size:10px; color:var(--warning); font-weight:700;">${rData.date}</span>
+                        </div>
+                        <div class="req-reason"><strong>Reason:</strong> ${rData.reason}</div>
+                        <div class="req-actions">
+                            <button class="btn" style="background:var(--success)" onclick="window.processRequest(event, '${rId}', '${rData.studentName}', '${rData.date}', 'accept')"><i class="ri-check-line"></i> Accept</button>
+                            <button class="btn" style="background:var(--danger)" onclick="window.processRequest(event, '${rId}', '${rData.studentName}', '${rData.date}', 'reject')"><i class="ri-close-line"></i> Reject</button>
+                        </div>
+                    `;
+                    reqList.appendChild(div);
+                });
+            }
+        });
+
+        // 2. Sync Student Profiles real-time
+        unsubscribeStudents = onSnapshot(collection(db, "students"), async (snap) => {
             studentsData = [];
             const listEl = document.getElementById("studentList");
             listEl.innerHTML = "";
@@ -194,10 +250,60 @@
         document.getElementById("studentList").appendChild(card);
     }
 
+    // --- REQUEST PROCESS ENGINE ---
+    window.processRequest = async (e, reqId, studentName, dateStr, decision) => {
+        const targetBtn = e.currentTarget;
+        targetBtn.disabled = true;
+
+        try {
+            if (decision === 'accept') {
+                window.showFloatingText(e, "Approved", "var(--success)");
+                
+                // 1. Add to official attendance
+                await setDoc(doc(db, "attendance", `${studentName}_${dateStr}`), { 
+                    studentName: studentName, 
+                    userName: studentName, 
+                    date: dateStr, 
+                    timestamp: serverTimestamp() 
+                });
+
+                // 2. Adjust Streak on Student Profile
+                const sRef = doc(db, "students", studentName);
+                const sSnap = await getDoc(sRef);
+                let newStreak = 1;
+                
+                if (sSnap.exists()) {
+                    const d = sSnap.data();
+                    const last = d.lastAttendanceDate;
+                    if (last) {
+                        const t = new Date(dateStr);
+                        const lDate = new Date(last);
+                        const yest = new Date(t);
+                        yest.setDate(t.getDate() - 1);
+                        
+                        if (lDate.toDateString() === yest.toDateString()) newStreak = (d.streak || 0) + 1;
+                        else if (lDate.toDateString() === t.toDateString()) newStreak = d.streak;
+                    }
+                    await updateDoc(sRef, { streak: newStreak, lastAttendanceDate: dateStr });
+                }
+            } else {
+                window.showFloatingText(e, "Rejected", "var(--danger)");
+            }
+
+            // Remove the processed request from Firestore
+            await deleteDoc(doc(db, "attendance_requests", reqId));
+
+        } catch (err) {
+            alert("Error processing request!");
+            targetBtn.disabled = false;
+        }
+    };
+
     window.handleAtt = async (e, name, mode) => {
         if (mode === 'plus') {
             window.showFloatingText(e, "+1 Day", "var(--success)");
-            await addDoc(collection(db, "attendance"), { userName: name, timestamp: Date.now() });
+            const tStr = new Date().toISOString().split('T')[0];
+            await setDoc(doc(db, "attendance", `${name}_${tStr}`), { userName: name, studentName: name, date: tStr, timestamp: serverTimestamp() });
         } else {
             window.showFloatingText(e, "-1 Day", "var(--danger)");
             const q = query(collection(db, "attendance"), where("userName", "==", name), limit(1));
