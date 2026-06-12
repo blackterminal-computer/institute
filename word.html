@@ -3,24 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BT | Admin Elite Pro</title>
+    <title>BT | AI Terminal Controller</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; }
+        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --ai-purple: #a855f7; }
         body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
         .wrapper { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
         .admin-card { background: rgba(255,255,255,0.03); padding: 25px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); }
         h2 { font-size: 14px; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
         
-        input, textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box; }
-        button { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; }
+        input, textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box; font-family: inherit; }
         
+        .ai-btn { width: 100%; background: linear-gradient(135deg, var(--primary), var(--ai-purple)); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2); }
+        .ai-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4); }
+        .ai-btn:disabled { background: #334155; box-shadow: none; cursor: not-allowed; }
+        
+        .deploy-btn { width: 100%; background: var(--accent); color: #020617; border: none; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .deploy-btn:hover { background: #22d3ee; }
+        .deploy-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+
         /* Preview Styling */
         .preview-box { border: 2px dashed rgba(255,255,255,0.1); padding: 15px; border-radius: 24px; position: sticky; top: 20px; }
-        .demo-card { background: #0f172a; padding: 20px; border-radius: 20px; border-left: 4px solid var(--accent); }
-        .demo-vid { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; margin-top: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #444; }
-
+        .demo-card { background: #0f172a; padding: 20px; border-radius: 20px; border-left: 4px solid var(--ai-purple); }
+        
         @media (max-width: 768px) { .wrapper { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -28,30 +34,49 @@
 
 <div class="wrapper">
     <div class="admin-card">
-        <h2><i class="ri-settings-4-fill"></i> Terminal Control</h2>
-        <input type="text" id="wordInput" placeholder="Topic Title..." oninput="updatePreview()">
-        <textarea id="descInput" placeholder="Explain the concept..." rows="5" oninput="updatePreview()"></textarea>
-        <input type="url" id="videoInput" placeholder="YouTube URL (Shorts/Video)" oninput="updatePreview()">
+        <h2><i class="ri-cpu-line"></i> AI Autonomous Control</h2>
         
-        <button id="updateBtn"><i class="ri-rocket-2-fill"></i> DEPLOY TO TERMINAL</button>
-        <p id="status" style="font-size: 10px; margin-top: 10px; text-align: center; opacity: 0.5;">Status: Idle</p>
+        <button id="generateAiBtn" class="ai-btn">
+            <i class="ri-magic-line"></i> GENERATE NEW TOPIC WITH GEMINI AI
+        </button>
+
+        <div style="height:1px; background:rgba(255,255,255,0.1); margin: 20px 0;"></div>
+
+        <label style="font-size: 11px; color: #94a3b8; display:block; margin-bottom: 5px;">AI Generated Title</label>
+        <input type="text" id="wordInput" placeholder="AI Title will appear here..." oninput="updatePreview()">
+        
+        <label style="font-size: 11px; color: #94a3b8; display:block; margin-bottom: 5px;">AI Generated Explanation</label>
+        <textarea id="descInput" placeholder="AI Description will appear here..." rows="6" oninput="updatePreview()"></textarea>
+        
+        <label style="font-size: 11px; color: #94a3b8; display:block; margin-bottom: 5px;">YouTube Search Query (Optional)</label>
+        <input type="text" id="videoInput" placeholder="Search keywords or URL..." oninput="updatePreview()">
+        
+        <button id="deployBtn" class="deploy-btn" disabled>
+            <i class="ri-rocket-2-fill"></i> DEPLOY AI CONTENT TO TERMINAL
+        </button>
+        
+        <p id="status" style="font-size: 11px; margin-top: 12px; text-align: center; color: #64748b;">Status: Waiting for AI Generation...</p>
     </div>
 
     <div class="preview-box">
         <h2 style="color: #64748b;"><i class="ri-eye-fill"></i> Live Preview</h2>
         <div class="demo-card">
-            <h3 id="preTitle" style="margin:0; font-size: 16px;">Topic Title</h3>
+            <h3 id="preTitle" style="margin:0; font-size: 16px; color: #fff;">Topic Title</h3>
             <div style="height:1px; background:rgba(255,255,255,0.1); margin:10px 0;"></div>
-            <p id="preDesc" style="font-size: 12px; opacity:0.7;">Description will appear here...</p>
-            <div id="preVid" class="demo-vid">Video Preview Area</div>
+            <p id="preDesc" style="font-size: 13px; opacity:0.7; line-height: 1.5;">Content summary preview...</p>
         </div>
     </div>
 </div>
 
 <script type="module">
+    // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    
+    // Google Gen AI Import
+    import { GoogleGenAI } from "https://esm.run/@google/genai";
 
+    // Your Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -61,46 +86,91 @@
         appId: "1:552489994197:web:7662331264c334ffbadf5c"
     };
 
+    // ⚠️ IMPORTANT: Apni Gemini API Key yahan daalein (Google AI Studio se free milti hai)
+    const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"; 
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-    // Global updatePreview function
+    // Preview Sync
     window.updatePreview = () => {
-        const title = document.getElementById('wordInput').value || "Topic Title";
-        const desc = document.getElementById('descInput').value || "Description will appear here...";
-        const vid = document.getElementById('videoInput').value;
-
+        const title = document.getElementById('wordInput').value.trim() || "Topic Title";
+        const desc = document.getElementById('descInput').value.trim() || "Content summary preview...";
         document.getElementById('preTitle').innerText = title;
         document.getElementById('preDesc').innerText = desc;
+    };
 
-        const vidBox = document.getElementById('preVid');
-        if(vid) {
-            vidBox.innerHTML = `<i class="ri-video-on-fill"></i> Video Link Detected`;
-            vidBox.style.color = "var(--accent)";
-        } else {
-            vidBox.innerHTML = "Video Preview Area";
-            vidBox.style.color = "#444";
+    // STEP 1: AI Generate Button Click
+    document.getElementById('generateAiBtn').onclick = async () => {
+        const status = document.getElementById('status');
+        const genBtn = document.getElementById('generateAiBtn');
+        const deployBtn = document.getElementById('deployBtn');
+
+        if(GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+            return alert("Pehle code ke andar 'GEMINI_API_KEY' set karein!");
+        }
+
+        status.innerText = "Status: Gemini AI is thinking...";
+        status.style.color = "var(--ai-purple)";
+        genBtn.disabled = true;
+
+        try {
+            // AI ko strict command dena JSON format mein output ke liye
+            const prompt = "Generate a highly interesting micro-learning tech topic or cyber security concept for developers. Provide the output strictly in a valid JSON format with two keys: 'title' (short name of concept) and 'description' (maximum 250 characters explanation in simple but futuristic tone). Do not wrap the response in markdown code blocks.";
+            
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+            });
+
+            const cleanText = response.text.trim();
+            const data = JSON.parse(cleanText);
+
+            // Fields update karna
+            document.getElementById('wordInput').value = data.title;
+            document.getElementById('descInput').value = data.description;
+            document.getElementById('videoInput').value = `https://www.youtube.com/results?search_query=${encodeURIComponent(data.title)}`;
+            
+            window.updatePreview();
+            
+            status.innerText = "Status: AI Content Generated! Review and deploy.";
+            status.style.color = "var(--accent)";
+            deployBtn.disabled = false; // Enable deploy button
+
+        } catch (error) {
+            status.innerText = "Status: AI Generation Failed.";
+            status.style.color = "#ef4444";
+            console.error(error);
+            alert("AI Error: " + error.message);
+        } finally {
+            genBtn.disabled = false;
         }
     };
 
-    document.getElementById('updateBtn').onclick = async () => {
+    // STEP 2: Deploy To Firebase
+    document.getElementById('deployBtn').onclick = async () => {
         const word = document.getElementById('wordInput').value.trim();
         const desc = document.getElementById('descInput').value.trim();
         const video = document.getElementById('videoInput').value.trim();
         const status = document.getElementById('status');
+        const deployBtn = document.getElementById('deployBtn');
 
-        if(!word || !desc) return alert("Fill mandatory fields!");
+        status.innerText = "Status: Synchronizing with Terminal...";
+        deployBtn.disabled = true;
 
-        status.innerText = "Status: Deploying...";
         try {
             await setDoc(doc(db, "content", "dailyWord"), {
                 word, description: desc, video, updatedAt: Date.now()
             });
-            status.innerText = "Status: Successfully Synced!";
-            alert("Terminal Updated!");
+            status.innerText = "Status: AI Content Live on Terminal!";
+            status.style.color = "#10b981";
+            alert("🚀 Terminal Updated with AI Content!");
         } catch (e) {
-            status.innerText = "Status: Sync Failed!";
+            status.innerText = "Status: Deploy Failed!";
+            status.style.color = "#ef4444";
             alert(e.message);
+            deployBtn.disabled = false;
         }
     };
 </script>
