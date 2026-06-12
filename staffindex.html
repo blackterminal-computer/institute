@@ -57,33 +57,21 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
 
-        .s-text-container {
-            z-index: 2;
-            width: 60%;
-        }
+        .s-text-container { z-index: 2; width: 60%; }
 
         .s-image-container {
-            position: absolute;
-            right: 5px;
-            top: -80px; 
-            width: 150px; 
-            height: 185px; 
+            position: absolute; right: 5px; top: -80px; 
+            width: 150px; height: 185px; 
             background-image: url('https://i.ibb.co/RrHyVyr/salman-khan.png');
-            background-size: contain;
-            background-position: bottom center; 
-            background-repeat: no-repeat;
-            z-index: 10;
+            background-size: contain; background-position: bottom center; 
+            background-repeat: no-repeat; z-index: 10;
             filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.5));
         }
 
         .stylish-underline {
-            display: block;
-            width: 40px; 
-            height: 3px;
-            margin-top: 8px;
+            display: block; width: 40px; height: 3px; margin-top: 8px;
             background: linear-gradient(90deg, var(--apple-blue), var(--cyber-purple));
-            border-radius: 2px;
-            animation: expandWidth 1.5s ease-out;
+            border-radius: 2px; animation: expandWidth 1.5s ease-out;
         }
 
         @keyframes expandWidth {
@@ -92,7 +80,6 @@
         }
 
         .container { max-width: 455px; margin: auto; }
-
         .header { margin: 15px 0 24px 0; position: relative; display: flex; flex-direction: column; }
         .header p { color: var(--cyber-purple); font-size: 12px; margin: 0 0 4px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
         .header h1 { 
@@ -117,7 +104,6 @@
         .card:hover { border-color: var(--border-hover); transform: translateY(-3px); }
 
         h3 { font-size: 12px; margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 700; text-transform: uppercase; }
-
         .toggle-btn {
             margin-left: auto; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.05);
             color: var(--text-main); font-size: 11px; padding: 6px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
@@ -154,13 +140,9 @@
             box-shadow: 0 0 15px rgba(10, 132, 255, 0.25); border-radius: 14px; position: absolute; left: 4px;
             display: flex; align-items: center; justify-content: center; cursor: grab; z-index: 2; transition: transform 0.1s ease, background 0.3s;
         }
-
         .slider-handle:active { cursor: grabbing; }
         .slider-handle i { font-size: 18px; color: var(--apple-blue); transition: all 0.3s; }
-
-        .slider-track.success-state {
-            background: rgba(48, 209, 88, 0.1) !important; border-color: var(--apple-green) !important; box-shadow: 0 0 20px rgba(48, 209, 88, 0.2);
-        }
+        .slider-track.success-state { background: rgba(48, 209, 88, 0.1) !important; border-color: var(--apple-green) !important; box-shadow: 0 0 20px rgba(48, 209, 88, 0.2); }
 
         .btn { width: 100%; padding: 15px 20px; border-radius: 16px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; transition: all 0.3s ease; }
         .btn-main { background: linear-gradient(135deg, #FFFFFF 0%, #E5E5EA 100%); color: #000000; }
@@ -173,7 +155,6 @@
         .strict-date-card.today { background: linear-gradient(180deg, var(--apple-red) 0%, #C92A2A 100%); border: none; box-shadow: 0 8px 20px rgba(255, 59, 48, 0.35); }
         .strict-date-card.today .mon, .strict-date-card.today .day { color: white; }
 
-        /* --- New Task Item Layout updates to insert Buttons --- */
         .task-item { background: rgba(255,255,255,0.01); padding: 14px 16px; border-radius: 16px; margin-top: 10px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .task-left-block { display: flex; align-items: center; gap: 12px; }
         .task-dot { height: 7px; width: 7px; background: var(--cyber-purple); border-radius: 50%; box-shadow: 0 0 10px var(--cyber-purple); flex-shrink: 0; }
@@ -198,6 +179,8 @@
         <h1 id="user-display">Staff Terminal</h1>
         <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> DAYS</div>
     </div>
+
+    <div id="staff-deduction-alert-box"></div>
 
     <div class="salman-banner animate__animated animate__fadeInUp">
         <div class="s-image-container"></div>
@@ -291,8 +274,8 @@
 
     <p class="footer-text">TERMINAL v2.9 • ENCRYPTED</p>
 </div>
-
 <script>
+    // System Initialization & Security Configuration Block
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
         authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -310,12 +293,17 @@
     let isAttendanceMarkedToday = false;
     let currentSalaryBalance = 0;
 
+    const staffId = localStorage.getItem('bt_staff_id');
+    const staffName = localStorage.getItem('bt_staff_name') || "Staff";
+    if(!staffId) { window.location.href = "index.html"; }
+
     document.addEventListener("DOMContentLoaded", () => {
         fs.collection("attendance").where("date", "==", new Date().toISOString().split('T')[0])
           .onSnapshot(snap => { document.getElementById('present-count').innerText = snap.size; });
         initSlider();
     });
 
+    // Biometric Slider Interface Vector Engine
     function initSlider() {
         const handle = document.getElementById('sl-handle');
         const track = document.getElementById('sl-track');
@@ -379,10 +367,15 @@
         window.addEventListener('touchend', endDrag);
     }
 
+    // Geodesic Haversine Distance Formula Vector
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-        const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const R = 6371000; // Radius of Earth in meters
+        const phi1 = lat1 * Math.PI / 180;
+        const phi2 = lat2 * Math.PI / 180;
+        const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+        const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) + 
+                  Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
@@ -420,7 +413,6 @@
         icon.className = "fas fa-fingerprint";
     }
 
-    // Dynamic Task Loading Function with Interactive Buttons
     function loadTasks() {
         db.ref(`tasks/${staffId}`).on('value', snap => {
             const container = document.getElementById('task-list'); 
@@ -450,7 +442,6 @@
         });
     }
 
-    // Interactive complete action handler triggering Firebase Node state update
     function completeTask(taskId) {
         if(confirm("Have you really completed this task?")) {
             db.ref(`tasks/${staffId}/${taskId}`).update({
@@ -470,9 +461,6 @@
         db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { location.reload(); });
     }
 
-    const staffId = localStorage.getItem('bt_staff_id');
-    const staffName = localStorage.getItem('bt_staff_name') || "Staff";
-    if(!staffId) { window.location.href = "index.html"; }
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -509,6 +497,7 @@
         const daysRemaining = lastDay - now.getDate();
         document.getElementById('cycle-days').innerText = `${daysRemaining} days remaining`;
 
+        // 1. REAL-TIME BALANCE AND PROFILE SYNC
         db.ref(`staff/${staffId}`).on('value', snap => {
             const val = snap.val() || {};
             currentSalaryBalance = val.salary || 0;
@@ -549,9 +538,42 @@
             });
         });
 
+        // 2. REAL-TIME REDUCTION LOG LISTENERS
+        db.ref(`staff_logs/${staffId}`).limitToLast(1).on('value', snap => {
+            const alertBox = document.getElementById('staff-deduction-alert-box');
+            if(!alertBox) return;
+
+            if(snap.exists()) {
+                snap.forEach(child => {
+                    const logData = child.val();
+                    alertBox.innerHTML = `
+                        <div class="card animate__animated animate__pulse" style="border-left: 4px solid var(--apple-orange); background: rgba(255, 159, 10, 0.08); margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: var(--apple-orange); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                <i class="fas fa-receipt"></i> Transaction / Payout Alert
+                            </div>
+                            <p style="margin: 10px 0 6px 0; color: #FFF; font-size: 14px; font-weight: 600; line-height: 1.4;">
+                                ${logData.message}
+                            </p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                                <small style="color: var(--text-sec); font-size: 11px;">
+                                    Remaining Balance: <b style="color: var(--apple-green);">₹${logData.restBalance}</b>
+                                </small>
+                                <small style="color: var(--text-muted); font-size: 9px;">
+                                    ${new Date(logData.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                alertBox.innerHTML = "";
+            }
+        });
+
         loadTasks(); listenStrictDays();
     }
     
+    // Emergency Matrix Balance Verification System
     function requestSalary() {
         const btn = document.getElementById('payout-btn');
         
@@ -597,7 +619,8 @@
             amount: `₹${finalRequestedAmount}`,
             status: "Pending",
             requestType: isEmergency ? "Emergency Advance" : "Regular Payout",
-            requestedAt: new Date().toISOString()
+            requestedAt: new Date().toISOString(),
+            staffId: staffId
         }).then(() => {
             btn.innerText = "REQUEST PENDING...";
             btn.style.background = "var(--text-muted)";
