@@ -13,6 +13,7 @@
         :root {
             --apple-green: #30D158;
             --apple-blue: #0A84FF;
+            --apple-red: #FF453A;
             --bg: #050508;
             --glass: rgba(18, 18, 26, 0.75);
             --border: rgba(255, 255, 255, 0.06);
@@ -40,7 +41,8 @@
         }
         .student-meta { display: flex; flex-direction: column; gap: 2px; }
         .att-name { font-size: 15px; font-weight: 600; color: #FFF; }
-        .att-time { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+        .att-time { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; display: flex; flex-direction: column; gap: 4px; }
+        .elapsed-time { color: var(--apple-blue); font-weight: 700; font-size: 12px; }
         .action-group { display: flex; align-items: center; gap: 10px; }
         .wa-action {
             width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
@@ -49,6 +51,7 @@
         }
         .wa-action:hover { background: var(--apple-green); color: #fff; box-shadow: 0 6px 16px rgba(48, 209, 88, 0.3); transform: scale(1.05); }
         .status-badge { font-size: 11px; color: var(--apple-green); font-weight: 700; background: rgba(48, 209, 88, 0.1); padding: 5px 12px; border-radius: 10px; border: 1px solid rgba(48, 209, 88, 0.15); }
+        .status-badge.ended { color: var(--apple-red); background: rgba(255, 69, 58, 0.1); border-color: rgba(255, 69, 58, 0.15); }
     </style>
 </head>
 <body>
@@ -79,8 +82,8 @@
     firebase.initializeApp(firebaseConfig);
     const fs = firebase.firestore(); 
 
-    // Global Registry Caching logic for instantaneous retrieval
     let studentPhoneCache = JSON.parse(sessionStorage.getItem('bt_phone_cache') || '{}');
+    let timerInterval = null;
 
     async function prefetchStudentRegistry() {
         if (Object.keys(studentPhoneCache).length > 0) return;
@@ -95,34 +98,105 @@
         } catch (e) { console.error("Cache prefetch bypassed", e); }
     }
 
+    // Helper: JavaScript Date object ko formatted 12-hour AM/PM string mein badalta hai
+    function formatDateTimeToString(dateObj) {
+        let hours = dateObj.getHours();
+        const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; 
+        return `${hours}:${minutes} ${ampm}`;
+    }
+
+    // Main Engine: Direct numeric milliseconds timestamp use karke calculation karega 
+    function calculateLiveTimeDifference(timestampMs) {
+        const now = new Date().getTime();
+        const diffMs = now - timestampMs;
+        const diffMins = Math.floor(diffMs / 60000);
+
+        if (diffMins >= 60) {
+            return { text: "Duration: 1 hr+", isEnded: true };
+        } else {
+            return { text: `Active: ${diffMins} min${diffMins !== 1 ? 's' : ''} ago`, isEnded: false };
+        }
+    }
+
+    function updateLiveTimers() {
+        document.querySelectorAll('.att-item').forEach(item => {
+            const docTimestamp = parseInt(item.getAttribute('data-timestamp'));
+            if (!docTimestamp) return;
+
+            const timeData = calculateLiveTimeDifference(docTimestamp);
+            const elapsedSpan = item.querySelector('.elapsed-time');
+            const badgeSpan = item.querySelector('.status-badge');
+            
+            if (elapsedSpan) {
+                elapsedSpan.innerText = timeData.text;
+                if (timeData.isEnded) {
+                    elapsedSpan.style.color = "var(--apple-red)";
+                    badgeSpan.innerText = "CLASS ENDED";
+                    badgeSpan.classList.add('ended');
+                } else {
+                    elapsedSpan.style.color = "var(--apple-blue)";
+                    badgeSpan.innerText = "PRESENT";
+                    badgeSpan.classList.remove('ended');
+                }
+            }
+        });
+    }
+
     function loadLivePresentLogs() {
         const todayStr = new Date().toISOString().split('T')[0];
         const container = document.getElementById('students-log-container');
         const countSpan = document.getElementById('active-count');
 
-        // Parallel processing invocation
         prefetchStudentRegistry();
 
+        // Database snapshot listener query
         fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
             countSpan.innerText = snapshot.size;
             if (snapshot.empty) {
                 container.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;"><p style="font-size:13px; color:var(--text-muted);">No logs documented for today.</p></div>';
+                if(timerInterval) clearInterval(timerInterval);
                 return;
             }
 
             let htmlContent = "";
             let i = 1;
 
+            // Database docs mapping loop
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
                 const displayName = data.userName || data.studentName || "Unknown Student";
-                const checkTime = data.time || "Logged";
                 
-                // Read straight from optimized lookups instead of individual database loops
-                let phone = data.userPhone || data.phoneNumber || data.phone || studentPhoneCache[displayName] || "";
+                // 1. DATABASE CHECK: Agar custom time field available na ho toh core server creation time standard pakdega
+                let logDateObj = new Date(); 
+                
+                if (data.timestamp) { 
+                    logDateObj = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                } else if (doc._document && doc._document.createTime) {
+                    // Firebase internal creation time fallback mechanism
+                    logDateObj = doc._document.createTime.timestamp.toDate();
+                } else if (data.time && data.time !== "Logged" && data.time.match(/(\d+):(\d+)\s*(AM|PM)/i)) {
+                    // Agar string form me pure time format database me ho
+                    const timeParts = data.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    let h = parseInt(timeParts[1]);
+                    const m = parseInt(timeParts[2]);
+                    if (timeParts[3].toUpperCase() === "PM" && h < 12) h += 12;
+                    if (timeParts[3].toUpperCase() === "AM" && h === 12) h = 0;
+                    logDateObj.setHours(h, m, 0, 0);
+                }
 
+                const finalTimestampMs = logDateObj.getTime();
+                const displayPunchTime = formatDateTimeToString(logDateObj);
+
+                // Live dynamic elapsed values
+                const timeData = calculateLiveTimeDifference(finalTimestampMs);
+
+                let phone = data.userPhone || data.phoneNumber || data.phone || studentPhoneCache[displayName] || "";
                 const cleanPhone = phone.toString().replace(/\D/g, '');
                 let waBtnHtml = "";
+                
                 if(cleanPhone.length >= 10) {
                     const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
                     const msg = encodeURIComponent(`Hi ${displayName}, dues update checklist.`);
@@ -131,20 +205,32 @@
                     waBtnHtml = `<div class="wa-action" style="opacity:0.25; cursor:not-allowed;"><i class="fab fa-whatsapp"></i></div>`; 
                 }
 
+                const badgeClass = timeData.isEnded ? "status-badge ended" : "status-badge";
+                const badgeText = timeData.isEnded ? "CLASS ENDED" : "PRESENT";
+                const elapsedStyle = timeData.isEnded ? "color: var(--apple-red);" : "color: var(--apple-blue);";
+
                 htmlContent += `
-                    <div class="att-item animate__animated animate__fadeIn">
+                    <div class="att-item animate__animated animate__fadeIn" data-timestamp="${finalTimestampMs}">
                         <div class="student-meta">
                             <span class="att-name">${i}. ${displayName}</span>
-                            <span class="att-time"><i class="far fa-clock"></i> Punch: ${checkTime}</span>
+                            <span class="att-time">
+                                <span><i class="far fa-clock"></i> Punch: ${displayPunchTime}</span>
+                                <span class="elapsed-time" style="${elapsedStyle}">${timeData.text}</span>
+                            </span>
                         </div>
                         <div class="action-group">
                             ${waBtnHtml}
-                            <span class="status-badge">PRESENT</span>
+                            <span class="${badgeClass}">${badgeText}</span>
                         </div>
                     </div>`;
                 i++;
             });
+            
             container.innerHTML = htmlContent;
+
+            // Timer interval handler updates layout numbers smoothly every 15s
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateLiveTimers, 15000);
         });
     }
 
