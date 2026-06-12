@@ -28,7 +28,8 @@
             background: var(--bg); background-image: var(--accent-glow); background-attachment: fixed;
             color: var(--text-main); margin: 0; padding: 24px 16px; -webkit-font-smoothing: antialiased;
         }
-        .container { max-width: 450px; margin: auto; }
+        .container { max-width: 450px; margin: auto; min-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+        .content-body { flex: 1; }
         .back-nav { display: flex; align-items: center; gap: 8px; color: var(--apple-green); font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; text-decoration: none; margin-bottom: 20px; width: max-content; transition: all 0.2s ease; }
         .back-nav:hover { opacity: 0.8; transform: translateX(-2px); }
         
@@ -57,7 +58,7 @@
 
         .list-wrapper { display: flex; flex-direction: column; gap: 12px; }
         
-        /* Grid-Locked Premium Layout (No Neon Animation) */
+        /* Grid-Locked Premium Layout */
         .att-item { 
             background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border);
             padding: 16px; border-radius: 18px; 
@@ -101,45 +102,66 @@
             min-width: 80px; text-align: center; letter-spacing: 0.3px; 
         }
         .status-badge.ended { color: var(--apple-red); background: rgba(255, 69, 58, 0.1); border-color: rgba(255, 69, 58, 0.15); }
+
+        /* Premium Minimalist Footer */
+        .app-footer {
+            text-align: center;
+            padding: 24px 0 10px 0;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .app-footer span {
+            color: var(--apple-green);
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <a href="index.html" class="back-nav"><i class="fas fa-arrow-left"></i> Terminal</a>
-    
-    <div class="header-panel">
-        <h1>Live Attendance</h1>
+    <div class="content-body">
+        <a href="index.html" class="back-nav"><i class="fas fa-arrow-left"></i> Terminal</a>
+        
+        <div class="header-panel">
+            <h1>Live Attendance</h1>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box tot">
+                <div class="num" id="stat-total">0</div>
+                <div class="lbl">Total Logs</div>
+            </div>
+            <div class="stat-box act">
+                <div class="num" id="stat-active">0</div>
+                <div class="lbl">Active</div>
+            </div>
+            <div class="stat-box end">
+                <div class="num" id="stat-ended">0</div>
+                <div class="lbl">Class Ended</div>
+            </div>
+        </div>
+
+        <div class="controls-wrapper">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Search student name..." oninput="filterLogs()">
+            </div>
+            <div class="filter-tabs">
+                <div class="filter-btn active" id="tab-all" onclick="setFilter('all')">All</div>
+                <div class="filter-btn" id="tab-active" onclick="setFilter('active')">Active</div>
+                <div class="filter-btn" id="tab-ended" onclick="setFilter('ended')">Ended</div>
+            </div>
+        </div>
+
+        <div id="students-log-container" class="list-wrapper">
+            <p style="text-align:center; font-size:13px; opacity:0.5; color: var(--text-sec);">Connecting to servers...</p>
+        </div>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-box tot">
-            <div class="num" id="stat-total">0</div>
-            <div class="lbl">Total Logs</div>
-        </div>
-        <div class="stat-box act">
-            <div class="num" id="stat-active">0</div>
-            <div class="lbl">Active</div>
-        </div>
-        <div class="stat-box end">
-            <div class="num" id="stat-ended">0</div>
-            <div class="lbl">Class Ended</div>
-        </div>
-    </div>
-
-    <div class="controls-wrapper">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="search-input" placeholder="Search student name..." oninput="filterLogs()">
-        </div>
-        <div class="filter-tabs">
-            <div class="filter-btn active" id="tab-all" onclick="setFilter('all')">All</div>
-            <div class="filter-btn" id="tab-active" onclick="setFilter('active')">Active</div>
-            <div class="filter-btn" id="tab-ended" onclick="setFilter('ended')">Ended</div>
-        </div>
-    </div>
-
-    <div id="students-log-container" class="list-wrapper">
-        <p style="text-align:center; font-size:13px; opacity:0.5; color: var(--text-sec);">Connecting to servers...</p>
+    <div class="app-footer">
+        Developed by <span>Abinash Barik</span>
     </div>
 </div>
 
@@ -330,7 +352,7 @@
                 const badgeClass = timeData.isEnded ? "status-badge ended" : "status-badge";
                 const badgeText = timeData.isEnded ? "CLASS ENDED" : "PRESENT";
                 const elapsedStyle = timeData.isEnded ? "color: var(--apple-red);" : "color: var(--apple-blue);";
-                const priorityClass = "att-item"; // Removed pulse class reference completely
+                const priorityClass = "att-item"; 
                 const flexOrderStyle = timeData.isEnded ? "order: -1;" : "order: 0;";
 
                 let barColor = "var(--apple-blue)";
