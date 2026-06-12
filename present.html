@@ -32,10 +32,18 @@
         .back-nav { display: flex; align-items: center; gap: 8px; color: var(--apple-green); font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; text-decoration: none; margin-bottom: 20px; width: max-content; transition: all 0.2s ease; }
         .back-nav:hover { opacity: 0.8; transform: translateX(-2px); }
         
-        .header-panel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header-panel h1 { font-size: 28px; margin: 0; font-weight: 800; letter-spacing: -1px; }
-        .counter-pill { background: rgba(48, 209, 88, 0.12); border: 1px solid rgba(48, 209, 88, 0.25); padding: 6px 14px; border-radius: 20px; color: var(--apple-green); font-weight: 700; font-size: 14px; }
+        .header-panel { margin-bottom: 20px; }
+        .header-panel h1 { font-size: 28px; margin: 0 0 15px 0; font-weight: 800; letter-spacing: -1px; }
         
+        /* Advanced Multi-Stats Panel */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: var(--glass); border: 1px solid var(--border); padding: 12px 8px; border-radius: 14px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .stat-box .num { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
+        .stat-box .lbl { font-size: 9px; font-weight: 700; color: var(--text-sec); letter-spacing: 0.5px; text-transform: uppercase; }
+        .stat-box.tot .num { color: #FFF; }
+        .stat-box.act .num { color: var(--apple-green); }
+        .stat-box.end .num { color: var(--apple-red); }
+
         /* Search & Filter Controls */
         .controls-wrapper { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
         .search-box { position: relative; width: 100%; }
@@ -49,7 +57,7 @@
 
         .list-wrapper { display: flex; flex-direction: column; gap: 12px; }
         
-        /* Grid-Locked Card Layout with Progress Bar */
+        /* Grid-Locked Premium Layout (No Neon Animation) */
         .att-item { 
             background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border);
             padding: 16px; border-radius: 18px; 
@@ -64,7 +72,7 @@
         }
         .att-item:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.12); }
         
-        /* Visual Bottom Progress Track */
+        /* Bottom Progress Tracker */
         .progress-track { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.03); }
         .progress-bar { height: 100%; width: 0%; background: var(--apple-blue); transition: width 0.5s ease, background-color 0.5s ease; }
         
@@ -75,18 +83,18 @@
         
         .action-group { 
             display: grid;
-            grid-template-columns: auto auto auto;
+            grid-template-columns: repeat(3, auto);
             align-items: center;
             gap: 8px; 
         }
         
-        /* Communication Circular Buttons */
-        .action-btn { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; transition: all 0.2s ease; font-size: 14px; text-decoration: none; box-sizing: border-box; }
+        /* Communication & Control Circular Buttons */
+        .action-btn { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; transition: all 0.2s ease; font-size: 13px; text-decoration: none; box-sizing: border-box; }
         .wa-btn { background: rgba(48, 209, 88, 0.1); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.15); }
         .wa-btn:hover { background: var(--apple-green); color: #fff; box-shadow: 0 4px 12px rgba(48, 209, 88, 0.25); transform: scale(1.05); }
         .call-btn { background: rgba(10, 132, 255, 0.1); color: var(--apple-blue); border: 1px solid rgba(10, 132, 255, 0.15); }
         .call-btn:hover { background: var(--apple-blue); color: #fff; box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25); transform: scale(1.05); }
-        
+
         .status-badge { 
             font-size: 11px; color: var(--apple-green); font-weight: 700; background: rgba(48, 209, 88, 0.1); 
             padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(48, 209, 88, 0.15); 
@@ -101,7 +109,21 @@
     
     <div class="header-panel">
         <h1>Live Attendance</h1>
-        <div class="counter-pill"><span id="active-count">0</span> PRESENT</div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-box tot">
+            <div class="num" id="stat-total">0</div>
+            <div class="lbl">Total Logs</div>
+        </div>
+        <div class="stat-box act">
+            <div class="num" id="stat-active">0</div>
+            <div class="lbl">Active</div>
+        </div>
+        <div class="stat-box end">
+            <div class="num" id="stat-ended">0</div>
+            <div class="lbl">Class Ended</div>
+        </div>
     </div>
 
     <div class="controls-wrapper">
@@ -137,7 +159,7 @@
 
     let studentPhoneCache = JSON.parse(sessionStorage.getItem('bt_phone_cache') || '{}');
     let timerInterval = null;
-    let currentFilter = 'all'; // Global state tracking
+    let currentFilter = 'all';
 
     async function prefetchStudentRegistry() {
         if (Object.keys(studentPhoneCache).length > 0) return;
@@ -172,6 +194,10 @@
         }
     }
 
+    window.initiateDirectCall = function(cleanPhone) {
+        window.location.href = `tel:+${cleanPhone}`;
+    };
+
     window.sendWhatsAppAlert = function(cleanPhone, displayName, timestampMs) {
         const timeData = calculateLiveTimeDifference(timestampMs);
         const customMsg = timeData.isEnded 
@@ -181,6 +207,9 @@
     };
 
     function updateLiveTimers() {
+        let activeCount = 0;
+        let endedCount = 0;
+
         document.querySelectorAll('.att-item').forEach(item => {
             const docTimestamp = parseInt(item.getAttribute('data-timestamp'));
             if (!docTimestamp) return;
@@ -190,7 +219,6 @@
             const badgeSpan = item.querySelector('.status-badge');
             const bar = item.querySelector('.progress-bar');
             
-            // Core dynamic update rules
             if (elapsedSpan) elapsedSpan.innerText = timeData.text;
             if (bar) {
                 bar.style.width = timeData.percent + "%";
@@ -199,21 +227,24 @@
                 else bar.style.backgroundColor = "var(--apple-blue)";
             }
 
-            if (badgeSpan) {
-                if (timeData.isEnded) {
-                    if (elapsedSpan) elapsedSpan.style.color = "var(--apple-red)";
-                    badgeSpan.innerText = "CLASS ENDED";
-                    badgeSpan.classList.add('ended');
-                    item.setAttribute('data-state', 'ended');
-                } else {
-                    if (elapsedSpan) elapsedSpan.style.color = "var(--apple-blue)";
-                    badgeSpan.innerText = "PRESENT";
-                    badgeSpan.classList.remove('ended');
-                    item.setAttribute('data-state', 'active');
-                }
+            if (timeData.isEnded) {
+                endedCount++;
+                if (elapsedSpan) elapsedSpan.style.color = "var(--apple-red)";
+                if (badgeSpan) { badgeSpan.innerText = "CLASS ENDED"; badgeSpan.classList.add('ended'); }
+                item.setAttribute('data-state', 'ended');
+                item.style.order = "-1"; 
+            } else {
+                activeCount++;
+                if (elapsedSpan) elapsedSpan.style.color = "var(--apple-blue)";
+                if (badgeSpan) { badgeSpan.innerText = "PRESENT"; badgeSpan.classList.remove('ended'); }
+                item.setAttribute('data-state', 'active');
+                item.style.order = "0";
             }
         });
-        filterLogs(); // Re-apply visibility filtering logic post data update
+
+        document.getElementById('stat-active').innerText = activeCount;
+        document.getElementById('stat-ended').innerText = endedCount;
+        filterLogs();
     }
 
     window.setFilter = function(type) {
@@ -243,14 +274,15 @@
     function loadLivePresentLogs() {
         const todayStr = new Date().toISOString().split('T')[0];
         const container = document.getElementById('students-log-container');
-        const countSpan = document.getElementById('active-count');
-
+        
         prefetchStudentRegistry();
 
         fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
-            countSpan.innerText = snapshot.size;
+            document.getElementById('stat-total').innerText = snapshot.size;
             if (snapshot.empty) {
                 container.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;"><p style="font-size:13px; color:var(--text-muted);">No logs documented for today.</p></div>';
+                document.getElementById('stat-active').innerText = "0";
+                document.getElementById('stat-ended').innerText = "0";
                 if(timerInterval) clearInterval(timerInterval);
                 return;
             }
@@ -284,10 +316,11 @@
                 const cleanPhone = phone.toString().replace(/\D/g, '');
                 
                 let waBtnHtml = "", callBtnHtml = "";
+
                 if(cleanPhone.length >= 10) {
                     const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
                     waBtnHtml = `<div class="action-btn wa-btn" onclick="window.sendWhatsAppAlert('${finalNum}', '${displayName}', ${finalTimestampMs})"><i class="fab fa-whatsapp"></i></div>`;
-                    callBtnHtml = `<a href="tel:+${finalNum}" class="action-btn call-btn"><i class="fas fa-phone-alt"></i></a>`;
+                    callBtnHtml = `<div class="action-btn call-btn" onclick="window.initiateDirectCall('${finalNum}')"><i class="fas fa-phone-alt"></i></div>`;
                 } else { 
                     waBtnHtml = `<div class="action-btn wa-btn" style="opacity:0.25; cursor:not-allowed;"><i class="fab fa-whatsapp"></i></div>`; 
                     callBtnHtml = `<div class="action-btn call-btn" style="opacity:0.25; cursor:not-allowed;"><i class="fas fa-phone-alt"></i></div>`; 
@@ -297,13 +330,15 @@
                 const badgeClass = timeData.isEnded ? "status-badge ended" : "status-badge";
                 const badgeText = timeData.isEnded ? "CLASS ENDED" : "PRESENT";
                 const elapsedStyle = timeData.isEnded ? "color: var(--apple-red);" : "color: var(--apple-blue);";
-                
+                const priorityClass = "att-item"; // Removed pulse class reference completely
+                const flexOrderStyle = timeData.isEnded ? "order: -1;" : "order: 0;";
+
                 let barColor = "var(--apple-blue)";
                 if (timeData.mins >= 60) barColor = "var(--apple-red)";
                 else if (timeData.mins >= 30) barColor = "var(--apple-orange)";
 
                 htmlContent += `
-                    <div class="att-item animate__animated animate__fadeIn" data-timestamp="${finalTimestampMs}" data-name="${displayName.toLowerCase()}" data-state="${cardState}">
+                    <div class="${priorityClass} animate__animated animate__fadeIn" data-timestamp="${finalTimestampMs}" data-name="${displayName.toLowerCase()}" data-state="${cardState}" style="${flexOrderStyle}">
                         <div class="student-meta">
                             <span class="att-name">${i}. ${displayName}</span>
                             <div class="att-time">
@@ -323,8 +358,11 @@
                 i++;
             });
             
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+            
             container.innerHTML = htmlContent;
-            filterLogs(); // Sync initial view filtering metrics instantly
+            updateLiveTimers(); 
 
             if(timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateLiveTimers, 15000);
