@@ -33,24 +33,47 @@
         .header-panel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .header-panel h1 { font-size: 28px; margin: 0; font-weight: 800; letter-spacing: -1px; }
         .counter-pill { background: rgba(48, 209, 88, 0.12); border: 1px solid rgba(48, 209, 88, 0.25); padding: 6px 14px; border-radius: 20px; color: var(--apple-green); font-weight: 700; font-size: 14px; }
+        
         .list-wrapper { display: flex; flex-direction: column; gap: 12px; }
+        
+        /* High-Performance Core Grid Setup */
         .att-item { 
             background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border);
-            padding: 14px 18px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: all 0.2s ease;
+            padding: 16px; border-radius: 18px; 
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
-        .student-meta { display: flex; flex-direction: column; gap: 2px; }
-        .att-name { font-size: 15px; font-weight: 600; color: #FFF; }
-        .att-time { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; display: flex; flex-direction: column; gap: 4px; }
+        
+        .student-meta { 
+            display: grid;
+            gap: 4px;
+        }
+        .att-name { font-size: 15px; font-weight: 600; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .att-time { font-size: 11px; color: var(--text-muted); font-weight: 500; display: grid; gap: 2px; }
         .elapsed-time { color: var(--apple-blue); font-weight: 700; font-size: 12px; }
-        .action-group { display: flex; align-items: center; gap: 10px; }
-        .wa-action {
-            width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            background: rgba(48, 209, 88, 0.1); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.15);
-            cursor: pointer; transition: all 0.2s;
+        
+        .action-group { 
+            display: grid;
+            grid-template-columns: auto auto;
+            align-items: center;
+            gap: 10px; 
         }
-        .wa-action:hover { background: var(--apple-green); color: #fff; box-shadow: 0 6px 16px rgba(48, 209, 88, 0.3); transform: scale(1.05); }
-        .status-badge { font-size: 11px; color: var(--apple-green); font-weight: 700; background: rgba(48, 209, 88, 0.1); padding: 5px 12px; border-radius: 10px; border: 1px solid rgba(48, 209, 88, 0.15); }
+        
+        .wa-action {
+            width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+            background: rgba(48, 209, 88, 0.1); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.15);
+            cursor: pointer; transition: all 0.2s ease; font-size: 15px;
+        }
+        .wa-action:hover { background: var(--apple-green); color: #fff; box-shadow: 0 4px 12px rgba(48, 209, 88, 0.25); transform: scale(1.05); }
+        
+        .status-badge { 
+            font-size: 11px; color: var(--apple-green); font-weight: 700; background: rgba(48, 209, 88, 0.1); 
+            padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(48, 209, 88, 0.15); 
+            min-width: 80px; text-align: center; letter-spacing: 0.3px; 
+        }
         .status-badge.ended { color: var(--apple-red); background: rgba(255, 69, 58, 0.1); border-color: rgba(255, 69, 58, 0.15); }
     </style>
 </head>
@@ -98,7 +121,6 @@
         } catch (e) { console.error("Cache prefetch bypassed", e); }
     }
 
-    // Helper: JavaScript Date object ko formatted 12-hour AM/PM string mein badalta hai
     function formatDateTimeToString(dateObj) {
         let hours = dateObj.getHours();
         const minutes = dateObj.getMinutes().toString().padStart(2, '0');
@@ -108,18 +130,22 @@
         return `${hours}:${minutes} ${ampm}`;
     }
 
-    // Main Engine: Direct numeric milliseconds timestamp use karke calculation karega 
     function calculateLiveTimeDifference(timestampMs) {
-        const now = new Date().getTime();
-        const diffMs = now - timestampMs;
-        const diffMins = Math.floor(diffMs / 60000);
-
+        const diffMins = Math.floor((new Date().getTime() - timestampMs) / 60000);
         if (diffMins >= 60) {
-            return { text: "Duration: 1 hr+", isEnded: true };
+            return { text: "Duration: 1 hr+", isEnded: true, mins: diffMins };
         } else {
-            return { text: `Active: ${diffMins} min${diffMins !== 1 ? 's' : ''} ago`, isEnded: false };
+            return { text: `Active: ${diffMins} min${diffMins !== 1 ? 's' : ''} ago`, isEnded: false, mins: diffMins };
         }
     }
+
+    window.sendWhatsAppAlert = function(cleanPhone, displayName, timestampMs) {
+        const timeData = calculateLiveTimeDifference(timestampMs);
+        const customMsg = timeData.isEnded 
+            ? `Hi ${displayName}, your 1 hour class is completed. You can leave now.`
+            : `Hi ${displayName}, your current class duration is ${timeData.mins} mins.`;
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(customMsg)}`, '_blank');
+    };
 
     function updateLiveTimers() {
         document.querySelectorAll('.att-item').forEach(item => {
@@ -152,7 +178,6 @@
 
         prefetchStudentRegistry();
 
-        // Database snapshot listener query
         fs.collection("attendance").where("date", "==", todayStr).onSnapshot(async (snapshot) => {
             countSpan.innerText = snapshot.size;
             if (snapshot.empty) {
@@ -164,21 +189,16 @@
             let htmlContent = "";
             let i = 1;
 
-            // Database docs mapping loop
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
                 const displayName = data.userName || data.studentName || "Unknown Student";
                 
-                // 1. DATABASE CHECK: Agar custom time field available na ho toh core server creation time standard pakdega
                 let logDateObj = new Date(); 
-                
                 if (data.timestamp) { 
                     logDateObj = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
                 } else if (doc._document && doc._document.createTime) {
-                    // Firebase internal creation time fallback mechanism
                     logDateObj = doc._document.createTime.timestamp.toDate();
                 } else if (data.time && data.time !== "Logged" && data.time.match(/(\d+):(\d+)\s*(AM|PM)/i)) {
-                    // Agar string form me pure time format database me ho
                     const timeParts = data.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
                     let h = parseInt(timeParts[1]);
                     const m = parseInt(timeParts[2]);
@@ -189,8 +209,6 @@
 
                 const finalTimestampMs = logDateObj.getTime();
                 const displayPunchTime = formatDateTimeToString(logDateObj);
-
-                // Live dynamic elapsed values
                 const timeData = calculateLiveTimeDifference(finalTimestampMs);
 
                 let phone = data.userPhone || data.phoneNumber || data.phone || studentPhoneCache[displayName] || "";
@@ -199,8 +217,7 @@
                 
                 if(cleanPhone.length >= 10) {
                     const finalNum = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
-                    const msg = encodeURIComponent(`Hi ${displayName}, dues update checklist.`);
-                    waBtnHtml = `<div class="wa-action" onclick="window.open('https://wa.me/${finalNum}?text=${msg}', '_blank')"><i class="fab fa-whatsapp"></i></div>`;
+                    waBtnHtml = `<div class="wa-action" onclick="window.sendWhatsAppAlert('${finalNum}', '${displayName}', ${finalTimestampMs})"><i class="fab fa-whatsapp"></i></div>`;
                 } else { 
                     waBtnHtml = `<div class="wa-action" style="opacity:0.25; cursor:not-allowed;"><i class="fab fa-whatsapp"></i></div>`; 
                 }
@@ -213,10 +230,10 @@
                     <div class="att-item animate__animated animate__fadeIn" data-timestamp="${finalTimestampMs}">
                         <div class="student-meta">
                             <span class="att-name">${i}. ${displayName}</span>
-                            <span class="att-time">
+                            <div class="att-time">
                                 <span><i class="far fa-clock"></i> Punch: ${displayPunchTime}</span>
                                 <span class="elapsed-time" style="${elapsedStyle}">${timeData.text}</span>
-                            </span>
+                            </div>
                         </div>
                         <div class="action-group">
                             ${waBtnHtml}
@@ -228,7 +245,6 @@
             
             container.innerHTML = htmlContent;
 
-            // Timer interval handler updates layout numbers smoothly every 15s
             if(timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateLiveTimers, 15000);
         });
