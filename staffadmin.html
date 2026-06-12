@@ -78,7 +78,7 @@
         .strict-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,59,48,0.05); border: 1px solid rgba(255,59,48,0.15); padding: 10px 14px; border-radius: 12px; margin-top: 8px; font-size: 13px; font-weight: 600; }
         .footer-text { text-align: center; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; margin-top: 35px; }
 
-        /* Status Badges for Realtime Assignment Audit */
+        /* Status Badges */
         .status-badge { font-size: 9px; padding: 4px 8px; border-radius: 8px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 4px; }
         .status-pending { background: rgba(191, 90, 242, 0.15); color: var(--cyber-purple); }
         .status-completed { background: rgba(48, 209, 88, 0.15); color: var(--apple-green); }
@@ -188,15 +188,13 @@
 
     function toggleCollapseCard(cardId) {
         const cardElement = document.getElementById(cardId);
-        if (cardElement) {
-            cardElement.classList.toggle('active');
-        }
+        if (cardElement) { cardElement.classList.toggle('active'); }
     }
 
     function initAdminEngine() {
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // Realtime Staff and Punch-in Monitor Engine
+        // Realtime Staff Engine
         db.ref('staff').on('value', staffSnap => {
             db.ref(`attendance`).on('value', attendanceSnap => {
                 const select = document.getElementById('task-staff-select');
@@ -215,12 +213,10 @@
                     Object.keys(staffData).forEach(id => {
                         const staff = staffData[id];
                         
-                        // Dropdown update
                         const option = document.createElement('option');
                         option.value = id; option.innerText = `${staff.name || 'Unknown'} (${id})`;
                         select.appendChild(option);
                         
-                        // Today's punch check logic
                         let punchTimeDisplay = `<span style="color: var(--apple-red); font-weight:600; font-size:11px;">Absent</span>`;
                         if(attendanceData[id] && attendanceData[id][todayStr]) {
                             const time = attendanceData[id][todayStr].time || "Present";
@@ -233,8 +229,7 @@
                                 <td><input type="number" class="inline-input" id="wage-${id}" value="${staff.perDayWage || 0}"></td>
                                 <td><input type="number" class="inline-input" id="streak-${id}" value="${staff.streak || 0}"></td>
                                 <td>${punchTimeDisplay}</td>
-                              <td><input type="number" class="inline-input" id="salary-${id}" value="${staff.salary || 0}" style="color: var(--apple-green); font-weight:700; width: 65px;"></td>
-
+                                <td><input type="number" class="inline-input" id="salary-${id}" value="${staff.salary || 0}" style="color: var(--apple-green); font-weight:700; width: 65px;"></td>
                                 <td style="text-align: center;">
                                     <button class="table-action-btn btn-save-row" onclick="updateStaffRow('${id}')" title="Save Metrics"><i class="fas fa-save"></i></button>
                                     <button class="table-action-btn btn-delete-row" onclick="deleteStaffRow('${id}', '${staff.name || ''}')" title="Delete Profile"><i class="fas fa-trash-alt"></i></button>
@@ -245,7 +240,7 @@
             });
         });
 
-        // Pending Payouts Pipeline Tracker
+        // Payout Tracker (With Dynamic Staff ID passing)
         db.ref('salaryRequests').on('value', snap => {
             const container = document.getElementById('payout-requests-list');
             const payoutCountSpan = document.getElementById('stat-payout-count');
@@ -260,6 +255,8 @@
                             ? `<br><span class="lead-badge" style="background: rgba(255, 159, 10, 0.15); color: var(--apple-orange); font-size:9px; margin-top:4px; display:inline-block;">Emergency Advance</span>`
                             : `<br><span class="lead-badge" style="background: rgba(10, 132, 255, 0.15); color: var(--apple-blue); font-size:9px; margin-top:4px; display:inline-block;">Regular Payout</span>`;
                         
+                        const staffId = reqData.staffId || reqData.uid || reqId;
+
                         container.innerHTML += `
                             <div class="data-item">
                                 <div class="data-info">
@@ -267,7 +264,7 @@
                                     <small>Amount: <b style="color: var(--apple-green);">${reqData.amount}</b>${reqTypeBadge}</small>
                                 </div>
                                 <div class="action-btn-group">
-                                    <button class="sm-btn btn-approve" onclick="resolvePayout('${reqId}', true, '${reqData.amount}')">Approve</button>
+                                    <button class="sm-btn btn-approve" onclick="resolvePayout('${reqId}', true, '${staffId}', '${reqData.amount}', '${reqData.requestType || 'Advance Pay'}')">Approve</button>
                                     <button class="sm-btn btn-reject" onclick="resolvePayout('${reqId}', false)">Reject</button>
                                 </div>
                             </div>`;
@@ -278,7 +275,7 @@
             if(pendingCounter === 0) container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending requests</p></div>`;
         });
 
-        // Realtime Leads Sync Pipeline
+        // Leads Pipeline Monitor
         db.ref('leads').on('value', snap => {
             const container = document.getElementById('leads-realtime-list');
             if(!container) return; container.innerHTML = "";
@@ -289,184 +286,137 @@
                     const activeClientName = item.name || item.clientName || 'Unnamed Client';
                     const cleanedPhone = item.phone ? item.phone.replace(/[^0-9]/g, '') : '';
                     const currentStatus = item.status || 'Pending';
-                    
-                    let badgeHtml = '';
-                    if(currentStatus === "Completed" || currentStatus === "Done") {
-                        badgeHtml = `<span class="lead-badge" style="background: rgba(48, 209, 88, 0.15); color: var(--apple-green);">${currentStatus}</span>`;
-                    }
-                    
-                    let commsHtml = '';
-                    if(cleanedPhone) {
-                        commsHtml = `
-                            <div class="lead-comms-group">
-                                <a href="tel:${cleanedPhone}" class="comm-link-btn comm-call" title="Call Client"><i class="fas fa-phone-alt"></i></a>
-                                <a href="https://api.whatsapp.com/send?phone=${cleanedPhone.length === 10 ? '91'+cleanedPhone : cleanedPhone}" target="_blank" class="comm-link-btn comm-wa" title="WhatsApp Message"><i class="fab fa-whatsapp"></i></a>
-                            </div>`;
-                    }
+                    let badgeHtml = (currentStatus === "Completed" || currentStatus === "Done") ? `<span class="lead-badge" style="background: rgba(48, 209, 88, 0.15); color: var(--apple-green);">${currentStatus}</span>` : '';
+                    let commsHtml = cleanedPhone ? `<div class="lead-comms-group"><a href="tel:${cleanedPhone}" class="comm-link-btn comm-call"><i class="fas fa-phone-alt"></i></a><a href="https://api.whatsapp.com/send?phone=${cleanedPhone.length === 10 ? '91'+cleanedPhone : cleanedPhone}" target="_blank" class="comm-link-btn comm-wa"><i class="fab fa-whatsapp"></i></a></div>` : '';
 
                     container.innerHTML += `
                         <div class="data-item">
                             <div class="data-info">
                                 <p style="font-size:13px; margin-bottom: 2px; font-weight:700;">${activeClientName}</p>
-                                <small style="color: #fff; font-weight:600;"><i class="fas fa-phone-alt" style="font-size:10px; color: var(--text-muted)"></i> ${item.phone || 'No Contact'}</small>
+                                <small style="color: #fff; font-weight:600;"><i class="fas fa-phone-alt" style="font-size:10px;"></i> ${item.phone || 'No Contact'}</small>
                                 <small style="color: var(--apple-orange); font-weight:600;"><i class="fas fa-graduation-cap" style="font-size:10px;"></i> ${item.course || 'General'}</small>
                                 <small style="font-size:10px; color: var(--text-muted);">Handler: <b>${item.assignedTo || 'Unassigned'}</b></small>
                             </div>
-                            <div class="lead-action-box">
-                                ${badgeHtml}
-                                <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
-                                    ${commsHtml}
-                                    <button class="btn-delete-lead" onclick="deleteLeadRecord('${key}', '${activeClientName}')" title="Delete Lead">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
+                            <div class="lead-action-box">${badgeHtml}<div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">${commsHtml}<button class="btn-delete-lead" onclick="deleteLeadRecord('${key}', '${activeClientName}')"><i class="fas fa-trash-alt"></i></button></div></div>
                         </div>`;
                 });
             } else { container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active leads found.</p></div>`; }
         });
 
-        // Broadcast Task Pipeline Engine WITH ENHANCED STAGE TRACKING
+        // Broadcast Tasks Pipeline
         db.ref('tasks').on('value', snap => {
             const taskContainer = document.getElementById('broadcast-tasks-list');
-            if(!taskContainer) return;
-            taskContainer.innerHTML = "";
-            let taskCounter = 0;
-
+            if(!taskContainer) return; taskContainer.innerHTML = ""; let taskCounter = 0;
             if(snap.exists()) {
                 const allStaffTasks = snap.val();
                 Object.keys(allStaffTasks).forEach(staffId => {
                     const staffTasksNode = allStaffTasks[staffId];
                     Object.keys(staffTasksNode).forEach(taskKey => {
-                        taskCounter++;
-                        const taskData = staffTasksNode[taskKey];
-                        
-                        // Checking completion parameters
-                        const isDone = taskData.status === "Completed";
-                        
+                        taskCounter++; const taskData = staffTasksNode[taskKey]; const isDone = taskData.status === "Completed";
                         let formattedDate = 'Recent Deploy';
-                        if(taskData.date) {
-                            try { formattedDate = new Date(taskData.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " | " + new Date(taskData.date).toLocaleDateString([], {month: 'short', day: 'numeric'}); } catch(e){}
-                        }
-
-                        // Completed exact execution metrics generator
+                        if(taskData.date) { try { formattedDate = new Date(taskData.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " | " + new Date(taskData.date).toLocaleDateString([], {month: 'short', day: 'numeric'}); } catch(e){} }
                         let trackingMetaHtml = `<span class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> Pending</span>`;
-                        if(isDone && taskData.completedAt) {
-                            try {
-                                const executionTime = new Date(taskData.completedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                                const executionDate = new Date(taskData.completedAt).toLocaleDateString([], {month: 'short', day: 'numeric'});
-                                trackingMetaHtml = `<span class="status-badge status-completed"><i class="fas fa-check-circle"></i> Done ✅ at ${executionTime} (${executionDate})</span>`;
-                            } catch(e){
-                                trackingMetaHtml = `<span class="status-badge status-completed"><i class="fas fa-check-circle"></i> Done ✅</span>`;
-                            }
-                        }
+                        if(isDone && taskData.completedAt) { try { trackingMetaHtml = `<span class="status-badge status-completed"><i class="fas fa-check-circle"></i> Done ✅ at ${new Date(taskData.completedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`; } catch(e){} }
 
                         taskContainer.innerHTML += `
-                            <div class="data-item" style="border-left: 3px solid ${isDone ? 'var(--apple-green)' : 'var(--cyber-purple)'}; background: ${isDone ? 'rgba(48, 209, 88, 0.02)' : 'rgba(255,255,255,0.02)'};">
+                            <div class="data-item" style="border-left: 3px solid ${isDone ? 'var(--apple-green)' : 'var(--cyber-purple)'};">
                                 <div class="data-info" style="max-width: 75%;">
-                                    <p style="font-size: 13px; font-weight: 600;" class="${isDone ? 'done-text' : ''}">${taskData.task || 'Empty assignment payload'}</p>
-                                    <small style="color: var(--cyber-purple); font-weight: 700; margin-top: 3px;"><i class="fas fa-user-shield"></i> Target ID: ${staffId}</small>
-                                    <small style="font-size: 10px; opacity: 0.6;"><i class="far fa-clock"></i> Issued: ${formattedDate}</small>
+                                    <p style="font-size: 13px; font-weight: 600;" class="${isDone ? 'done-text' : ''}">${taskData.task || 'Empty payload'}</p>
+                                    <small style="color: var(--cyber-purple); font-weight: 700;"><i class="fas fa-user-shield"></i> Target ID: ${staffId}</small>
                                     ${trackingMetaHtml}
                                 </div>
-                                <div>
-                                    <button class="btn-delete-lead" onclick="deleteBroadcastTask('${staffId}', '${taskKey}')" title="Revoke Assignment" style="opacity: 0.7; font-size: 14px;">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
+                                <div><button class="btn-delete-lead" onclick="deleteBroadcastTask('${staffId}', '${taskKey}')"><i class="fas fa-trash-alt"></i></button></div>
                             </div>`;
                     });
                 });
             }
-            if(taskCounter === 0) {
-                taskContainer.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active deployments monitored.</p></div>`;
-            }
+            if(taskCounter === 0) taskContainer.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active deployments monitored.</p></div>`;
         });
 
-        // Strict Day Protocols Registry Tracker
+        // Strict Days Tracker
         db.ref('strictDays').on('value', snap => {
             const registryBox = document.getElementById('strict-days-active-registry');
             if(!registryBox) return; registryBox.innerHTML = "";
             if(snap.exists()){
                 snap.forEach(child => {
                     const nodeKey = child.key; const dateVal = child.val();
-                    registryBox.innerHTML += `
-                        <div class="strict-item">
-                            <span><i class="fas fa-calendar-check" style="color: var(--apple-red); margin-right:6px;"></i> ${dateVal}</span>
-                            <i class="fas fa-times-circle" style="color: var(--text-muted); cursor:pointer;" onclick="removeStrictDay('${nodeKey}','${dateVal}')"></i>
-                        </div>`;
+                    registryBox.innerHTML += `<div class="strict-item"><span><i class="fas fa-calendar-check" style="color: var(--apple-red);"></i> ${dateVal}</span><i class="fas fa-times-circle" style="color: var(--text-muted); cursor:pointer;" onclick="removeStrictDay('${nodeKey}','${dateVal}')"></i></div>`;
                 });
             } else { registryBox.innerHTML = `<p style="font-size:11px; color:var(--text-muted); text-align:center;">No strict schedules locked.</p>`; }
         });
     }
 
+    // Manual Edit Flow
     function updateStaffRow(id) {
-    const targetWage = parseInt(document.getElementById(`wage-${id}`).value);
-    const targetStreak = parseInt(document.getElementById(`streak-${id}`).value);
-    const targetSalary = parseInt(document.getElementById(`salary-${id}`).value);
-    if(isNaN(targetWage) || isNaN(targetStreak) || isNaN(targetSalary)) return alert("Invalid inputs.");
-    db.ref(`staff/${id}`).update({ perDayWage: targetWage, streak: targetStreak, salary: targetSalary }).then(() => { alert("Staff metrics updated!"); });
-}
-
-
-    function deleteStaffRow(id, name) {
-        if(!confirm(`Delete profile [${name || id}]?`)) return;
-        db.ref(`staff/${id}`).remove().then(() => { alert("Staff removed."); });
-    }
-
-    function deleteLeadRecord(key, clientName) {
-        if(!confirm(`Are you sure you want to delete lead: [${clientName}] permanently?`)) return;
-        db.ref(`leads/${key}`).remove().then(() => {
-            alert("Lead successfully deleted from pipeline!");
-        }).catch(err => alert("Error deleting lead: " + err.message));
-    }
-
-    function deleteBroadcastTask(staffId, taskKey) {
-        if(!confirm("Are you sure you want to revoke/delete this assignment?")) return;
-        db.ref(`tasks/${staffId}/${taskKey}`).remove().then(() => {
-            alert("Assignment successfully deleted from system!");
-        }).catch(err => alert("Error deleting task: " + err.message));
-    }
-
-    function removeStrictDay(nodeKey, dateStr) {
-        if(!confirm(`Unlock strict timeline for [${dateStr}]?`)) return;
-        db.ref(`strictDays/${nodeKey}`).remove().then(() => { alert("Date policy cleared."); });
-    }
-
-    function resolvePayout(targetStaffId, isApproved, amountString) {
-        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE' : 'REJECT'} payout?`)) return;
-        if(isApproved) {
-            db.ref(`staff/${targetStaffId}`).transaction(profile => { if(profile) profile.salary = 0; return profile; }).then(() => {
-                db.ref(`salaryRequests/${targetStaffId}`).update({ status: "Approved", processedAt: new Date().toISOString() }).then(() => { alert("Payout approved!"); });
-            });
-        } else { db.ref(`salaryRequests/${targetStaffId}`).remove().then(() => { alert("Request rejected."); }); }
-    }
-
-    function assignTask() {
-        const targetId = document.getElementById('task-staff-select').value;
-        const desc = document.getElementById('task-desc').value.trim();
-        if(!targetId || !desc) return alert("Select staff and provide task details.");
+        const targetWage = parseInt(document.getElementById(`wage-${id}`).value);
+        const targetStreak = parseInt(document.getElementById(`streak-${id}`).value);
+        const targetSalary = parseInt(document.getElementById(`salary-${id}`).value);
         
-        // Added 'Pending' default state status on deploy initialization
-        db.ref(`tasks/${targetId}`).push({ 
-            task: desc, 
-            date: new Date().toISOString(),
-            status: "Pending" 
-        }).then(() => { 
-            alert("Task deployed!"); 
-            document.getElementById('task-desc').value = ''; 
-            document.getElementById('broadcast-form-card').classList.remove('active');
+        if(isNaN(targetWage) || isNaN(targetStreak) || isNaN(targetSalary)) return alert("Invalid inputs.");
+        
+        // Manual change log create karne ke liye pehle old salary check karenge
+        db.ref(`staff/${id}/salary`).once('value', snap => {
+            const oldSalary = snap.val() || 0;
+            const diff = oldSalary - targetSalary;
+
+            db.ref(`staff/${id}`).update({ perDayWage: targetWage, streak: targetStreak, salary: targetSalary }).then(() => {
+                if (diff > 0) {
+                    // Agar balance manual minus kiya hai toh notification ya log bhejo
+                    db.ref(`staff_logs/${id}`).push({
+                        message: `Reduce ${diff} by admin manual adjustment.`,
+                        restBalance: targetSalary,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                alert("Staff metrics updated!");
+            });
         });
     }
 
+    // Payout Logic with Automatic Message & Reason Logs
+    function resolvePayout(reqId, isApproved, staffId, amountString, requestType) {
+        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE' : 'REJECT'} payout?`)) return;
+        
+        const deductAmount = parseInt(amountString) || 0;
+
+        if(isApproved) {
+            db.ref(`staff/${staffId}`).transaction(profile => { 
+                if(profile) {
+                    let oldSalary = parseInt(profile.salary) || 0;
+                    let newSalary = Math.max(0, oldSalary - deductAmount);
+                    
+                    profile.salary = newSalary;
+
+                    // Yahan hum realtime text log create kar rahe hain jo staff ko dikhega
+                    db.ref(`staff_logs/${staffId}`).push({
+                        message: `Reduce ${deductAmount} for ${requestType}`,
+                        restBalance: newSalary,
+                        timestamp: new Date().toISOString()
+                    });
+                } 
+                return profile; 
+            }).then(() => {
+                db.ref(`salaryRequests/${reqId}`).update({ status: "Approved", processedAt: new Date().toISOString() }).then(() => { 
+                    alert("Payout approved! Log generated for staff app."); 
+                });
+            }).catch(err => alert("Error: " + err.message));
+        } else { 
+            db.ref(`salaryRequests/${reqId}`).update({ status: "Rejected", processedAt: new Date().toISOString() }).then(() => { alert("Rejected."); }); 
+        }
+    }
+
+    function deleteStaffRow(id, name) { if(!confirm(`Delete profile [${name || id}]?`)) return; db.ref(`staff/${id}`).remove(); }
+    function deleteLeadRecord(key, clientName) { if(!confirm(`Delete lead [${clientName}]?`)) return; db.ref(`leads/${key}`).remove(); }
+    function deleteBroadcastTask(staffId, taskKey) { if(!confirm("Revoke task?")) return; db.ref(`tasks/${staffId}/${taskKey}`).remove(); }
+    function removeStrictDay(nodeKey, dateStr) { if(!confirm(`Unlock [${dateStr}]?`)) return; db.ref(`strictDays/${nodeKey}`).remove(); }
+    function assignTask() {
+        const targetId = document.getElementById('task-staff-select').value; const desc = document.getElementById('task-desc').value.trim();
+        if(!targetId || !desc) return alert("Fill data.");
+        db.ref(`tasks/${targetId}`).push({ task: desc, date: new Date().toISOString(), status: "Pending" }).then(() => { alert("Deployed!"); document.getElementById('task-desc').value = ''; });
+    }
     function setStrictDay() {
-        const targetDate = document.getElementById('strict-date-input').value;
-        if(!targetDate) return alert("Select a date first.");
-        db.ref('strictDays').push(targetDate).then(() => { 
-            alert(`Date [${targetDate}] locked!`); 
-            document.getElementById('strict-date-input').value = ''; 
-            document.getElementById('strict-days-card').classList.remove('active');
-        });
+        const targetDate = document.getElementById('strict-date-input').value; if(!targetDate) return alert("Select date.");
+        db.ref('strictDays').push(targetDate).then(() => { alert("Locked!"); document.getElementById('strict-date-input').value = ''; });
     }
 </script>
 </body>
