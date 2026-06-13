@@ -9,27 +9,68 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
-        :root { --primary: #8b5cf6; --secondary: #ec4899; --accent: #22d3ee; --bg: #030712; --glass: rgba(17, 24, 39, 0.7); --glass-border: rgba(255, 255, 255, 0.1); --success: #22c55e; --danger: #ef4444; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: radial-gradient(circle at top right, #1e1b4b, #030712); color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { width: 100%; max-width: 650px; background: var(--glass); border: 1px solid var(--glass-border); padding: 40px; border-radius: 30px; backdrop-filter: blur(12px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
-        #q { font-size: 20px; font-weight: 700; margin: 20px 0 30px; line-height: 1.4; color: #fff; text-align: left; }
+        :root {
+            --primary: #8b5cf6;
+            --secondary: #ec4899;
+            --accent: #22d3ee;
+            --bg: #030712;
+            --glass: rgba(17, 24, 39, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: radial-gradient(circle at top right, #1e1b4b, #030712);
+            color: #f1f5f9; 
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+        }
+
+        .stats-bar { width: 100%; max-width: 650px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        
+        .card { 
+            width: 100%; max-width: 650px; background: var(--glass); 
+            border: 1px solid var(--glass-border); padding: 40px; border-radius: 30px; 
+            backdrop-filter: blur(12px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        #q { font-size: 22px; font-weight: 700; margin: 20px 0 30px; line-height: 1.4; color: #fff; }
+        
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .opt { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 20px; border-radius: 20px; cursor: pointer; text-align: center; font-weight: 600; font-size: 14px; transition: 0.3s; }
-        .opt:hover:not(.lock) { background: rgba(139, 92, 246, 0.1); border-color: var(--primary); }
-        .opt.correct { background: var(--success); color: white; }
-        .opt.wrong { background: var(--danger); color: white; }
-        #p-fill { background: linear-gradient(90deg, var(--primary), var(--secondary)); height: 8px; border-radius: 4px; transition: 0.6s; }
-        .btn-primary { width: 100%; margin-top: 30px; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; font-weight: 800; border: none; cursor: pointer; }
-        .btn-primary:disabled { opacity: 0.2; }
+        .opt { 
+            background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); 
+            padding: 20px; border-radius: 20px; cursor: pointer; transition: all 0.3s ease;
+            text-align: center; font-weight: 600; font-size: 14px;
+        }
+        
+        .opt:hover:not(.lock) { background: rgba(139, 92, 246, 0.1); border-color: var(--primary); transform: translateY(-2px); }
+        .opt.correct { background: var(--success); color: white; border-color: var(--success); }
+        .opt.wrong { background: var(--danger); color: white; border-color: var(--danger); }
+        
+        #p-fill { background: linear-gradient(90deg, var(--primary), var(--secondary)); height: 8px; border-radius: 4px; transition: 0.6s ease; }
+        
+        .btn-primary { 
+            width: 100%; margin-top: 30px; padding: 18px; border-radius: 16px; 
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; font-weight: 800; border: none; cursor: pointer;
+        }
+        .btn-primary:disabled { opacity: 0.2; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
+    <div class="stats-bar">
+        <div style="font-weight: 800; display: flex; align-items: center; gap: 8px;"><i class="ri-terminal-box-fill" style="color:var(--accent)"></i>BT_TERMINAL</div>
+        <div id="timer" style="font-family: 'Fira Code'; color: var(--accent);">20s</div>
+    </div>
+
     <div class="card" id="examBox">
         <div id="p-fill" style="width: 0%;"></div>
-        <div id="q-num" style="font-size: 11px; margin-top: 20px; color: var(--secondary); font-weight: 800;">INITIALIZING...</div>
-        <h3 id="q">Loading...</h3>
+        <div id="q-num" style="font-size: 11px; margin-top: 20px; color: var(--secondary); font-weight: 800; letter-spacing: 1px;">INITIALIZING...</div>
+        <h3 id="q">Fetching System Data...</h3>
         <div class="options-grid" id="options"></div>
         <button id="nextBtn" class="btn-primary" disabled>NEXT SEQUENCE</button>
     </div>
@@ -38,77 +79,67 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        const db = getFirestore(initializeApp({ apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI", projectId: "black-terminal-f2c91" }));
-        
-        const questions = [
-            {q: "What does CPU stand for?", a: "Central Process Unit", b: "Central Processing Unit", c: "Core Processing Unit", d: "Central Power Unit", ans: "B"},
-            {q: "Which language is for web styling?", a: "HTML", b: "CSS", c: "Python", d: "SQL", ans: "B"},
-            {q: "What does RAM stand for?", a: "Random Access Memory", b: "Read Access Memory", c: "Run Access Memory", d: "Rapid Access Memory", ans: "A"},
-            {q: "Which company created Java?", a: "Microsoft", b: "Oracle", c: "Sun Microsystems", d: "Google", ans: "C"},
-            {q: "Which of these is a database?", a: "React", b: "MongoDB", c: "Express", d: "Node", ans: "B"},
-            {q: "What is the default port for HTTP?", a: "21", b: "80", c: "443", d: "22", ans: "B"},
-            {q: "Which protocol is secure?", a: "HTTP", b: "HTTPS", c: "FTP", d: "SMTP", ans: "B"},
-            {q: "What is the 'Brain' of a computer?", a: "GPU", b: "RAM", c: "CPU", d: "ROM", ans: "C"},
-            {q: "Which tag is for a hyperlink?", a: "<a>", b: "<link>", c: "<url>", d: "<href>", ans: "A"},
-            {q: "What is Git?", a: "IDE", b: "Compiler", c: "Version Control", d: "Database", ans: "C"},
-            {q: "Which is a programming language?", a: "HTML", b: "CSS", c: "Python", d: "JSON", ans: "C"},
-            {q: "What does API stand for?", a: "App Program Interface", b: "Application Programming Interface", c: "Applied Protocol Integration", d: "Auto Process Input", ans: "B"},
-            {q: "Which tag is for the biggest heading?", a: "<h1>", b: "<h6>", c: "<header>", d: "<head>", ans: "A"},
-            {q: "What is used to style web pages?", a: "HTML", b: "CSS", c: "XML", d: "SQL", ans: "B"},
-            {q: "Which symbol is for single-line comments in JS?", a: "//", b: "/*", c: "##", d: "--", ans: "A"},
-            {q: "What does DNS stand for?", a: "Data Name System", b: "Domain Name System", c: "Digital Network Service", d: "Dynamic Name Storage", ans: "B"},
-            {q: "Which is a client-side language?", a: "PHP", b: "Python", c: "JavaScript", d: "Ruby", ans: "C"},
-            {q: "What is a loop in programming?", a: "Error", b: "Variable", c: "Control flow", d: "Function", ans: "C"},
-            {q: "Which OS is Linux-based?", a: "Windows", b: "macOS", c: "Android", d: "iOS", ans: "C"},
-            {q: "What does JSON stand for?", a: "Java Object Notation", b: "JavaScript Object Notation", c: "Joint System Object Node", d: "None", ans: "B"},
-            {q: "Which command lists files in Linux?", a: "dir", b: "ls", c: "list", d: "show", ans: "B"},
-            {q: "What is an IDE?", a: "Input Device Engine", b: "Integrated Development Environment", c: "Internal Data Entry", d: "None", ans: "B"},
-            {q: "Which tag is for a list item?", a: "<li>", b: "<ul>", c: "<ol>", d: "<list>", ans: "A"},
-            {q: "What is 'npm'?", a: "Node Process Manager", b: "Node Package Manager", c: "New Program Module", d: "None", ans: "B"},
-            {q: "Which is not a browser?", a: "Chrome", b: "Firefox", c: "Python", d: "Safari", ans: "C"},
-            {q: "Which is a backend framework?", a: "React", b: "Angular", c: "Express", d: "Vue", ans: "C"},
-            {q: "What does SQL stand for?", a: "Structured Query Language", b: "Simple Query Layer", c: "System Query Level", d: "Standard Query List", ans: "A"},
-            {q: "Which key is used to refresh a browser?", a: "F5", b: "F1", c: "F12", d: "Esc", ans: "A"},
-            {q: "What is a 'Bug'?", a: "Hardware", b: "Error", c: "Software", d: "Virus", ans: "B"},
-            {q: "What does URL stand for?", a: "Uniform Resource Locator", b: "United Resource Link", c: "Universal Record Locator", d: "None", ans: "A"}
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+            authDomain: "black-terminal-f2c91.firebaseapp.com",
+            projectId: "black-terminal-f2c91",
+            storageBucket: "black-terminal-f2c91.appspot.com",
+            messagingSenderId: "552489994197",
+            appId: "1:552489994197:web:7662331264c334ffbadf5c"
+        };
+
+        const db = getFirestore(initializeApp(firebaseConfig));
+        const manualQuestions = [
+            { question: "Which company developed Java?", a: "Microsoft", b: "Sun Microsystems", c: "Google", d: "Apple", correct: "B" },
+            { question: "What does SQL stand for?", a: "Structured Query Lang", b: "Simple Query Level", c: "System Quick Layer", d: "Standard Query List", correct: "A" },
+            { question: "Default port for HTTP?", a: "443", b: "21", c: "80", d: "25", correct: "C" },
+            { question: "Client-side scripting language?", a: "PHP", b: "Python", c: "JavaScript", d: "Ruby", correct: "C" },
+            { question: "Which Git command stages changes?", a: "commit", b: "push", c: "add", d: "init", correct: "C" }
         ];
 
-        let index = 0, locked = false;
+        let index = 0, score = 0, locked = false, time = 20, timerInterval;
         const student = localStorage.getItem("studentName") || "Root_User";
 
-        if (localStorage.getItem("daily_done_" + student) === new Date().toDateString()) {
-            document.getElementById("examBox").innerHTML = `<h2>TERMINAL LOCKED</h2><p>Check back tomorrow for the next sequence.</p>`;
-        } else {
-            showQ();
-        }
-
         function showQ() {
-            if (index >= questions.length) return finish();
-            locked = false;
+            if (index >= manualQuestions.length) return finish();
+            locked = false; time = 20;
             document.getElementById("nextBtn").disabled = true;
-            const q = questions[index];
-            document.getElementById("q-num").innerText = `SEQUENCE ${index + 1} / ${questions.length}`;
-            document.getElementById("p-fill").style.width = ((index + 1) / questions.length * 100) + "%";
-            document.getElementById("q").innerText = q.q;
-            document.getElementById("options").innerHTML = ['A','B','C','D'].map(id => `<div class="opt" onclick="window.select('${id}', this)">${q[id.toLowerCase()]}</div>`).join('');
+            const q = manualQuestions[index];
+            document.getElementById("q-num").innerText = `SEQUENCE ${index + 1} / ${manualQuestions.length}`;
+            document.getElementById("p-fill").style.width = ((index + 1) / manualQuestions.length * 100) + "%";
+            document.getElementById("q").innerText = q.question;
+            const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
+            document.getElementById("options").innerHTML = opts.map(o => `
+                <div class="opt" onclick="window.selectOpt('${o.id}', this)">${o.v}</div>
+            `).join('');
         }
 
-        window.select = (v, el) => {
+        window.selectOpt = (v, el) => {
             if (locked) return;
             locked = true;
-            if (v === questions[index].ans) el.classList.add("correct");
-            else el.classList.add("wrong");
             document.getElementById("nextBtn").disabled = false;
+            if (v === manualQuestions[index].correct) { el.classList.add("correct"); score++; }
+            else { el.classList.add("wrong"); }
+            document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
         };
 
         document.getElementById("nextBtn").onclick = () => { index++; showQ(); };
-
+        
         async function finish() {
-            localStorage.setItem("daily_done_" + student, new Date().toDateString());
-            try { await updateDoc(doc(db, "students", student), { xp: increment(100) }); } catch(e) {}
-            document.getElementById("examBox").innerHTML = `<h2>SYNC COMPLETE</h2><p>100XP Successfully Added.</p>`;
-            confetti();
+            clearInterval(timerInterval);
+            document.getElementById("examBox").innerHTML = `<h2 style="text-align:center;">Sync Complete<br>${score}/${manualQuestions.length}</h2>`;
+            try { await updateDoc(doc(db, "students", student), { xp: increment(score * 10) }); } catch(e) {}
         }
+
+        timerInterval = setInterval(() => {
+            if (!locked) {
+                time--;
+                document.getElementById("timer").innerText = time + "s";
+                if (time <= 0) locked = true;
+            }
+        }, 1000);
+
+        showQ();
     </script>
 </body>
 </html>
