@@ -690,40 +690,46 @@
                 }
             });
             
-                // Updated Leaderboard Logic
-async function fetchTopPerformer() {
+                async function fetchTopPerformer() {
+    console.log("Fetching top performer..."); // Check in F12 Console
     try {
         const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(1));
         const querySnapshot = await getDocs(q);
         
         if (querySnapshot.empty) {
-            document.getElementById("topPerformerName").innerText = "No data found";
+            console.log("No students found in collection.");
+            document.getElementById("topPerformerName").innerText = "No Data";
             return;
         }
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            const name = doc.id; // Student ka naam
+            const name = doc.id;
+            // Agar 'photo' field null hai, toh DiceBear link use hogi
             const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
             
+            console.log("Top Performer found:", name, photo); // Debugging
+
             const nameEl = document.getElementById("topPerformerName");
             const imgEl = document.getElementById("topPerformerAvatar");
             const container = document.getElementById("topPerformerContainer");
 
             if(nameEl) nameEl.innerText = name;
-            if(imgEl) imgEl.src = photo;
+            if(imgEl) {
+                imgEl.src = photo;
+                imgEl.onerror = () => { imgEl.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"; };
+            }
             
-            // Highlight if current user is top
-            if(name === localStorage.getItem("studentName")) {
+            if(name === student) {
                 container.style.borderColor = "var(--amber-glow)";
                 container.style.background = "rgba(245, 158, 11, 0.08)";
             }
         });
     } catch (error) {
-        console.error("Leaderboard Error:", error);
-        document.getElementById("topPerformerName").innerText = "Sync Failed";
+        console.error("Firebase Error:", error);
     }
 }
+
 
 
 
