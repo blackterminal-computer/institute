@@ -690,24 +690,41 @@
                 }
             });
             
-                async function fetchTopPerformer() {
+                // Updated Leaderboard Logic
+async function fetchTopPerformer() {
+    try {
         const q = query(collection(db, "students"), orderBy("xp", "desc"), limit(1));
         const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            document.getElementById("topPerformerName").innerText = "No data found";
+            return;
+        }
+
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            const name = doc.id;
+            const name = doc.id; // Student ka naam
             const photo = data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
             
+            const nameEl = document.getElementById("topPerformerName");
+            const imgEl = document.getElementById("topPerformerAvatar");
             const container = document.getElementById("topPerformerContainer");
-            document.getElementById("topPerformerAvatar").src = photo;
-            document.getElementById("topPerformerName").innerText = name;
+
+            if(nameEl) nameEl.innerText = name;
+            if(imgEl) imgEl.src = photo;
             
+            // Highlight if current user is top
             if(name === localStorage.getItem("studentName")) {
                 container.style.borderColor = "var(--amber-glow)";
                 container.style.background = "rgba(245, 158, 11, 0.08)";
             }
         });
+    } catch (error) {
+        console.error("Leaderboard Error:", error);
+        document.getElementById("topPerformerName").innerText = "Sync Failed";
     }
+}
+
 
 
             let bTimer;
