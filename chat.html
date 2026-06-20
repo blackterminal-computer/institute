@@ -52,10 +52,11 @@
         
         .checkin-btn { background: #052e16; border: 1px solid #10b981; color: #34d399; }
         .checkin-btn:hover { background: #064e3b; color: #6ee7b7; }
+        .checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #475569; color: #94a3b8; background: #1e293b; }
         
         .checkout-btn { background: #450a0a; border: 1px solid #f43f5e; color: #fb7185; }
         .checkout-btn:hover { background: #7f1d1d; color: #fda4af; }
-        .checkout-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: #475569; color: #94a3b8; background: #1e293b; }
+        .checkout-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #475569; color: #94a3b8; background: #1e293b; }
     </style>
 </head>
 <body>
@@ -77,6 +78,12 @@
     </div>
 </div>
 
+<div style="margin: 20px auto; max-width: 600px; background: #080808; padding: 18px 20px; border-radius: 20px; border: 1px dashed #334155; text-align: center;">
+    <div id="status" style="font-size: 13px; color: #94a3b8; font-weight: 600;">
+        <i class="ri-loader-4-line ri-spin"></i> Verifying live institute coordinates...
+    </div>
+</div>
+
 <div class="feed-controls">
     <button class="toggle-feed-btn active" id="feedGlobal" onclick="switchFeedMode('global')">Global Feed</button>
     <button class="toggle-feed-btn" id="feedFollowing" onclick="switchFeedMode('following')">Following Feed</button>
@@ -86,8 +93,8 @@
     <textarea id="postInput" placeholder="What's on your mind, Cyber-Runner?"></textarea>
     
     <div class="session-grid">
-        <button class="session-btn checkin-btn" onclick="publishPostSafe('Checked-In')">🟢 Checked-In</button>
-        <button class="session-btn checkout-btn" id="checkOutBtn" onclick="publishPostSafe('Checked-Out')">🔴 Checked-Out</button>
+        <button class="session-btn checkin-btn" id="checkin-btn" onclick="publishPostSafe('Checked-In')" disabled>🟢 Checked-In</button>
+        <button class="session-btn checkout-btn" id="checkout-btn" onclick="publishPostSafe('Checked-Out')" disabled>🔴 Checked-Out</button>
     </div>
 </div>
 
@@ -109,9 +116,20 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const student = localStorage.getItem("studentName") || "Elite User";
+    
+    // Geo-fencing Configuration (Update these to your institute's coordinates)
+    const INST_LAT = 21.940550; 
+    const INST_LON = 86.737409; 
+    const ALLOWED_RANGE = 0.05; // 50-meter perimeter (in km)
+    
     let currentFeedMode = "global";
     let followingList = new Set();
+    let inPremises = false;
     let currentUserPhoto = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+    const statusBox = document.getElementById('status');
+    const checkinBtn = document.getElementById('checkin-btn');
+    const checkoutBtn = document.getElementById('checkout-btn');
 
     // Dynamic Database Photo Fetch Helper
     async function refreshLivePhoto() {
@@ -200,6 +218,41 @@
         return { hrs, mins };
     }
 
+    function calculateDistance(la1, lo1, la2, lo2) { 
+        const R = 6371; 
+        const dLa = (la2 - la1) * Math.PI / 180; 
+        const dLo = (lo2 - lo1) * Math.PI / 180; 
+        const a = Math.sin(dLa / 2) ** 2 + Math.cos(la1 * Math.PI / 180) * Math.cos(la2 * Math.PI / 180) * Math.sin(dLo / 2) ** 2; 
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+    }
+
+    // Verify user coordinates 
+    function initLocation() {
+        navigator.geolocation.getCurrentPosition(pos => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, INST_LAT, INST_LON);
+            
+            if(dist <= ALLOWED_RANGE) { 
+                inPremises = true;
+                statusBox.style.color = "#34d399"; 
+                statusBox.innerHTML = `🟢 Inside Campus Bounds Verified (${(dist * 1000).toFixed(0)}m)`; 
+                checkinBtn.disabled = false; 
+                validateCheckOutOption(); // Enable checkout conditionally
+            } else { 
+                inPremises = false;
+                statusBox.style.color = "#f43f5e"; 
+                statusBox.innerHTML = `🔴 Out of Bounds! (${(dist * 1000).toFixed(0)}m away)`; 
+                checkinBtn.disabled = true;
+                checkoutBtn.disabled = true;
+            }
+        }, () => {
+            statusBox.style.color = "#f43f5e";
+            statusBox.innerHTML = "⚠️ Please allow Location GPS access";
+            checkinBtn.disabled = true;
+            checkoutBtn.disabled = true;
+        }, { enableHighAccuracy: true });
+    }
+    initLocation();
+
     async function getCheckInTimesToday() {
         const todayStr = new Date().toISOString().split('T')[0];
         const q = query(
@@ -227,13 +280,13 @@
     }
 
     async function validateCheckOutOption() {
+        if (!inPremises) return;
         const checkInTimes = await getCheckInTimesToday();
-        const checkOutBtn = document.getElementById("checkOutBtn");
+        const checkOutBtn = document.getElementById("checkout-btn");
         if(checkOutBtn) {
             checkOutBtn.disabled = checkInTimes.length === 0;
         }
     }
-    validateCheckOutOption();
 
     async function getLatestEntryTime() {
         const checkInTimes = await getCheckInTimesToday();
@@ -315,6 +368,10 @@
 
     // Safety layer ensuring updated live profile picture travels to database feed post
     window.publishPostSafe = async (sessionStatus) => {
+        if(!inPremises) {
+            alert("⚠️ Alert: You are out of bounds. Move inside campus boundaries range to register session access!");
+            return;
+        }
         await refreshLivePhoto();
         await publishSessionPost(sessionStatus);
     };
@@ -343,7 +400,9 @@
         const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentTimeStamp = `${dateStr}, ${timeStr}`;
 
-        await addXP(student, 15);
+        // Enhanced XP Rules applied directly
+        let xpReward = (sessionStatus === 'Checked-In') ? 15 : 100;
+        await addXP(student, xpReward);
 
         let entryTimeLog = null;
         let exitTimeLog = null;
@@ -363,8 +422,8 @@
         
         await addDoc(collection(db, "posts"), {
             user: student,
-            userPhoto: currentUserPhoto, // Loaded directly from state
-            content: content || (sessionStatus === 'Checked-In' ? "Logging entry at institute." : "Class completed, leaving institute."),
+            userPhoto: currentUserPhoto, // Loaded directly from live state
+            content: content || (sessionStatus === 'Checked-In' ? "Logging entry terminal clearance inside campus." : "Terminal session successfully completed, exiting campus."),
             uploadTimestamp: serverTimestamp(),
             badgeTimestamp: currentTimeStamp,
             sessionTag: sessionStatus,
@@ -375,7 +434,7 @@
 
         document.getElementById("postInput").value = "";
         validateCheckOutOption();
-        showToast(`Status updated: ${sessionStatus}!`);
+        showToast(`Status updated: ${sessionStatus} | +${xpReward} XP Credited!`);
     };
 
     function setupFeedListener() {
