@@ -16,7 +16,7 @@
 
         #profileModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
         .profile-card { background: #111; padding: 40px; border-radius: 32px; text-align: center; border: 1px solid var(--border); width: 100%; max-width: 320px; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
-        .profile-card img { width: 100px; height: 100px; border-radius: 28px; margin-bottom: 20px; border: 3px solid var(--border); }
+        .profile-card img { width: 100px; height: 100px; border-radius: 28px; margin-bottom: 20px; border: 3px solid var(--border); object-fit: cover; }
         
         .border-cyan { border-color: var(--neon-cyan) !important; box-shadow: 0 0 15px rgba(0,242,254,0.2); }
         .border-magenta { border-color: var(--neon-magenta) !important; box-shadow: 0 0 15px rgba(255,0,127,0.2); }
@@ -111,6 +111,20 @@
     const student = localStorage.getItem("studentName") || "Elite User";
     let currentFeedMode = "global";
     let followingList = new Set();
+    let currentUserPhoto = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; // Default fallback
+
+    // Fetch user's profile picture from main students profile database on load
+    async function fetchMainProfilePhoto() {
+        try {
+            const studentDoc = await getDoc(doc(db, "students", student));
+            if(studentDoc.exists() && studentDoc.data().photo) {
+                currentUserPhoto = studentDoc.data().photo;
+            }
+        } catch(e) {
+            console.error("Profile photo load fallback:", e);
+        }
+    }
+    fetchMainProfilePhoto();
 
     const neonColors = ["cyan", "magenta", "lime", "yellow", "purple"];
     function getNeonClass(seed) {
@@ -152,11 +166,9 @@
         });
     }
 
-    // Bulletproof ISO datetime string converter to prevent any parsing errors
     function parse12HourTime(timeStr) {
         if (!timeStr) return new Date();
         try {
-            // Format example: "20/06/2026, 06:10 PM"
             const [datePart, timePart] = timeStr.split(', ');
             const [dd, mm, yyyy] = datePart.split('/');
             const [time, modifier] = timePart.split(' ');
@@ -171,7 +183,7 @@
             date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
             return date;
         } catch(e) {
-            console.error("Time parsing error fallback:", e);
+            console.error("Time parsing fallback:", e);
             return new Date();
         }
     }
@@ -200,7 +212,6 @@
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if(data.uploadTimestamp) {
-                // Safely convert Firestore timestamp to date string
                 const postDate = data.uploadTimestamp.toDate().toISOString().split('T')[0];
                 if(postDate === todayStr && data.badgeTimestamp) {
                     checkInTimestamps.push({
@@ -211,7 +222,6 @@
             }
         });
         
-        // Sort check-in times by server millis to get absolute latest check-in first
         checkInTimestamps.sort((a, b) => b.millis - a.millis);
         return checkInTimestamps;
     }
@@ -228,12 +238,12 @@
     async function getLatestEntryTime() {
         const checkInTimes = await getCheckInTimesToday();
         if(checkInTimes.length > 0) {
-            // Return latest check-in timestamp string
             return checkInTimes[0].timestamp;
         }
         return null;
     }
 
+    // Modal Profile Viewer
     window.openProfile = async (username) => {
         const modal = document.getElementById("profileModal");
         modal.style.display = "flex";
@@ -242,7 +252,16 @@
         avatarImg.className = `feed-avatar ${getNeonClass(username)}`;
         
         document.getElementById("modalName").innerText = username;
-        avatarImg.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+        
+        // Match live synced profile picture if viewing own profile
+        if (username === student) {
+            avatarImg.src = currentUserPhoto;
+        } else {
+            const targetUserDoc = await getDoc(doc(db, "students", username));
+            avatarImg.src = (targetUserDoc.exists() && targetUserDoc.data().photo) 
+                ? targetUserDoc.data().photo 
+                : `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+        }
         
         const xpSnap = await getDoc(doc(db, "users_xp", username));
         const userXp = xpSnap.exists() ? (xpSnap.data().xp || 0) : 0;
@@ -315,10 +334,9 @@
             }
         }
 
-        // Generate precise timestamps
         const now = new Date();
-        const dateStr = now.toLocaleDateString('en-GB'); // dd/mm/yyyy
-        const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }); // hh:mm am/pm
+        const dateStr = now.toLocaleDateString('en-GB');
+        timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentTimeStamp = `${dateStr}, ${timeStr}`;
 
         await addXP(student, 15);
@@ -341,7 +359,7 @@
         
         await addDoc(collection(db, "posts"), {
             user: student,
-            userPhoto: `https://api.dicebear.com/7.x/bottts/svg?seed=${student}`,
+            userPhoto: currentUserPhoto, // Use the dynamically updated profile image
             content: content || (sessionStatus === 'Checked-In' ? "Logging entry at institute." : "Class completed, leaving institute."),
             uploadTimestamp: serverTimestamp(),
             badgeTimestamp: currentTimeStamp,
