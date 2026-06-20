@@ -86,8 +86,8 @@
     <textarea id="postInput" placeholder="What's on your mind, Cyber-Runner?"></textarea>
     
     <div class="session-grid">
-        <button class="session-btn checkin-btn" onclick="publishSessionPost('Checked-In')">🟢 Checked-In</button>
-        <button class="session-btn checkout-btn" id="checkOutBtn" onclick="publishSessionPost('Checked-Out')">🔴 Checked-Out</button>
+        <button class="session-btn checkin-btn" onclick="publishPostSafe('Checked-In')">🟢 Checked-In</button>
+        <button class="session-btn checkout-btn" id="checkOutBtn" onclick="publishPostSafe('Checked-Out')">🔴 Checked-Out</button>
     </div>
 </div>
 
@@ -111,20 +111,20 @@
     const student = localStorage.getItem("studentName") || "Elite User";
     let currentFeedMode = "global";
     let followingList = new Set();
-    let currentUserPhoto = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; // Default fallback
+    let currentUserPhoto = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
-    // Fetch user's profile picture from main students profile database on load
-    async function fetchMainProfilePhoto() {
+    // Dynamic Database Photo Fetch Helper
+    async function refreshLivePhoto() {
         try {
             const studentDoc = await getDoc(doc(db, "students", student));
             if(studentDoc.exists() && studentDoc.data().photo) {
                 currentUserPhoto = studentDoc.data().photo;
             }
         } catch(e) {
-            console.error("Profile photo load fallback:", e);
+            console.error("Photo sync error:", e);
         }
     }
-    fetchMainProfilePhoto();
+    refreshLivePhoto();
 
     const neonColors = ["cyan", "magenta", "lime", "yellow", "purple"];
     function getNeonClass(seed) {
@@ -183,7 +183,7 @@
             date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
             return date;
         } catch(e) {
-            console.error("Time parsing fallback:", e);
+            console.error("Time parsing error fallback:", e);
             return new Date();
         }
     }
@@ -243,18 +243,16 @@
         return null;
     }
 
-    // Modal Profile Viewer
     window.openProfile = async (username) => {
         const modal = document.getElementById("profileModal");
         modal.style.display = "flex";
         
         const avatarImg = document.getElementById("modalAvatar");
         avatarImg.className = `feed-avatar ${getNeonClass(username)}`;
-        
         document.getElementById("modalName").innerText = username;
         
-        // Match live synced profile picture if viewing own profile
         if (username === student) {
+            await refreshLivePhoto();
             avatarImg.src = currentUserPhoto;
         } else {
             const targetUserDoc = await getDoc(doc(db, "students", username));
@@ -315,6 +313,12 @@
         setupFeedListener();
     };
 
+    // Safety layer ensuring updated live profile picture travels to database feed post
+    window.publishPostSafe = async (sessionStatus) => {
+        await refreshLivePhoto();
+        await publishSessionPost(sessionStatus);
+    };
+
     window.publishSessionPost = async (sessionStatus) => {
         const content = document.getElementById("postInput").value.trim();
         
@@ -336,7 +340,7 @@
 
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-GB');
-        timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentTimeStamp = `${dateStr}, ${timeStr}`;
 
         await addXP(student, 15);
@@ -359,7 +363,7 @@
         
         await addDoc(collection(db, "posts"), {
             user: student,
-            userPhoto: currentUserPhoto, // Use the dynamically updated profile image
+            userPhoto: currentUserPhoto, // Loaded directly from state
             content: content || (sessionStatus === 'Checked-In' ? "Logging entry at institute." : "Class completed, leaving institute."),
             uploadTimestamp: serverTimestamp(),
             badgeTimestamp: currentTimeStamp,
