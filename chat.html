@@ -95,7 +95,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc, setDoc, deleteDoc, limit, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc, deleteDoc, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
@@ -152,21 +152,37 @@
         });
     }
 
+    // Bulletproof ISO datetime string converter to prevent any parsing errors
     function parse12HourTime(timeStr) {
-        const [time, modifier] = timeStr.split(' ');
-        let [hours, minutes] = time.split(':');
-        if (hours === '12') hours = '0';
-        if (modifier.toLowerCase() === 'pm') hours = parseInt(hours, 10) + 12;
-        const date = new Date();
-        date.setHours(hours, minutes, 0, 0);
-        return date;
+        if (!timeStr) return new Date();
+        try {
+            // Format example: "20/06/2026, 06:10 PM"
+            const [datePart, timePart] = timeStr.split(', ');
+            const [dd, mm, yyyy] = datePart.split('/');
+            const [time, modifier] = timePart.split(' ');
+            let [hours, minutes] = time.split(':');
+            
+            if (hours === '12') hours = '0';
+            if (modifier && modifier.toUpperCase() === 'PM') {
+                hours = parseInt(hours, 10) + 12;
+            }
+            
+            const date = new Date(yyyy, mm - 1, dd);
+            date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+            return date;
+        } catch(e) {
+            console.error("Time parsing error fallback:", e);
+            return new Date();
+        }
     }
 
     function calculateDuration(entryStr, exitStr) {
         const entryDate = parse12HourTime(entryStr);
         const exitDate = parse12HourTime(exitStr);
         let differenceMs = exitDate - entryDate;
+        
         if (differenceMs < 0) differenceMs += 24 * 60 * 60 * 1000;
+        
         const hrs = Math.floor(differenceMs / (1000 * 60 * 60));
         const mins = Math.floor((differenceMs % (1000 * 60 * 60)) / (1000 * 60));
         return { hrs, mins };
@@ -184,12 +200,19 @@
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if(data.uploadTimestamp) {
+                // Safely convert Firestore timestamp to date string
                 const postDate = data.uploadTimestamp.toDate().toISOString().split('T')[0];
                 if(postDate === todayStr && data.badgeTimestamp) {
-                    checkInTimestamps.push(data.badgeTimestamp);
+                    checkInTimestamps.push({
+                        timestamp: data.badgeTimestamp,
+                        millis: data.uploadTimestamp.toMillis()
+                    });
                 }
             }
         });
+        
+        // Sort check-in times by server millis to get absolute latest check-in first
+        checkInTimestamps.sort((a, b) => b.millis - a.millis);
         return checkInTimestamps;
     }
 
@@ -205,7 +228,8 @@
     async function getLatestEntryTime() {
         const checkInTimes = await getCheckInTimesToday();
         if(checkInTimes.length > 0) {
-            return checkInTimes[checkInTimes.length - 1];
+            // Return latest check-in timestamp string
+            return checkInTimes[0].timestamp;
         }
         return null;
     }
@@ -291,10 +315,11 @@
             }
         }
 
-        const currentTimeStamp = new Date().toLocaleString('en-IN', { 
-            day: '2-digit', month: '2-digit', year: 'numeric', 
-            hour: '2-digit', minute: '2-digit', hour12: true 
-        });
+        // Generate precise timestamps
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB'); // dd/mm/yyyy
+        const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }); // hh:mm am/pm
+        const currentTimeStamp = `${dateStr}, ${timeStr}`;
 
         await addXP(student, 15);
 
@@ -327,15 +352,10 @@
         });
 
         document.getElementById("postInput").value = "";
-        CheckOutOptionValidate();
+        validateCheckOutOption();
         showToast(`Status updated: ${sessionStatus}!`);
     };
 
-    function CheckOutOptionValidate() {
-        validateCheckOutOption();
-    }
-
-    // Streamlined listener to fetch all available docs directly from collection
     function setupFeedListener() {
         onSnapshot(collection(db, "posts"), (snap) => {
             const feed = document.getElementById("liveFeedContainer");
@@ -346,7 +366,6 @@
                 allPosts.push({ id: docSnap.id, ...docSnap.data() });
             });
 
-            // Fallback sorter to order elements logically by upload server timestamp (if available)
             allPosts.sort((a, b) => {
                 const timeA = a.uploadTimestamp ? a.uploadTimestamp.toMillis() : 0;
                 const timeB = b.uploadTimestamp ? b.uploadTimestamp.toMillis() : 0;
@@ -358,6 +377,7 @@
                 
                 const isFoll = followingList.has(p.user);
                 const neonClass = getNeonClass(p.user);
+                const profileImgSrc = p.userPhoto || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.user}`;
                 
                 let displayTimeLabel = '';
                 if(p.sessionTag === 'Checked-In' && p.entryTime) {
@@ -378,7 +398,7 @@
                 card.innerHTML = `
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <div style="display:flex; align-items:center; gap:16px;">
-                            <img src="${p.userPhoto}" class="feed-avatar ${neonClass}" onclick="openProfile('${p.user}')">
+                            <img src="${profileImgSrc}" class="feed-avatar ${neonClass}" onclick="openProfile('${p.user}')">
                             <div>
                                 <div style="font-weight:800; color:#fff;">${p.user}</div>
                             </div>
@@ -400,7 +420,7 @@
                 feed.appendChild(card);
             });
         }, (error) => {
-            console.warn("Firestore Listener Warning (Ignored during index init):", error);
+            console.warn("Firestore Listener Warning:", error);
         });
     }
 
