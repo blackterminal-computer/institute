@@ -46,17 +46,20 @@
         
         .meta-tag { font-size: 11px; color: #64748b; background: rgba(255,255,255,0.03); padding: 3px 8px; border-radius: 8px; display: inline-block; margin-top: 6px; border: 1px solid var(--border); }
         
-        .session-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-        .session-btn { padding: 16px; border-radius: 16px; font-weight: 800; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; text-align: center; }
+        .session-grid { display: flex; gap: 12px; margin-top: 16px; }
+        .session-btn { padding: 16px; border-radius: 16px; font-weight: 800; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; text-align: center; width: 100%; }
         .session-btn:active { transform: scale(0.96); }
         
         .checkin-btn { background: #052e16; border: 1px solid #10b981; color: #34d399; }
         .checkin-btn:hover { background: #064e3b; color: #6ee7b7; }
         .checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #475569; color: #94a3b8; background: #1e293b; }
-        
-        .checkout-btn { background: #450a0a; border: 1px solid #f43f5e; color: #fb7185; }
-        .checkout-btn:hover { background: #7f1d1d; color: #fda4af; }
-        .checkout-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #475569; color: #94a3b8; background: #1e293b; }
+
+        /* Slider Check-in UI Enhancements */
+        .slider-wrapper { margin-top: 18px; position: relative; width: 100%; height: 50px; background: #000; border-radius: 25px; border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .slider-text { position: absolute; font-size: 13px; font-weight: 700; color: #64748b; pointer-events: none; text-transform: uppercase; letter-spacing: 1px; }
+        .swipe-knob { position: absolute; left: 4px; width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-magenta), var(--neon-purple)); display: flex; align-items: center; justify-content: center; color: white; cursor: grab; font-size: 20px; transition: box-shadow 0.2s; }
+        .swipe-knob:active { cursor: grabbing; box-shadow: 0 0 15px var(--neon-magenta); }
+        .slider-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: rgba(255, 0, 127, 0.15); border-radius: 25px; transition: width 0.1s linear; border-right: 2px solid var(--neon-magenta); }
     </style>
 </head>
 <body>
@@ -92,14 +95,18 @@
 <div class="post-box">
     <textarea id="postInput" placeholder="What's on your mind, Cyber-Runner?"></textarea>
     
+    <div id="sliderCheckinContainer" class="slider-wrapper">
+        <div class="slider-fill" id="sliderFill"></div>
+        <span class="slider-text" id="sliderText">↔ Slide Right to Check-In</span>
+        <div class="swipe-knob" id="swipeKnob"><i class="ri-arrow-right-line"></i></div>
+    </div>
+
     <div class="session-grid">
-        <button class="session-btn checkin-btn" id="checkin-btn" onclick="publishPostSafe('Checked-In')" disabled>🟢 Checked-In</button>
-        <button class="session-btn checkout-btn" id="checkout-btn" onclick="publishPostSafe('Checked-Out')" disabled>🔴 Checked-Out</button>
+        <button class="session-btn checkin-btn" id="checkin-btn" onclick="publishPostSafe('Checked-In')" style="display:none;" disabled>🟢 Checked-In</button>
     </div>
 </div>
 
 <div id="liveFeedContainer"></div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc, deleteDoc, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -129,7 +136,6 @@
 
     const statusBox = document.getElementById('status');
     const checkinBtn = document.getElementById('checkin-btn');
-    const checkoutBtn = document.getElementById('checkout-btn');
 
     // Dynamic Database Photo Fetch Helper
     async function refreshLivePhoto() {
@@ -226,7 +232,6 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
     }
 
-    // Verify user coordinates 
     function initLocation() {
         navigator.geolocation.getCurrentPosition(pos => {
             const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, INST_LAT, INST_LON);
@@ -236,22 +241,92 @@
                 statusBox.style.color = "#34d399"; 
                 statusBox.innerHTML = `🟢 Inside Campus Bounds Verified (${(dist * 1000).toFixed(0)}m)`; 
                 checkinBtn.disabled = false; 
-                validateCheckOutOption(); // Enable checkout conditionally
+                document.getElementById("sliderCheckinContainer").style.opacity = "1";
             } else { 
                 inPremises = false;
                 statusBox.style.color = "#f43f5e"; 
                 statusBox.innerHTML = `🔴 Out of Bounds! (${(dist * 1000).toFixed(0)}m away)`; 
                 checkinBtn.disabled = true;
-                checkoutBtn.disabled = true;
+                document.getElementById("sliderCheckinContainer").style.opacity = "0.4";
             }
         }, () => {
             statusBox.style.color = "#f43f5e";
             statusBox.innerHTML = "⚠️ Please allow Location GPS access";
             checkinBtn.disabled = true;
-            checkoutBtn.disabled = true;
+            document.getElementById("sliderCheckinContainer").style.opacity = "0.4";
         }, { enableHighAccuracy: true });
     }
     initLocation();
+
+    // Swipe-to-Check-in Slider Logic
+    const swipeKnob = document.getElementById("swipeKnob");
+    const sliderFill = document.getElementById("sliderFill");
+    const sliderContainer = document.getElementById("sliderCheckinContainer");
+    let isDragging = false;
+
+    swipeKnob.addEventListener("mousedown", (e) => { isDragging = true; });
+    swipeKnob.addEventListener("touchstart", (e) => { isDragging = true; });
+
+    document.addEventListener("mousemove", (e) => {
+        if(!isDragging) return;
+        handleSliderMove(e.clientX || (e.touches ? e.touches[0].clientX : 0));
+    });
+
+    document.addEventListener("touchmove", (e) => {
+        if(!isDragging) return;
+        handleSliderMove(e.touches[0].clientX);
+    });
+
+    document.addEventListener("mouseup", () => {
+        if(isDragging) {
+            isDragging = false;
+            resetSliderPos();
+        }
+    });
+
+    document.addEventListener("touchend", () => {
+        if(isDragging) {
+            isDragging = false;
+            resetSliderPos();
+        }
+    });
+
+    function handleSliderMove(clientX) {
+        const rect = sliderContainer.getBoundingClientRect();
+        let xPos = clientX - rect.left - 21;
+        const maxLimit = rect.width - 48;
+        
+        if(xPos < 4) xPos = 4;
+        if(xPos > maxLimit) {
+            xPos = maxLimit;
+            isDragging = false;
+            autoCheckinSliderVerification();
+        }
+        swipeKnob.style.left = xPos + "px";
+        sliderFill.style.width = (xPos + 21) + "px";
+    }
+
+    function resetSliderPos() {
+        swipeKnob.style.left = "4px";
+        sliderFill.style.width = "0px";
+    }
+
+    async function autoCheckinSliderVerification() {
+        if(!inPremises) {
+            alert("⚠️ Alert: You are out of bounds. Move inside campus boundaries range to register session access!");
+            resetSliderPos();
+            return;
+        }
+        document.getElementById("sliderText").innerText = "✅ Checked-In Successfully!";
+        swipeKnob.innerHTML = `<i class="ri-check-line" style="color:#39ff14"></i>`;
+        await publishSessionPost("Checked-In");
+        
+        setTimeout(() => {
+            document.getElementById("sliderText").innerText = "↔ Slide Right to Check-In";
+            swipeKnob.innerHTML = `<i class="ri-arrow-right-line"></i>`;
+            resetSliderPos();
+        }, 2000);
+    }
 
     async function getCheckInTimesToday() {
         const todayStr = new Date().toISOString().split('T')[0];
@@ -277,15 +352,6 @@
         
         checkInTimestamps.sort((a, b) => b.millis - a.millis);
         return checkInTimestamps;
-    }
-
-    async function validateCheckOutOption() {
-        if (!inPremises) return;
-        const checkInTimes = await getCheckInTimesToday();
-        const checkOutBtn = document.getElementById("checkout-btn");
-        if(checkOutBtn) {
-            checkOutBtn.disabled = checkInTimes.length === 0;
-        }
     }
 
     async function getLatestEntryTime() {
@@ -378,14 +444,6 @@
 
     window.publishSessionPost = async (sessionStatus) => {
         const content = document.getElementById("postInput").value.trim();
-        
-        if(sessionStatus === "Checked-Out") {
-            const checkInTimes = await getCheckInTimesToday();
-            if(checkInTimes.length === 0) {
-                alert("⚠️ Alert: You cannot log Checked-Out without a Checked-In badge for today!");
-                return;
-            }
-        }
 
         if(sessionStatus === "Checked-In") {
             const checkInTimes = await getCheckInTimesToday();
@@ -400,8 +458,8 @@
         const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentTimeStamp = `${dateStr}, ${timeStr}`;
 
-        // Enhanced XP Rules applied directly
-        let xpReward = (sessionStatus === 'Checked-In') ? 15 : 100;
+        // Checked-In yields 15XP. Automated cron event yields 100XP
+        let xpReward = 15;
         await addXP(student, xpReward);
 
         let entryTimeLog = null;
@@ -410,19 +468,16 @@
 
         if(sessionStatus === 'Checked-In') {
             entryTimeLog = currentTimeStamp;
-        } else if(sessionStatus === 'Checked-Out') {
-            entryTimeLog = await getLatestEntryTime();
-            exitTimeLog = currentTimeStamp;
             
-            if (entryTimeLog) {
-                const dur = calculateDuration(entryTimeLog, exitTimeLog);
-                durationLog = `${dur.hrs} hrs ${dur.mins} mins`;
-            }
+            // AUTOMATED 1-HOUR CRON CHECKOUT TIMER (3600000 milliseconds)
+            setTimeout(async () => {
+                await runAutoCheckOutSequence(currentTimeStamp);
+            }, 3600000);
         }
         
         await addDoc(collection(db, "posts"), {
             user: student,
-            userPhoto: currentUserPhoto, // Loaded directly from live state
+            userPhoto: currentUserPhoto,
             content: content || (sessionStatus === 'Checked-In' ? "Logging entry terminal clearance inside campus." : "Terminal session successfully completed, exiting campus."),
             uploadTimestamp: serverTimestamp(),
             badgeTimestamp: currentTimeStamp,
@@ -433,9 +488,35 @@
         });
 
         document.getElementById("postInput").value = "";
-        validateCheckOutOption();
-        showToast(`Status updated: ${sessionStatus} | +${xpReward} XP Credited!`);
+        showToast(`Status updated: Checked-In | +15 XP Credited!`);
     };
+
+    // Automated Background 1-hour Checkout Task
+    async function runAutoCheckOutSequence(checkInStamp) {
+        await refreshLivePhoto();
+        // Automatically awards +100XP on checkout
+        await addXP(student, 100);
+
+        const exitDateObj = new Date();
+        const exitDateStr = exitDateObj.toLocaleDateString('en-GB');
+        const exitTimeStr = exitDateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const exitTimeStamp = `${exitDateStr}, ${exitTimeStr}`;
+        const dur = calculateDuration(checkInStamp, exitTimeStamp);
+        const durationCalculatedLog = `${dur.hrs} hrs ${dur.mins} mins`;
+
+        await addDoc(collection(db, "posts"), {
+            user: student,
+            userPhoto: currentUserPhoto,
+            content: "Terminal timer concluded 1-hour duration, checking out automatically.",
+            uploadTimestamp: serverTimestamp(),
+            badgeTimestamp: exitTimeStamp,
+            sessionTag: "Checked-Out",
+            entryTime: checkInStamp,
+            exitTime: exitTimeStamp,
+            classDuration: durationCalculatedLog
+        });
+        showToast("Auto Checked-Out after 1 hr session clearance | +100 XP Credited!");
+    }
 
     function setupFeedListener() {
         onSnapshot(collection(db, "posts"), (snap) => {
