@@ -145,6 +145,7 @@
 
     const statusBox = document.getElementById('status');
     const checkinBtn = document.getElementById('checkin-btn');
+    const feedContainer = document.getElementById('liveFeedContainer');
 
     // Dynamic Database Photo Fetch Helper
     async function refreshLivePhoto() {
@@ -267,7 +268,7 @@
     }
     initLocation();
 
-    // High performance (60fps) Apple-style Swipe-to-Check-in Slider Logic
+    // Apple-style Swipe-to-Check-in Slider Logic
     const swipeKnob = document.getElementById("swipeKnob");
     const sliderFill = document.getElementById("sliderFill");
     const sliderContainer = document.getElementById("sliderCheckinContainer");
@@ -562,10 +563,13 @@
         showToast("Auto Checked-Out after 1 hr session clearance | +100 XP Credited!");
     }
 
+    let unsubscribeFeed = null;
+
     function setupFeedListener() {
-        onSnapshot(collection(db, "posts"), (snap) => {
-            const feed = document.getElementById("liveFeedContainer");
-            feed.innerHTML = "";
+        if (unsubscribeFeed) unsubscribeFeed(); // Purge old listener to avoid duplication
+
+        unsubscribeFeed = onSnapshot(collection(db, "posts"), (snap) => {
+            feedContainer.innerHTML = ""; 
 
             const allPosts = [];
             snap.forEach(docSnap => {
@@ -579,7 +583,7 @@
             });
 
             allPosts.forEach(p => {
-                if (currentFeedMode === "following" && !followingList.has(p.user) && p.user !== student) return;
+                if (currentFeedMode === "following" && !followingListCheck(p.user)) return;
                 
                 const isFoll = followingList.has(p.user);
                 const neonClass = getNeonClass(p.user);
@@ -623,11 +627,15 @@
                         ${p.sessionTag ? `<div class="badge" style="margin-top:6px; font-size:11px; ${p.sessionTag === 'Checked-In' ? 'border-color:var(--neon-lime); color:#39ff14;' : 'border-color:var(--neon-magenta); color:#ff007f;'}">${p.sessionTag}</div>` : ''}
                     </div>
                 `;
-                feed.appendChild(card);
+                feedContainer.appendChild(card);
             });
         }, (error) => {
             console.warn("Firestore Listener Warning:", error);
         });
+    }
+
+    function ListCheck(user) {
+        return (followingList.has(user) || user === student);
     }
 
     // Real-time Total Check-ins Tracker Engine
