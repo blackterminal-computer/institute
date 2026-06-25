@@ -54,12 +54,11 @@
         .checkin-btn:hover { background: #064e3b; color: #6ee7b7; }
         .checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #475569; color: #94a3b8; background: #1e293b; }
 
-        /* Slider Check-in UI Enhancements */
-        .slider-wrapper { margin-top: 18px; position: relative; width: 100%; height: 50px; background: #000; border-radius: 25px; border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .slider-text { position: absolute; font-size: 13px; font-weight: 700; color: #64748b; pointer-events: none; text-transform: uppercase; letter-spacing: 1px; }
-        .swipe-knob { position: absolute; left: 4px; width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-magenta), var(--neon-purple)); display: flex; align-items: center; justify-content: center; color: white; cursor: grab; font-size: 20px; transition: box-shadow 0.2s; }
-        .swipe-knob:active { cursor: grabbing; box-shadow: 0 0 15px var(--neon-magenta); }
-        .slider-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: rgba(255, 0, 127, 0.15); border-radius: 25px; transition: width 0.1s linear; border-right: 2px solid var(--neon-magenta); }
+        /* Apple-style Slider UI Enhancements */
+        .slider-wrapper { margin-top: 18px; position: relative; width: 100%; height: 56px; background: #1c1c1e; border-radius: 28px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
+        .slider-text { position: absolute; font-size: 14px; font-weight: 600; color: #8e8e93; pointer-events: none; transition: opacity 0.3s; }
+        .swipe-knob { position: absolute; left: 4px; width: 48px; height: 48px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; color: #000; cursor: grab; font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: left 0.05s ease-out; }
+        .slider-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: linear-gradient(90deg, var(--neon-magenta), var(--neon-purple)); border-radius: 28px; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -97,7 +96,7 @@
     
     <div id="sliderCheckinContainer" class="slider-wrapper">
         <div class="slider-fill" id="sliderFill"></div>
-        <span class="slider-text" id="sliderText">↔ Slide Right to Check-In</span>
+        <span class="slider-text" id="sliderText">Slide to Check-In</span>
         <div class="swipe-knob" id="swipeKnob"><i class="ri-arrow-right-line"></i></div>
     </div>
 
@@ -257,11 +256,11 @@
         }, { enableHighAccuracy: true });
     }
     initLocation();
-
-    // Swipe-to-Check-in Slider Logic
+    // Apple-style Swipe-to-Check-in Slider Logic
     const swipeKnob = document.getElementById("swipeKnob");
     const sliderFill = document.getElementById("sliderFill");
     const sliderContainer = document.getElementById("sliderCheckinContainer");
+    const sliderText = document.getElementById("sliderText");
     let isDragging = false;
 
     swipeKnob.addEventListener("mousedown", (e) => { isDragging = true; });
@@ -293,9 +292,12 @@
 
     function handleSliderMove(clientX) {
         const rect = sliderContainer.getBoundingClientRect();
-        let xPos = clientX - rect.left - 21;
-        const maxLimit = rect.width - 48;
+        let xPos = clientX - rect.left - 24; // Center the 48px knob
+        const maxLimit = rect.width - 52;
         
+        const progress = Math.min(xPos / maxLimit, 1);
+        sliderText.style.opacity = Math.max(1 - (progress * 2), 0);
+
         if(xPos < 4) xPos = 4;
         if(xPos > maxLimit) {
             xPos = maxLimit;
@@ -303,12 +305,13 @@
             autoCheckinSliderVerification();
         }
         swipeKnob.style.left = xPos + "px";
-        sliderFill.style.width = (xPos + 21) + "px";
+        sliderFill.style.width = (xPos + 48) + "px";
     }
 
     function resetSliderPos() {
         swipeKnob.style.left = "4px";
         sliderFill.style.width = "0px";
+        sliderText.style.opacity = "1";
     }
 
     async function autoCheckinSliderVerification() {
@@ -317,12 +320,12 @@
             resetSliderPos();
             return;
         }
-        document.getElementById("sliderText").innerText = "✅ Checked-In Successfully!";
+        sliderText.innerText = "✅ Checked-In!";
         swipeKnob.innerHTML = `<i class="ri-check-line" style="color:#39ff14"></i>`;
         await publishSessionPost("Checked-In");
         
         setTimeout(() => {
-            document.getElementById("sliderText").innerText = "↔ Slide Right to Check-In";
+            sliderText.innerText = "Slide to Check-In";
             swipeKnob.innerHTML = `<i class="ri-arrow-right-line"></i>`;
             resetSliderPos();
         }, 2000);
@@ -432,7 +435,6 @@
         setupFeedListener();
     };
 
-    // Safety layer ensuring updated live profile picture travels to database feed post
     window.publishPostSafe = async (sessionStatus) => {
         if(!inPremises) {
             alert("⚠️ Alert: You are out of bounds. Move inside campus boundaries range to register session access!");
@@ -458,7 +460,6 @@
         const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentTimeStamp = `${dateStr}, ${timeStr}`;
 
-        // Checked-In yields 15XP. Automated cron event yields 100XP
         let xpReward = 15;
         await addXP(student, xpReward);
 
@@ -469,7 +470,6 @@
         if(sessionStatus === 'Checked-In') {
             entryTimeLog = currentTimeStamp;
             
-            // AUTOMATED 1-HOUR CRON CHECKOUT TIMER (3600000 milliseconds)
             setTimeout(async () => {
                 await runAutoCheckOutSequence(currentTimeStamp);
             }, 3600000);
@@ -491,10 +491,8 @@
         showToast(`Status updated: Checked-In | +15 XP Credited!`);
     };
 
-    // Automated Background 1-hour Checkout Task
     async function runAutoCheckOutSequence(checkInStamp) {
         await refreshLivePhoto();
-        // Automatically awards +100XP on checkout
         await addXP(student, 100);
 
         const exitDateObj = new Date();
@@ -591,6 +589,7 @@
         snap.docs.forEach(d => followingList.add(d.id));
         setupFeedListener();
     });
+</script>
 </script>
 </body>
 </html>
