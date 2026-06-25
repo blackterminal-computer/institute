@@ -91,6 +91,16 @@
     <button class="toggle-feed-btn" id="feedFollowing" onclick="switchFeedMode('following')">Following Feed</button>
 </div>
 
+<div style="margin: 24px auto 20px auto; max-width: 600px; background: rgba(57,255,20,0.03); border: 1px solid rgba(57,255,20,0.2); padding: 16px 24px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Today's Session Terminals</div>
+        <div style="font-size: 15px; font-weight: 800; color: #39ff14; margin-top: 4px;">Active Terminals Cleared</div>
+    </div>
+    <div style="background: #000; border: 2px solid #39ff14; width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; box-shadow: 0 0 15px rgba(57,255,20,0.3);" id="totalCheckinCounterDisplay">
+        0
+    </div>
+</div>
+
 <div class="post-box">
     <textarea id="postInput" placeholder="What's on your mind, Cyber-Runner?"></textarea>
     
@@ -256,6 +266,7 @@
         }, { enableHighAccuracy: true });
     }
     initLocation();
+
     // High performance (60fps) Apple-style Swipe-to-Check-in Slider Logic
     const swipeKnob = document.getElementById("swipeKnob");
     const sliderFill = document.getElementById("sliderFill");
@@ -618,6 +629,27 @@
             console.warn("Firestore Listener Warning:", error);
         });
     }
+
+    // Real-time Total Check-ins Tracker Engine
+    onSnapshot(query(collection(db, "posts"), where("user", "==", student), where("sessionTag", "==", "Checked-In")), (snap) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        let countToday = 0;
+        
+        snap.forEach((doc) => {
+            const data = doc.data();
+            if(data.uploadTimestamp) {
+                const postDate = data.uploadTimestamp.toDate().toISOString().split('T')[0];
+                if(postDate === todayStr) {
+                    countToday++;
+                }
+            }
+        });
+        
+        const counterElement = document.getElementById("totalCheckinCounterDisplay");
+        if(counterElement) {
+            counterElement.innerText = countToday;
+        }
+    });
 
     onSnapshot(collection(db, "students", student, "following"), snap => {
         followingList.clear();
