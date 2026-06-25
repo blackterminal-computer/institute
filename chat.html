@@ -91,16 +91,6 @@
     <button class="toggle-feed-btn" id="feedFollowing" onclick="switchFeedMode('following')">Following Feed</button>
 </div>
 
-<div style="margin: 24px auto 20px auto; max-width: 600px; background: rgba(57,255,20,0.03); border: 1px solid rgba(57,255,20,0.2); padding: 16px 24px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center;">
-    <div>
-        <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Today's Session Terminals</div>
-        <div style="font-size: 15px; font-weight: 800; color: #39ff14; margin-top: 4px;">Active Terminals Cleared</div>
-    </div>
-    <div style="background: #000; border: 2px solid #39ff14; width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; box-shadow: 0 0 15px rgba(57,255,20,0.3);" id="totalCheckinCounterDisplay">
-        0
-    </div>
-</div>
-
 <div class="post-box">
     <textarea id="postInput" placeholder="What's on your mind, Cyber-Runner?"></textarea>
     
@@ -145,7 +135,6 @@
 
     const statusBox = document.getElementById('status');
     const checkinBtn = document.getElementById('checkin-btn');
-    const feedContainer = document.getElementById('liveFeedContainer');
 
     // Dynamic Database Photo Fetch Helper
     async function refreshLivePhoto() {
@@ -267,8 +256,7 @@
         }, { enableHighAccuracy: true });
     }
     initLocation();
-
-    // Apple-style Swipe-to-Check-in Slider Logic
+    // High performance (60fps) Apple-style Swipe-to-Check-in Slider Logic
     const swipeKnob = document.getElementById("swipeKnob");
     const sliderFill = document.getElementById("sliderFill");
     const sliderContainer = document.getElementById("sliderCheckinContainer");
@@ -563,13 +551,10 @@
         showToast("Auto Checked-Out after 1 hr session clearance | +100 XP Credited!");
     }
 
-    let unsubscribeFeed = null;
-
     function setupFeedListener() {
-        if (unsubscribeFeed) unsubscribeFeed(); // Purge old listener to avoid duplication
-
-        unsubscribeFeed = onSnapshot(collection(db, "posts"), (snap) => {
-            feedContainer.innerHTML = ""; 
+        onSnapshot(collection(db, "posts"), (snap) => {
+            const feed = document.getElementById("liveFeedContainer");
+            feed.innerHTML = "";
 
             const allPosts = [];
             snap.forEach(docSnap => {
@@ -583,7 +568,7 @@
             });
 
             allPosts.forEach(p => {
-                if (currentFeedMode === "following" && !followingListCheck(p.user)) return;
+                if (currentFeedMode === "following" && !followingList.has(p.user) && p.user !== student) return;
                 
                 const isFoll = followingList.has(p.user);
                 const neonClass = getNeonClass(p.user);
@@ -627,37 +612,12 @@
                         ${p.sessionTag ? `<div class="badge" style="margin-top:6px; font-size:11px; ${p.sessionTag === 'Checked-In' ? 'border-color:var(--neon-lime); color:#39ff14;' : 'border-color:var(--neon-magenta); color:#ff007f;'}">${p.sessionTag}</div>` : ''}
                     </div>
                 `;
-                feedContainer.appendChild(card);
+                feed.appendChild(card);
             });
         }, (error) => {
             console.warn("Firestore Listener Warning:", error);
         });
     }
-
-    function ListCheck(user) {
-        return (followingList.has(user) || user === student);
-    }
-
-    // Real-time Total Check-ins Tracker Engine
-    onSnapshot(query(collection(db, "posts"), where("user", "==", student), where("sessionTag", "==", "Checked-In")), (snap) => {
-        const todayStr = new Date().toISOString().split('T')[0];
-        let countToday = 0;
-        
-        snap.forEach((doc) => {
-            const data = doc.data();
-            if(data.uploadTimestamp) {
-                const postDate = data.uploadTimestamp.toDate().toISOString().split('T')[0];
-                if(postDate === todayStr) {
-                    countToday++;
-                }
-            }
-        });
-        
-        const counterElement = document.getElementById("totalCheckinCounterDisplay");
-        if(counterElement) {
-            counterElement.innerText = countToday;
-        }
-    });
 
     onSnapshot(collection(db, "students", student, "following"), snap => {
         followingList.clear();
