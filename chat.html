@@ -54,11 +54,12 @@
         .checkin-btn:hover { background: #064e3b; color: #6ee7b7; }
         .checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #475569; color: #94a3b8; background: #1e293b; }
 
-        /* Apple-style Slider UI Enhancements (Transparent Background inside the slide channel) */
-        .slider-wrapper { margin-top: 18px; position: relative; width: 100%; height: 56px; background: rgba(28, 28, 30, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 28px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
-        .slider-text { position: absolute; font-size: 14px; font-weight: 600; color: #8e8e93; pointer-events: none; transition: opacity 0.3s; }
-        .swipe-knob { position: absolute; left: 4px; width: 48px; height: 48px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; color: #000; cursor: grab; font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .slider-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: linear-gradient(90deg, rgba(255,0,127,0.7), rgba(157,0,255,0.7)); border-radius: 28px; opacity: 0.8; }
+        /* Slider Check-in UI Enhancements */
+        .slider-wrapper { margin-top: 18px; position: relative; width: 100%; height: 50px; background: #000; border-radius: 25px; border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .slider-text { position: absolute; font-size: 13px; font-weight: 700; color: #64748b; pointer-events: none; text-transform: uppercase; letter-spacing: 1px; }
+        .swipe-knob { position: absolute; left: 4px; width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-magenta), var(--neon-purple)); display: flex; align-items: center; justify-content: center; color: white; cursor: grab; font-size: 20px; transition: box-shadow 0.2s; }
+        .swipe-knob:active { cursor: grabbing; box-shadow: 0 0 15px var(--neon-magenta); }
+        .slider-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: rgba(255, 0, 127, 0.15); border-radius: 25px; transition: width 0.1s linear; border-right: 2px solid var(--neon-magenta); }
     </style>
 </head>
 <body>
@@ -96,7 +97,7 @@
     
     <div id="sliderCheckinContainer" class="slider-wrapper">
         <div class="slider-fill" id="sliderFill"></div>
-        <span class="slider-text" id="sliderText">Slide to Check-In</span>
+        <span class="slider-text" id="sliderText">↔ Slide Right to Check-In</span>
         <div class="swipe-knob" id="swipeKnob"><i class="ri-arrow-right-line"></i></div>
     </div>
 
@@ -256,104 +257,58 @@
         }, { enableHighAccuracy: true });
     }
     initLocation();
-    // High performance (60fps) Apple-style Swipe-to-Check-in Slider Logic
+
+    // Swipe-to-Check-in Slider Logic
     const swipeKnob = document.getElementById("swipeKnob");
     const sliderFill = document.getElementById("sliderFill");
     const sliderContainer = document.getElementById("sliderCheckinContainer");
-    const sliderText = document.getElementById("sliderText");
-    
     let isDragging = false;
-    let startX = 0;
-    let currentX = 0;
-    let animationFrameId = null;
 
-    sliderContainer.addEventListener("touchstart", (e) => { e.preventDefault(); }, { passive: false });
-
-    swipeKnob.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        startX = e.clientX - swipeKnob.offsetLeft;
-    });
-
-    swipeKnob.addEventListener("touchstart", (e) => {
-        isDragging = true;
-        startX = e.touches[0].clientX - swipeKnob.offsetLeft;
-    });
+    swipeKnob.addEventListener("mousedown", (e) => { isDragging = true; });
+    swipeKnob.addEventListener("touchstart", (e) => { isDragging = true; });
 
     document.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
-        currentX = e.clientX - startX;
-        if (!animationFrameId) animationFrameId = requestAnimationFrame(updateSliderPosition);
+        if(!isDragging) return;
+        handleSliderMove(e.clientX || (e.touches ? e.touches[0].clientX : 0));
     });
 
     document.addEventListener("touchmove", (e) => {
-        if (!isDragging) return;
-        currentX = e.touches[0].clientX - startX;
-        if (!animationFrameId) animationFrameId = requestAnimationFrame(updateSliderPosition);
+        if(!isDragging) return;
+        handleSliderMove(e.touches[0].clientX);
     });
 
     document.addEventListener("mouseup", () => {
-        if (isDragging) {
+        if(isDragging) {
             isDragging = false;
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-            smoothSnapBack();
+            resetSliderPos();
         }
     });
 
     document.addEventListener("touchend", () => {
-        if (isDragging) {
+        if(isDragging) {
             isDragging = false;
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-            smoothSnapBack();
+            resetSliderPos();
         }
     });
 
-    function updateSliderPosition() {
+    function handleSliderMove(clientX) {
         const rect = sliderContainer.getBoundingClientRect();
-        const maxLimit = rect.width - 52; 
+        let xPos = clientX - rect.left - 21;
+        const maxLimit = rect.width - 48;
         
-        let targetX = currentX;
-        if (targetX < 4) targetX = 4;
-        if (targetX > maxLimit) {
-            targetX = maxLimit;
+        if(xPos < 4) xPos = 4;
+        if(xPos > maxLimit) {
+            xPos = maxLimit;
             isDragging = false;
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
             autoCheckinSliderVerification();
         }
-
-        swipeKnob.style.left = targetX + "px";
-        sliderFill.style.width = (targetX + 48) + "px";
-        
-        const progress = targetX / maxLimit;
-        sliderText.style.opacity = Math.max(1 - (progress * 2), 0);
-        
-        animationFrameId = null;
-    }
-
-    function smoothSnapBack() {
-        const currentLeft = parseInt(swipeKnob.style.left) || 4;
-        const rect = sliderContainer.getBoundingClientRect();
-        const maxLimit = rect.width - 52;
-
-        if (currentLeft < maxLimit) {
-            swipeKnob.style.transition = "left 0.3s cubic-bezier(0.25, 1, 0.5, 1)";
-            sliderFill.style.transition = "width 0.3s cubic-bezier(0.25, 1, 0.5, 1)";
-            
-            resetSliderPos();
-            
-            setTimeout(() => {
-                swipeKnob.style.transition = "none";
-                sliderFill.style.transition = "none";
-            }, 300);
-        }
+        swipeKnob.style.left = xPos + "px";
+        sliderFill.style.width = (xPos + 21) + "px";
     }
 
     function resetSliderPos() {
         swipeKnob.style.left = "4px";
         sliderFill.style.width = "0px";
-        sliderText.style.opacity = "1";
     }
 
     async function autoCheckinSliderVerification() {
@@ -362,12 +317,12 @@
             resetSliderPos();
             return;
         }
-        sliderText.innerText = "✅ Checked-In!";
+        document.getElementById("sliderText").innerText = "✅ Checked-In Successfully!";
         swipeKnob.innerHTML = `<i class="ri-check-line" style="color:#39ff14"></i>`;
         await publishSessionPost("Checked-In");
         
         setTimeout(() => {
-            sliderText.innerText = "Slide to Check-In";
+            document.getElementById("sliderText").innerText = "↔ Slide Right to Check-In";
             swipeKnob.innerHTML = `<i class="ri-arrow-right-line"></i>`;
             resetSliderPos();
         }, 2000);
@@ -397,6 +352,14 @@
         
         checkInTimestamps.sort((a, b) => b.millis - a.millis);
         return checkInTimestamps;
+    }
+
+    async function getLatestEntryTime() {
+        const checkInTimes = await getCheckInTimesToday();
+        if(checkInTimes.length > 0) {
+            return checkInTimes[0].timestamp;
+        }
+        return null;
     }
 
     window.openProfile = async (username) => {
@@ -434,8 +397,7 @@
         if (username !== student) {
             const checkSnap = await getDoc(doc(db, "students", username, "following", student));
             followBackBadge.style.display = "inline-block";
-            let followBackBadgeText = checkSnap.exists() ? "Following You Back" : "Doesn't Follow Back";
-            followBackBadge.innerText = followBackBadgeText;
+            followBackBadge.innerText = checkSnap.exists() ? "Following You Back" : "Doesn't Follow Back";
         } else {
             followBackBadge.style.display = "none";
         }
@@ -470,6 +432,7 @@
         setupFeedListener();
     };
 
+    // Safety layer ensuring updated live profile picture travels to database feed post
     window.publishPostSafe = async (sessionStatus) => {
         if(!inPremises) {
             alert("⚠️ Alert: You are out of bounds. Move inside campus boundaries range to register session access!");
@@ -495,6 +458,7 @@
         const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentTimeStamp = `${dateStr}, ${timeStr}`;
 
+        // Checked-In yields 15XP. Automated cron event yields 100XP
         let xpReward = 15;
         await addXP(student, xpReward);
 
@@ -505,6 +469,7 @@
         if(sessionStatus === 'Checked-In') {
             entryTimeLog = currentTimeStamp;
             
+            // AUTOMATED 1-HOUR CRON CHECKOUT TIMER (3600000 milliseconds)
             setTimeout(async () => {
                 await runAutoCheckOutSequence(currentTimeStamp);
             }, 3600000);
@@ -526,8 +491,10 @@
         showToast(`Status updated: Checked-In | +15 XP Credited!`);
     };
 
+    // Automated Background 1-hour Checkout Task
     async function runAutoCheckOutSequence(checkInStamp) {
         await refreshLivePhoto();
+        // Automatically awards +100XP on checkout
         await addXP(student, 100);
 
         const exitDateObj = new Date();
