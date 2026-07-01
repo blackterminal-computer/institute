@@ -381,27 +381,59 @@
     }
 
     function markAttendance() {
-        if (!navigator.geolocation) {
-            alert("No GPS Detected.");
-            resetSliderUI();
-            return;
-        }
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-            if (dist <= 100) {
-                const todayStr = new Date().toISOString().split('T')[0];
-                db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                    db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
-                    location.reload();
-                });
-            } else { 
-                alert("Out of bounds threshold violation."); 
-                resetSliderUI();
-            }
-        }, () => { 
-            resetSliderUI(); 
-        }, { enableHighAccuracy: true });
+    if (!navigator.geolocation) {
+        alert("No GPS Detected.");
+        resetSliderUI();
+        return;
     }
+
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+        if (dist <= 100) {
+            const now = new Date();
+            const hours = now.getHours();
+            
+            // वेज कैलकुलेशन लॉजिक
+            let wageMultiplier = 0;
+
+            // मॉर्निंग पंचिंग चेक (मान लीजिए 9:00 AM से पहले या बाद)
+            // यहाँ 9 मतलब सुबह 9:00 बजे
+            if (hours < 9) {
+                wageMultiplier = 0.5; // आधा वेज
+            } else {
+                wageMultiplier = 0.25; // 9:00 बजे के बाद - 25%
+            }
+
+            // इवनिंग पंचिंग चेक (मान लीजिए 5:00 PM (17:00) का समय)
+            // नोट: अगर यह मॉर्निंग और इवनिंग दोनों के लिए है, 
+            // तो आप अपनी जरूरत अनुसार यहाँ conditions और सेट करें।
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            // डेटाबेस अपडेट करते समय कैलकुलेटेड वेज का उपयोग करें
+            db.ref(`attendance/${staffId}/${todayStr}`).set({ 
+                time: now.toLocaleTimeString(), 
+                status: "Present", 
+                name: staffName,
+                wageCalculated: wageMultiplier // लॉग में सेव करें
+            }).then(() => {
+                db.ref(`staff/${staffId}`).transaction(s => { 
+                    if (s) { 
+                        const dailyWage = s.perDayWage || 500;
+                        s.salary = (s.salary || 0) + (dailyWage * wageMultiplier); 
+                        s.streak = (s.streak || 0) + 1; 
+                    } 
+                    return s; 
+                });
+                location.reload();
+            });
+        } else { 
+            alert("Out of bounds threshold violation."); 
+            resetSliderUI();
+        }
+    }, () => { resetSliderUI(); }, { enableHighAccuracy: true });
+}
+
 
     function resetSliderUI() {
         const handle = document.getElementById('sl-handle');
