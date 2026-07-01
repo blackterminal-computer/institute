@@ -393,29 +393,25 @@
             const now = new Date();
             const hours = now.getHours();
             
-            // वेज कैलकुलेशन लॉजिक
             let wageMultiplier = 0;
 
-            // मॉर्निंग पंचिंग चेक (मान लीजिए 9:00 AM से पहले या बाद)
-            // यहाँ 9 मतलब सुबह 9:00 बजे
-            if (hours < 9) {
-                wageMultiplier = 0.5; // आधा वेज
+            // मॉर्निंग और इवनिंग का लॉजिक
+            if (hours < 12) {
+                // सुबह का समय (Morning Slot)
+                wageMultiplier = (hours < 9) ? 0.5 : 0.25; 
             } else {
-                wageMultiplier = 0.25; // 9:00 बजे के बाद - 25%
+                // शाम का समय (Evening Slot - 12 PM के बाद)
+                // यहाँ 17 मतलब 5:00 PM
+                wageMultiplier = (hours < 17) ? 0.5 : 0.25;
             }
-
-            // इवनिंग पंचिंग चेक (मान लीजिए 5:00 PM (17:00) का समय)
-            // नोट: अगर यह मॉर्निंग और इवनिंग दोनों के लिए है, 
-            // तो आप अपनी जरूरत अनुसार यहाँ conditions और सेट करें।
 
             const todayStr = new Date().toISOString().split('T')[0];
             
-            // डेटाबेस अपडेट करते समय कैलकुलेटेड वेज का उपयोग करें
             db.ref(`attendance/${staffId}/${todayStr}`).set({ 
                 time: now.toLocaleTimeString(), 
                 status: "Present", 
                 name: staffName,
-                wageCalculated: wageMultiplier // लॉग में सेव करें
+                wageCalculated: wageMultiplier 
             }).then(() => {
                 db.ref(`staff/${staffId}`).transaction(s => { 
                     if (s) { 
@@ -433,6 +429,7 @@
         }
     }, () => { resetSliderUI(); }, { enableHighAccuracy: true });
 }
+
 
 
     function resetSliderUI() {
