@@ -391,23 +391,30 @@
         const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
         if (dist <= 100) {
             const now = new Date();
-            const hours = now.getHours();
+            const hours = now.getHours(); // 24-hour format
+            const todayStr = now.toISOString().split('T')[0];
             
-            let wageMultiplier = 0;
+            let slot = "";
+            let isValid = false;
+            let wageMultiplier = 0.5; // Default full wage (50%)
 
-            // मॉर्निंग और इवनिंग का लॉजिक
-            if (hours < 12) {
-                // सुबह का समय (Morning Slot)
-                wageMultiplier = (hours < 9) ? 0.5 : 0.25; 
-            } else {
-                // शाम का समय (Evening Slot - 12 PM के बाद)
-                // यहाँ 17 मतलब 5:00 PM
-                wageMultiplier = (hours < 17) ? 0.5 : 0.25;
+            // Slot Determination
+            if (hours >= 9 && hours < 11) {
+                slot = "morning";
+                isValid = true;
+            } else if (hours >= 17 && hours < 23) {
+                slot = "evening";
+                isValid = true;
             }
 
-            const todayStr = new Date().toISOString().split('T')[0];
-            
-            db.ref(`attendance/${staffId}/${todayStr}`).set({ 
+            if (!isValid) {
+                alert("Punching time window error! Morning: 9am-11am, Evening: 5pm-11pm.");
+                resetSliderUI();
+                return;
+            }
+
+            // Database me slot ke hisaab se save karein
+            db.ref(`attendance/${staffId}/${todayStr}/${slot}`).set({ 
                 time: now.toLocaleTimeString(), 
                 status: "Present", 
                 name: staffName,
@@ -416,6 +423,7 @@
                 db.ref(`staff/${staffId}`).transaction(s => { 
                     if (s) { 
                         const dailyWage = s.perDayWage || 500;
+                        // Har punch par 50% wage add ho raha hai
                         s.salary = (s.salary || 0) + (dailyWage * wageMultiplier); 
                         s.streak = (s.streak || 0) + 1; 
                     } 
