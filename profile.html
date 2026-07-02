@@ -240,6 +240,75 @@ font-size:28px;
 background:#111827;
 
 }
+/* Notification Drawer */
+
+.notification-panel{
+position:fixed;
+top:0;
+right:-100%;
+width:320px;
+max-width:90%;
+height:100%;
+background:#111827;
+backdrop-filter:blur(20px);
+transition:.4s;
+z-index:2000;
+padding:20px;
+box-sizing:border-box;
+overflow:auto;
+border-left:1px solid rgba(255,255,255,.08);
+}
+
+.notification-panel.active{
+right:0;
+}
+
+.notice{
+padding:15px;
+margin-bottom:12px;
+background:rgba(255,255,255,.05);
+border-radius:16px;
+font-size:14px;
+}
+
+.closeNotice{
+width:100%;
+margin-top:15px;
+padding:14px;
+border:none;
+border-radius:16px;
+background:#ef4444;
+color:#fff;
+font-weight:bold;
+cursor:pointer;
+}
+
+/* Daily Reward */
+
+.reward-card{
+margin:20px 0;
+padding:22px;
+border-radius:25px;
+background:linear-gradient(135deg,#f59e0b,#f97316);
+text-align:center;
+}
+
+.reward-card button{
+margin-top:15px;
+padding:14px 25px;
+border:none;
+border-radius:14px;
+background:#fff;
+font-weight:bold;
+cursor:pointer;
+}
+
+/* Locked Badge */
+
+.badge.locked{
+opacity:.25;
+filter:grayscale(1);
+}
     </style>
 </head>
 <body>
@@ -253,7 +322,8 @@ background:#111827;
         <div id="liveDate">Loading...</div>
     </div>
 
-    <div class="notify-box">
+  <div class="notify-box"
+onclick="toggleNotification()">
         <i class="ri-notification-3-fill"></i>
         <span id="notifyCount">0</span>
     </div>
@@ -293,6 +363,22 @@ background:#111827;
     <div class="wallet-right">
         <i class="ri-wallet-3-fill"></i>
     </div>
+    
+    <div class="reward-card">
+
+<h2>🎁 Daily Reward</h2>
+
+<p>
+Claim today's reward and earn 20 XP
+</p>
+
+<button onclick="claimReward()">
+
+Claim Reward
+
+</button>
+
+</div>
     <div class="stats-row">
        
 
@@ -482,6 +568,22 @@ document.getElementById("notifyCount").innerText = 3;
 
 const xp = d.xp || 0;
 
+const badges=document.querySelectorAll(".badge");
+
+badges.forEach(x=>x.classList.add("locked"));
+
+if(xp>=100)
+badges[0].classList.remove("locked");
+
+if(xp>=500)
+badges[1].classList.remove("locked");
+
+if(xp>=1000)
+badges[2].classList.remove("locked");
+
+if(xp>=5000)
+badges[3].classList.remove("locked");
+
 const levelXP = xp % 1000;
 
 document.getElementById("xpBar").style.width =
@@ -594,7 +696,9 @@ Math.round(levelXP / 10) + "%";
     };
 
     window.downloadPremiumInvoice = (month, amt, date, duration, course) => {
-        const html = `<html><body style="font-family:sans-serif; padding:40px; background:#f4f7fe;"><div style="background:white; padding:40px; border-radius:30px; max-width:500px; margin:auto; border:1px solid #e2e8f0;"><h1 style="color:#6366f1;">BLACK TERMINAL</h1><p><strong>Student:</strong> ${studentID}</p><p><strong>Course:</strong> ${course}</p><p><strong>Month:</strong> ${month}</p><p><strong>Amount:</strong> INR ${amt}.00</p><p><strong>Date:</strong> ${date}</p><div style="text-align:center; background:#dcfce7; color:#15803d; padding:10px; border-radius:10px;">PAYMENT SUCCESSFUL</div></div></body></html>`;
+        const html = `<html><body style="font-family:sans-serif; padding:40px; background:#f4f7fe;"><div style="background:white; padding:40px; border-radius:30px; max-width:500px; margin:auto; border:1px solid #e2e8f0;"><h1 style="color:#6366f1;">BLACK TERMINAL</h1><p><strong>Student:</strong> ${studentID}</p><p><strong>Course:</strong> ${course}</p><p><strong>Month:</strong> ${month}</p><p><strong>Amount:</strong> INR ${amt}.00</p><p><strong>Date:</strong> ${date}</p><div style="text-align:center; background:#dcfce7; color:#15803d; padding:10px; border-radius:10px;">PAYMENT SUCCESSFUL</div></div>
+        
+        </body></html>`;
         const blob = new Blob([html], { type: 'text/html' }); const link = document.createElement('a');
         link.href = URL.createObjectURL(blob); link.download = `BT_Receipt_${month}.html`; link.click();
     };
@@ -626,7 +730,75 @@ document.getElementById("greeting").innerHTML=txt;
 }
 setInterval(updateClock, 1000);
 updateClock();
+window.toggleNotification=()=>{
 
+document
+.getElementById("notifyPanel")
+.classList.toggle("active");
+
+}
+
+
+// Daily Reward
+
+window.claimReward=async()=>{
+
+const ref=doc(db,"students",studentID);
+
+const snap=await getDoc(ref);
+
+if(!snap.exists()) return;
+
+const data=snap.data();
+
+const today=new Date().toDateString();
+
+if(data.lastReward===today){
+
+alert("Today's reward already claimed.");
+
+return;
+
+}
+
+const newXP=(data.xp||0)+20;
+
+const newCoins=(data.coins||0)+5;
+
+await updateDoc(ref,{
+
+xp:newXP,
+
+coins:newCoins,
+
+lastReward:today
+
+});
+
+alert("🎉 +20 XP and +5 Coins");
+
+};
 </script>
+
+<div class="notification-panel" id="notifyPanel">
+
+<h2>Notifications</h2>
+
+<div id="notificationList">
+
+<div class="notice">
+Welcome to BlackTerminal 🚀
+</div>
+
+</div>
+
+<button class="closeNotice"
+onclick="toggleNotification()">
+
+Close
+
+</button>
+
+</div>
 </body>
 </html>
