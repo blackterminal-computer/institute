@@ -511,31 +511,34 @@
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     // Initialization System
+// Initialization System
 async function initSystem() {
     const todayStr = new Date().toISOString().split('T')[0];
     const now = new Date();
     const currentHour = now.getHours();
     
-    // Determine current slot
+    // 1. Determine current slot
     let currentSlot = "";
     if (currentHour >= 9 && currentHour < 12) currentSlot = "morning";
     else if (currentHour >= 17 && currentHour < 23) currentSlot = "evening";
 
-    // Check specific slot for today
+    // 2. Check specific slot for today and lock if exists
     if (currentSlot) {
         db.ref(`attendance/${staffId}/${todayStr}/${currentSlot}`).once('value', snap => {
             if(snap.exists()) {
-                // Sirf agar current slot mein punch ho chuka hai, tabhi slider lock karein
                 lockSliderUI();
             }
         });
     }
 
+    // 3. UI Updates
+    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
+    document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysRemaining = lastDay - now.getDate();
-    document.getElementById('cycle-days').innerText = `${daysRemaining} days remaining`;
+    document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days remaining`;
 
-    // Real-time Balance, Stats & Request Button Logic
+    // 4. Real-time Balance, Stats & Request Button
     db.ref(`staff/${staffId}`).on('value', snap => {
         const val = snap.val() || {};
         currentSalaryBalance = val.salary || 0;
@@ -549,33 +552,42 @@ async function initSystem() {
 
         db.ref(`salaryRequests/${staffId}`).once('value', reqSnap => {
             const btn = document.getElementById('payout-btn');
-            
             if (reqSnap.exists() && reqSnap.val().status === "Pending") {
                 btn.style.display = 'block'; 
                 btn.innerText = "REQUEST PENDING...";
                 btn.style.background = "var(--text-muted)";
                 btn.disabled = true;
-            } else if (currentSalaryBalance > 0) {
-                const currentDayOfMonth = now.getDate(); 
-                
-                if (daysRemaining <= 0) {
-                    btn.style.display = 'block';
-                    btn.disabled = false;
-                    btn.innerText = "REQUEST PAYOUT";
-                    btn.style.background = "var(--apple-green)";
-                } else if (currentDayOfMonth >= 20) {
-                    btn.style.display = 'block';
-                    btn.disabled = false;
-                    btn.innerText = "REQUEST EMERGENCY ADVANCE";
-                    btn.style.background = "var(--apple-orange)";
-                } else {
-                    btn.style.display = 'none';
-                }
+            } else if (currentSalaryBalance > 0 && (lastDay - now.getDate() <= 0 || now.getDate() >= 20)) {
+                btn.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = (lastDay - now.getDate() <= 0) ? "REQUEST PAYOUT" : "REQUEST EMERGENCY ADVANCE";
+                btn.style.background = (lastDay - now.getDate() <= 0) ? "var(--apple-green)" : "var(--apple-orange)";
             } else {
                 btn.style.display = 'none';
             }
         });
     });
+
+    // 5. Load secondary modules
+    loadTasks(); 
+    listenStrictDays();
+}
+
+function lockSliderUI() {
+    const track = document.getElementById('sl-track');
+    const handle = document.getElementById('sl-handle');
+    const text = document.getElementById('sl-text');
+    const icon = document.getElementById('sl-icon');
+    
+    track.classList.add('success-state');
+    handle.style.transform = `translateX(${track.clientWidth - handle.clientWidth - 8}px)`;
+    handle.style.pointerEvents = "none";
+    
+    text.innerText = "PUNCHED PRESENT";
+    text.style.color = "var(--apple-green)";
+    icon.className = "fas fa-check-circle";
+}
+
 
     // Reduction Log Listener
     db.ref(`staff_logs/${staffId}`).limitToLast(1).on('value', snap => {
