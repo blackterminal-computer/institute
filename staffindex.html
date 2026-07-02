@@ -381,50 +381,67 @@
     }
 
     function markAttendance() {
-    if (!navigator.geolocation) {
-        alert("GPS required.");
-        return;
+        if (!navigator.geolocation) {
+            alert("No GPS Detected.");
+            resetSliderUI();
+            return;
+        }
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+            if (dist <= 100) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
+                    db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
+                    location.reload();
+                });
+            } else { 
+                alert("Out of bounds threshold violation."); 
+                resetSliderUI();
+            }
+        }, () => { 
+            resetSliderUI(); 
+        }, { enableHighAccuracy: true });
     }
 
-    navigator.geolocation.getCurrentPosition((pos) => {
-        const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-        if (dist > 100) return alert("Out of range!");
+    function resetSliderUI() {
+        const handle = document.getElementById('sl-handle');
+        const text = document.getElementById('sl-text');
+        const icon = document.getElementById('sl-icon');
+        handle.style.transition = 'all 0.3s ease';
+        handle.style.transform = 'translateX(0px)';
+        handle.style.pointerEvents = "auto";
+        text.innerText = "SLIDE TO PUNCH IN";
+        icon.className = "fas fa-fingerprint";
+    }
 
-        const todayStr = new Date().toISOString().split('T')[0];
-        const now = new Date();
-        const currentHour = now.getHours();
-
-        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
-            const data = snap.val() || {};
-
-            // Morning Logic (Before 5 PM)
-            if (!data.morning) {
-                db.ref(`attendance/${staffId}/${todayStr}`).update({
-                    morning: now.toLocaleTimeString()
-                }).then(() => alert("Morning Punch In Successful!"));
-            } 
-            // Evening Logic (After 5 PM)
-            else if (currentHour >= 17 && !data.evening) {
-                db.ref(`attendance/${staffId}/${todayStr}`).update({
-                    evening: now.toLocaleTimeString()
-                }).then(() => {
-                    // Yahan salary update karein (Double shift = Double pay)
-                    db.ref(`staff/${staffId}`).transaction(s => {
-                        if (s) s.salary = (s.salary || 0) + (s.perDayWage || 500);
-                        return s;
-                    });
-                    alert("Evening Punch In Successful!");
-                });
-            } else if (currentHour < 17) {
-                alert("Evening punch sirf 5 PM ke baad available hai.");
-            } else {
-                alert("Aaj ka dono punch complete ho chuka hai.");
-            }
-            location.reload();
+    function loadTasks() {
+        db.ref(`tasks/${staffId}`).on('value', snap => {
+            const container = document.getElementById('task-list'); 
+            if(!snap.exists()) return; 
+            container.innerHTML = "";
+            
+            snap.forEach(child => {
+                const taskId = child.key;
+                const t = child.val();
+                const isDone = t.status === "Completed";
+                
+                container.innerHTML += `
+                    <div class="task-item animate__animated animate__fadeIn">
+                        <div class="task-left-block">
+                            <div class="task-dot ${isDone ? 'completed' : ''}"></div>
+                            <div class="task-info">
+                                <p class="${isDone ? 'done-text' : ''}">${t.task}</p>
+                                <small>${new Date(t.date).toLocaleDateString('en-GB')}</small>
+                            </div>
+                        </div>
+                        <button class="task-action-btn ${isDone ? 'completed' : ''}" 
+                                ${isDone ? 'disabled' : `onclick="completeTask('${taskId}')"`}>
+                            ${isDone ? '<i class="fas fa-check"></i> DONE' : 'MARK DONE'}
+                        </button>
+                    </div>`;
+            });
         });
-    });
-}
-
+    }
 
     function completeTask(taskId) {
         if(confirm("Have you really completed this task?")) {
@@ -450,22 +467,22 @@
 
     async function initSystem() {
         const todayStr = new Date().toISOString().split('T')[0];
-        // initSystem ke andar...
-db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
-    const data = snap.val();
-    const handle = document.getElementById('sl-handle');
-    const text = document.getElementById('sl-text');
-
-    if (!data) {
-        text.innerText = "SLIDE FOR MORNING PUNCH";
-    } else if (data.morning && !data.evening) {
-        text.innerText = "SLIDE FOR EVENING PUNCH (5 PM+)";
-    } else {
-        text.innerText = "ATTENDANCE COMPLETED";
-        handle.style.pointerEvents = "none";
-    }
-});
-
+        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+            if(snap.exists()) {
+                isAttendanceMarkedToday = true;
+                const track = document.getElementById('sl-track');
+                const handle = document.getElementById('sl-handle');
+                const text = document.getElementById('sl-text');
+                const icon = document.getElementById('sl-icon');
+                
+                track.classList.add('success-state');
+                handle.style.background = "var(--apple-green)";
+                handle.style.borderColor = "transparent";
+                handle.style.boxShadow = "0 0 15px rgba(48, 209, 88, 0.4)";
+                
+                const maxScroll = track.clientWidth - handle.clientWidth - 8;
+                handle.style.transform = `translateX(${maxScroll}px)`;
+                handle.style.pointerEvents = "none";
                 
                 text.innerText = "PUNCHED PRESENT";
                 text.style.color = "var(--apple-green)";
