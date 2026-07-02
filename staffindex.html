@@ -1,4 +1,4 @@
-
+1. Index staff
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -381,72 +381,27 @@
     }
 
     function markAttendance() {
-    if (!navigator.geolocation) {
-        alert("No GPS Detected.");
-        resetSliderUI();
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition((pos) => {
-        const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-        if (dist <= 100) {
-            const now = new Date();
-            const hours = now.getHours();
-            const todayStr = now.toISOString().split('T')[0];
-            
-            let slot = "";
-            let isValid = false;
-
-            // Slot Determination
-            if (hours >= 9 && hours < 12) {
-                slot = "morning";
-                isValid = true;
-            } else if (hours >= 17 && hours < 23) {
-                slot = "evening";
-                isValid = true;
-            }
-
-            if (!isValid) {
-                alert("Punching time window error! Morning: 9am-12pm, Evening: 5pm-11pm.");
-                resetSliderUI();
-                return;
-            }
-
-            // Check if already punched for THIS specific slot
-            db.ref(`attendance/${staffId}/${todayStr}/${slot}`).once('value', snapshot => {
-                if (snapshot.exists()) {
-                    alert("Aapne is slot mein pehle hi punch kar diya hai!");
-                    resetSliderUI();
-                    return;
-                }
-
-                // Agar nahi hai, to save karein
-                db.ref(`attendance/${staffId}/${todayStr}/${slot}`).set({ 
-                    time: now.toLocaleTimeString(), 
-                    status: "Present", 
-                    name: staffName 
-                }).then(() => {
-                    // Salary add karein (0.5 per slot)
-                    db.ref(`staff/${staffId}`).transaction(s => { 
-                        if (s) { 
-                            const dailyWage = s.perDayWage || 500;
-                            s.salary = (s.salary || 0) + (dailyWage * 0.5); 
-                            s.streak = (s.streak || 0) + 1; 
-                        } 
-                        return s; 
-                    });
+        if (!navigator.geolocation) {
+            alert("No GPS Detected.");
+            resetSliderUI();
+            return;
+        }
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+            if (dist <= 100) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
+                    db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
                     location.reload();
                 });
-            });
-        } else { 
-            alert("Out of bounds threshold violation."); 
-            resetSliderUI();
-        }
-    }, () => { resetSliderUI(); }, { enableHighAccuracy: true });
-}
-
-
-
+            } else { 
+                alert("Out of bounds threshold violation."); 
+                resetSliderUI();
+            }
+        }, () => { 
+            resetSliderUI(); 
+        }, { enableHighAccuracy: true });
+    }
 
     function resetSliderUI() {
         const handle = document.getElementById('sl-handle');
@@ -510,152 +465,33 @@
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // Initialization System
-// Initialization System
-// Initialization System
-async function initSystem() {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const now = new Date();
-    const currentHour = now.getHours();
-    
-    // 1. Determine current slot
-    let currentSlot = "";
-    if (currentHour >= 9 && currentHour < 12) currentSlot = "morning";
-    else if (currentHour >= 17 && currentHour < 23) currentSlot = "evening";
-
-    // 2. Lock UI if already punched in CURRENT slot
-    if (currentSlot) {
-        db.ref(`attendance/${staffId}/${todayStr}/${currentSlot}`).once('value', snap => {
-            if(snap.exists()) lockSliderUI();
-        });
-    }
-
-    // 3. Setup UI Text
-    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
-    document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    document.getElementById('cycle-days').innerText = `${lastDay - now.getDate()} days remaining`;
-
-    // 4. Real-time Balance, Stats & Request Button
-    db.ref(`staff/${staffId}`).on('value', snap => {
-        const val = snap.val() || {};
-        currentSalaryBalance = val.salary || 0;
-        document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
-        document.getElementById('total-earning').innerText = `₹${currentSalaryBalance}`;
-        document.getElementById('streak-val').innerText = val.streak || 0;
-        
-        const percent = Math.min((currentSalaryBalance / ((val.perDayWage || 500) * 25)) * 100, 100);
-        document.getElementById('salary-progress').style.width = percent + "%";
-
-        db.ref(`salaryRequests/${staffId}`).once('value', reqSnap => {
-            const btn = document.getElementById('payout-btn');
-            if (reqSnap.exists() && reqSnap.val().status === "Pending") {
-                btn.style.display = 'block'; btn.innerText = "REQUEST PENDING..."; btn.disabled = true; btn.style.background = "var(--text-muted)";
-            } else if (currentSalaryBalance > 0 && (lastDay - now.getDate() <= 0 || now.getDate() >= 20)) {
-                btn.style.display = 'block'; btn.disabled = false;
-                btn.innerText = (lastDay - now.getDate() <= 0) ? "REQUEST PAYOUT" : "REQUEST EMERGENCY ADVANCE";
-                btn.style.background = (lastDay - now.getDate() <= 0) ? "var(--apple-green)" : "var(--apple-orange)";
-            } else {
-                btn.style.display = 'none';
+    async function initSystem() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+            if(snap.exists()) {
+                isAttendanceMarkedToday = true;
+                const track = document.getElementById('sl-track');
+                const handle = document.getElementById('sl-handle');
+                const text = document.getElementById('sl-text');
+                const icon = document.getElementById('sl-icon');
+                
+                track.classList.add('success-state');
+                handle.style.background = "var(--apple-green)";
+                handle.style.borderColor = "transparent";
+                handle.style.boxShadow = "0 0 15px rgba(48, 209, 88, 0.4)";
+                
+                const maxScroll = track.clientWidth - handle.clientWidth - 8;
+                handle.style.transform = `translateX(${maxScroll}px)`;
+                handle.style.pointerEvents = "none";
+                
+                text.innerText = "PUNCHED PRESENT";
+                text.style.color = "var(--apple-green)";
+                text.style.webkitTextFillColor = "var(--apple-green)";
+                text.style.opacity = "1";
+                icon.className = "fas fa-check-circle";
+                icon.style.color = "#FFFFFF";
             }
         });
-    });
-
-    // 5. Alerts & Modules
-    db.ref(`staff_logs/${staffId}`).limitToLast(1).on('value', snap => {
-        const alertBox = document.getElementById('staff-deduction-alert-box');
-        if(alertBox && snap.exists()) {
-            snap.forEach(child => {
-                const logData = child.val();
-                alertBox.innerHTML = `<div class="card animate__animated animate__pulse" style="border-left: 4px solid var(--apple-orange); background: rgba(255, 159, 10, 0.08); margin-bottom: 20px;"><div style="color: var(--apple-orange); font-weight: 700; font-size: 11px;">TRANSACTION ALERT</div><p style="color: #FFF; font-size: 14px;">${logData.message}</p></div>`;
-            });
-        }
-    });
-
-    loadTasks(); 
-    listenStrictDays();
-}
-
-function lockSliderUI() {
-    const track = document.getElementById('sl-track'), handle = document.getElementById('sl-handle'), text = document.getElementById('sl-text');
-    track.classList.add('success-state');
-    handle.style.transform = `translateX(${track.clientWidth - handle.clientWidth - 8}px)`;
-    handle.style.pointerEvents = "none";
-    text.innerText = "PUNCHED PRESENT";
-    text.style.color = "var(--apple-green)";
-    document.getElementById('sl-icon').className = "fas fa-check-circle";
-}
-
-
-    // 5. Load secondary modules
-    loadTasks(); 
-    listenStrictDays();
-}
-
-function lockSliderUI() {
-    const track = document.getElementById('sl-track');
-    const handle = document.getElementById('sl-handle');
-    const text = document.getElementById('sl-text');
-    const icon = document.getElementById('sl-icon');
-    
-    track.classList.add('success-state');
-    handle.style.transform = `translateX(${track.clientWidth - handle.clientWidth - 8}px)`;
-    handle.style.pointerEvents = "none";
-    
-    text.innerText = "PUNCHED PRESENT";
-    text.style.color = "var(--apple-green)";
-    icon.className = "fas fa-check-circle";
-}
-
-
-    // Reduction Log Listener
-    db.ref(`staff_logs/${staffId}`).limitToLast(1).on('value', snap => {
-        const alertBox = document.getElementById('staff-deduction-alert-box');
-        if(!alertBox) return;
-        if(snap.exists()) {
-            snap.forEach(child => {
-                const logData = child.val();
-                alertBox.innerHTML = `
-                    <div class="card animate__animated animate__pulse" style="border-left: 4px solid var(--apple-orange); background: rgba(255, 159, 10, 0.08); margin-bottom: 20px;">
-                        <div style="display: flex; align-items: center; gap: 8px; color: var(--apple-orange); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
-                            <i class="fas fa-receipt"></i> Transaction / Payout Alert
-                        </div>
-                        <p style="margin: 10px 0 6px 0; color: #FFF; font-size: 14px; font-weight: 600; line-height: 1.4;">${logData.message}</p>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                            <small style="color: var(--text-sec); font-size: 11px;">Remaining Balance: <b style="color: var(--apple-green);">₹${logData.restBalance}</b></small>
-                            <small style="color: var(--text-muted); font-size: 9px;">${new Date(logData.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
-                        </div>
-                    </div>`;
-            });
-        }
-    });
-
-    loadTasks(); 
-    listenStrictDays();
-}
-
-// Slider lock UI logic
-function lockSliderUI() {
-    const track = document.getElementById('sl-track');
-    const handle = document.getElementById('sl-handle');
-    const text = document.getElementById('sl-text');
-    const icon = document.getElementById('sl-icon');
-    
-    track.classList.add('success-state');
-    handle.style.background = "var(--apple-green)";
-    handle.style.borderColor = "transparent";
-    handle.style.boxShadow = "0 0 15px rgba(48, 209, 88, 0.4)";
-    
-    const maxScroll = track.clientWidth - handle.clientWidth - 8;
-    handle.style.transform = `translateX(${maxScroll}px)`;
-    handle.style.pointerEvents = "none";
-    
-    text.innerText = "PUNCHED PRESENT";
-    text.style.color = "var(--apple-green)";
-    icon.className = "fas fa-check-circle";
-}
-
 
         const now = new Date(); 
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
