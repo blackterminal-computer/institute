@@ -391,15 +391,14 @@
         const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
         if (dist <= 100) {
             const now = new Date();
-            const hours = now.getHours(); // 24-hour format
+            const hours = now.getHours();
             const todayStr = now.toISOString().split('T')[0];
             
             let slot = "";
             let isValid = false;
-            let wageMultiplier = 0.5; // Default full wage (50%)
 
             // Slot Determination
-            if (hours >= 9 && hours < 11) {
+            if (hours >= 9 && hours < 12) {
                 slot = "morning";
                 isValid = true;
             } else if (hours >= 17 && hours < 23) {
@@ -408,28 +407,36 @@
             }
 
             if (!isValid) {
-                alert("Punching time window error! Morning: 9am-11am, Evening: 5pm-11pm.");
+                alert("Punching time window error! Morning: 9am-12pm, Evening: 5pm-11pm.");
                 resetSliderUI();
                 return;
             }
 
-            // Database me slot ke hisaab se save karein
-            db.ref(`attendance/${staffId}/${todayStr}/${slot}`).set({ 
-                time: now.toLocaleTimeString(), 
-                status: "Present", 
-                name: staffName,
-                wageCalculated: wageMultiplier 
-            }).then(() => {
-                db.ref(`staff/${staffId}`).transaction(s => { 
-                    if (s) { 
-                        const dailyWage = s.perDayWage || 500;
-                        // Har punch par 50% wage add ho raha hai
-                        s.salary = (s.salary || 0) + (dailyWage * wageMultiplier); 
-                        s.streak = (s.streak || 0) + 1; 
-                    } 
-                    return s; 
+            // Check if already punched for THIS specific slot
+            db.ref(`attendance/${staffId}/${todayStr}/${slot}`).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    alert("Aapne is slot mein pehle hi punch kar diya hai!");
+                    resetSliderUI();
+                    return;
+                }
+
+                // Agar nahi hai, to save karein
+                db.ref(`attendance/${staffId}/${todayStr}/${slot}`).set({ 
+                    time: now.toLocaleTimeString(), 
+                    status: "Present", 
+                    name: staffName 
+                }).then(() => {
+                    // Salary add karein (0.5 per slot)
+                    db.ref(`staff/${staffId}`).transaction(s => { 
+                        if (s) { 
+                            const dailyWage = s.perDayWage || 500;
+                            s.salary = (s.salary || 0) + (dailyWage * 0.5); 
+                            s.streak = (s.streak || 0) + 1; 
+                        } 
+                        return s; 
+                    });
+                    location.reload();
                 });
-                location.reload();
             });
         } else { 
             alert("Out of bounds threshold violation."); 
@@ -437,6 +444,7 @@
         }
     }, () => { resetSliderUI(); }, { enableHighAccuracy: true });
 }
+
 
 
 
