@@ -512,6 +512,7 @@
 
     // Initialization System
 // Initialization System
+// Initialization System
 async function initSystem() {
     const todayStr = new Date().toISOString().split('T')[0];
     const now = new Date();
@@ -522,16 +523,14 @@ async function initSystem() {
     if (currentHour >= 9 && currentHour < 12) currentSlot = "morning";
     else if (currentHour >= 17 && currentHour < 23) currentSlot = "evening";
 
-    // 2. Check specific slot for today and lock if exists
+    // 2. Lock UI if already punched in CURRENT slot
     if (currentSlot) {
         db.ref(`attendance/${staffId}/${todayStr}/${currentSlot}`).once('value', snap => {
-            if(snap.exists()) {
-                lockSliderUI();
-            }
+            if(snap.exists()) lockSliderUI();
         });
     }
 
-    // 3. UI Updates
+    // 3. Setup UI Text
     document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
     document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     
@@ -542,7 +541,6 @@ async function initSystem() {
     db.ref(`staff/${staffId}`).on('value', snap => {
         const val = snap.val() || {};
         currentSalaryBalance = val.salary || 0;
-        
         document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
         document.getElementById('total-earning').innerText = `₹${currentSalaryBalance}`;
         document.getElementById('streak-val').innerText = val.streak || 0;
@@ -553,13 +551,9 @@ async function initSystem() {
         db.ref(`salaryRequests/${staffId}`).once('value', reqSnap => {
             const btn = document.getElementById('payout-btn');
             if (reqSnap.exists() && reqSnap.val().status === "Pending") {
-                btn.style.display = 'block'; 
-                btn.innerText = "REQUEST PENDING...";
-                btn.style.background = "var(--text-muted)";
-                btn.disabled = true;
+                btn.style.display = 'block'; btn.innerText = "REQUEST PENDING..."; btn.disabled = true; btn.style.background = "var(--text-muted)";
             } else if (currentSalaryBalance > 0 && (lastDay - now.getDate() <= 0 || now.getDate() >= 20)) {
-                btn.style.display = 'block';
-                btn.disabled = false;
+                btn.style.display = 'block'; btn.disabled = false;
                 btn.innerText = (lastDay - now.getDate() <= 0) ? "REQUEST PAYOUT" : "REQUEST EMERGENCY ADVANCE";
                 btn.style.background = (lastDay - now.getDate() <= 0) ? "var(--apple-green)" : "var(--apple-orange)";
             } else {
@@ -567,6 +561,32 @@ async function initSystem() {
             }
         });
     });
+
+    // 5. Alerts & Modules
+    db.ref(`staff_logs/${staffId}`).limitToLast(1).on('value', snap => {
+        const alertBox = document.getElementById('staff-deduction-alert-box');
+        if(alertBox && snap.exists()) {
+            snap.forEach(child => {
+                const logData = child.val();
+                alertBox.innerHTML = `<div class="card animate__animated animate__pulse" style="border-left: 4px solid var(--apple-orange); background: rgba(255, 159, 10, 0.08); margin-bottom: 20px;"><div style="color: var(--apple-orange); font-weight: 700; font-size: 11px;">TRANSACTION ALERT</div><p style="color: #FFF; font-size: 14px;">${logData.message}</p></div>`;
+            });
+        }
+    });
+
+    loadTasks(); 
+    listenStrictDays();
+}
+
+function lockSliderUI() {
+    const track = document.getElementById('sl-track'), handle = document.getElementById('sl-handle'), text = document.getElementById('sl-text');
+    track.classList.add('success-state');
+    handle.style.transform = `translateX(${track.clientWidth - handle.clientWidth - 8}px)`;
+    handle.style.pointerEvents = "none";
+    text.innerText = "PUNCHED PRESENT";
+    text.style.color = "var(--apple-green)";
+    document.getElementById('sl-icon').className = "fas fa-check-circle";
+}
+
 
     // 5. Load secondary modules
     loadTasks(); 
