@@ -51,6 +51,23 @@
         .nav-group { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; }
         .home-nav { background: #fff; color: #000; padding: 18px; border-radius: 24px; text-align: center; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .logout-btn { background: rgba(244, 63, 94, 0.1); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.2); padding: 14px; border-radius: 20px; text-align: center; font-weight: 700; cursor: pointer; font-size: 13px; }
+        @media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #studentCard,
+    #studentCard * {
+        visibility: visible;
+    }
+
+    #studentCard {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
     </style>
 </head>
 <body>
@@ -108,6 +125,10 @@
         <span class="duration-text" id="showJoinDate" style="font-size: 12px; margin-bottom: 12px;">Joined: --</span>
         <div id="feeStatusBadge" class="paid-label">Status: --</div>
     </div>
+    
+    <button class="update-btn" onclick="showStudentID()" style="margin-top:15px;">
+    <i class="ri-qr-code-line"></i> Digital Student ID
+</button>
 
     <div class="history-box">
         <div class="card-label"><i class="ri-history-line"></i> Payment Ledger</div>
@@ -132,7 +153,7 @@
     <div class="logout-btn" onclick="logout()"><i class="ri-logout-circle-line"></i> Secure Logout</div>
     <a href="index.html" class="home-nav"><i class="ri-home-4-fill"></i> Return Home</a>
 </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, onSnapshot, updateDoc, collection, getDocs, setDoc, getDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -288,13 +309,77 @@
     };
 
     window.downloadPremiumInvoice = (month, amt, date, duration, course) => {
-        const html = `<html><body style="font-family:sans-serif; padding:40px; background:#f4f7fe;"><div style="background:white; padding:40px; border-radius:30px; max-width:500px; margin:auto; border:1px solid #e2e8f0;"><h1 style="color:#6366f1;">BLACK TERMINAL</h1><p><strong>Student:</strong> ${studentID}</p><p><strong>Course:</strong> ${course}</p><p><strong>Month:</strong> ${month}</p><p><strong>Amount:</strong> INR ${amt}.00</p><p><strong>Date:</strong> ${date}</p><div style="text-align:center; background:#dcfce7; color:#15803d; padding:10px; border-radius:10px;">PAYMENT SUCCESSFUL</div></div></body></html>`;
+        const html = `<html><body style="font-family:sans-serif; padding:40px; background:#f4f7fe;"><div style="background:white; padding:40px; border-radius:30px; max-width:500px; margin:auto; border:1px solid #e2e8f0;"><h1 style="color:#6366f1;">BLACK TERMINAL</h1><p><strong>Student:</strong> ${studentID}</p><p><strong>Course:</strong> ${course}</p><p><strong>Month:</strong> ${month}</p><p><strong>Amount:</strong> INR ${amt}.00</p><p><strong>Date:</strong> ${date}</p><div style="text-align:center; background:#dcfce7; color:#15803d; padding:10px; border-radius:10px;">PAYMENT SUCCESSFUL</div></div></body>
+        
+        
+        </html>`;
         const blob = new Blob([html], { type: 'text/html' }); const link = document.createElement('a');
         link.href = URL.createObjectURL(blob); link.download = `BT_Receipt_${month}.html`; link.click();
     };
 
-    window.onload = startRealTimeSync;
+    document.addEventListener("DOMContentLoaded", startRealTimeSync);
+    globalThis.showStudentID = () => {
+
+    document.getElementById("idPopup").style.display = "flex";
+
+    document.getElementById("cardPhoto").src = document.getElementById("photo").src;
+    document.getElementById("cardName").innerText = studentID;
+    document.getElementById("cardID").innerText = studentID;
+    document.getElementById("cardCourse").innerText = "Course : " + document.getElementById("showCourse").innerText;
+    document.getElementById("cardJoin").innerText = document.getElementById("showJoinDate").innerText;
+    document.getElementById("cardDuration").innerText = document.getElementById("showDuration").innerText;
+    document.getElementById("cardStatus").innerText = document.getElementById("feeStatusBadge").innerText;
+
+    const qrBox = document.getElementById("qrcode");
+qrBox.replaceChildren();
+
+    new QRCode(document.getElementById("qrcode"), {
+        text: JSON.stringify({
+            id: studentID,
+            course: document.getElementById("showCourse").innerText
+        }),
+        width: 140,
+        height: 140
+    });
+};
+
+globalThis.closeStudentID = () => {
+    document.getElementById("idPopup").style.display = "none";
+};
 </script>
+
+<div id="idPopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:9999;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;">
+
+<div id="studentCard" style="background:#fff;color:#000;width:340px;border-radius:25px;padding:25px;text-align:center;">
+
+<h2 style="margin-top:0;">BLACK TERMINAL</h2>
+
+<img id="cardPhoto" style="width:90px;height:90px;border-radius:20px;object-fit:cover;">
+
+<h3 id="cardName"></h3>
+
+<p>ID : <span id="cardID"></span></p>
+
+<p id="cardCourse"></p>
+
+<p id="cardJoin"></p>
+
+<p id="cardDuration"></p>
+
+<p id="cardStatus"></p>
+
+<div id="qrcode" style="margin:20px auto;"></div>
+
+<button class="update-btn" onclick="window.print()">Print / Save</button>
+
+<button class="update-btn" onclick="closeStudentID()" style="margin-top:10px;background:#111;color:#fff;">
+Close
+</button>
+
+</div>
+
+</div>
+
 </body>
 </html>
 
