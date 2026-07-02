@@ -381,27 +381,53 @@
     }
 
     function markAttendance() {
-        if (!navigator.geolocation) {
-            alert("No GPS Detected.");
-            resetSliderUI();
-            return;
-        }
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-            if (dist <= 100) {
-                const todayStr = new Date().toISOString().split('T')[0];
-                db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                    db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
-                    location.reload();
-                });
-            } else { 
-                alert("Out of bounds threshold violation."); 
-                resetSliderUI();
-            }
-        }, () => { 
-            resetSliderUI(); 
-        }, { enableHighAccuracy: true });
+    if (!navigator.geolocation) {
+        alert("No GPS Detected.");
+        resetSliderUI();
+        return;
     }
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
+        if (dist <= 100) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+                const data = snap.val() || {};
+
+                if (!data.morning) {
+                    // Morning Punch
+                    db.ref(`attendance/${staffId}/${todayStr}`).update({
+                        morning: now.toLocaleTimeString(),
+                        name: staffName
+                    }).then(() => location.reload());
+                } else if (currentHour >= 17 && !data.evening) {
+                    // Evening Punch (After 5 PM)
+                    db.ref(`attendance/${staffId}/${todayStr}`).update({
+                        evening: now.toLocaleTimeString()
+                    }).then(() => {
+                        db.ref(`staff/${staffId}`).transaction(s => { 
+                            if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); } 
+                            return s; 
+                        });
+                        location.reload();
+                    });
+                } else if (currentHour < 17) {
+                    alert("Evening punch sirf 5 PM ke baad available hai.");
+                    resetSliderUI();
+                } else {
+                    alert("Aaj ka dono shift complete ho chuka hai.");
+                    resetSliderUI();
+                }
+            });
+        } else { 
+            alert("Out of bounds threshold violation."); 
+            resetSliderUI();
+        }
+    }, () => { resetSliderUI(); }, { enableHighAccuracy: true });
+}
+
 
     function resetSliderUI() {
         const handle = document.getElementById('sl-handle');
@@ -467,31 +493,32 @@
 
     async function initSystem() {
         const todayStr = new Date().toISOString().split('T')[0];
-        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
-            if(snap.exists()) {
-                isAttendanceMarkedToday = true;
-                const track = document.getElementById('sl-track');
-                const handle = document.getElementById('sl-handle');
-                const text = document.getElementById('sl-text');
-                const icon = document.getElementById('sl-icon');
+        // initSystem ke andar is part ko replace karein:
+db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
+    const data = snap.val();
+    const track = document.getElementById('sl-track');
+    const handle = document.getElementById('sl-handle');
+    const text = document.getElementById('sl-text');
+    const icon = document.getElementById('sl-icon');
+
+    if (data) {
+        if (data.morning && !data.evening) {
+            text.innerText = "MORNING PUNCHED - WAIT FOR 5 PM";
+            text.style.color = "var(--apple-green)";
+            icon.className = "fas fa-check-circle";
+            handle.style.pointerEvents = "none";
+        } else if (data.morning && data.evening) {
+            track.classList.add('success-state');
+            handle.style.background = "var(--apple-green)";
+            text.innerText = "SHIFT COMPLETED";
+            icon.className = "fas fa-check-double";
+            handle.style.pointerEvents = "none";
+        }
+    }
+});
+
                 
-                track.classList.add('success-state');
-                handle.style.background = "var(--apple-green)";
-                handle.style.borderColor = "transparent";
-                handle.style.boxShadow = "0 0 15px rgba(48, 209, 88, 0.4)";
                 
-                const maxScroll = track.clientWidth - handle.clientWidth - 8;
-                handle.style.transform = `translateX(${maxScroll}px)`;
-                handle.style.pointerEvents = "none";
-                
-                text.innerText = "PUNCHED PRESENT";
-                text.style.color = "var(--apple-green)";
-                text.style.webkitTextFillColor = "var(--apple-green)";
-                text.style.opacity = "1";
-                icon.className = "fas fa-check-circle";
-                icon.style.color = "#FFFFFF";
-            }
-        });
 
         const now = new Date(); 
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
