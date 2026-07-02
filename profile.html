@@ -51,11 +51,103 @@
         .nav-group { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; }
         .home-nav { background: #fff; color: #000; padding: 18px; border-radius: 24px; text-align: center; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .logout-btn { background: rgba(244, 63, 94, 0.1); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.2); padding: 14px; border-radius: 20px; text-align: center; font-weight: 700; cursor: pointer; font-size: 13px; }
+        
+        .elite-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px;
+margin-bottom:20px;
+background:rgba(255,255,255,.05);
+border:1px solid rgba(255,255,255,.08);
+border-radius:25px;
+backdrop-filter:blur(20px);
+}
+
+.notify-box{
+position:relative;
+width:55px;
+height:55px;
+border-radius:18px;
+display:flex;
+justify-content:center;
+align-items:center;
+background:#111827;
+font-size:22px;
+cursor:pointer;
+}
+
+.notify-box span{
+position:absolute;
+top:-5px;
+right:-5px;
+background:#ef4444;
+width:20px;
+height:20px;
+display:flex;
+justify-content:center;
+align-items:center;
+border-radius:50%;
+font-size:11px;
+font-weight:bold;
+}
+
+.elite-progress{
+background:rgba(255,255,255,.04);
+padding:20px;
+border-radius:25px;
+margin-bottom:20px;
+}
+
+.progress-top{
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+font-weight:700;
+}
+
+.bar{
+height:10px;
+background:#1e293b;
+border-radius:50px;
+overflow:hidden;
+}
+
+#xpBar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#06b6d4,#6366f1);
+transition:1s;
+}
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- Elite Header -->
+<div class="elite-header">
+    <div>
+        <small id="greeting">Welcome</small>
+        <h2 id="liveTime">00:00:00</h2>
+        <div id="liveDate">Loading...</div>
+    </div>
+
+    <div class="notify-box">
+        <i class="ri-notification-3-fill"></i>
+        <span id="notifyCount">0</span>
+    </div>
+</div>
+
+<div class="elite-progress">
+    <div class="progress-top">
+        <span>Next Level</span>
+        <span id="nextLevel">0%</span>
+    </div>
+
+    <div class="bar">
+        <div id="xpBar"></div>
+    </div>
+</div>
     <div class="profile-header">
         <div class="avatar-wrapper">
             <img id="photo" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" onclick="document.getElementById('file').click()">
@@ -184,6 +276,16 @@
                 document.getElementById("streak").innerText = d.streak || 0;
                 if(d.photo) document.getElementById("photo").src = d.photo;
 
+const xp = d.xp || 0;
+
+const levelXP = xp % 1000;
+
+document.getElementById("xpBar").style.width =
+(levelXP / 1000 * 100) + "%";
+
+document.getElementById("nextLevel").innerText =
+Math.round(levelXP / 10) + "%";
+
                 const waiverStatusEl = document.getElementById("waiverStatus");
                 if(d.waiverStatus === "Pending") {
                     waiverStatusEl.innerText = `Status: Under Review`; waiverStatusEl.style.display = "block";
@@ -294,6 +396,30 @@
     };
 
     window.onload = startRealTimeSync;
+    function updateClock(){
+
+const now=new Date();
+
+document.getElementById("liveTime").innerHTML=
+now.toLocaleTimeString();
+
+document.getElementById("liveDate").innerHTML=
+now.toDateString();
+
+const h=now.getHours();
+
+let txt="Good Evening";
+
+if(h<12) txt="Good Morning ☀️";
+else if(h<17) txt="Good Afternoon 🌤️";
+
+document.getElementById("greeting").innerHTML=txt;
+
+}
+
+setInterval(updateClock,1000);
+
+updateClock();
 </script>
 </body>
 </html>
