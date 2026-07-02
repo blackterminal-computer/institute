@@ -119,6 +119,128 @@ width:0%;
 background:linear-gradient(90deg,#06b6d4,#6366f1);
 transition:1s;
 }
+
+.wallet-card{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+padding:22px;
+
+margin-bottom:20px;
+
+border-radius:25px;
+
+background:linear-gradient(135deg,#4338ca,#06b6d4);
+
+}
+
+.wallet-left h2{
+
+margin:8px 0;
+
+font-size:30px;
+
+}
+
+.wallet-right{
+
+font-size:45px;
+
+opacity:.8;
+
+}
+
+.profile-completion{
+
+padding:20px;
+
+margin-bottom:20px;
+
+background:rgba(255,255,255,.04);
+
+border-radius:25px;
+
+}
+
+.top-row{
+
+display:flex;
+
+justify-content:space-between;
+
+margin-bottom:10px;
+
+}
+
+.progress-bg{
+
+height:10px;
+
+background:#1e293b;
+
+border-radius:50px;
+
+overflow:hidden;
+
+}
+
+#profileBar{
+
+width:0%;
+
+height:100%;
+
+background:#10b981;
+
+transition:1s;
+
+}
+
+.badge-card{
+
+margin-top:20px;
+
+padding:20px;
+
+border-radius:25px;
+
+background:rgba(255,255,255,.04);
+
+}
+
+.badge-grid{
+
+display:grid;
+
+grid-template-columns:repeat(4,1fr);
+
+gap:15px;
+
+margin-top:15px;
+
+}
+
+.badge{
+
+height:60px;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+border-radius:18px;
+
+font-size:28px;
+
+background:#111827;
+
+}
     </style>
 </head>
 <body>
@@ -159,10 +281,47 @@ transition:1s;
     </div>
 
     <div class="stats-row">
+        <div class="wallet-card">
+
+    <div class="wallet-left">
+        <small>Student Wallet</small>
+
+        <h2>₹ <span id="walletBalance">0</span></h2>
+
+        <p>Reward Coins :
+            <span id="rewardCoins">0</span>
+        </p>
+    </div>
+
+    <div class="wallet-right">
+        <i class="ri-wallet-3-fill"></i>
+    </div>
+
+</div>
         <div class="stat-card"><span class="stat-num" id="xp">0</span><span class="stat-lbl">XP Points</span></div>
         <div class="stat-card"><span class="stat-num" id="rank">#--</span><span class="stat-lbl">Global Rank</span></div>
         <div class="stat-card"><span class="stat-num" id="streak">0</span><span class="stat-lbl">🔥 Streak</span></div>
     </div>
+    
+    <div class="profile-completion">
+
+    <div class="top-row">
+
+        <span>Profile Completion</span>
+
+        <span id="profilePercent">
+            0%
+        </span>
+
+    </div>
+
+    <div class="progress-bg">
+
+        <div id="profileBar"></div>
+
+    </div>
+
+</div>
 
     <div class="attendance-card">
         <div class="att-main">
@@ -200,6 +359,32 @@ transition:1s;
         <span class="duration-text" id="showJoinDate" style="font-size: 12px; margin-bottom: 12px;">Joined: --</span>
         <div id="feeStatusBadge" class="paid-label">Status: --</div>
     </div>
+    
+    <div class="badge-card">
+
+<h3>Your Badges</h3>
+
+<div class="badge-grid">
+
+<div class="badge bronze">
+🥉
+</div>
+
+<div class="badge silver">
+🥈
+</div>
+
+<div class="badge gold">
+🥇
+</div>
+
+<div class="badge diamond">
+💎
+</div>
+
+</div>
+
+</div>
 
     <div class="history-box">
         <div class="card-label"><i class="ri-history-line"></i> Payment Ledger</div>
@@ -267,7 +452,27 @@ transition:1s;
     function startRealTimeSync() {
         onSnapshot(doc(db, "students", studentID), (snap) => {
             if (snap.exists()) {
-                const d = snap.data(); const now = Date.now();
+                const d = snap.data(); 
+                document.getElementById("walletBalance").innerText =
+d.wallet || 0;
+
+document.getElementById("rewardCoins").innerText =
+d.coins || 0;
+
+let profile=40;
+
+if(d.photo) profile+=20;
+
+if(d.bio) profile+=20;
+
+if(d.currentCourse) profile+=20;
+
+document.getElementById("profilePercent").innerHTML=
+profile+"%";
+
+document.getElementById("profileBar").style.width=
+profile+"%";
+                const now = Date.now();
                 let isHolidayOver = d.waiverExpiry ? (now > d.waiverExpiry) : true;
 document.getElementById("notifyCount").innerText = 3;
                 document.getElementById("showName").innerText = studentID;
