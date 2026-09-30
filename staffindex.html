@@ -1,630 +1,4059 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Staff Terminal | Black Terminal</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    
-    <style>
-        :root {
-            --apple-blue: #0A84FF;
-            --apple-green: #30D158;
-            --apple-red: #FF453A;
-            --apple-orange: #FF9F0A;
-            --cyber-purple: #BF5AF2;
-            --bg: #06060A;
-            --glass: rgba(16, 16, 24, 0.7);
-            --border: rgba(255, 255, 255, 0.06);
-            --border-hover: rgba(255, 255, 255, 0.12);
-            --text-main: #FFFFFF;
-            --text-sec: #AEAEB2;
-            --text-muted: #8E8E93;
-            --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-            --accent-glow: 
-                radial-gradient(circle at 15% 15%, rgba(191, 90, 242, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 85% 25%, rgba(10, 132, 255, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 50% 85%, rgba(48, 209, 88, 0.05) 0%, transparent 50%);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            background: var(--bg);
-            background-image: var(--accent-glow);
-            background-attachment: fixed;
-            color: var(--text-main);
-            margin: 0;
-            padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 30px) 16px;
-            -webkit-font-smoothing: antialiased;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-        
-        .salman-banner {
-            background: linear-gradient(135deg, #0a0a12 0%, #1a1a2e 100%);
-            border: 1px solid rgba(10, 132, 255, 0.4);
-            border-radius: 24px;
-            padding: 24px 20px;
-            margin-top: 55px; 
-            margin-bottom: 24px;
-            height: 60px;
-            position: relative;
-            overflow: visible; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        }
+<title>Staff Terminal | Black Terminal</title>
 
-        .s-text-container {
-            z-index: 2;
-            width: 60%;
-        }
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-        .s-image-container {
-            position: absolute;
-            right: 5px;
-            top: -80px; 
-            width: 150px; 
-            height: 185px; 
-            background-image: url('https://i.ibb.co/RrHyVyr/salman-khan.png');
-            background-size: contain;
-            background-position: bottom center; 
-            background-repeat: no-repeat;
-            z-index: 10;
-            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.5));
-        }
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-        .stylish-underline {
-            display: block;
-            width: 40px; 
-            height: 3px;
-            margin-top: 8px;
-            background: linear-gradient(90deg, var(--apple-blue), var(--cyber-purple));
-            border-radius: 2px;
-            animation: expandWidth 1.5s ease-out;
-        }
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-        @keyframes expandWidth {
-            0% { width: 0; opacity: 0; }
-            100% { width: 40px; opacity: 1; }
-        }
+<style>
 
-        .container { max-width: 455px; margin: auto; }
+:root{
+    --blue:#0A84FF;
+    --green:#30D158;
+    --red:#FF453A;
+    --orange:#FF9F0A;
+    --purple:#BF5AF2;
+    --cyan:#22D3EE;
 
-        .header { margin: 15px 0 24px 0; position: relative; display: flex; flex-direction: column; }
-        .header p { color: var(--cyber-purple); font-size: 12px; margin: 0 0 4px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
-        .header h1 { 
-            font-size: 34px; margin: 0; font-weight: 800; letter-spacing: -1.2px;
-            background: linear-gradient(135deg, #FFFFFF 40%, var(--apple-blue) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        
-        .streak-badge {
-            position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-            background: rgba(255, 159, 10, 0.1); color: var(--apple-orange); 
-            padding: 8px 14px; border-radius: 18px; font-size: 12px; font-weight: 700; 
-            border: 1px solid rgba(255, 159, 10, 0.2); box-shadow: 0 4px 15px rgba(255, 159, 10, 0.15);
-            display: flex; align-items: center; gap: 6px;
-        }
+    --bg:#050509;
+    --card:rgba(17,17,25,.76);
+    --card2:rgba(25,25,35,.72);
 
-        .card {
-            background: var(--glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            border-radius: 24px; padding: 22px; margin-bottom: 18px; border: 1px solid var(--border);
-            box-shadow: var(--card-shadow); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .card:hover { border-color: var(--border-hover); transform: translateY(-3px); }
+    --border:rgba(255,255,255,.07);
+    --border2:rgba(255,255,255,.13);
 
-        h3 { font-size: 12px; margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 700; text-transform: uppercase; }
+    --white:#fff;
+    --text:#EDEDED;
+    --muted:#8E8E93;
 
-        .toggle-btn {
-            margin-left: auto; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.05);
-            color: var(--text-main); font-size: 11px; padding: 6px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
-        }
-        .toggle-btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.15); }
+    --shadow:0 18px 50px rgba(0,0,0,.58);
+}
 
-        .progress-container { background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; margin: 18px 0 12px 0; overflow: hidden; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--cyber-purple), var(--apple-blue), var(--apple-green)); width: 0%; border-radius: 10px; transition: width 1.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
 
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .stat-box small { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; font-weight: 700; letter-spacing: 0.8px; }
-        .stat-box b { font-size: 30px; font-weight: 800; color: #FFF; }
+html{
+    scroll-behavior:smooth;
+}
 
-        .slider-track {
-            width: 100%; height: 58px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 18px; position: relative; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; box-sizing: border-box; user-select: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
-        }
-        
-        .slider-text {
-            font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--text-sec); z-index: 1; pointer-events: none;
-            background: linear-gradient(90deg, #8E8E93, #FFF, #8E8E93); background-size: 200% 100%;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shineText 2.5s infinite linear;
-        }
+body{
+    margin:0;
+    min-height:100vh;
+    color:var(--white);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+    background:
+        radial-gradient(circle at 10% 0%,rgba(191,90,242,.13),transparent 32%),
+        radial-gradient(circle at 90% 12%,rgba(10,132,255,.13),transparent 32%),
+        radial-gradient(circle at 50% 100%,rgba(48,209,88,.06),transparent 35%),
+        #050509;
 
-        @keyframes shineText {
-            0% { background-position: -100% 0; }
-            100% { background-position: 100% 0; }
-        }
+    padding:
+        calc(env(safe-area-inset-top) + 18px)
+        15px
+        calc(env(safe-area-inset-bottom) + 35px);
 
-        .slider-handle {
-            width: 50px; height: 48px; background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(10, 132, 255, 0.4);
-            box-shadow: 0 0 15px rgba(10, 132, 255, 0.25); border-radius: 14px; position: absolute; left: 4px;
-            display: flex; align-items: center; justify-content: center; cursor: grab; z-index: 2; transition: transform 0.1s ease, background 0.3s;
-        }
+    -webkit-font-smoothing:antialiased;
+}
 
-        .slider-handle:active { cursor: grabbing; }
-        .slider-handle i { font-size: 18px; color: var(--apple-blue); transition: all 0.3s; }
+.container{
+    max-width:470px;
+    margin:auto;
+}
 
-        .slider-track.success-state {
-            background: rgba(48, 209, 88, 0.1) !important; border-color: var(--apple-green) !important; box-shadow: 0 0 20px rgba(48, 209, 88, 0.2);
-        }
+/* =========================
+   HEADER
+========================= */
 
-        .btn { width: 100%; padding: 15px 20px; border-radius: 16px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; transition: all 0.3s ease; }
-        .btn-main { background: linear-gradient(135deg, #FFFFFF 0%, #E5E5EA 100%); color: #000000; }
-        .btn:active { transform: scale(0.96); }
+.header{
+    position:relative;
+    margin:18px 0 24px;
+    animation:fadeUp .7s ease;
+}
 
-        .strict-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 12px; }
-        .strict-date-card { background: rgba(255, 59, 48, 0.06); border: 1px solid rgba(255, 59, 48, 0.18); border-radius: 16px; padding: 12px 6px; text-align: center; }
-        .strict-date-card .mon { font-size: 10px; font-weight: 800; color: var(--apple-red); text-transform: uppercase; }
-        .strict-date-card .day { font-size: 20px; font-weight: 700; color: #fff; margin: 4px 0 0 0; }
-        .strict-date-card.today { background: linear-gradient(180deg, var(--apple-red) 0%, #C92A2A 100%); border: none; box-shadow: 0 8px 20px rgba(255, 59, 48, 0.35); }
-        .strict-date-card.today .mon, .strict-date-card.today .day { color: white; }
+.header p{
+    margin:0 0 5px;
+    color:var(--purple);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:1.7px;
+    text-transform:uppercase;
+}
 
-        /* --- New Task Item Layout updates to insert Buttons --- */
-        .task-item { background: rgba(255,255,255,0.01); padding: 14px 16px; border-radius: 16px; margin-top: 10px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .task-left-block { display: flex; align-items: center; gap: 12px; }
-        .task-dot { height: 7px; width: 7px; background: var(--cyber-purple); border-radius: 50%; box-shadow: 0 0 10px var(--cyber-purple); flex-shrink: 0; }
-        .task-dot.completed { background: var(--apple-green); box-shadow: 0 0 10px var(--apple-green); }
-        .task-info p { margin: 0; font-size: 14px; font-weight: 600; color: #E5E5EA; }
-        .task-info p.done-text { text-decoration: line-through; color: var(--text-muted); }
-        .task-info small { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block; }
-        
-        .task-action-btn { background: rgba(191, 90, 242, 0.12); color: var(--cyber-purple); border: 1px solid rgba(191, 90, 242, 0.2); font-size: 11px; padding: 6px 12px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; }
-        .task-action-btn:hover { background: rgba(191, 90, 242, 0.2); }
-        .task-action-btn.completed { background: rgba(48, 209, 88, 0.12); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.2); cursor: default; }
+.header h1{
+    margin:0;
+    font-size:35px;
+    line-height:1.05;
+    letter-spacing:-1.4px;
+    font-weight:850;
 
-        input { width: 100%; padding: 14px 16px; margin-bottom: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px; color: white; outline: none; box-sizing: border-box; font-size: 14px; transition: all 0.3s; }
-        input:focus { border-color: var(--cyber-purple); box-shadow: 0 0 0 4px rgba(191, 90, 242, 0.15); }
-        .footer-text { text-align: center; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; margin-top: 35px; }
-    </style>
+    background:linear-gradient(
+        135deg,
+        #fff 25%,
+        #9BD6FF 55%,
+        #BF5AF2 100%
+    );
+
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.streak-badge{
+    position:absolute;
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+
+    padding:8px 13px;
+    border-radius:18px;
+
+    display:flex;
+    align-items:center;
+    gap:6px;
+
+    font-size:11px;
+    font-weight:800;
+
+    color:var(--orange);
+
+    background:rgba(255,159,10,.09);
+    border:1px solid rgba(255,159,10,.22);
+
+    box-shadow:
+        0 5px 20px rgba(255,159,10,.12);
+}
+
+/* =========================
+   SALMAN BANNER
+========================= */
+
+.salman-banner{
+    position:relative;
+    height:106px;
+
+    margin-top:58px;
+    margin-bottom:22px;
+
+    padding:20px;
+
+    overflow:visible;
+
+    border-radius:25px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(13,13,23,.98),
+            rgba(23,23,43,.92)
+        );
+
+    border:1px solid rgba(10,132,255,.32);
+
+    box-shadow:
+        0 15px 40px rgba(0,0,0,.55),
+        inset 0 1px rgba(255,255,255,.04);
+}
+
+.s-text-container{
+    width:63%;
+    position:relative;
+    z-index:3;
+}
+
+.s-image-container{
+    position:absolute;
+    right:0;
+    top:-78px;
+
+    width:155px;
+    height:184px;
+
+    background-image:url('https://i.ibb.co/RrHyVyr/salman-khan.png');
+    background-size:contain;
+    background-position:center bottom;
+    background-repeat:no-repeat;
+
+    filter:
+        drop-shadow(0 14px 18px rgba(0,0,0,.65));
+
+    z-index:4;
+}
+
+.performance-label{
+    font-size:9px;
+    font-weight:850;
+    color:var(--blue);
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    margin-bottom:6px;
+}
+
+.performance-title{
+    margin:0;
+    font-size:18px;
+    line-height:1.2;
+    font-weight:850;
+}
+
+.stylish-underline{
+    display:block;
+    width:45px;
+    height:3px;
+    margin-top:9px;
+
+    border-radius:5px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--blue),
+            var(--purple)
+        );
+
+    box-shadow:0 0 12px rgba(10,132,255,.35);
+}
+
+/* =========================
+   CARDS
+========================= */
+
+.card{
+    position:relative;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24,24,34,.82),
+            rgba(11,11,17,.72)
+        );
+
+    backdrop-filter:blur(25px);
+    -webkit-backdrop-filter:blur(25px);
+
+    border:1px solid var(--border);
+
+    border-radius:25px;
+
+    padding:21px;
+
+    margin-bottom:17px;
+
+    box-shadow:var(--shadow);
+
+    transition:
+        transform .3s ease,
+        border-color .3s ease;
+}
+
+.card:hover{
+    border-color:var(--border2);
+}
+
+.card-title{
+    display:flex;
+    align-items:center;
+    gap:9px;
+
+    margin:0 0 18px;
+
+    color:#AFAFB5;
+
+    font-size:11px;
+    font-weight:850;
+    letter-spacing:1px;
+    text-transform:uppercase;
+}
+
+.card-title i{
+    color:var(--blue);
+}
+
+/* =========================
+   STATS
+========================= */
+
+.stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+}
+
+.stat-box{
+    padding:4px 0;
+}
+
+.stat-box small{
+    display:block;
+
+    margin-bottom:5px;
+
+    color:var(--muted);
+
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:1px;
+}
+
+.stat-box b{
+    font-size:29px;
+    font-weight:850;
+}
+
+.progress-container{
+    height:8px;
+
+    margin:19px 0 11px;
+
+    overflow:hidden;
+
+    background:rgba(255,255,255,.05);
+
+    border-radius:20px;
+}
+
+.progress-bar{
+    width:0%;
+    height:100%;
+
+    border-radius:20px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--purple),
+            var(--blue),
+            var(--green)
+        );
+
+    transition:width 1.3s ease;
+}
+
+.cycle-row{
+    display:flex;
+    justify-content:space-between;
+
+    color:var(--muted);
+
+    font-size:10px;
+    font-weight:700;
+}
+
+/* =========================
+   PAYOUT
+========================= */
+
+.payout-btn{
+    display:none;
+
+    width:100%;
+
+    margin:15px 0;
+
+    padding:13px;
+
+    border:none;
+    border-radius:14px;
+
+    color:#fff;
+
+    font-weight:800;
+
+    cursor:pointer;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.3);
+}
+
+/* =========================
+   SLIDER
+========================= */
+
+.slider-track{
+    position:relative;
+
+    width:100%;
+    height:58px;
+
+    margin-top:18px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    overflow:hidden;
+
+    background:rgba(255,255,255,.035);
+
+    border:1px solid rgba(255,255,255,.09);
+
+    border-radius:18px;
+
+    box-shadow:
+        inset 0 2px 6px rgba(0,0,0,.45);
+}
+
+.slider-text{
+    z-index:1;
+
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:1px;
+
+    color:#A8A8AE;
+
+    pointer-events:none;
+
+    animation:textGlow 2.5s linear infinite;
+}
+
+@keyframes textGlow{
+    0%{opacity:.55}
+    50%{opacity:1}
+    100%{opacity:.55}
+}
+
+.slider-handle{
+    position:absolute;
+
+    left:4px;
+
+    width:50px;
+    height:48px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:14px;
+
+    cursor:grab;
+
+    z-index:3;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.16),
+            rgba(255,255,255,.025)
+        );
+
+    border:1px solid rgba(10,132,255,.45);
+
+    box-shadow:
+        0 0 18px rgba(10,132,255,.25);
+
+    touch-action:none;
+}
+
+.slider-handle:active{
+    cursor:grabbing;
+}
+
+.slider-handle i{
+    color:var(--blue);
+    font-size:18px;
+}
+
+.success-state{
+    background:rgba(48,209,88,.09)!important;
+    border-color:rgba(48,209,88,.65)!important;
+
+    box-shadow:
+        0 0 25px rgba(48,209,88,.18),
+        inset 0 0 20px rgba(48,209,88,.05);
+}
+
+/* =========================
+   QUICK MENU
+========================= */
+
+.quick-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:17px 19px;
+}
+
+.quick-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.quick-icon{
+    width:40px;
+    height:40px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:13px;
+
+    font-size:17px;
+}
+
+.quick-info h3{
+    margin:0;
+
+    color:#fff;
+
+    font-size:13px;
+    font-weight:800;
+
+    text-transform:none;
+    letter-spacing:0;
+}
+
+.quick-info small{
+    display:block;
+
+    margin-top:4px;
+
+    color:var(--muted);
+
+    font-size:10px;
+}
+
+.quick-btn{
+    border:none;
+
+    padding:9px 12px;
+
+    border-radius:11px;
+
+    font-size:9px;
+    font-weight:850;
+
+    cursor:pointer;
+
+    background:rgba(255,255,255,.06);
+    color:#fff;
+
+    border:1px solid rgba(255,255,255,.08);
+}
+
+/* =========================
+   STRICT DAYS
+========================= */
+
+.strict-container{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:9px;
+}
+
+.strict-date-card{
+    text-align:center;
+
+    padding:11px 5px;
+
+    border-radius:15px;
+
+    background:rgba(255,69,58,.055);
+
+    border:1px solid rgba(255,69,58,.18);
+}
+
+.strict-date-card .mon{
+    display:block;
+
+    color:var(--red);
+
+    font-size:8px;
+    font-weight:850;
+
+    text-transform:uppercase;
+}
+
+.strict-date-card .day{
+    display:block;
+
+    margin-top:4px;
+
+    color:#fff;
+
+    font-size:19px;
+    font-weight:850;
+}
+
+.strict-date-card.today{
+    background:
+        linear-gradient(
+            180deg,
+            #FF453A,
+            #C92727
+        );
+
+    border:none;
+
+    box-shadow:
+        0 8px 20px rgba(255,69,58,.28);
+}
+
+.strict-date-card.today .mon,
+.strict-date-card.today .day{
+    color:#fff;
+}
+
+/* =========================
+   30 DAY HISTORY
+========================= */
+
+.history-card{
+    border-top:3px solid var(--cyan);
+}
+
+.history-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    cursor:pointer;
+    user-select:none;
+}
+
+.history-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.history-title-icon{
+    width:37px;
+    height:37px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:12px;
+
+    background:rgba(34,211,238,.09);
+
+    color:var(--cyan);
+
+    border:1px solid rgba(34,211,238,.18);
+}
+
+.history-title-text strong{
+    display:block;
+
+    color:#fff;
+
+    font-size:13px;
+}
+
+.history-title-text small{
+    display:block;
+
+    margin-top:3px;
+
+    color:var(--muted);
+
+    font-size:9px;
+}
+
+.history-arrow{
+    width:32px;
+    height:32px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:10px;
+
+    color:#aaa;
+
+    background:rgba(255,255,255,.05);
+
+    transition:transform .3s ease;
+}
+
+.history-arrow.open{
+    transform:rotate(180deg);
+}
+
+.history-body{
+    max-height:0;
+    overflow:hidden;
+
+    opacity:0;
+
+    transition:
+        max-height .45s ease,
+        opacity .3s ease,
+        margin-top .3s ease;
+}
+
+.history-body.open{
+    max-height:900px;
+    opacity:1;
+
+    margin-top:18px;
+}
+
+.history-summary{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+
+    margin-bottom:14px;
+}
+
+.history-stat{
+    padding:11px 8px;
+
+    text-align:center;
+
+    background:rgba(255,255,255,.035);
+
+    border:1px solid rgba(255,255,255,.06);
+
+    border-radius:13px;
+}
+
+.history-stat b{
+    display:block;
+
+    color:#fff;
+
+    font-size:17px;
+}
+
+.history-stat span{
+    display:block;
+
+    margin-top:3px;
+
+    color:var(--muted);
+
+    font-size:8px;
+    font-weight:800;
+    letter-spacing:.5px;
+}
+
+.history-table-wrap{
+    max-height:430px;
+
+    overflow:auto;
+
+    border-radius:15px;
+
+    border:1px solid rgba(255,255,255,.06);
+
+    scrollbar-width:thin;
+}
+
+.history-table{
+    width:100%;
+
+    border-collapse:collapse;
+
+    min-width:330px;
+}
+
+.history-table th{
+    position:sticky;
+    top:0;
+    z-index:2;
+
+    padding:11px 9px;
+
+    text-align:left;
+
+    background:#16161f;
+
+    color:#8F8F98;
+
+    font-size:8px;
+    font-weight:850;
+
+    letter-spacing:.7px;
+    text-transform:uppercase;
+}
+
+.history-table td{
+    padding:11px 9px;
+
+    border-top:1px solid rgba(255,255,255,.05);
+
+    color:#E7E7E9;
+
+    font-size:10px;
+}
+
+.history-table tr:hover td{
+    background:rgba(255,255,255,.025);
+}
+
+.history-date{
+    font-weight:800;
+}
+
+.history-day{
+    color:#8E8E93;
+}
+
+.history-time{
+    color:#7DD3FC;
+
+    font-weight:800;
+}
+
+.present-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+
+    padding:4px 7px;
+
+    border-radius:8px;
+
+    color:var(--green);
+
+    background:rgba(48,209,88,.09);
+
+    border:1px solid rgba(48,209,88,.15);
+
+    font-size:8px;
+    font-weight:850;
+}
+
+.empty-history{
+    text-align:center;
+
+    padding:25px 10px;
+
+    color:var(--muted);
+
+    font-size:11px;
+}
+
+.empty-history i{
+    display:block;
+
+    margin-bottom:8px;
+
+    font-size:22px;
+
+    color:#555;
+}
+
+/* =========================
+   TASKS
+========================= */
+
+.task-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+
+    padding:13px;
+
+    margin-top:9px;
+
+    border-radius:15px;
+
+    background:rgba(255,255,255,.025);
+
+    border:1px solid rgba(255,255,255,.06);
+}
+
+.task-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    min-width:0;
+}
+
+.task-dot{
+    width:7px;
+    height:7px;
+
+    flex-shrink:0;
+
+    border-radius:50%;
+
+    background:var(--purple);
+
+    box-shadow:0 0 10px var(--purple);
+}
+
+.task-dot.completed{
+    background:var(--green);
+    box-shadow:0 0 10px var(--green);
+}
+
+.task-info{
+    min-width:0;
+}
+
+.task-info p{
+    margin:0;
+
+    color:#E5E5EA;
+
+    font-size:12px;
+    font-weight:650;
+
+    word-break:break-word;
+}
+
+.task-info p.done-text{
+    color:var(--muted);
+    text-decoration:line-through;
+}
+
+.task-info small{
+    display:block;
+
+    margin-top:4px;
+
+    color:var(--muted);
+
+    font-size:9px;
+}
+
+.task-action-btn{
+    flex-shrink:0;
+
+    padding:7px 10px;
+
+    border-radius:9px;
+
+    border:1px solid rgba(191,90,242,.2);
+
+    color:var(--purple);
+
+    background:rgba(191,90,242,.09);
+
+    font-size:8px;
+    font-weight:850;
+
+    cursor:pointer;
+}
+
+.task-action-btn.completed{
+    color:var(--green);
+
+    background:rgba(48,209,88,.09);
+
+    border-color:rgba(48,209,88,.18);
+}
+
+/* =========================
+   LEAD FORM
+========================= */
+
+input{
+    width:100%;
+
+    margin-bottom:10px;
+
+    padding:14px 15px;
+
+    color:#fff;
+
+    background:rgba(255,255,255,.035);
+
+    border:1px solid rgba(255,255,255,.07);
+
+    border-radius:14px;
+
+    outline:none;
+
+    font-size:13px;
+
+    transition:.25s;
+}
+
+input::placeholder{
+    color:#6E6E75;
+}
+
+input:focus{
+    border-color:var(--purple);
+
+    box-shadow:
+        0 0 0 4px rgba(191,90,242,.1);
+}
+
+.submit-btn{
+    width:100%;
+
+    padding:14px;
+
+    border:none;
+
+    border-radius:15px;
+
+    color:#050505;
+
+    background:
+        linear-gradient(
+            135deg,
+            #fff,
+            #DCDCE2
+        );
+
+    font-weight:850;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.submit-btn:active{
+    transform:scale(.97);
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer-text{
+    margin-top:30px;
+
+    text-align:center;
+
+    color:#56565D;
+
+    font-size:9px;
+    font-weight:800;
+
+    letter-spacing:1.5px;
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toast{
+    position:fixed;
+
+    left:50%;
+    bottom:25px;
+
+    transform:
+        translate(-50%,120px);
+
+    z-index:9999;
+
+    width:calc(100% - 35px);
+    max-width:400px;
+
+    padding:14px 16px;
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    border-radius:15px;
+
+    color:#fff;
+
+    background:rgba(20,20,28,.94);
+
+    border:1px solid rgba(255,255,255,.1);
+
+    backdrop-filter:blur(20px);
+
+    box-shadow:0 15px 40px rgba(0,0,0,.5);
+
+    font-size:12px;
+    font-weight:700;
+
+    transition:.35s ease;
+}
+
+.toast.show{
+    transform:translate(-50%,0);
+}
+
+.toast i{
+    color:var(--green);
+}
+
+/* =========================
+   ANIMATION
+========================= */
+
+@keyframes fadeUp{
+    from{
+        opacity:0;
+        transform:translateY(15px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+@media(max-width:380px){
+
+    .header h1{
+        font-size:30px;
+    }
+
+    .streak-badge{
+        padding:7px 9px;
+        font-size:9px;
+    }
+
+    .strict-container{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .s-image-container{
+        width:135px;
+    }
+
+}
+
+</style>
 </head>
+
 <body>
+
 <div class="container">
-    <div class="header animate__animated animate__fadeIn">
-        <p id="current-date">--</p>
-        <h1 id="user-display">Staff Terminal</h1>
-        <div class="streak-badge"><i class="fas fa-fire"></i> <span id="streak-val">0</span> DAYS</div>
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <p id="current-date">Loading...</p>
+
+        <h1 id="user-display">
+            Staff Terminal
+        </h1>
+
+        <div class="streak-badge">
+            <i class="fas fa-fire"></i>
+
+            <span id="streak-val">0</span>
+
+            DAYS
+        </div>
+
     </div>
 
-    <div class="salman-banner animate__animated animate__fadeInUp">
+
+    <!-- PERFORMANCE BANNER -->
+
+    <div class="salman-banner">
+
         <div class="s-image-container"></div>
+
         <div class="s-text-container">
-            <div style="font-size: 9px; font-weight: 800; color: var(--apple-blue); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
-                <i class="fas fa-crown"></i> PERFORMANCE PARTNER
+
+            <div class="performance-label">
+                <i class="fas fa-crown"></i>
+                PERFORMANCE PARTNER
             </div>
-            <h4 style="font-size: 18px; font-weight: 800; color: #FFF; margin: 0; line-height: 1.2;">Swag Se<br>Punch In Karo!</h4>
+
+            <h4 class="performance-title">
+                Swag Se<br>
+                Punch In Karo!
+            </h4>
+
             <span class="stylish-underline"></span>
+
         </div>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-top: 3px solid var(--apple-blue);">
-        <h3><i class="fas fa-chart-pie"></i> Earnings & Stats</h3>
+
+    <!-- EARNINGS -->
+
+    <div class="card">
+
+        <div class="card-title">
+            <i class="fas fa-chart-pie"></i>
+            Earnings & Stats
+        </div>
+
         <div class="stat-grid">
-            <div class="stat-box"><small>DAILY WAGE</small><b id="daily-rate" style="color: var(--apple-blue);">₹0</b></div>
-            <div class="stat-box" style="text-align: right;"><small>BALANCE</small><b id="total-earning" style="color: var(--apple-green);">₹0</b></div>
-        </div>
-        <div class="progress-container"><div id="salary-progress" class="progress-bar"></div></div>
-        
-        <button id="payout-btn" class="btn" style="margin-top: 15px; color: white; display: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: 700;" onclick="requestSalary()">
-            REQUEST PAYOUT <i class="fas fa-wallet" style="margin-left: 8px;"></i>
-        </button>
-        
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-weight: 600;">
-            <span>Cycle Progress</span><span id="cycle-days">-- days left</span>
-        </div>
-        <br>
-        <div class="slider-track" id="sl-track">
-            <div class="slider-handle" id="sl-handle"><i class="fas fa-fingerprint" id="sl-icon"></i></div>
-            <span class="slider-text" id="sl-text">SLIDE TO PUNCH IN</span>
-        </div>
-    </div>
 
-    <div class="card animate__animated animate__fadeInUp" id="strict-card" style="display: none; border-left: 4px solid var(--apple-red);">
-        <h3 style="color: var(--apple-red);"><i class="fas fa-calendar-check"></i> Strict Attendance Days</h3>
-        <div id="strict-days-list" class="strict-container"></div>
-    </div>
+            <div class="stat-box">
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-blue); display: flex; align-items: center; justify-content: space-between; padding: 18px 22px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-wallet" style="color: var(--apple-blue); font-size: 18px;"></i>
-            <div>
-                <h3 style="margin: 0; font-size: 14px; color: #FFF; text-transform: none; letter-spacing: normal;">Student Fees Ledger</h3>
-                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px;">Manage & trace billing status matrices</small>
+                <small>
+                    DAILY WAGE
+                </small>
+
+                <b
+                    id="daily-rate"
+                    style="color:var(--blue)"
+                >
+                    ₹0
+                </b>
+
             </div>
-        </div>
-        <button class="toggle-btn" onclick="window.location.href='fees.html'" style="background: rgba(10, 132, 255, 0.12); color: var(--apple-blue); border: 1px solid rgba(10, 132, 255, 0.18); padding: 8px 14px;">
-            MANAGE <i class="fas fa-arrow-right" style="margin-left: 4px; font-size: 9px;"></i>
-        </button>
-    </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-orange); display: flex; align-items: center; justify-content: space-between; padding: 18px 22px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-exclamation-triangle" style="color: var(--apple-orange); font-size: 18px;"></i>
-            <div>
-                <h3 style="margin: 0; font-size: 14px; color: #FFF; text-transform: none; letter-spacing: normal;">Defaulters Tracker</h3>
-                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px;">Check continuous absence logs</small>
+
+            <div
+                class="stat-box"
+                style="text-align:right"
+            >
+
+                <small>
+                    BALANCE
+                </small>
+
+                <b
+                    id="total-earning"
+                    style="color:var(--green)"
+                >
+                    ₹0
+                </b>
+
             </div>
-        </div>
-        <button class="toggle-btn" onclick="window.location.href='defaulters.html'" style="background: rgba(255, 159, 10, 0.12); color: var(--apple-orange); border: 1px solid rgba(255, 159, 10, 0.18); padding: 8px 14px;">
-            VIEW LIST <i class="fas fa-arrow-right" style="margin-left: 4px; font-size: 9px;"></i>
-        </button>
-    </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-green); display: flex; align-items: center; justify-content: space-between; padding: 18px 22px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-user-check" style="color: var(--apple-green); font-size: 18px;"></i>
-            <div>
-                <h3 style="margin: 0; font-size: 14px; color: #FFF; text-transform: none; letter-spacing: normal;">Students Present Today</h3>
-                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px;">Live logs: <span id="present-count" style="color: var(--apple-green); font-weight: 700;">0</span> active</small>
+        </div>
+
+
+        <div class="progress-container">
+
+            <div
+                id="salary-progress"
+                class="progress-bar"
+            ></div>
+
+        </div>
+
+
+        <button
+            id="payout-btn"
+            class="payout-btn"
+            onclick="requestSalary()"
+        >
+            REQUEST PAYOUT
+            <i class="fas fa-wallet"></i>
+        </button>
+
+
+        <div class="cycle-row">
+
+            <span>
+                Cycle Progress
+            </span>
+
+            <span id="cycle-days">
+                -- days remaining
+            </span>
+
+        </div>
+
+
+        <!-- SLIDER -->
+
+        <div
+            class="slider-track"
+            id="sl-track"
+        >
+
+            <div
+                class="slider-handle"
+                id="sl-handle"
+            >
+
+                <i
+                    class="fas fa-fingerprint"
+                    id="sl-icon"
+                ></i>
+
             </div>
+
+            <span
+                class="slider-text"
+                id="sl-text"
+            >
+                SLIDE TO PUNCH IN
+            </span>
+
         </div>
-        <button class="toggle-btn" onclick="window.location.href='present.html'" style="background: rgba(48, 209, 88, 0.12); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.18); padding: 8px 14px;">
-            OPEN LIST <i class="fas fa-external-link-alt" style="margin-left: 5px; font-size: 9px;"></i>
+
+    </div>
+
+
+    <!-- =============================
+         30 DAY PUNCH HISTORY
+    ============================== -->
+
+    <div class="card history-card">
+
+        <div
+            class="history-header"
+            onclick="toggleHistory()"
+        >
+
+            <div class="history-title">
+
+                <div class="history-title-icon">
+
+                    <i class="fas fa-clock-rotate-left"></i>
+
+                </div>
+
+                <div class="history-title-text">
+
+                    <strong>
+                        30-Day Punch History
+                    </strong>
+
+                    <small>
+                        Date-wise punch-in records
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="history-arrow"
+                id="history-arrow"
+            >
+
+                <i class="fas fa-chevron-down"></i>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="history-body"
+            id="history-body"
+        >
+
+            <div class="history-summary">
+
+                <div class="history-stat">
+
+                    <b id="history-present">
+                        0
+                    </b>
+
+                    <span>
+                        PRESENT
+                    </span>
+
+                </div>
+
+
+                <div class="history-stat">
+
+                    <b id="history-total">
+                        30
+                    </b>
+
+                    <span>
+                        CYCLE DAYS
+                    </span>
+
+                </div>
+
+
+                <div class="history-stat">
+
+                    <b id="history-missed">
+                        0
+                    </b>
+
+                    <span>
+                        MISSED
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="history-table-wrap">
+
+                <table class="history-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Date
+                            </th>
+
+                            <th>
+                                Day
+                            </th>
+
+                            <th>
+                                Punch In
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="history-table-body">
+
+                        <tr>
+
+                            <td
+                                colspan="4"
+                                class="empty-history"
+                            >
+
+                                <i class="fas fa-spinner fa-spin"></i>
+
+                                Loading history...
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- STRICT DAYS -->
+
+    <div
+        class="card"
+        id="strict-card"
+        style="
+            display:none;
+            border-left:4px solid var(--red);
+        "
+    >
+
+        <div
+            class="card-title"
+            style="color:var(--red)"
+        >
+
+            <i class="fas fa-calendar-check"></i>
+
+            Strict Attendance Days
+
+        </div>
+
+        <div
+            id="strict-days-list"
+            class="strict-container"
+        ></div>
+
+    </div>
+
+
+    <!-- FEES -->
+
+    <div class="card quick-card">
+
+        <div class="quick-left">
+
+            <div
+                class="quick-icon"
+                style="
+                    color:var(--blue);
+                    background:rgba(10,132,255,.1)
+                "
+            >
+
+                <i class="fas fa-wallet"></i>
+
+            </div>
+
+            <div class="quick-info">
+
+                <h3>
+                    Student Fees Ledger
+                </h3>
+
+                <small>
+                    Manage & trace billing status
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="quick-btn"
+            style="
+                color:var(--blue);
+                background:rgba(10,132,255,.09)
+            "
+            onclick="window.location.href='fees.html'"
+        >
+
+            MANAGE
+            <i class="fas fa-arrow-right"></i>
+
         </button>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-top: 3px solid var(--cyber-purple);">
-        <h3 style="color: var(--cyber-purple);"><i class="fas fa-bolt"></i> Priority Assignments</h3>
-        <div id="task-list"><div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active tasks</p></div></div>
+
+    <!-- DEFAULTERS -->
+
+    <div class="card quick-card">
+
+        <div class="quick-left">
+
+            <div
+                class="quick-icon"
+                style="
+                    color:var(--orange);
+                    background:rgba(255,159,10,.1)
+                "
+            >
+
+                <i class="fas fa-exclamation-triangle"></i>
+
+            </div>
+
+            <div class="quick-info">
+
+                <h3>
+                    Defaulters Tracker
+                </h3>
+
+                <small>
+                    Check continuous absence logs
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="quick-btn"
+            style="
+                color:var(--orange);
+                background:rgba(255,159,10,.09)
+            "
+            onclick="window.location.href='defaulters.html'"
+        >
+
+            VIEW LIST
+            <i class="fas fa-arrow-right"></i>
+
+        </button>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp">
-        <h3><i class="fas fa-paper-plane"></i> Quick Lead Entry</h3>
-        <input type="text" id="l-name" placeholder="Full Name">
-        <input type="tel" id="l-phone" placeholder="WhatsApp Number">
-        <input type="text" id="l-course" placeholder="Target Course">
-        <button class="btn btn-main" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-chevron-right" style="font-size: 11px;"></i></button>
+
+    <!-- PRESENT STUDENTS -->
+
+    <div class="card quick-card">
+
+        <div class="quick-left">
+
+            <div
+                class="quick-icon"
+                style="
+                    color:var(--green);
+                    background:rgba(48,209,88,.1)
+                "
+            >
+
+                <i class="fas fa-user-check"></i>
+
+            </div>
+
+            <div class="quick-info">
+
+                <h3>
+                    Students Present Today
+                </h3>
+
+                <small>
+
+                    Live logs:
+                    <span
+                        id="present-count"
+                        style="
+                            color:var(--green);
+                            font-weight:800
+                        "
+                    >
+                        0
+                    </span>
+
+                    active
+
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="quick-btn"
+            style="
+                color:var(--green);
+                background:rgba(48,209,88,.09)
+            "
+            onclick="window.location.href='present.html'"
+        >
+
+            OPEN
+            <i class="fas fa-external-link-alt"></i>
+
+        </button>
+
     </div>
 
-    <p class="footer-text">TERMINAL v2.9 • ENCRYPTED</p>
+
+    <!-- TASKS -->
+
+    <div
+        class="card"
+        style="border-top:3px solid var(--purple)"
+    >
+
+        <div
+            class="card-title"
+            style="color:var(--purple)"
+        >
+
+            <i class="fas fa-bolt"></i>
+
+            Priority Assignments
+
+        </div>
+
+        <div id="task-list">
+
+            <div
+                style="
+                    text-align:center;
+                    padding:15px;
+                    color:#666;
+                    font-size:11px
+                "
+            >
+
+                Loading tasks...
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- LEADS -->
+
+    <div class="card">
+
+        <div class="card-title">
+
+            <i class="fas fa-paper-plane"></i>
+
+            Quick Lead Entry
+
+        </div>
+
+
+        <input
+            type="text"
+            id="l-name"
+            placeholder="Full Name"
+        >
+
+
+        <input
+            type="tel"
+            id="l-phone"
+            placeholder="WhatsApp Number"
+        >
+
+
+        <input
+            type="text"
+            id="l-course"
+            placeholder="Target Course"
+        >
+
+
+        <button
+            class="submit-btn"
+            onclick="submitLead()"
+        >
+
+            SUBMIT LEAD
+
+            <i class="fas fa-chevron-right"></i>
+
+        </button>
+
+    </div>
+
+
+    <p class="footer-text">
+        BLACK TERMINAL • STAFF TERMINAL v3.0
+    </p>
+
 </div>
 
+
+<!-- TOAST -->
+
+<div
+    class="toast"
+    id="toast"
+>
+
+    <i class="fas fa-circle-check"></i>
+
+    <span id="toast-text">
+        Done
+    </span>
+
+</div>
+
+
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.firebasestorage.app",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const fs = firebase.firestore(); 
-    const db = firebase.database();
 
-    let isAttendanceMarkedToday = false;
-    let currentSalaryBalance = 0;
+/* =====================================================
+   FIREBASE CONFIG
+===================================================== */
 
-    document.addEventListener("DOMContentLoaded", () => {
-        fs.collection("attendance").where("date", "==", new Date().toISOString().split('T')[0])
-          .onSnapshot(snap => { document.getElementById('present-count').innerText = snap.size; });
-        initSlider();
-    });
+const firebaseConfig = {
 
-    function initSlider() {
-        const handle = document.getElementById('sl-handle');
-        const track = document.getElementById('sl-track');
-        const text = document.getElementById('sl-text');
-        const icon = document.getElementById('sl-icon');
-        
-        let isDragging = false;
-        let startX = 0;
-        let maxScroll = track.clientWidth - handle.clientWidth - 8; 
+    apiKey:
+    "AIzaSyCEyfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
 
-        window.addEventListener('resize', () => { maxScroll = track.clientWidth - handle.clientWidth - 8; });
+    authDomain:
+    "black-terminal-f2c91.firebaseapp.com",
 
-        function startDrag(e) {
-            if(isAttendanceMarkedToday) return;
-            isDragging = true;
-            startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
-            handle.style.transition = 'none';
+    databaseURL:
+    "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+
+    projectId:
+    "black-terminal-f2c91",
+
+    storageBucket:
+    "black-terminal-f2c91.firebasestorage.app",
+
+    messagingSenderId:
+    "552489994197",
+
+    appId:
+    "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+
+firebase.initializeApp(firebaseConfig);
+
+
+const fs =
+firebase.firestore();
+
+const db =
+firebase.database();
+
+
+/* =====================================================
+   STAFF SESSION
+===================================================== */
+
+const staffId =
+localStorage.getItem("bt_staff_id");
+
+const staffName =
+localStorage.getItem("bt_staff_name") || "Staff";
+
+
+if(!staffId){
+
+    window.location.href="index.html";
+
+}
+
+
+/* =====================================================
+   GLOBAL VARIABLES
+===================================================== */
+
+let isAttendanceMarkedToday = false;
+
+let currentSalaryBalance = 0;
+
+let historyLoaded = false;
+
+
+/* =====================================================
+   LOCAL DATE HELPERS
+===================================================== */
+
+function getLocalDate(){
+
+    const d = new Date();
+
+    const year =
+        d.getFullYear();
+
+    const month =
+        String(d.getMonth()+1).padStart(2,"0");
+
+    const day =
+        String(d.getDate()).padStart(2,"0");
+
+    return `${year}-${month}-${day}`;
+
+}
+
+
+function getMonthKey(){
+
+    const d = new Date();
+
+    return `${d.getFullYear()}-${String(
+        d.getMonth()+1
+    ).padStart(2,"0")}`;
+
+}
+
+
+function formatTime(date){
+
+    return date.toLocaleTimeString(
+        "en-IN",
+        {
+            hour:"2-digit",
+            minute:"2-digit",
+            second:"2-digit",
+            hour12:true
         }
+    );
 
-        function moveDrag(e) {
-            if (!isDragging) return;
-            const currentX = (e.type === 'touchmove') ? e.touches[0].clientX : e.clientX;
-            let deltaX = currentX - startX;
-            if (deltaX < 0) deltaX = 0;
-            if (deltaX > maxScroll) deltaX = maxScroll;
-            
-            handle.style.transform = `translateX(${deltaX}px)`;
-            let opacityRatio = 1 - (deltaX / maxScroll);
-            text.style.opacity = opacityRatio;
+}
+
+
+function formatDate(dateString){
+
+    const d =
+        new Date(dateString+"T00:00:00");
+
+    return d.toLocaleDateString(
+        "en-IN",
+        {
+            day:"2-digit",
+            month:"short"
         }
+    );
 
-        function endDrag() {
-            if (!isDragging) return;
-            isDragging = false;
-            
-            const computedStyle = window.getComputedStyle(handle);
-            const matrix = new WebKitCSSMatrix(computedStyle.transform);
-            const finalX = matrix.m41;
+}
 
-            if (finalX >= maxScroll * 0.92) {
-                handle.style.transition = 'all 0.2s ease';
-                handle.style.transform = `translateX(${maxScroll}px)`;
-                text.innerText = "LOCATING GPS...";
-                text.style.opacity = "1";
-                icon.className = "fas fa-spinner fa-spin";
-                handle.style.pointerEvents = "none";
-                markAttendance();
-            } else {
-                handle.style.transition = 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
-                handle.style.transform = 'translateX(0px)';
-                text.style.opacity = "1";
+
+function getDayName(dateString){
+
+    const d =
+        new Date(dateString+"T00:00:00");
+
+    return d.toLocaleDateString(
+        "en-IN",
+        {
+            weekday:"short"
+        }
+    );
+
+}
+
+
+/* =====================================================
+   TOAST
+===================================================== */
+
+let toastTimer;
+
+function showToast(message){
+
+    const toast =
+        document.getElementById("toast");
+
+    const text =
+        document.getElementById("toast-text");
+
+    text.innerText =
+        message;
+
+    toast.classList.add("show");
+
+    clearTimeout(toastTimer);
+
+    toastTimer =
+        setTimeout(
+            ()=>{
+                toast.classList.remove("show");
+            },
+            2800
+        );
+
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+document.getElementById(
+    "user-display"
+).innerText =
+    `Hi, ${staffName.split(" ")[0]}`;
+
+
+document.getElementById(
+    "current-date"
+).innerText =
+    new Date().toLocaleDateString(
+        "en-IN",
+        {
+            weekday:"long",
+            month:"long",
+            day:"numeric"
+        }
+    );
+
+
+/* =====================================================
+   PRESENT STUDENT COUNT
+===================================================== */
+
+document.addEventListener(
+"DOMContentLoaded",
+()=>{
+
+    const today =
+        getLocalDate();
+
+    fs.collection("attendance")
+        .where("date","==",today)
+        .onSnapshot(
+            snap=>{
+
+                document.getElementById(
+                    "present-count"
+                ).innerText =
+                    snap.size;
+
+            },
+            error=>{
+
+                console.log(
+                    "Firestore attendance:",
+                    error
+                );
+
             }
+        );
+
+    initSlider();
+
+});
+
+
+/* =====================================================
+   SLIDER
+===================================================== */
+
+function initSlider(){
+
+    const handle =
+        document.getElementById(
+            "sl-handle"
+        );
+
+    const track =
+        document.getElementById(
+            "sl-track"
+        );
+
+    const text =
+        document.getElementById(
+            "sl-text"
+        );
+
+    let dragging =
+        false;
+
+    let startX =
+        0;
+
+    let maxScroll =
+        track.clientWidth -
+        handle.clientWidth -
+        8;
+
+
+    function updateMax(){
+
+        maxScroll =
+            track.clientWidth -
+            handle.clientWidth -
+            8;
+
+        if(maxScroll < 0){
+            maxScroll = 0;
         }
 
-        handle.addEventListener('mousedown', startDrag);
-        window.addEventListener('mousemove', moveDrag);
-        window.addEventListener('mouseup', endDrag);
-
-        handle.addEventListener('touchstart', startDrag);
-        window.addEventListener('touchmove', moveDrag);
-        window.addEventListener('touchend', endDrag);
     }
 
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-        const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+
+    window.addEventListener(
+        "resize",
+        updateMax
+    );
+
+
+    function getX(e){
+
+        if(
+            e.type === "touchstart" ||
+            e.type === "touchmove"
+        ){
+
+            return e.touches[0].clientX;
+
+        }
+
+        return e.clientX;
+
     }
 
-    function markAttendance() {
-        if (!navigator.geolocation) {
-            alert("No GPS Detected.");
-            resetSliderUI();
+
+    function startDrag(e){
+
+        if(isAttendanceMarkedToday)
             return;
+
+        updateMax();
+
+        dragging = true;
+
+        startX =
+            getX(e);
+
+        handle.style.transition =
+            "none";
+
+    }
+
+
+    function moveDrag(e){
+
+        if(!dragging)
+            return;
+
+        e.preventDefault();
+
+        let delta =
+            getX(e) - startX;
+
+        if(delta < 0)
+            delta = 0;
+
+        if(delta > maxScroll)
+            delta = maxScroll;
+
+        handle.style.transform =
+            `translateX(${delta}px)`;
+
+        const ratio =
+            maxScroll === 0
+            ? 0
+            : delta/maxScroll;
+
+        text.style.opacity =
+            1-ratio;
+
+    }
+
+
+    function endDrag(){
+
+        if(!dragging)
+            return;
+
+        dragging = false;
+
+        const matrix =
+            new DOMMatrix(
+                getComputedStyle(
+                    handle
+                ).transform
+            );
+
+        const finalX =
+            matrix.m41;
+
+
+        if(
+            finalX >=
+            maxScroll*.90
+        ){
+
+            handle.style.transition =
+                "all .2s ease";
+
+            handle.style.transform =
+                `translateX(${maxScroll}px)`;
+
+            text.innerText =
+                "LOCATING GPS...";
+
+            text.style.opacity =
+                "1";
+
+            document.getElementById(
+                "sl-icon"
+            ).className =
+                "fas fa-spinner fa-spin";
+
+            handle.style.pointerEvents =
+                "none";
+
+            markAttendance();
+
         }
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, 21.9403651, 86.7376570);
-            if (dist <= 100) {
-                const todayStr = new Date().toISOString().split('T')[0];
-                db.ref(`attendance/${staffId}/${todayStr}`).set({ time: new Date().toLocaleTimeString(), status: "Present", name: staffName }).then(() => {
-                    db.ref(`staff/${staffId}`).transaction(s => { if (s) { s.salary = (s.salary || 0) + (s.perDayWage || 500); s.streak = (s.streak || 0) + 1; } return s; });
-                    location.reload();
-                });
-            } else { 
-                alert("Out of bounds threshold violation."); 
+        else{
+
+            handle.style.transition =
+                "all .3s cubic-bezier(.16,1,.3,1)";
+
+            handle.style.transform =
+                "translateX(0px)";
+
+            text.style.opacity =
+                "1";
+
+        }
+
+    }
+
+
+    handle.addEventListener(
+        "mousedown",
+        startDrag
+    );
+
+    window.addEventListener(
+        "mousemove",
+        moveDrag
+    );
+
+    window.addEventListener(
+        "mouseup",
+        endDrag
+    );
+
+
+    handle.addEventListener(
+        "touchstart",
+        startDrag,
+        {passive:false}
+    );
+
+    window.addEventListener(
+        "touchmove",
+        moveDrag,
+        {passive:false}
+    );
+
+    window.addEventListener(
+        "touchend",
+        endDrag
+    );
+
+}
+
+
+/* =====================================================
+   DISTANCE
+===================================================== */
+
+function calculateDistance(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+){
+
+    const R =
+        6371e3;
+
+    const p1 =
+        lat1*Math.PI/180;
+
+    const p2 =
+        lat2*Math.PI/180;
+
+    const dp =
+        (lat2-lat1)*Math.PI/180;
+
+    const dl =
+        (lon2-lon1)*Math.PI/180;
+
+
+    const a =
+        Math.sin(dp/2) *
+        Math.sin(dp/2) +
+
+        Math.cos(p1) *
+        Math.cos(p2) *
+        Math.sin(dl/2) *
+        Math.sin(dl/2);
+
+
+    return R *
+        (
+            2 *
+            Math.atan2(
+                Math.sqrt(a),
+                Math.sqrt(1-a)
+            )
+        );
+
+}
+
+
+/* =====================================================
+   PUNCH-IN
+===================================================== */
+
+function markAttendance(){
+
+    if(!navigator.geolocation){
+
+        alert(
+            "GPS is not supported on this device."
+        );
+
+        resetSliderUI();
+
+        return;
+
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        position=>{
+
+            const distance =
+                calculateDistance(
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    21.9403651,
+                    86.7376570
+                );
+
+
+            if(distance <= 100){
+
+                const today =
+                    getLocalDate();
+
+                const now =
+                    new Date();
+
+                const punchTime =
+                    formatTime(now);
+
+                /*
+                 * IMPORTANT:
+                 * Punch time is saved inside
+                 * attendance/{staffId}/{date}
+                 */
+
+                const attendanceData = {
+
+                    time:
+                        punchTime,
+
+                    punchInTime:
+                        punchTime,
+
+                    timestamp:
+                        Date.now(),
+
+                    status:
+                        "Present",
+
+                    name:
+                        staffName,
+
+                    date:
+                        today,
+
+                    month:
+                        getMonthKey()
+
+                };
+
+
+                db.ref(
+                    `attendance/${staffId}/${today}`
+                )
+                .set(
+                    attendanceData
+                )
+                .then(()=>{
+
+                    /*
+                     * Salary + streak
+                     */
+
+                    return db.ref(
+                        `staff/${staffId}`
+                    )
+                    .transaction(
+                        staff=>{
+
+                            if(staff){
+
+                                /*
+                                 * Prevent duplicate
+                                 * salary increment
+                                 */
+
+                                const lastPunch =
+                                    staff.lastPunchDate;
+
+                                if(
+                                    lastPunch !== today
+                                ){
+
+                                    staff.salary =
+                                        (
+                                            staff.salary ||
+                                            0
+                                        ) +
+                                        (
+                                            staff.perDayWage ||
+                                            500
+                                        );
+
+
+                                    staff.streak =
+                                        (
+                                            staff.streak ||
+                                            0
+                                        ) +
+                                        1;
+
+
+                                    staff.lastPunchDate =
+                                        today;
+
+                                }
+
+                            }
+
+                            return staff;
+
+                        }
+                    );
+
+                })
+                .then(()=>{
+
+                    showToast(
+                        `Punch-in recorded at ${punchTime}`
+                    );
+
+                    setTimeout(
+                        ()=>{
+                            location.reload();
+                        },
+                        900
+                    );
+
+                })
+                .catch(
+                    error=>{
+
+                        console.error(
+                            error
+                        );
+
+                        alert(
+                            "Attendance save failed: "+
+                            error.message
+                        );
+
+                        resetSliderUI();
+
+                    }
+                );
+
+            }
+            else{
+
+                alert(
+                    `You are ${Math.round(distance)} meters away from the center. Attendance requires you to be within 100 meters.`
+                );
+
                 resetSliderUI();
+
             }
-        }, () => { 
-            resetSliderUI(); 
-        }, { enableHighAccuracy: true });
-    }
 
-    function resetSliderUI() {
-        const handle = document.getElementById('sl-handle');
-        const text = document.getElementById('sl-text');
-        const icon = document.getElementById('sl-icon');
-        handle.style.transition = 'all 0.3s ease';
-        handle.style.transform = 'translateX(0px)';
-        handle.style.pointerEvents = "auto";
-        text.innerText = "SLIDE TO PUNCH IN";
-        icon.className = "fas fa-fingerprint";
-    }
+        },
 
-    // Dynamic Task Loading Function with Interactive Buttons
-    function loadTasks() {
-        db.ref(`tasks/${staffId}`).on('value', snap => {
-            const container = document.getElementById('task-list'); 
-            if(!snap.exists()) return; 
-            container.innerHTML = "";
-            
-            snap.forEach(child => {
-                const taskId = child.key;
-                const t = child.val();
-                const isDone = t.status === "Completed";
-                
-                container.innerHTML += `
-                    <div class="task-item animate__animated animate__fadeIn">
-                        <div class="task-left-block">
-                            <div class="task-dot ${isDone ? 'completed' : ''}"></div>
-                            <div class="task-info">
-                                <p class="${isDone ? 'done-text' : ''}">${t.task}</p>
-                                <small>${new Date(t.date).toLocaleDateString('en-GB')}</small>
-                            </div>
-                        </div>
-                        <button class="task-action-btn ${isDone ? 'completed' : ''}" 
-                                ${isDone ? 'disabled' : `onclick="completeTask('${taskId}')"`}>
-                            ${isDone ? '<i class="fas fa-check"></i> DONE' : 'MARK DONE'}
-                        </button>
-                    </div>`;
-            });
-        });
-    }
+        error=>{
 
-    // Interactive complete action handler triggering Firebase Node state update
-    function completeTask(taskId) {
-        if(confirm("Kya aapne yeh task sach me pura kar liya hai?")) {
-            db.ref(`tasks/${staffId}/${taskId}`).update({
-                status: "Completed",
-                completedAt: Date.now()
-            }).then(() => {
-                alert("Task status synced: Marked Completed!");
-            }).catch(err => {
-                alert("Error synchronizing task: " + err.message);
-            });
+            let message =
+                "Unable to get GPS location.";
+
+            if(
+                error.code ===
+                error.PERMISSION_DENIED
+            ){
+
+                message =
+                    "GPS permission denied. Please allow location access.";
+
+            }
+
+            if(
+                error.code ===
+                error.POSITION_UNAVAILABLE
+            ){
+
+                message =
+                    "GPS location unavailable.";
+
+            }
+
+            alert(message);
+
+            resetSliderUI();
+
+        },
+
+        {
+            enableHighAccuracy:true,
+            timeout:15000,
+            maximumAge:0
         }
+
+    );
+
+}
+
+
+/* =====================================================
+   RESET SLIDER
+===================================================== */
+
+function resetSliderUI(){
+
+    const handle =
+        document.getElementById(
+            "sl-handle"
+        );
+
+    const text =
+        document.getElementById(
+            "sl-text"
+        );
+
+    const icon =
+        document.getElementById(
+            "sl-icon"
+        );
+
+
+    handle.style.transition =
+        "all .3s ease";
+
+    handle.style.transform =
+        "translateX(0px)";
+
+    handle.style.pointerEvents =
+        "auto";
+
+    text.innerText =
+        "SLIDE TO PUNCH IN";
+
+    text.style.opacity =
+        "1";
+
+    icon.className =
+        "fas fa-fingerprint";
+
+}
+
+
+/* =====================================================
+   30 DAY HISTORY TOGGLE
+===================================================== */
+
+function toggleHistory(){
+
+    const body =
+        document.getElementById(
+            "history-body"
+        );
+
+    const arrow =
+        document.getElementById(
+            "history-arrow"
+        );
+
+
+    body.classList.toggle("open");
+
+    arrow.classList.toggle("open");
+
+
+    if(
+        body.classList.contains("open") &&
+        !historyLoaded
+    ){
+
+        loadPunchHistory();
+
     }
 
-    function submitLead() {
-        const n = document.getElementById('l-name').value, p = document.getElementById('l-phone').value, c = document.getElementById('l-course').value;
-        if(!n || p.length < 10) return alert("Validation Failed.");
-        db.ref('leads').push({ name: n, phone: p, course: c, staff: staffName, timestamp: Date.now() }).then(() => { location.reload(); });
-    }
+}
 
-    const staffId = localStorage.getItem('bt_staff_id');
-    const staffName = localStorage.getItem('bt_staff_name') || "Staff";
-    if(!staffId) { window.location.href = "index.html"; }
-    document.getElementById('user-display').innerText = `Hi, ${staffName.split(' ')[0]}`;
-    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    async function initSystem() {
-        const todayStr = new Date().toISOString().split('T')[0];
-        db.ref(`attendance/${staffId}/${todayStr}`).once('value', snap => {
-            if(snap.exists()) {
-                isAttendanceMarkedToday = true;
-                const track = document.getElementById('sl-track');
-                const handle = document.getElementById('sl-handle');
-                const text = document.getElementById('sl-text');
-                const icon = document.getElementById('sl-icon');
-                
-                track.classList.add('success-state');
-                handle.style.background = "var(--apple-green)";
-                handle.style.borderColor = "transparent";
-                handle.style.boxShadow = "0 0 15px rgba(48, 209, 88, 0.4)";
-                
-                const maxScroll = track.clientWidth - handle.clientWidth - 8;
-                handle.style.transform = `translateX(${maxScroll}px)`;
-                handle.style.pointerEvents = "none";
-                
-                text.innerText = "PUNCHED PRESENT";
-                text.style.color = "var(--apple-green)";
-                text.style.webkitTextFillColor = "var(--apple-green)";
-                text.style.opacity = "1";
-                icon.className = "fas fa-check-circle";
-                icon.style.color = "#FFFFFF";
-            }
-        });
+/* =====================================================
+   30 DAY PUNCH HISTORY
+===================================================== */
 
-        const now = new Date(); 
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const daysRemaining = lastDay - now.getDate();
-        document.getElementById('cycle-days').innerText = `${daysRemaining} days remaining`;
+function loadPunchHistory(){
 
-        db.ref(`staff/${staffId}`).on('value', snap => {
-            const val = snap.val() || {};
-            currentSalaryBalance = val.salary || 0;
-            
-            document.getElementById('daily-rate').innerText = `₹${val.perDayWage || 500}`;
-            document.getElementById('total-earning').innerText = `₹${currentSalaryBalance}`;
-            document.getElementById('streak-val').innerText = val.streak || 0;
-            const percent = Math.min((currentSalaryBalance / ((val.perDayWage || 500) * 25)) * 100, 100);
-            document.getElementById('salary-progress').style.width = percent + "%";
+    historyLoaded = true;
 
-            db.ref(`salaryRequests/${staffId}`).once('value', reqSnap => {
-                const btn = document.getElementById('payout-btn');
-                
-                if (reqSnap.exists() && reqSnap.val().status === "Pending") {
-                    btn.style.display = 'block'; 
-                    btn.innerText = "REQUEST PENDING...";
-                    btn.style.background = "var(--text-muted)";
-                    btn.disabled = true;
-                } else if (currentSalaryBalance > 0) {
-                    const currentDayOfMonth = now.getDate(); 
-                    
-                    if (daysRemaining <= 0) {
-                        btn.style.display = 'block';
-                        btn.disabled = false;
-                        btn.innerText = "REQUEST PAYOUT";
-                        btn.style.background = "var(--apple-green)";
-                    } else if (currentDayOfMonth >= 20) {
-                        btn.style.display = 'block';
-                        btn.disabled = false;
-                        btn.innerText = "REQUEST EMERGENCY ADVANCE";
-                        btn.style.background = "var(--apple-orange)";
-                    } else {
-                        btn.style.display = 'none';
+    const table =
+        document.getElementById(
+            "history-table-body"
+        );
+
+
+    table.innerHTML = `
+
+        <tr>
+
+            <td
+                colspan="4"
+                class="empty-history"
+            >
+
+                <i class="fas fa-spinner fa-spin"></i>
+
+                Loading punch history...
+
+            </td>
+
+        </tr>
+
+    `;
+
+
+    const now =
+        new Date();
+
+    const year =
+        now.getFullYear();
+
+    const month =
+        now.getMonth();
+
+    const monthStart =
+        new Date(
+            year,
+            month,
+            1
+        );
+
+    const monthEnd =
+        new Date(
+            year,
+            month+1,
+            0
+        );
+
+
+    const daysInMonth =
+        monthEnd.getDate();
+
+
+    /*
+     * Current monthly cycle.
+     *
+     * If month has 30/31 days,
+     * current month records are shown.
+     *
+     * If current month changes,
+     * old month records are automatically
+     * removed by cleanupOldPunchRecords().
+     */
+
+    db.ref(
+        `attendance/${staffId}`
+    )
+    .once(
+        "value",
+        snap=>{
+
+            const data =
+                snap.val() || {};
+
+            const records = {};
+
+
+            Object.keys(data).forEach(
+                date=>{
+
+                    if(
+                        date >=
+                        formatLocalDate(monthStart)
+                        &&
+                        date <=
+                        formatLocalDate(monthEnd)
+                    ){
+
+                        records[date] =
+                            data[date];
+
                     }
-                } else {
-                    btn.style.display = 'none';
+
                 }
-            });
-        });
+            );
 
-        loadTasks(); listenStrictDays();
-    }
-    
-    function requestSalary() {
-        const btn = document.getElementById('payout-btn');
-        
-        if (currentSalaryBalance <= 0) {
-            alert("Error: Cannot request payout for ₹0 balance.");
-            btn.style.display = 'none';
-            return;
+
+            renderPunchHistory(
+                records,
+                daysInMonth
+            );
+
+        },
+        error=>{
+
+            console.error(error);
+
+            table.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="4"
+                        class="empty-history"
+                    >
+
+                        <i class="fas fa-triangle-exclamation"></i>
+
+                        Unable to load history.
+
+                    </td>
+
+                </tr>
+
+            `;
+
         }
-        
-        const now = new Date(); 
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const daysRemaining = lastDay - now.getDate();
-        const isEmergency = daysRemaining > 0;
+    );
 
-        let finalRequestedAmount = currentSalaryBalance;
+}
 
-        if (isEmergency) {
-            const maxAllowed = Math.floor(currentSalaryBalance * 0.5);
-            const userInput = prompt(`Aapka monthly cycle complete nahi hua hai.\nMaximum limit (50%): ₹${maxAllowed}\n\nKitna Emergency Advance chahiye? Enter amount:`);
-            
-            if (userInput === null) return; 
-            
-            const parsedAmount = parseInt(userInput.replace(/[^0-9]/g, ''));
-            
-            if (isNaN(parsedAmount) || parsedAmount <= 0) {
-                alert("Kripya ek valid amount enter karein.");
-                return;
-            }
-            
-            if (parsedAmount > maxAllowed) {
-                alert(`Aap ₹${maxAllowed} se zyada amount request nahi kar sakte (50% Hold policy active).`);
-                return;
-            }
-            
-            finalRequestedAmount = parsedAmount;
-        } else {
-            const confirmReq = confirm(`Kya aap full payout (₹${currentSalaryBalance}) ke liye request bhejna chahte hain?`);
-            if (!confirmReq) return;
+
+/* =====================================================
+   DATE FORMAT
+===================================================== */
+
+function formatLocalDate(date){
+
+    return (
+        date.getFullYear()
+        +
+        "-"
+        +
+        String(
+            date.getMonth()+1
+        ).padStart(2,"0")
+        +
+        "-"
+        +
+        String(
+            date.getDate()
+        ).padStart(2,"0")
+    );
+
+}
+
+
+/* =====================================================
+   RENDER HISTORY
+===================================================== */
+
+function renderPunchHistory(
+    records,
+    daysInMonth
+){
+
+    const table =
+        document.getElementById(
+            "history-table-body"
+        );
+
+
+    const today =
+        getLocalDate();
+
+
+    let presentCount =
+        0;
+
+    let missedCount =
+        0;
+
+
+    let html = "";
+
+
+    const now =
+        new Date();
+
+    const year =
+        now.getFullYear();
+
+    const month =
+        now.getMonth();
+
+
+    /*
+     * Show from day 1
+     * up to today.
+     */
+
+    const currentDay =
+        now.getDate();
+
+
+    for(
+        let day=1;
+        day<=currentDay;
+        day++
+    ){
+
+        const date =
+            formatLocalDate(
+                new Date(
+                    year,
+                    month,
+                    day
+                )
+            );
+
+
+        const record =
+            records[date];
+
+
+        const isPresent =
+            !!record;
+
+
+        if(isPresent){
+
+            presentCount++;
+
         }
-        
-        db.ref(`salaryRequests/${staffId}`).set({
-            name: staffName,
-            amount: `₹${finalRequestedAmount}`,
-            status: "Pending",
-            requestType: isEmergency ? "Emergency Advance" : "Regular Payout",
-            requestedAt: new Date().toISOString()
-        }).then(() => {
-            btn.innerText = "REQUEST PENDING...";
-            btn.style.background = "var(--text-muted)";
-            btn.disabled = true;
-            alert(isEmergency ? `₹${finalRequestedAmount} ki Emergency Advance Request Admin ko bhej di gayi hai!` : "Salary Request Sent Successfully!");
-        });
-    }
-    
-    function listenStrictDays() {
-        const strictCard = document.getElementById('strict-card'); const strictList = document.getElementById('strict-days-list');
-        db.ref('strictDays').on('value', snap => {
-            if (snap.exists()) {
-                strictList.innerHTML = ""; let count = 0; const todayStr = new Date().toISOString().split('T')[0];
-                snap.forEach(child => {
-                    const dateVal = child.val();
-                    if (dateVal >= todayStr) {
-                        count++; const isToday = dateVal === todayStr; const d = new Date(dateVal);
-                        const mon = d.toLocaleDateString('en-GB', { month: 'short' }); const day = d.toLocaleDateString('en-GB', { day: 'numeric' });
-                        strictList.innerHTML += `<div class="strict-date-card ${isToday ? 'today' : ''}"><span class="mon">${isToday ? 'NOW' : mon}</span><span class="day">${day}</span></div>`;
+        else{
+
+            missedCount++;
+
+        }
+
+
+        const punchTime =
+            record
+            ? (
+                record.punchInTime ||
+                record.time ||
+                "--"
+            )
+            : "--";
+
+
+        html += `
+
+            <tr>
+
+                <td class="history-date">
+
+                    ${formatDate(date)}
+
+                </td>
+
+                <td class="history-day">
+
+                    ${getDayName(date)}
+
+                </td>
+
+                <td class="history-time">
+
+                    ${
+                        punchTime === "--"
+                        ? "--"
+                        : `<i class="far fa-clock"></i> ${escapeHtml(punchTime)}`
                     }
-                });
-                strictCard.style.display = count > 0 ? "block" : "none";
-            }
-        });
-    }
-    initSystem();
-</script>
-</body>
 
+                </td>
+
+                <td>
+
+                    ${
+                        isPresent
+
+                        ?
+
+                        `
+                        <span class="present-pill">
+
+                            <i class="fas fa-check"></i>
+
+                            PRESENT
+
+                        </span>
+                        `
+
+                        :
+
+                        `
+                        <span
+                            style="
+                                color:#666;
+                                font-size:8px;
+                                font-weight:800
+                            "
+                        >
+                            ${
+                                date === today
+                                ? "NOT YET"
+                                : "MISSED"
+                            }
+                        </span>
+                        `
+                    }
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+
+    if(!html){
+
+        html = `
+
+            <tr>
+
+                <td
+                    colspan="4"
+                    class="empty-history"
+                >
+
+                    <i class="fas fa-calendar-xmark"></i>
+
+                    No punch records found.
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+
+    table.innerHTML =
+        html;
+
+
+    document.getElementById(
+        "history-present"
+    ).innerText =
+        presentCount;
+
+
+    document.getElementById(
+        "history-missed"
+    ).innerText =
+        missedCount;
+
+
+    document.getElementById(
+        "history-total"
+    ).innerText =
+        currentDay;
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(value){
+
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+/* =====================================================
+   AUTO CLEANUP
+===================================================== */
+
+/*
+ * When a new calendar month starts,
+ * records from previous months are deleted.
+ *
+ * This keeps the current 30/31-day cycle clean.
+ */
+
+function cleanupOldPunchRecords(){
+
+    const today =
+        new Date();
+
+    const currentMonth =
+        today.getMonth();
+
+    const currentYear =
+        today.getFullYear();
+
+
+    db.ref(
+        `attendance/${staffId}`
+    )
+    .once(
+        "value",
+        snap=>{
+
+            if(!snap.exists())
+                return;
+
+
+            const updates = {};
+
+            const data =
+                snap.val();
+
+
+            Object.keys(data).forEach(
+                date=>{
+
+                    const d =
+                        new Date(
+                            date+"T00:00:00"
+                        );
+
+
+                    if(
+                        d.getFullYear() !==
+                        currentYear
+                        ||
+                        d.getMonth() !==
+                        currentMonth
+                    ){
+
+                        updates[date] =
+                            null;
+
+                    }
+
+                }
+            );
+
+
+            if(
+                Object.keys(updates).length
+            ){
+
+                db.ref(
+                    `attendance/${staffId}`
+                )
+                .update(
+                    updates
+                )
+                .then(()=>{
+
+                    console.log(
+                        "Old punch records cleaned."
+                    );
+
+                })
+                .catch(
+                    err=>{
+                        console.error(
+                            "Cleanup error:",
+                            err
+                        );
+                    }
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   TASKS
+===================================================== */
+
+function loadTasks(){
+
+    db.ref(
+        `tasks/${staffId}`
+    )
+    .on(
+        "value",
+        snap=>{
+
+            const container =
+                document.getElementById(
+                    "task-list"
+                );
+
+
+            if(!snap.exists()){
+
+                container.innerHTML = `
+
+                    <div
+                        style="
+                            text-align:center;
+                            padding:15px;
+                            color:#666;
+                            font-size:11px
+                        "
+                    >
+
+                        <i
+                            class="fas fa-check-double"
+                            style="
+                                display:block;
+                                margin-bottom:7px;
+                                font-size:20px
+                            "
+                        ></i>
+
+                        No active tasks
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            container.innerHTML = "";
+
+
+            snap.forEach(
+                child=>{
+
+                    const taskId =
+                        child.key;
+
+                    const task =
+                        child.val();
+
+                    const isDone =
+                        task.status ===
+                        "Completed";
+
+
+                    const taskText =
+                        escapeHtml(
+                            task.task ||
+                            "Untitled Task"
+                        );
+
+
+                    let dateText =
+                        "--";
+
+
+                    if(task.date){
+
+                        const d =
+                            new Date(
+                                task.date
+                            );
+
+                        if(
+                            !isNaN(
+                                d.getTime()
+                            )
+                        ){
+
+                            dateText =
+                                d.toLocaleDateString(
+                                    "en-IN"
+                                );
+
+                        }
+
+                    }
+
+
+                    container.innerHTML += `
+
+                        <div class="task-item">
+
+                            <div class="task-left">
+
+                                <div
+                                    class="task-dot
+                                    ${
+                                        isDone
+                                        ? "completed"
+                                        : ""
+                                    }"
+                                ></div>
+
+                                <div class="task-info">
+
+                                    <p
+                                        class="${
+                                            isDone
+                                            ? "done-text"
+                                            : ""
+                                        }"
+                                    >
+                                        ${taskText}
+                                    </p>
+
+                                    <small>
+                                        ${dateText}
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+
+                                class="
+                                    task-action-btn
+                                    ${
+                                        isDone
+                                        ? "completed"
+                                        : ""
+                                    }
+                                "
+
+                                ${
+                                    isDone
+                                    ? "disabled"
+                                    : `onclick="completeTask('${taskId}')"`
+                                }
+
+                            >
+
+                                ${
+                                    isDone
+
+                                    ?
+
+                                    `<i class="fas fa-check"></i> DONE`
+
+                                    :
+
+                                    `MARK DONE`
+                                }
+
+                            </button>
+
+                        </div>
+
+                    `;
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   COMPLETE TASK
+===================================================== */
+
+function completeTask(taskId){
+
+    if(
+        !confirm(
+            "Kya aapne yeh task sach me pura kar liya hai?"
+        )
+    ){
+
+        return;
+
+    }
+
+
+    db.ref(
+        `tasks/${staffId}/${taskId}`
+    )
+    .update({
+
+        status:
+            "Completed",
+
+        completedAt:
+            Date.now()
+
+    })
+    .then(()=>{
+
+        showToast(
+            "Task marked as completed."
+        );
+
+    })
+    .catch(
+        error=>{
+
+            alert(
+                "Task update failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   LEAD SUBMISSION
+===================================================== */
+
+function submitLead(){
+
+    const name =
+        document.getElementById(
+            "l-name"
+        ).value.trim();
+
+
+    const phone =
+        document.getElementById(
+            "l-phone"
+        ).value.trim();
+
+
+    const course =
+        document.getElementById(
+            "l-course"
+        ).value.trim();
+
+
+    if(!name){
+
+        alert(
+            "Please enter full name."
+        );
+
+        return;
+
+    }
+
+
+    if(
+        phone.replace(
+            /\D/g,
+            ""
+        ).length < 10
+    ){
+
+        alert(
+            "Please enter a valid WhatsApp number."
+        );
+
+        return;
+
+    }
+
+
+    db.ref("leads")
+    .push({
+
+        name:
+            name,
+
+        phone:
+            phone,
+
+        course:
+            course,
+
+        staff:
+            staffName,
+
+        staffId:
+            staffId,
+
+        timestamp:
+            Date.now()
+
+    })
+    .then(()=>{
+
+        document.getElementById(
+            "l-name"
+        ).value = "";
+
+        document.getElementById(
+            "l-phone"
+        ).value = "";
+
+        document.getElementById(
+            "l-course"
+        ).value = "";
+
+
+        showToast(
+            "Lead submitted successfully."
+        );
+
+    })
+    .catch(
+        error=>{
+
+            alert(
+                "Lead submission failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   SALARY REQUEST
+===================================================== */
+
+function requestSalary(){
+
+    const btn =
+        document.getElementById(
+            "payout-btn"
+        );
+
+
+    if(currentSalaryBalance <= 0){
+
+        alert(
+            "Cannot request payout for ₹0 balance."
+        );
+
+        btn.style.display =
+            "none";
+
+        return;
+
+    }
+
+
+    const now =
+        new Date();
+
+    const lastDay =
+        new Date(
+            now.getFullYear(),
+            now.getMonth()+1,
+            0
+        ).getDate();
+
+
+    const daysRemaining =
+        lastDay -
+        now.getDate();
+
+
+    const isEmergency =
+        daysRemaining > 0;
+
+
+    let finalAmount =
+        currentSalaryBalance;
+
+
+    if(isEmergency){
+
+        const maxAllowed =
+            Math.floor(
+                currentSalaryBalance *
+                .5
+            );
+
+
+        const input =
+            prompt(
+                `Monthly cycle complete nahi hua hai.\n\nMaximum emergency advance: ₹${maxAllowed}\n\nAmount enter karein:`
+            );
+
+
+        if(input === null)
+            return;
+
+
+        const amount =
+            parseInt(
+                input.replace(
+                    /[^0-9]/g,
+                    ""
+                )
+            );
+
+
+        if(
+            isNaN(amount) ||
+            amount <= 0
+        ){
+
+            alert(
+                "Please enter a valid amount."
+            );
+
+            return;
+
+        }
+
+
+        if(
+            amount > maxAllowed
+        ){
+
+            alert(
+                `Maximum allowed amount ₹${maxAllowed} hai.`
+            );
+
+            return;
+
+        }
+
+
+        finalAmount =
+            amount;
+
+    }
+    else{
+
+        if(
+            !confirm(
+                `Kya aap full payout ₹${currentSalaryBalance} ke liye request bhejna chahte hain?`
+            )
+        ){
+
+            return;
+
+        }
+
+    }
+
+
+    db.ref(
+        `salaryRequests/${staffId}`
+    )
+    .set({
+
+        name:
+            staffName,
+
+        amount:
+            `₹${finalAmount}`,
+
+        numericAmount:
+            finalAmount,
+
+        status:
+            "Pending",
+
+        requestType:
+            isEmergency
+            ? "Emergency Advance"
+            : "Regular Payout",
+
+        requestedAt:
+            new Date().toISOString()
+
+    })
+    .then(()=>{
+
+        btn.innerText =
+            "REQUEST PENDING...";
+
+        btn.style.background =
+            "#555";
+
+        btn.disabled =
+            true;
+
+
+        showToast(
+            isEmergency
+            ? "Emergency advance request sent."
+            : "Salary request sent successfully."
+        );
+
+    })
+    .catch(
+        error=>{
+
+            alert(
+                "Salary request failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   STRICT ATTENDANCE DAYS
+===================================================== */
+
+function listenStrictDays(){
+
+    const card =
+        document.getElementById(
+            "strict-card"
+        );
+
+    const list =
+        document.getElementById(
+            "strict-days-list"
+        );
+
+
+    db.ref("strictDays")
+    .on(
+        "value",
+        snap=>{
+
+            if(!snap.exists()){
+
+                card.style.display =
+                    "none";
+
+                return;
+
+            }
+
+
+            list.innerHTML =
+                "";
+
+            let count =
+                0;
+
+
+            const today =
+                getLocalDate();
+
+
+            snap.forEach(
+                child=>{
+
+                    const dateValue =
+                        child.val();
+
+
+                    if(
+                        dateValue >=
+                        today
+                    ){
+
+                        count++;
+
+
+                        const isToday =
+                            dateValue ===
+                            today;
+
+
+                        const d =
+                            new Date(
+                                dateValue+
+                                "T00:00:00"
+                            );
+
+
+                        const month =
+                            d.toLocaleDateString(
+                                "en-IN",
+                                {
+                                    month:"short"
+                                }
+                            );
+
+
+                        const day =
+                            d.getDate();
+
+
+                        list.innerHTML += `
+
+                            <div
+                                class="
+                                    strict-date-card
+                                    ${
+                                        isToday
+                                        ? "today"
+                                        : ""
+                                    }
+                                "
+                            >
+
+                                <span class="mon">
+
+                                    ${
+                                        isToday
+                                        ? "NOW"
+                                        : month
+                                    }
+
+                                </span>
+
+                                <span class="day">
+
+                                    ${day}
+
+                                </span>
+
+                            </div>
+
+                        `;
+
+                    }
+
+                }
+            );
+
+
+            card.style.display =
+                count > 0
+                ? "block"
+                : "none";
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   INIT SYSTEM
+===================================================== */
+
+async function initSystem(){
+
+    const today =
+        getLocalDate();
+
+
+    /*
+     * First cleanup old month records.
+     */
+
+    cleanupOldPunchRecords();
+
+
+    /*
+     * Check today's attendance.
+     */
+
+    db.ref(
+        `attendance/${staffId}/${today}`
+    )
+    .once(
+        "value",
+        snap=>{
+
+            if(snap.exists()){
+
+                isAttendanceMarkedToday =
+                    true;
+
+
+                const track =
+                    document.getElementById(
+                        "sl-track"
+                    );
+
+                const handle =
+                    document.getElementById(
+                        "sl-handle"
+                    );
+
+                const text =
+                    document.getElementById(
+                        "sl-text"
+                    );
+
+                const icon =
+                    document.getElementById(
+                        "sl-icon"
+                    );
+
+
+                track.classList.add(
+                    "success-state"
+                );
+
+
+                handle.style.background =
+                    "var(--green)";
+
+                handle.style.borderColor =
+                    "transparent";
+
+                handle.style.boxShadow =
+                    "0 0 18px rgba(48,209,88,.45)";
+
+
+                const maxScroll =
+                    track.clientWidth -
+                    handle.clientWidth -
+                    8;
+
+
+                handle.style.transform =
+                    `translateX(${maxScroll}px)`;
+
+
+                handle.style.pointerEvents =
+                    "none";
+
+
+                text.innerText =
+                    "PUNCHED PRESENT";
+
+                text.style.color =
+                    "var(--green)";
+
+                text.style.webkitTextFillColor =
+                    "var(--green)";
+
+                text.style.opacity =
+                    "1";
+
+
+                icon.className =
+                    "fas fa-check-circle";
+
+                icon.style.color =
+                    "#fff";
+
+
+                /*
+                 * If today's punch exists,
+                 * update streak display from staff.
+                 */
+
+            }
+
+        }
+    );
+
+
+    /*
+     * Monthly cycle.
+     */
+
+    const now =
+        new Date();
+
+
+    const lastDay =
+        new Date(
+            now.getFullYear(),
+            now.getMonth()+1,
+            0
+        ).getDate();
+
+
+    const daysRemaining =
+        lastDay -
+        now.getDate();
+
+
+    document.getElementById(
+        "cycle-days"
+    ).innerText =
+        `${daysRemaining} days remaining`;
+
+
+    /*
+     * Staff data listener.
+     */
+
+    db.ref(
+        `staff/${staffId}`
+    )
+    .on(
+        "value",
+        snap=>{
+
+            const value =
+                snap.val() || {};
+
+
+            currentSalaryBalance =
+                value.salary || 0;
+
+
+            const dailyWage =
+                value.perDayWage ||
+                500;
+
+
+            document.getElementById(
+                "daily-rate"
+            ).innerText =
+                `₹${dailyWage}`;
+
+
+            document.getElementById(
+                "total-earning"
+            ).innerText =
+                `₹${currentSalaryBalance}`;
+
+
+            document.getElementById(
+                "streak-val"
+            ).innerText =
+                value.streak || 0;
+
+
+            const percent =
+                Math.min(
+                    (
+                        currentSalaryBalance /
+                        (
+                            dailyWage *
+                            25
+                        )
+                    ) *
+                    100,
+                    100
+                );
+
+
+            document.getElementById(
+                "salary-progress"
+            ).style.width =
+                percent+"%";
+
+
+            /*
+             * Salary request status.
+             */
+
+            db.ref(
+                `salaryRequests/${staffId}`
+            )
+            .once(
+                "value",
+                requestSnap=>{
+
+                    const btn =
+                        document.getElementById(
+                            "payout-btn"
+                        );
+
+
+                    if(
+                        requestSnap.exists() &&
+                        requestSnap.val().status ===
+                        "Pending"
+                    ){
+
+                        btn.style.display =
+                            "block";
+
+                        btn.innerText =
+                            "REQUEST PENDING...";
+
+                        btn.style.background =
+                            "#555";
+
+                        btn.disabled =
+                            true;
+
+                    }
+
+                    else if(
+                        currentSalaryBalance > 0
+                    ){
+
+                        const currentDay =
+                            now.getDate();
+
+
+                        /*
+                         * Full payout at month end.
+                         */
+
+                        if(
+                            daysRemaining <= 0
+                        ){
+
+                            btn.style.display =
+                                "block";
+
+                            btn.disabled =
+                                false;
+
+                            btn.innerText =
+                                "REQUEST PAYOUT";
+
+                            btn.style.background =
+                                "var(--green)";
+
+                        }
+
+                        /*
+                         * Emergency advance
+                         * from 20th.
+                         */
+
+                        else if(
+                            currentDay >= 20
+                        ){
+
+                            btn.style.display =
+                                "block";
+
+                            btn.disabled =
+                                false;
+
+                            btn.innerText =
+                                "REQUEST EMERGENCY ADVANCE";
+
+                            btn.style.background =
+                                "var(--orange)";
+
+                        }
+
+                        else{
+
+                            btn.style.display =
+                                "none";
+
+                        }
+
+                    }
+
+                    else{
+
+                        btn.style.display =
+                            "none";
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    loadTasks();
+
+    listenStrictDays();
+
+
+    /*
+     * Automatically preload punch history
+     * in background, but UI remains collapsed.
+     */
+
+    setTimeout(
+        ()=>{
+            if(!historyLoaded){
+
+                /*
+                 * Don't open it.
+                 * Just mark it ready when user expands.
+                 */
+
+            }
+        },
+        500
+    );
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+initSystem();
+
+</script>
+
+</body>
 </html>
