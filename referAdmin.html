@@ -1,254 +1,3364 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Pro Admin v5.0</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
-    <style>
-        :root { 
-            --bg: #030712; 
-            --card-bg: rgba(15, 23, 42, 0.6); 
-            --accent: #818cf8; 
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --border: rgba(255, 255, 255, 0.08);
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', system-ui; }
-        
-        body { 
-            background: var(--bg); 
-            color: #f8fafc; 
-            padding: 15px;
-            background-image: radial-gradient(circle at top right, #1e1b4b, transparent 40%);
-            min-height: 100vh;
-        }
 
-        /* Modern Navigation */
-        .admin-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 10px 5px; }
-        .admin-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
-        .admin-logo i { background: var(--accent); padding: 8px; border-radius: 12px; color: #000; }
+<meta charset="UTF-8">
 
-        /* Advanced Stats Grid */
-        .stats-row { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-            margin-bottom: 25px; 
-        }
-        .stat-item { 
-            background: var(--card-bg); 
-            padding: 20px; 
-            border-radius: 24px; 
-            border: 1px solid var(--border);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-        }
-        .stat-item::before { content: ''; position: absolute; top:0; left:0; width:4px; height:100%; background: var(--accent); }
-        .stat-item p { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-item h2 { font-size: 28px; font-weight: 800; margin-top: 5px; }
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 
-        /* Search Engine v2 */
-        .search-container { position: relative; margin-bottom: 25px; }
-        .search-container i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 20px; }
-        .search-input { 
-            width: 100%; padding: 18px 18px 18px 50px; 
-            background: var(--card-bg); border: 1px solid var(--border); 
-            border-radius: 20px; color: white; font-size: 15px; outline: none; transition: 0.3s;
-        }
-        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(129, 140, 248, 0.1); }
+<title>BlackTerminal | Referral Admin</title>
 
-        /* Referrer Grouping */
-        .section-box { margin-bottom: 35px; animation: slideIn 0.4s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+<link
+    href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css"
+    rel="stylesheet">
 
-        .group-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 15px; padding: 0 5px;
-        }
-        .leader-name { display: flex; align-items: center; gap: 8px; font-weight: 800; color: #fff; }
-        .leader-name i { color: var(--accent); }
-        .count-pill { background: rgba(129, 140, 248, 0.1); color: var(--accent); padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; }
+<style>
 
-        /* Horizontal Card Logic */
-        .h-scroll { 
-            display: flex; gap: 14px; overflow-x: auto; 
-            padding: 5px 5px 20px 5px; scrollbar-width: none;
-        }
-        .h-scroll::-webkit-scrollbar { display: none; }
+/* =========================================================
+   ROOT
+========================================================= */
 
-        .user-card { 
-            min-width: 190px; background: var(--card-bg); 
-            border: 1px solid var(--border); border-radius: 28px; 
-            padding: 20px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-        .user-card.pending-glow { border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 0 15px rgba(245, 158, 11, 0.1); }
-        .user-card:hover { transform: scale(1.02); background: rgba(30, 41, 59, 0.8); }
+:root{
 
-        .user-id { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
-        .status-row { font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; margin-bottom: 20px; }
+    --bg:#030712;
+    --card:#0b1220;
+    --card2:#111827;
 
-        /* Action Buttons */
-        .btn-action { 
-            width: 100%; padding: 14px; border: none; border-radius: 16px; 
-            font-size: 11px; font-weight: 800; cursor: pointer; transition: 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-        }
-        .btn-v { background: #fff; color: #000; }
-        .btn-r { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
-        
-        /* Floating Toast */
-        #toast { 
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
-            background: #fff; color: #000; padding: 12px 25px; 
-            border-radius: 50px; font-weight: 800; font-size: 13px; z-index: 9999;
-            display: none; animation: pop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        @keyframes pop { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-    </style>
+    --accent:#818cf8;
+    --cyan:#06b6d4;
+    --green:#10b981;
+    --yellow:#f59e0b;
+    --red:#ef4444;
+    --pink:#ec4899;
+
+    --text:#f8fafc;
+    --muted:#64748b;
+
+    --border:rgba(255,255,255,.08);
+
+}
+
+
+*{
+
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    -webkit-tap-highlight-color:transparent;
+
+}
+
+
+body{
+
+    min-height:100vh;
+
+    background:
+
+        radial-gradient(
+            circle at top left,
+            rgba(99,102,241,.17),
+            transparent 32%
+        ),
+
+        radial-gradient(
+            circle at top right,
+            rgba(6,182,212,.10),
+            transparent 28%
+        ),
+
+        var(--bg);
+
+    color:var(--text);
+
+    padding:13px;
+
+    padding-bottom:70px;
+
+}
+
+
+button,
+input,
+select{
+
+    font:inherit;
+
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin:5px 2px 18px;
+
+}
+
+
+.logo{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+
+.logo-icon{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:14px;
+
+    display:grid;
+
+    place-items:center;
+
+    background:
+        linear-gradient(
+            135deg,
+            #818cf8,
+            #22d3ee
+        );
+
+    color:#020617;
+
+    font-size:20px;
+
+    box-shadow:
+        0 0 25px rgba(99,102,241,.25);
+
+}
+
+
+.logo h2{
+
+    font-size:16px;
+
+    font-weight:950;
+
+}
+
+
+.logo small{
+
+    display:block;
+
+    margin-top:2px;
+
+    color:#475569;
+
+    font-size:8px;
+
+    font-weight:800;
+
+    letter-spacing:1px;
+
+}
+
+
+.refresh{
+
+    width:40px;
+
+    height:40px;
+
+    border-radius:13px;
+
+    display:grid;
+
+    place-items:center;
+
+    color:#94a3b8;
+
+    background:rgba(255,255,255,.04);
+
+    border:1px solid var(--border);
+
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero{
+
+    padding:21px;
+
+    border-radius:26px;
+
+    margin-bottom:14px;
+
+    border:1px solid rgba(129,140,248,.16);
+
+    background:
+
+        linear-gradient(
+            135deg,
+            rgba(99,102,241,.15),
+            rgba(6,182,212,.05),
+            rgba(255,255,255,.025)
+        );
+
+}
+
+
+.hero-badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    padding:6px 9px;
+
+    border-radius:9px;
+
+    color:#67e8f9;
+
+    background:rgba(6,182,212,.08);
+
+    font-size:8px;
+
+    font-weight:950;
+
+    letter-spacing:1px;
+
+}
+
+
+.hero h1{
+
+    margin-top:10px;
+
+    font-size:23px;
+
+    line-height:1.1;
+
+    letter-spacing:-1px;
+
+}
+
+
+.hero h1 span{
+
+    background:
+        linear-gradient(
+            90deg,
+            #fff,
+            #67e8f9,
+            #a78bfa
+        );
+
+    -webkit-background-clip:text;
+
+    color:transparent;
+
+}
+
+
+.hero p{
+
+    margin-top:8px;
+
+    color:#64748b;
+
+    font-size:10px;
+
+    line-height:1.6;
+
+}
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.stats{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(4,1fr);
+
+    gap:8px;
+
+    margin-bottom:14px;
+
+}
+
+
+.stat{
+
+    padding:13px 7px;
+
+    text-align:center;
+
+    border-radius:17px;
+
+    background:rgba(255,255,255,.035);
+
+    border:1px solid var(--border);
+
+}
+
+
+.stat i{
+
+    display:block;
+
+    font-size:18px;
+
+    margin-bottom:6px;
+
+}
+
+
+.stat:nth-child(1) i{
+    color:#a5b4fc;
+}
+
+.stat:nth-child(2) i{
+    color:#fbbf24;
+}
+
+.stat:nth-child(3) i{
+    color:#34d399;
+}
+
+.stat:nth-child(4) i{
+    color:#67e8f9;
+}
+
+
+.stat strong{
+
+    display:block;
+
+    font-size:18px;
+
+    font-weight:950;
+
+}
+
+
+.stat span{
+
+    display:block;
+
+    margin-top:2px;
+
+    color:#475569;
+
+    font-size:7px;
+
+    font-weight:900;
+
+    text-transform:uppercase;
+
+}
+
+
+/* =========================================================
+   MAIN PANEL
+========================================================= */
+
+.panel{
+
+    padding:18px;
+
+    margin-bottom:14px;
+
+    border-radius:24px;
+
+    background:rgba(15,23,42,.70);
+
+    border:1px solid var(--border);
+
+}
+
+
+.panel-head{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:15px;
+
+}
+
+
+.title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:9px;
+
+}
+
+
+.title-icon{
+
+    width:36px;
+
+    height:36px;
+
+    display:grid;
+
+    place-items:center;
+
+    border-radius:11px;
+
+    color:#a5b4fc;
+
+    background:rgba(99,102,241,.10);
+
+}
+
+
+.title h3{
+
+    font-size:13px;
+
+    font-weight:950;
+
+}
+
+
+.title p{
+
+    margin-top:2px;
+
+    color:#475569;
+
+    font-size:7px;
+
+}
+
+
+/* =========================================================
+   ADD REWARD BUTTON
+========================================================= */
+
+.add-btn{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    padding:9px 11px;
+
+    border:0;
+
+    border-radius:11px;
+
+    color:#020617;
+
+    background:#fff;
+
+    font-size:8px;
+
+    font-weight:950;
+
+}
+
+
+/* =========================================================
+   REWARD CARDS
+========================================================= */
+
+.reward-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:9px;
+
+}
+
+
+.reward-card{
+
+    padding:13px;
+
+    border-radius:18px;
+
+    background:rgba(255,255,255,.025);
+
+    border:1px solid rgba(255,255,255,.06);
+
+}
+
+
+.reward-card.disabled{
+
+    opacity:.45;
+
+}
+
+
+.reward-top{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+
+.reward-icon{
+
+    width:40px;
+
+    height:40px;
+
+    flex-shrink:0;
+
+    display:grid;
+
+    place-items:center;
+
+    border-radius:13px;
+
+    color:#a5b4fc;
+
+    background:rgba(99,102,241,.10);
+
+    font-size:19px;
+
+}
+
+
+.reward-main{
+
+    min-width:0;
+
+    flex:1;
+
+}
+
+
+.reward-main strong{
+
+    display:block;
+
+    font-size:11px;
+
+    font-weight:950;
+
+}
+
+
+.reward-main small{
+
+    display:block;
+
+    margin-top:3px;
+
+    color:#64748b;
+
+    font-size:7px;
+
+    font-weight:800;
+
+}
+
+
+.reward-value{
+
+    text-align:right;
+
+}
+
+
+.reward-value b{
+
+    display:block;
+
+    color:#34d399;
+
+    font-size:13px;
+
+    font-weight:950;
+
+}
+
+
+.reward-value span{
+
+    display:block;
+
+    color:#475569;
+
+    margin-top:2px;
+
+    font-size:7px;
+
+    font-weight:800;
+
+}
+
+
+.reward-controls{
+
+    display:grid;
+
+    grid-template-columns:
+        1fr 1fr 1fr;
+
+    gap:7px;
+
+    margin-top:11px;
+
+}
+
+
+.field label{
+
+    display:block;
+
+    margin-bottom:4px;
+
+    color:#475569;
+
+    font-size:7px;
+
+    font-weight:900;
+
+    text-transform:uppercase;
+
+}
+
+
+.field input,
+.field select{
+
+    width:100%;
+
+    padding:9px 8px;
+
+    border-radius:10px;
+
+    outline:none;
+
+    border:1px solid rgba(255,255,255,.07);
+
+    background:#020617;
+
+    color:#fff;
+
+    font-size:9px;
+
+    font-weight:800;
+
+}
+
+
+.field input:focus,
+.field select:focus{
+
+    border-color:var(--accent);
+
+}
+
+
+/* =========================================================
+   REWARD ACTIONS
+========================================================= */
+
+.reward-actions{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    margin-top:10px;
+
+}
+
+
+.enable-label{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:#64748b;
+
+    font-size:8px;
+
+    font-weight:800;
+
+}
+
+
+.toggle{
+
+    position:relative;
+
+    width:38px;
+
+    height:21px;
+
+}
+
+
+.toggle input{
+
+    opacity:0;
+
+    width:0;
+
+    height:0;
+
+}
+
+
+.slider{
+
+    position:absolute;
+
+    inset:0;
+
+    cursor:pointer;
+
+    border-radius:20px;
+
+    background:#1e293b;
+
+    transition:.2s;
+
+}
+
+
+.slider:before{
+
+    content:"";
+
+    position:absolute;
+
+    width:15px;
+
+    height:15px;
+
+    left:3px;
+
+    top:3px;
+
+    border-radius:50%;
+
+    background:#64748b;
+
+    transition:.2s;
+
+}
+
+
+.toggle input:checked + .slider{
+
+    background:#10b981;
+
+}
+
+
+.toggle input:checked + .slider:before{
+
+    transform:translateX(17px);
+
+    background:#fff;
+
+}
+
+
+.delete-reward{
+
+    border:0;
+
+    background:transparent;
+
+    color:#ef4444;
+
+    font-size:15px;
+
+}
+
+
+/* =========================================================
+   SAVE
+========================================================= */
+
+.save-settings{
+
+    width:100%;
+
+    margin-top:13px;
+
+    padding:15px;
+
+    border:0;
+
+    border-radius:15px;
+
+    color:#020617;
+
+    background:
+        linear-gradient(
+            90deg,
+            #fff,
+            #dbeafe
+        );
+
+    font-size:10px;
+
+    font-weight:950;
+
+}
+
+
+.save-settings:active{
+
+    transform:scale(.97);
+
+}
+
+
+/* =========================================================
+   REFERRAL SECTION
+========================================================= */
+
+.search{
+
+    position:relative;
+
+    margin-bottom:11px;
+
+}
+
+
+.search i{
+
+    position:absolute;
+
+    left:14px;
+
+    top:50%;
+
+    transform:translateY(-50%);
+
+    color:#64748b;
+
+    font-size:17px;
+
+}
+
+
+.search input{
+
+    width:100%;
+
+    padding:14px 14px 14px 43px;
+
+    border-radius:15px;
+
+    outline:none;
+
+    color:#fff;
+
+    background:#080f1d;
+
+    border:1px solid var(--border);
+
+    font-size:10px;
+
+}
+
+
+.filter-row{
+
+    display:flex;
+
+    gap:6px;
+
+    overflow-x:auto;
+
+    scrollbar-width:none;
+
+    margin-bottom:14px;
+
+}
+
+
+.filter-row::-webkit-scrollbar{
+
+    display:none;
+
+}
+
+
+.filter{
+
+    flex-shrink:0;
+
+    padding:7px 10px;
+
+    border-radius:9px;
+
+    color:#64748b;
+
+    background:rgba(255,255,255,.035);
+
+    border:1px solid rgba(255,255,255,.05);
+
+    font-size:7px;
+
+    font-weight:900;
+
+}
+
+
+.filter.active{
+
+    color:#fff;
+
+    background:rgba(129,140,248,.14);
+
+    border-color:rgba(129,140,248,.25);
+
+}
+
+
+/* =========================================================
+   REFERRAL LIST
+========================================================= */
+
+.ref-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+
+.ref-card{
+
+    padding:13px;
+
+    border-radius:18px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid rgba(255,255,255,.06);
+
+}
+
+
+.ref-top{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+
+.ref-avatar{
+
+    width:39px;
+
+    height:39px;
+
+    flex-shrink:0;
+
+    display:grid;
+
+    place-items:center;
+
+    border-radius:12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(99,102,241,.2),
+            rgba(6,182,212,.12)
+        );
+
+    color:#a5b4fc;
+
+    font-size:16px;
+
+}
+
+
+.ref-info{
+
+    min-width:0;
+
+    flex:1;
+
+}
+
+
+.ref-info strong{
+
+    display:block;
+
+    overflow:hidden;
+
+    white-space:nowrap;
+
+    text-overflow:ellipsis;
+
+    font-size:11px;
+
+    font-weight:950;
+
+}
+
+
+.ref-info small{
+
+    display:block;
+
+    overflow:hidden;
+
+    white-space:nowrap;
+
+    text-overflow:ellipsis;
+
+    margin-top:3px;
+
+    color:#64748b;
+
+    font-size:7px;
+
+    font-weight:800;
+
+}
+
+
+.status{
+
+    flex-shrink:0;
+
+    padding:5px 7px;
+
+    border-radius:8px;
+
+    font-size:7px;
+
+    font-weight:950;
+
+}
+
+
+.status.pending{
+
+    color:#fbbf24;
+
+    background:rgba(245,158,11,.09);
+
+}
+
+
+.status.verified{
+
+    color:#34d399;
+
+    background:rgba(16,185,129,.09);
+
+}
+
+
+.ref-bottom{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:8px;
+
+    margin-top:11px;
+
+    padding-top:10px;
+
+    border-top:1px solid rgba(255,255,255,.045);
+
+}
+
+
+.reward-earned{
+
+    color:#64748b;
+
+    font-size:7px;
+
+    font-weight:800;
+
+}
+
+
+.ref-actions{
+
+    display:flex;
+
+    gap:6px;
+
+}
+
+
+.action{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    padding:8px 10px;
+
+    border-radius:10px;
+
+    border:0;
+
+    font-size:7px;
+
+    font-weight:950;
+
+}
+
+
+.approve{
+
+    color:#020617;
+
+    background:#fff;
+
+}
+
+
+.pending-btn{
+
+    color:#fbbf24;
+
+    background:rgba(245,158,11,.08);
+
+}
+
+
+.remove{
+
+    color:#f87171;
+
+    background:rgba(239,68,68,.08);
+
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.empty{
+
+    padding:35px 15px;
+
+    text-align:center;
+
+    border-radius:19px;
+
+    border:1px dashed rgba(255,255,255,.08);
+
+    background:rgba(255,255,255,.02);
+
+}
+
+
+.empty i{
+
+    display:block;
+
+    margin-bottom:7px;
+
+    color:#334155;
+
+    font-size:29px;
+
+}
+
+
+.empty p{
+
+    color:#64748b;
+
+    font-size:9px;
+
+    font-weight:700;
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+#toast{
+
+    position:fixed;
+
+    left:50%;
+
+    bottom:20px;
+
+    width:calc(100% - 28px);
+
+    max-width:470px;
+
+    transform:
+        translate(-50%,120px);
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:13px 15px;
+
+    border-radius:15px;
+
+    color:#fff;
+
+    background:
+        rgba(15,23,42,.96);
+
+    border:1px solid rgba(255,255,255,.1);
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.45);
+
+    z-index:9999;
+
+    transition:.35s;
+
+    font-size:9px;
+
+    font-weight:850;
+
+}
+
+
+#toast.show{
+
+    transform:
+        translate(-50%,0);
+
+}
+
+
+#toast i{
+
+    color:#34d399;
+
+    font-size:17px;
+
+}
+
+
+/* =========================================================
+   DESKTOP
+========================================================= */
+
+@media(min-width:700px){
+
+    body{
+
+        max-width:900px;
+
+        margin:auto;
+
+    }
+
+    .reward-list{
+
+        display:grid;
+
+        grid-template-columns:
+            1fr 1fr;
+
+    }
+
+    .reward-card{
+
+        min-width:0;
+
+    }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media(max-width:370px){
+
+    .stats{
+
+        grid-template-columns:
+            repeat(2,1fr);
+
+    }
+
+    .reward-controls{
+
+        grid-template-columns:
+            1fr 1fr;
+
+    }
+
+    .reward-controls
+    .field:last-child{
+
+        grid-column:1/-1;
+
+    }
+
+}
+
+</style>
+
 </head>
+
+
 <body>
 
-    <nav class="admin-nav">
-        <div class="admin-logo"><i class="ri-radar-fill"></i> BT COMMAND</div>
-        <i class="ri-refresh-line" onclick="location.reload()" style="opacity:0.5; cursor:pointer;"></i>
-    </nav>
 
-    <div class="stats-row">
-        <div class="stat-item">
-            <p>Direct Leads</p>
-            <h2 id="stat-total">0</h2>
+<!-- ======================================================
+     HEADER
+====================================================== -->
+
+<header class="header">
+
+    <div class="logo">
+
+        <div class="logo-icon">
+
+            <i class="ri-shield-star-fill"></i>
+
         </div>
-        <div class="stat-item">
-            <p>Action Queue</p>
-            <h2 id="stat-pending" style="color: var(--warning);">0</h2>
+
+        <div>
+
+            <h2>BT COMMAND</h2>
+
+            <small>
+                REFERRAL ADMIN
+            </small>
+
         </div>
+
     </div>
 
-    <div class="search-container">
+
+    <button
+        class="refresh"
+        onclick="location.reload()">
+
+        <i class="ri-refresh-line"></i>
+
+    </button>
+
+</header>
+
+
+<!-- ======================================================
+     HERO
+====================================================== -->
+
+<section class="hero">
+
+    <div class="hero-badge">
+
+        <i class="ri-settings-5-fill"></i>
+
+        REWARD CONTROL
+
+    </div>
+
+
+    <h1>
+
+        Manage Your
+
+        <span>Referral Program</span>
+
+    </h1>
+
+
+    <p>
+
+        Decide exactly how many referrals are required
+        for each reward and what the student receives.
+
+    </p>
+
+</section>
+
+
+<!-- ======================================================
+     STATS
+====================================================== -->
+
+<section class="stats">
+
+
+    <div class="stat">
+
+        <i class="ri-group-fill"></i>
+
+        <strong id="stat-total">
+            0
+        </strong>
+
+        <span>
+            Students
+        </span>
+
+    </div>
+
+
+    <div class="stat">
+
+        <i class="ri-time-fill"></i>
+
+        <strong
+            id="stat-pending">
+            0
+        </strong>
+
+        <span>
+            Pending
+        </span>
+
+    </div>
+
+
+    <div class="stat">
+
+        <i class="ri-checkbox-circle-fill"></i>
+
+        <strong
+            id="stat-verified">
+            0
+        </strong>
+
+        <span>
+            Verified
+        </span>
+
+    </div>
+
+
+    <div class="stat">
+
+        <i class="ri-user-add-fill"></i>
+
+        <strong
+            id="stat-referrals">
+            0
+        </strong>
+
+        <span>
+            Referrals
+        </span>
+
+    </div>
+
+</section>
+
+
+<!-- ======================================================
+     REWARD MANAGEMENT
+====================================================== -->
+
+<section class="panel">
+
+
+    <div class="panel-head">
+
+        <div class="title">
+
+            <div class="title-icon">
+
+                <i class="ri-gift-2-fill"></i>
+
+            </div>
+
+            <div>
+
+                <h3>
+                    Rewards
+                </h3>
+
+                <p>
+                    Set your own referral rewards
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="add-btn"
+            onclick="addReward()">
+
+            <i class="ri-add-line"></i>
+
+            ADD
+
+        </button>
+
+    </div>
+
+
+    <div
+        id="reward-list"
+        class="reward-list">
+
+    </div>
+
+
+    <button
+        class="save-settings"
+        onclick="saveRewards()">
+
+        <i class="ri-save-3-fill"></i>
+
+        SAVE ALL REWARD SETTINGS
+
+    </button>
+
+</section>
+
+
+<!-- ======================================================
+     REFERRAL MANAGEMENT
+====================================================== -->
+
+<section class="panel">
+
+
+    <div class="panel-head">
+
+        <div class="title">
+
+            <div
+                class="title-icon"
+                style="
+                color:#34d399;
+                background:rgba(16,185,129,.08);">
+
+                <i class="ri-user-follow-fill"></i>
+
+            </div>
+
+            <div>
+
+                <h3>
+                    Referral Requests
+                </h3>
+
+                <p>
+                    Approve or remove referrals
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- SEARCH -->
+
+    <div class="search">
+
         <i class="ri-search-2-line"></i>
-        <input type="text" id="adminSearch" class="search-input" placeholder="Search Referrer or Student..." oninput="filterFeed()">
+
+        <input
+            id="searchInput"
+            type="text"
+            placeholder="Search student or referrer..."
+            oninput="renderReferrals()">
+
     </div>
 
-    <div id="admin-feed"></div>
 
-    <div id="toast">Update Applied!</div>
+    <!-- FILTER -->
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <div class="filter-row">
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-            projectId: "black-terminal-f2c91",
-            storageBucket: "black-terminal-f2c91.firebasestorage.app",
-            messagingSenderId: "552489994197",
-            appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
+        <button
+            class="filter active"
+            onclick="setFilter('all',this)">
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+            ALL
 
-        onSnapshot(collection(db, "students"), (snap) => {
-            const feed = document.getElementById("admin-feed");
-            const totalEl = document.getElementById("stat-total");
-            const pendingEl = document.getElementById("stat-pending");
-            
-            feed.innerHTML = "";
-            let totalCount = 0;
-            let pendingCount = 0;
-            const groups = {};
+        </button>
 
-            snap.forEach(d => {
-                const data = d.data();
-                totalCount++;
-                if (data.status !== 'verified') pendingCount++;
 
-                if (data.referred_by) {
-                    if (!groups[data.referred_by]) groups[data.referred_by] = [];
-                    groups[data.referred_by].push({ id: d.id, ...data });
-                }
-            });
+        <button
+            class="filter"
+            onclick="setFilter('pending',this)">
 
-            totalEl.innerText = totalCount;
-            pendingEl.innerText = pendingCount;
+            PENDING
 
-            Object.keys(groups).sort().forEach(referrer => {
-                const section = document.createElement("div");
-                section.className = "section-box";
-                section.setAttribute('data-referrer', referrer.toLowerCase());
-                section.innerHTML = `
-                    <div class="group-header">
-                        <div class="leader-name"><i class="ri-user-follow-line"></i> ${referrer}</div>
-                        <span class="count-pill">${groups[referrer].length} Students</span>
+        </button>
+
+
+        <button
+            class="filter"
+            onclick="setFilter('verified',this)">
+
+            VERIFIED
+
+        </button>
+
+    </div>
+
+
+    <div
+        id="ref-list"
+        class="ref-list">
+
+        <div class="empty">
+
+            <i class="ri-loader-4-line"></i>
+
+            <p>
+                Loading referrals...
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ======================================================
+     TOAST
+====================================================== -->
+
+<div id="toast">
+
+    <i class="ri-checkbox-circle-fill"></i>
+
+    <span id="toast-text">
+        Done
+    </span>
+
+</div>
+
+
+<!-- ======================================================
+     FIREBASE
+====================================================== -->
+
+<script type="module">
+
+
+import {
+
+    initializeApp
+
+}
+
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+import {
+
+    getFirestore,
+
+    collection,
+
+    onSnapshot,
+
+    doc,
+
+    updateDoc,
+
+    setDoc,
+
+    getDoc,
+
+    deleteField
+
+}
+
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+/* ======================================================
+   FIREBASE
+====================================================== */
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyCEYfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
+
+    authDomain:
+        "black-terminal-f2c91.firebaseapp.com",
+
+    projectId:
+        "black-terminal-f2c91",
+
+    storageBucket:
+        "black-terminal-f2c91.firebasestorage.app",
+
+    messagingSenderId:
+        "552489994197",
+
+    appId:
+        "1:552489994197:web:7662331264c334ffbadf5c"
+
+};
+
+
+const app =
+    initializeApp(firebaseConfig);
+
+
+const db =
+    getFirestore(app);
+
+
+/* ======================================================
+   DEFAULT REWARDS
+====================================================== */
+
+const DEFAULT_REWARDS = [
+
+    {
+        id:"r1",
+        count:1,
+        name:"Cash Reward",
+        type:"Cash",
+        value:100,
+        enabled:true
+    },
+
+    {
+        id:"r2",
+        count:3,
+        name:"Digital Achievement Badge",
+        type:"Digital",
+        value:0,
+        enabled:true
+    },
+
+    {
+        id:"r3",
+        count:5,
+        name:"₹500 Bonus",
+        type:"Cash",
+        value:500,
+        enabled:true
+    },
+
+    {
+        id:"r4",
+        count:10,
+        name:"Keyboard",
+        type:"Physical",
+        value:700,
+        enabled:true
+    },
+
+    {
+        id:"r5",
+        count:20,
+        name:"Pen Drive",
+        type:"Physical",
+        value:1000,
+        enabled:true
+    },
+
+    {
+        id:"r6",
+        count:30,
+        name:"Wireless Mouse",
+        type:"Physical",
+        value:800,
+        enabled:false
+    },
+
+    {
+        id:"r7",
+        count:50,
+        name:"Smart TV",
+        type:"Physical",
+        value:15000,
+        enabled:false
+    },
+
+    {
+        id:"r8",
+        count:75,
+        name:"Smartphone",
+        type:"Physical",
+        value:10000,
+        enabled:false
+    },
+
+    {
+        id:"r9",
+        count:100,
+        name:"Premium Computer Course",
+        type:"Course",
+        value:6000,
+        enabled:false
+    },
+
+    {
+        id:"r10",
+        count:150,
+        name:"Grand Champion Reward",
+        type:"Special",
+        value:20000,
+        enabled:false
+    }
+
+];
+
+
+let rewards =
+    [...DEFAULT_REWARDS];
+
+
+let referralData = [];
+
+let currentFilter = "all";
+
+
+/* ======================================================
+   TOAST
+====================================================== */
+
+let toastTimer;
+
+
+function toast(
+    message,
+    success=true
+){
+
+    const el =
+        document.getElementById(
+            "toast"
+        );
+
+
+    document.getElementById(
+        "toast-text"
+    ).innerText =
+        message;
+
+
+    el.querySelector("i")
+        .className =
+        success
+        ? "ri-checkbox-circle-fill"
+        : "ri-error-warning-fill";
+
+
+    el.querySelector("i")
+        .style.color =
+        success
+        ? "#34d399"
+        : "#f87171";
+
+
+    el.classList.add("show");
+
+
+    clearTimeout(
+        toastTimer
+    );
+
+
+    toastTimer =
+        setTimeout(
+            ()=>{
+
+                el.classList.remove(
+                    "show"
+                );
+
+            },
+            2800
+        );
+
+}
+
+
+/* ======================================================
+   ICON
+====================================================== */
+
+function rewardIcon(type,name){
+
+    const n =
+        String(name)
+        .toLowerCase();
+
+
+    if(
+        n.includes("keyboard")
+    )
+        return "ri-keyboard-box-fill";
+
+
+    if(
+        n.includes("mouse")
+    )
+        return "ri-mouse-fill";
+
+
+    if(
+        n.includes("tv")
+        ||
+        n.includes("television")
+    )
+        return "ri-tv-fill";
+
+
+    if(
+        n.includes("mobile")
+        ||
+        n.includes("phone")
+    )
+        return "ri-smartphone-fill";
+
+
+    if(
+        n.includes("pen drive")
+        ||
+        n.includes("pendrive")
+        ||
+        n.includes("usb")
+    )
+        return "ri-usb-fill";
+
+
+    if(
+        n.includes("headphone")
+    )
+        return "ri-headphone-fill";
+
+
+    if(
+        n.includes("course")
+    )
+        return "ri-graduation-cap-fill";
+
+
+    if(
+        n.includes("cash")
+        ||
+        n.includes("bonus")
+        ||
+        n.includes("₹")
+    )
+        return "ri-money-rupee-circle-fill";
+
+
+    if(type === "Digital")
+        return "ri-medal-fill";
+
+
+    return "ri-gift-fill";
+
+}
+
+
+/* ======================================================
+   RENDER REWARDS
+====================================================== */
+
+function renderRewards(){
+
+    const container =
+        document.getElementById(
+            "reward-list"
+        );
+
+
+    container.innerHTML = "";
+
+
+    rewards.forEach(
+        (reward,index)=>{
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                `reward-card ${
+                    reward.enabled
+                    ? ""
+                    : "disabled"
+                }`;
+
+
+            card.innerHTML = `
+
+                <div class="reward-top">
+
+                    <div class="reward-icon">
+
+                        <i class="${rewardIcon(
+                            reward.type,
+                            reward.name
+                        )}"></i>
+
                     </div>
-                    <div class="h-scroll" id="row-${referrer}"></div>
-                `;
-                feed.appendChild(section);
 
-                const scroll = document.getElementById(`row-${referrer}`);
-                groups[referrer].forEach(ref => {
-                    const isVerified = ref.status === 'verified';
-                    const card = document.createElement("div");
-                    card.className = `user-card ${!isVerified ? 'pending-glow' : ''}`;
-                    card.setAttribute('data-id', ref.id.toLowerCase());
-                    card.innerHTML = `
-                        <div class="user-id">${ref.id}</div>
-                        <div class="status-row" style="color:${isVerified ? 'var(--success)' : 'var(--warning)'}">
-                            <i class="ri-${isVerified ? 'shield-check' : 'error-warning'}-fill"></i>
-                            ${(ref.status || 'pending').toUpperCase()}
-                        </div>
-                        <button class="btn-action ${isVerified ? 'btn-r' : 'btn-v'}" 
-                                onclick="updateStatus('${ref.id}', '${ref.status}')">
-                            ${isVerified ? 'REVOKE STATUS' : 'APPROVE NOW'}
-                        </button>
-                    `;
-                    scroll.appendChild(card);
-                });
-            });
-        });
 
-        window.updateStatus = async (sid, currentStatus) => {
-            const newStatus = currentStatus === 'verified' ? 'pending' : 'verified';
-            try {
-                await updateDoc(doc(db, "students", sid), { status: newStatus });
-                showToast(newStatus === 'verified' ? "Verified Successfully ✅" : "Status Revoked ❌");
-            } catch (err) {
-                alert("Database Error!");
-            }
-        };
+                    <div class="reward-main">
 
-        window.filterFeed = () => {
-            const term = document.getElementById('adminSearch').value.toLowerCase();
-            document.querySelectorAll('.section-box').forEach(box => {
-                const referrer = box.getAttribute('data-referrer');
-                const cards = box.querySelectorAll('.user-card');
-                let groupVisible = referrer.includes(term);
-                
-                cards.forEach(card => {
-                    const userId = card.getAttribute('data-id');
-                    if (userId.includes(term) || groupVisible) {
-                        card.style.display = 'block';
-                        groupVisible = true;
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-                box.style.display = groupVisible ? 'block' : 'none';
-            });
-        };
+                        <strong>
+                            ${escapeHTML(
+                                reward.name
+                            )}
+                        </strong>
 
-        function showToast(msg) {
-            const t = document.getElementById("toast");
-            t.innerText = msg;
-            t.style.display = "block";
-            if (window.navigator.vibrate) window.navigator.vibrate(50);
-            setTimeout(() => t.style.display = "none", 2500);
+                        <small>
+                            Reward #${index+1}
+                        </small>
+
+                    </div>
+
+
+                    <div class="reward-value">
+
+                        <b>
+                            ${
+                                reward.value > 0
+                                ? "₹" +
+                                  Number(
+                                      reward.value
+                                  ).toLocaleString()
+                                : "DIGITAL"
+                            }
+                        </b>
+
+                        <span>
+                            ${
+                                escapeHTML(
+                                    reward.type
+                                )
+                            }
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="reward-controls">
+
+
+                    <div class="field">
+
+                        <label>
+                            Referrals
+                        </label>
+
+                        <input
+                            type="number"
+                            min="1"
+                            value="${reward.count}"
+                            onchange="
+                                changeReward(
+                                    ${index},
+                                    'count',
+                                    this.value
+                                )
+                            ">
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label>
+                            Reward Name
+                        </label>
+
+                        <input
+                            type="text"
+                            value="${escapeAttribute(
+                                reward.name
+                            )}"
+                            onchange="
+                                changeReward(
+                                    ${index},
+                                    'name',
+                                    this.value
+                                )
+                            ">
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label>
+                            Value ₹
+                        </label>
+
+                        <input
+                            type="number"
+                            min="0"
+                            value="${reward.value}"
+                            onchange="
+                                changeReward(
+                                    ${index},
+                                    'value',
+                                    this.value
+                                )
+                            ">
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label>
+                            Type
+                        </label>
+
+                        <select
+                            onchange="
+                                changeReward(
+                                    ${index},
+                                    'type',
+                                    this.value
+                                )
+                            ">
+
+                            <option
+                                ${
+                                    reward.type==="Cash"
+                                    ? "selected"
+                                    : ""
+                                }>
+                                Cash
+                            </option>
+
+                            <option
+                                ${
+                                    reward.type==="Physical"
+                                    ? "selected"
+                                    : ""
+                                }>
+                                Physical
+                            </option>
+
+                            <option
+                                ${
+                                    reward.type==="Digital"
+                                    ? "selected"
+                                    : ""
+                                }>
+                                Digital
+                            </option>
+
+                            <option
+                                ${
+                                    reward.type==="Course"
+                                    ? "selected"
+                                    : ""
+                                }>
+                                Course
+                            </option>
+
+                            <option
+                                ${
+                                    reward.type==="Special"
+                                    ? "selected"
+                                    : ""
+                                }>
+                                Special
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <div class="reward-actions">
+
+
+                    <label class="enable-label">
+
+                        <label class="toggle">
+
+                            <input
+                                type="checkbox"
+                                ${
+                                    reward.enabled
+                                    ? "checked"
+                                    : ""
+                                }
+                                onchange="
+                                    changeReward(
+                                        ${index},
+                                        'enabled',
+                                        this.checked
+                                    )
+                                ">
+
+                            <span class="slider"></span>
+
+                        </label>
+
+                        ${
+                            reward.enabled
+                            ? "Reward Active"
+                            : "Reward Disabled"
+                        }
+
+                    </label>
+
+
+                    <button
+                        class="delete-reward"
+                        onclick="
+                            removeReward(
+                                ${index}
+                            )
+                        "
+                        title="Remove reward">
+
+                        <i class="ri-delete-bin-6-line"></i>
+
+                    </button>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                card
+            );
+
         }
-    </script>
+    );
+
+}
+
+
+/* ======================================================
+   CHANGE REWARD
+====================================================== */
+
+window.changeReward =
+function(
+    index,
+    key,
+    value
+){
+
+    if(
+        key === "count"
+        ||
+        key === "value"
+    ){
+
+        value =
+            Number(value);
+
+    }
+
+
+    rewards[index][key] =
+        value;
+
+
+    renderRewards();
+
+};
+
+
+/* ======================================================
+   ADD REWARD
+====================================================== */
+
+window.addReward =
+function(){
+
+    if(
+        rewards.length >= 10
+    ){
+
+        toast(
+            "Maximum 10 rewards allowed.",
+            false
+        );
+
+        return;
+
+    }
+
+
+    const last =
+        rewards[
+            rewards.length - 1
+        ];
+
+
+    rewards.push({
+
+        id:
+            "r" +
+            Date.now(),
+
+        count:
+            (last?.count || 0) + 10,
+
+        name:
+            "New Reward",
+
+        type:
+            "Physical",
+
+        value:
+            0,
+
+        enabled:
+            true
+
+    });
+
+
+    renderRewards();
+
+
+    setTimeout(
+        ()=>{
+
+            window.scrollTo({
+
+                top:
+                    document.body.scrollHeight,
+
+                behavior:
+                    "smooth"
+
+            });
+
+        },
+        100
+    );
+
+};
+
+
+/* ======================================================
+   REMOVE REWARD
+====================================================== */
+
+window.removeReward =
+function(index){
+
+    if(
+        !confirm(
+            "Remove this reward milestone?"
+        )
+    )
+        return;
+
+
+    rewards.splice(
+        index,
+        1
+    );
+
+
+    renderRewards();
+
+};
+
+
+/* ======================================================
+   SAVE REWARDS
+====================================================== */
+
+window.saveRewards =
+async function(){
+
+    try{
+
+
+        /* Remove invalid values */
+
+        rewards =
+            rewards
+            .filter(
+                r =>
+                    r.name &&
+                    Number(r.count) > 0
+            )
+            .map(
+                r => ({
+
+                    ...r,
+
+                    count:
+                        Number(
+                            r.count
+                        ),
+
+                    value:
+                        Number(
+                            r.value
+                        ) || 0
+
+                })
+            );
+
+
+        /* Sort by referral count */
+
+        rewards.sort(
+            (a,b)=>
+                a.count -
+                b.count
+        );
+
+
+        await setDoc(
+
+            doc(
+                db,
+                "referralSettings",
+                "config"
+            ),
+
+            {
+
+                rewards:rewards,
+
+                updatedAt:
+                    new Date().toISOString()
+
+            },
+
+            {
+
+                merge:true
+
+            }
+
+        );
+
+
+        renderRewards();
+
+
+        toast(
+            "Reward settings saved successfully 🚀"
+        );
+
+    }
+
+    catch(error){
+
+        console.error(
+            error
+        );
+
+
+        toast(
+            "Unable to save rewards.",
+            false
+        );
+
+    }
+
+};
+
+
+/* ======================================================
+   LOAD REWARDS
+====================================================== */
+
+async function loadRewards(){
+
+    try{
+
+        const snap =
+            await getDoc(
+
+                doc(
+                    db,
+                    "referralSettings",
+                    "config"
+                )
+
+            );
+
+
+        if(
+            snap.exists()
+            &&
+            Array.isArray(
+                snap.data().rewards
+            )
+        ){
+
+            rewards =
+                snap.data().rewards;
+
+        }
+
+
+        renderRewards();
+
+    }
+
+    catch(error){
+
+        console.error(
+            error
+        );
+
+
+        renderRewards();
+
+        toast(
+            "Using default reward settings.",
+            false
+        );
+
+    }
+
+}
+
+
+/* ======================================================
+   FIRESTORE REFERRALS
+====================================================== */
+
+onSnapshot(
+
+    collection(
+        db,
+        "students"
+    ),
+
+    snap => {
+
+
+        let total =
+            0;
+
+        let pending =
+            0;
+
+        let verified =
+            0;
+
+        referralData = [];
+
+
+        snap.forEach(
+            d => {
+
+                const data =
+                    d.data();
+
+
+                total++;
+
+
+                if(
+                    data.referred_by
+                ){
+
+                    const status =
+                        data.status === "verified"
+                        ? "verified"
+                        : "pending";
+
+
+                    if(
+                        status === "verified"
+                    ){
+
+                        verified++;
+
+                    }else{
+
+                        pending++;
+
+                    }
+
+
+                    referralData.push({
+
+                        id:d.id,
+
+                        referrer:
+                            data.referred_by,
+
+                        status:
+
+                            status,
+
+                        data:data
+
+                    });
+
+                }
+
+            }
+        );
+
+
+        document.getElementById(
+            "stat-total"
+        ).innerText =
+            total;
+
+
+        document.getElementById(
+            "stat-pending"
+        ).innerText =
+            pending;
+
+
+        document.getElementById(
+            "stat-verified"
+        ).innerText =
+            verified;
+
+
+        document.getElementById(
+            "stat-referrals"
+        ).innerText =
+            referralData.length;
+
+
+        renderReferrals();
+
+    },
+
+    error => {
+
+        console.error(
+            error
+        );
+
+
+        toast(
+            "Unable to load referrals.",
+            false
+        );
+
+    }
+
+);
+
+
+/* ======================================================
+   FILTER
+====================================================== */
+
+window.setFilter =
+function(
+    filter,
+    button
+){
+
+    currentFilter =
+        filter;
+
+
+    document
+        .querySelectorAll(
+            ".filter"
+        )
+        .forEach(
+            el =>
+                el.classList.remove(
+                    "active"
+                )
+        );
+
+
+    button.classList.add(
+        "active"
+    );
+
+
+    renderReferrals();
+
+};
+
+
+/* ======================================================
+   RENDER REFERRALS
+====================================================== */
+
+window.renderReferrals =
+function(){
+
+    const list =
+        document.getElementById(
+            "ref-list"
+        );
+
+
+    const search =
+        document.getElementById(
+            "searchInput"
+        )
+        .value
+        .toLowerCase()
+        .trim();
+
+
+    let data =
+        [...referralData];
+
+
+    /* Filter */
+
+    if(
+        currentFilter !== "all"
+    ){
+
+        data =
+            data.filter(
+                item =>
+                    item.status ===
+                    currentFilter
+            );
+
+    }
+
+
+    /* Search */
+
+    if(search){
+
+        data =
+            data.filter(
+                item =>
+
+                    String(
+                        item.id
+                    )
+                    .toLowerCase()
+                    .includes(search)
+
+                    ||
+
+                    String(
+                        item.referrer
+                    )
+                    .toLowerCase()
+                    .includes(search)
+
+            );
+
+    }
+
+
+    /* Empty */
+
+    if(
+        data.length === 0
+    ){
+
+        list.innerHTML = `
+
+            <div class="empty">
+
+                <i class="ri-user-search-line"></i>
+
+                <p>
+                    No referral records found.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    list.innerHTML = "";
+
+
+    /* Sort pending first */
+
+    data.sort(
+        (a,b) => {
+
+            if(
+                a.status ===
+                "pending"
+                &&
+                b.status !==
+                "pending"
+            )
+                return -1;
+
+
+            if(
+                a.status !==
+                "pending"
+                &&
+                b.status ===
+                "pending"
+            )
+                return 1;
+
+
+            return String(
+                a.id
+            ).localeCompare(
+                String(b.id)
+            );
+
+        }
+    );
+
+
+    data.forEach(
+        item => {
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "ref-card";
+
+
+            const statusText =
+                item.status ===
+                "verified"
+                ? "VERIFIED"
+                : "PENDING";
+
+
+            const reward =
+                getCurrentReward(
+                    getVerifiedCountForReferrer(
+                        item.referrer
+                    )
+                );
+
+
+            card.innerHTML = `
+
+                <div class="ref-top">
+
+
+                    <div class="ref-avatar">
+
+                        <i class="ri-user-fill"></i>
+
+                    </div>
+
+
+                    <div class="ref-info">
+
+                        <strong>
+                            ${escapeHTML(
+                                item.id
+                            )}
+                        </strong>
+
+                        <small>
+                            Referred by:
+                            ${escapeHTML(
+                                item.referrer
+                            )}
+                        </small>
+
+                    </div>
+
+
+                    <span
+                        class="status ${
+                            item.status
+                        }">
+
+                        ${statusText}
+
+                    </span>
+
+
+                </div>
+
+
+                <div class="ref-bottom">
+
+
+                    <div class="reward-earned">
+
+                        ${
+                            item.status ===
+                            "verified"
+
+                            ?
+
+                            (
+                                reward
+                                ?
+
+                                `Next:
+                                ${escapeHTML(
+                                    reward.name
+                                )}`
+
+                                :
+
+                                "Reward milestone reached"
+                            )
+
+                            :
+
+                            "Waiting for approval"
+
+                        }
+
+                    </div>
+
+
+                    <div class="ref-actions">
+
+
+                        ${
+                            item.status ===
+                            "verified"
+
+                            ?
+
+                            `
+
+                            <button
+                                class="action pending-btn"
+                                onclick="
+                                    updateReferralStatus(
+                                        ${JSON.stringify(item.id)},
+                                        'pending'
+                                    )
+                                ">
+
+                                <i class="ri-time-line"></i>
+
+                                PENDING
+
+                            </button>
+
+                            `
+
+                            :
+
+                            `
+
+                            <button
+                                class="action approve"
+                                onclick="
+                                    updateReferralStatus(
+                                        ${JSON.stringify(item.id)},
+                                        'verified'
+                                    )
+                                ">
+
+                                <i class="ri-check-line"></i>
+
+                                APPROVE
+
+                            </button>
+
+                            `
+
+                        }
+
+
+                        <button
+                            class="action remove"
+                            onclick="
+                                removeReferral(
+                                    ${JSON.stringify(item.id)}
+                                )
+                            ">
+
+                            <i class="ri-delete-bin-6-line"></i>
+
+                            DELETE
+
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+            list.appendChild(
+                card
+            );
+
+        }
+    );
+
+};
+
+
+/* ======================================================
+   GET VERIFIED COUNT OF REFERRER
+====================================================== */
+
+function getVerifiedCountForReferrer(
+    referrer
+){
+
+    return referralData.filter(
+        item =>
+
+            item.referrer ===
+            referrer
+
+            &&
+
+            item.status ===
+            "verified"
+
+    ).length;
+
+}
+
+
+/* ======================================================
+   FIND NEXT REWARD
+====================================================== */
+
+function getCurrentReward(
+    count
+){
+
+    const active =
+        rewards
+        .filter(
+            r =>
+                r.enabled
+                &&
+                Number(r.count) > count
+        )
+        .sort(
+            (a,b)=>
+                a.count -
+                b.count
+        );
+
+
+    return active[0] || null;
+
+}
+
+
+/* ======================================================
+   UPDATE STATUS
+====================================================== */
+
+window.updateReferralStatus =
+async function(
+    studentId,
+    newStatus
+){
+
+    try{
+
+
+        await updateDoc(
+
+            doc(
+                db,
+                "students",
+                studentId
+            ),
+
+            {
+
+                status:
+                    newStatus,
+
+                referral_status_updated_at:
+                    new Date()
+                    .toISOString()
+
+            }
+
+        );
+
+
+        toast(
+
+            newStatus ===
+            "verified"
+
+            ?
+
+            "Referral approved successfully ✅"
+
+            :
+
+            "Referral moved to pending."
+
+        );
+
+    }
+
+    catch(error){
+
+        console.error(
+            error
+        );
+
+
+        toast(
+            "Unable to update referral.",
+            false
+        );
+
+    }
+
+};
+
+
+/* ======================================================
+   DELETE / REMOVE REFERRAL
+====================================================== */
+
+window.removeReferral =
+async function(
+    studentId
+){
+
+    const ok =
+        confirm(
+
+            "Remove this referral?\n\n" +
+
+            "The student account will NOT be deleted. " +
+
+            "Only the referral connection will be removed."
+
+        );
+
+
+    if(!ok)
+        return;
+
+
+    try{
+
+
+        await updateDoc(
+
+            doc(
+                db,
+                "students",
+                studentId
+            ),
+
+            {
+
+                referred_by:
+                    deleteField(),
+
+                status:
+                    deleteField(),
+
+                referral_status_updated_at:
+                    deleteField()
+
+            }
+
+        );
+
+
+        toast(
+            "Referral removed successfully."
+        );
+
+    }
+
+    catch(error){
+
+        console.error(
+            error
+        );
+
+
+        toast(
+            "Unable to remove referral.",
+            false
+        );
+
+    }
+
+};
+
+
+/* ======================================================
+   ESCAPE
+====================================================== */
+
+function escapeHTML(value){
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+function escapeAttribute(value){
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        );
+
+}
+
+
+/* ======================================================
+   START
+====================================================== */
+
+loadRewards();
+
+</script>
+
+
 </body>
+
 </html>
