@@ -1,423 +1,4870 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Admin Dashboard | Black Terminal</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <style>
-        :root {
-            --apple-blue: #0A84FF; --apple-green: #30D158; --apple-red: #FF453A; --apple-orange: #FF9F0A; --cyber-purple: #BF5AF2; --bg: #06060A;
-            --glass: rgba(16, 16, 24, 0.7); --border: rgba(255, 255, 255, 0.06); --border-hover: rgba(255, 255, 255, 0.12);
-            --text-main: #FFFFFF; --text-sec: #AEAEB2; --text-muted: #8E8E93; --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-            --accent-glow: radial-gradient(circle at 85% 15%, rgba(191, 90, 242, 0.08) 0%, transparent 50%), radial-gradient(circle at 15% 25%, rgba(10, 132, 255, 0.08) 0%, transparent 50%);
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background: var(--bg); background-image: var(--accent-glow); background-attachment: fixed; color: var(--text-main); margin: 0; padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 30px) 16px; -webkit-font-smoothing: antialiased; min-height: 100vh; box-sizing: border-box; }
-        .container { max-width: 455px; margin: auto; }
-        .header { margin: 15px 0 24px 0; position: relative; display: flex; flex-direction: column; }
-        .header p { color: var(--apple-orange); font-size: 12px; margin: 0 0 4px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
-        .header h1 { font-size: 34px; margin: 0; font-weight: 800; letter-spacing: -1.2px; background: linear-gradient(135deg, #FFFFFF 40%, var(--apple-orange) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .card { background: var(--glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 24px; padding: 22px; margin-bottom: 18px; border: 1px solid var(--border); box-shadow: var(--card-shadow); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        .card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-        
-        .collapse-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0; user-select: none; }
-        .collapse-header h3 { margin: 0; font-size: 12px; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 700; text-transform: uppercase; }
-        .collapse-icon { font-size: 12px; color: var(--text-muted); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .collapse-content { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin-top: 0.3s, opacity 0.3s; }
-        
-        .card.active .collapse-content { max-height: 350px; margin-top: 20px; opacity: 1; }
-        .card.active .collapse-icon { transform: rotate(180deg); color: #fff; }
 
-        .card > h3 { font-size: 12px; margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; color: var(--text-sec); letter-spacing: 0.8px; font-weight: 700; text-transform: uppercase; }
+<meta charset="UTF-8">
 
-        .admin-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
-        .mini-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 16px; padding: 14px; text-align: center; }
-        .mini-box small { display: block; font-size: 9px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px; }
-        .mini-box span { font-size: 20px; font-weight: 800; color: #fff; }
-        .list-container { max-height: 250px; overflow-y: auto; padding-right: 4px; }
-        .list-container::-webkit-scrollbar { width: 4px; }
-        .list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .data-item { background: rgba(255,255,255,0.02); padding: 12px 14px; border-radius: 16px; margin-bottom: 10px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .data-info p { margin: 0; font-size: 14px; font-weight: 600; color: #E5E5EA; }
-        .data-info p.done-text { text-decoration: line-through; color: var(--text-muted); }
-        .data-info small { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
-        .action-btn-group { display: flex; gap: 6px; }
-        .sm-btn { padding: 6px 12px; border-radius: 10px; border: none; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .btn-approve { background: rgba(48, 209, 88, 0.15); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.25); }
-        .btn-reject { background: rgba(255, 59, 48, 0.15); color: var(--apple-red); border: 1px solid rgba(255, 59, 48, 0.25); }
-        input, select { width: 100%; padding: 14px 16px; margin-bottom: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px; color: white; outline: none; box-sizing: border-box; font-size: 14px; transition: all 0.3s; }
-        input:focus, select:focus { border-color: var(--apple-orange); box-shadow: 0 0 0 4px rgba(255, 159, 10, 0.15); }
-        select option { background: #101018; color: white; }
-        .btn { width: 100%; padding: 15px 20px; border-radius: 16px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; transition: transform 0.2s; }
-        .btn-orange { background: linear-gradient(135deg, var(--apple-orange) 0%, #FF3B30 100%); color: #fff; }
-        .btn:active { transform: scale(0.96); }
-        .toggle-btn { margin-left: auto; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.05); color: var(--text-main); font-size: 11px; padding: 6px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
-        .toggle-btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.15); }
-        .admin-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        .admin-table th, .admin-table td { text-align: left; padding: 12px 6px; font-size: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        .admin-table th { color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
-        .inline-input { width: 45px; padding: 6px 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 11px; margin: 0; text-align: center; }
-        .table-action-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; transition: transform 0.1s; }
-        .btn-save-row { color: var(--apple-green); }
-        .btn-delete-row { color: var(--apple-red); margin-left: 4px; }
-        .lead-badge { padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        
-        .lead-action-box { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-        .lead-comms-group { display: flex; gap: 8px; align-items: center; }
-        .comm-link-btn { text-decoration: none; font-size: 14px; padding: 4px 6px; border-radius: 6px; transition: transform 0.1s; display: inline-flex; align-items: center; justify-content: center; }
-        .comm-link-btn:active { transform: scale(0.85); }
-        .comm-call { color: var(--apple-blue); }
-        .comm-wa { color: #25D366; }
-        .btn-delete-lead { background: none; border: none; color: var(--apple-red); opacity: 0.5; cursor: pointer; font-size: 12px; padding: 2px; margin-left: 4px; transition: opacity 0.2s; }
-        .btn-delete-lead:hover { opacity: 1; }
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-        .strict-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,59,48,0.05); border: 1px solid rgba(255,59,48,0.15); padding: 10px 14px; border-radius: 12px; margin-top: 8px; font-size: 13px; font-weight: 600; }
-        .footer-text { text-align: center; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; margin-top: 35px; }
+<title>Admin Dashboard | Black Terminal</title>
 
-        /* Status Badges */
-        .status-badge { font-size: 9px; padding: 4px 8px; border-radius: 8px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 4px; }
-        .status-pending { background: rgba(191, 90, 242, 0.15); color: var(--cyber-purple); }
-        .status-completed { background: rgba(48, 209, 88, 0.15); color: var(--apple-green); }
-    </style>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<style>
+
+/* =====================================================
+   ROOT
+===================================================== */
+
+:root{
+
+    --blue:#0A84FF;
+    --green:#30D158;
+    --red:#FF453A;
+    --orange:#FF9F0A;
+    --purple:#BF5AF2;
+    --cyan:#22D3EE;
+
+    --bg:#06060A;
+
+    --glass:
+        rgba(16,16,24,.72);
+
+    --glass2:
+        rgba(25,25,36,.68);
+
+    --border:
+        rgba(255,255,255,.07);
+
+    --border-hover:
+        rgba(255,255,255,.14);
+
+    --text:
+        #FFFFFF;
+
+    --text-sec:
+        #AEAEB2;
+
+    --muted:
+        #8E8E93;
+
+    --shadow:
+        0 18px 45px
+        rgba(0,0,0,.58);
+
+}
+
+
+/* =====================================================
+   RESET
+===================================================== */
+
+*{
+
+    box-sizing:border-box;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+}
+
+
+html{
+
+    scroll-behavior:smooth;
+
+}
+
+
+body{
+
+    margin:0;
+
+    min-height:100vh;
+
+    color:var(--text);
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif;
+
+    background:
+
+        radial-gradient(
+            circle at 10% 0%,
+            rgba(191,90,242,.12),
+            transparent 30%
+        ),
+
+        radial-gradient(
+            circle at 90% 8%,
+            rgba(10,132,255,.10),
+            transparent 30%
+        ),
+
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(48,209,88,.045),
+            transparent 35%
+        ),
+
+        var(--bg);
+
+    background-attachment:fixed;
+
+    padding:
+
+        calc(
+            env(safe-area-inset-top) + 18px
+        )
+
+        15px
+
+        calc(
+            env(safe-area-inset-bottom) + 35px
+        );
+
+    -webkit-font-smoothing:
+        antialiased;
+
+}
+
+
+/* =====================================================
+   CONTAINER
+===================================================== */
+
+.container{
+
+    width:100%;
+
+    max-width:480px;
+
+    margin:auto;
+
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.header{
+
+    position:relative;
+
+    margin:
+        18px 0 25px;
+
+}
+
+
+.header p{
+
+    margin:
+        0 0 5px;
+
+    color:
+        var(--orange);
+
+    font-size:
+        10px;
+
+    font-weight:
+        900;
+
+    letter-spacing:
+        1.8px;
+
+    text-transform:
+        uppercase;
+
+}
+
+
+.header h1{
+
+    margin:0;
+
+    font-size:
+        35px;
+
+    line-height:
+        1.05;
+
+    letter-spacing:
+        -1.5px;
+
+    font-weight:
+        900;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            #FFFFFF 20%,
+            #FFD27A 55%,
+            #FF9F0A 100%
+        );
+
+    -webkit-background-clip:
+        text;
+
+    -webkit-text-fill-color:
+        transparent;
+
+}
+
+
+/* =====================================================
+   LIVE STATUS
+===================================================== */
+
+.live-status{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:7px;
+
+    margin-top:10px;
+
+    padding:
+        7px 11px;
+
+    border-radius:
+        12px;
+
+    color:
+        var(--green);
+
+    background:
+        rgba(48,209,88,.07);
+
+    border:
+        1px solid
+        rgba(48,209,88,.15);
+
+    font-size:
+        9px;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        .6px;
+
+}
+
+
+.live-dot{
+
+    width:6px;
+    height:6px;
+
+    border-radius:50%;
+
+    background:
+        var(--green);
+
+    box-shadow:
+        0 0 10px
+        var(--green);
+
+    animation:
+        livePulse 1.5s infinite;
+
+}
+
+
+@keyframes livePulse{
+
+    0%,100%{
+        opacity:1;
+        transform:scale(1);
+    }
+
+    50%{
+        opacity:.45;
+        transform:scale(.75);
+    }
+
+}
+
+
+/* =====================================================
+   STATS
+===================================================== */
+
+.admin-stats{
+
+    display:grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:12px;
+
+    margin-bottom:18px;
+
+}
+
+
+.mini-box{
+
+    position:relative;
+
+    overflow:hidden;
+
+    padding:17px;
+
+    border-radius:19px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.055),
+            rgba(255,255,255,.018)
+        );
+
+    border:
+        1px solid
+        var(--border);
+
+    box-shadow:
+        var(--shadow);
+
+}
+
+
+.mini-box::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:80px;
+    height:80px;
+
+    right:-30px;
+    bottom:-35px;
+
+    border-radius:50%;
+
+    background:
+        rgba(10,132,255,.07);
+
+    filter:
+        blur(8px);
+
+}
+
+
+.mini-box small{
+
+    display:block;
+
+    margin-bottom:6px;
+
+    color:
+        var(--muted);
+
+    font-size:
+        8px;
+
+    font-weight:
+        850;
+
+    letter-spacing:
+        1px;
+
+}
+
+
+.mini-box span{
+
+    font-size:
+        25px;
+
+    font-weight:
+        900;
+
+}
+
+
+/* =====================================================
+   CARDS
+===================================================== */
+
+.card{
+
+    position:relative;
+
+    margin-bottom:17px;
+
+    padding:21px;
+
+    border-radius:24px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24,24,34,.80),
+            rgba(10,10,16,.70)
+        );
+
+    border:
+        1px solid
+        var(--border);
+
+    backdrop-filter:
+        blur(25px);
+
+    -webkit-backdrop-filter:
+        blur(25px);
+
+    box-shadow:
+        var(--shadow);
+
+    transition:
+        .3s ease;
+
+}
+
+
+.card:hover{
+
+    border-color:
+        var(--border-hover);
+
+}
+
+
+.card > h3{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:9px;
+
+    margin:
+        0 0 19px;
+
+    color:
+        var(--text-sec);
+
+    font-size:
+        11px;
+
+    font-weight:
+        850;
+
+    letter-spacing:
+        .9px;
+
+    text-transform:
+        uppercase;
+
+}
+
+
+/* =====================================================
+   COLLAPSE
+===================================================== */
+
+.collapse-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    cursor:pointer;
+
+    user-select:none;
+
+}
+
+
+.collapse-header h3{
+
+    margin:0;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:
+        var(--text-sec);
+
+    font-size:
+        11px;
+
+    font-weight:
+        850;
+
+    letter-spacing:
+        .8px;
+
+    text-transform:
+        uppercase;
+
+}
+
+
+.collapse-icon{
+
+    color:
+        var(--muted);
+
+    font-size:
+        12px;
+
+    transition:
+        .3s ease;
+
+}
+
+
+.collapse-content{
+
+    max-height:0;
+
+    overflow:hidden;
+
+    opacity:0;
+
+    transition:
+
+        max-height .45s ease,
+
+        margin-top .3s ease,
+
+        opacity .3s ease;
+
+}
+
+
+.card.active
+.collapse-content{
+
+    max-height:
+        500px;
+
+    margin-top:
+        19px;
+
+    opacity:1;
+
+}
+
+
+.card.active
+.collapse-icon{
+
+    transform:
+        rotate(180deg);
+
+    color:#fff;
+
+}
+
+
+/* =====================================================
+   INPUTS
+===================================================== */
+
+input,
+select{
+
+    width:100%;
+
+    margin-bottom:11px;
+
+    padding:
+        14px 15px;
+
+    color:#fff;
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius:
+        14px;
+
+    outline:none;
+
+    font-size:
+        13px;
+
+    transition:
+        .25s ease;
+
+}
+
+
+input::placeholder{
+
+    color:#68686F;
+
+}
+
+
+input:focus,
+select:focus{
+
+    border-color:
+        var(--orange);
+
+    box-shadow:
+        0 0 0 4px
+        rgba(255,159,10,.10);
+
+}
+
+
+select option{
+
+    background:
+        #111119;
+
+    color:#fff;
+
+}
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+.btn{
+
+    width:100%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:9px;
+
+    padding:
+        14px 18px;
+
+    border:none;
+
+    border-radius:
+        15px;
+
+    font-size:
+        13px;
+
+    font-weight:
+        850;
+
+    cursor:pointer;
+
+    transition:
+        .2s ease;
+
+}
+
+
+.btn:active{
+
+    transform:
+        scale(.96);
+
+}
+
+
+.btn-purple{
+
+    color:#fff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #BF5AF2,
+            #7C3AED
+        );
+
+    box-shadow:
+        0 10px 25px
+        rgba(191,90,242,.20);
+
+}
+
+
+.btn-red{
+
+    color:#fff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #FF453A,
+            #C92828
+        );
+
+}
+
+
+.btn-orange{
+
+    color:#fff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #FF9F0A,
+            #FF453A
+        );
+
+}
+
+
+/* =====================================================
+   TOGGLE BUTTON
+===================================================== */
+
+.toggle-btn{
+
+    padding:
+        7px 12px;
+
+    color:#fff;
+
+    background:
+        rgba(255,255,255,.055);
+
+    border:
+        1px solid
+        rgba(255,255,255,.07);
+
+    border-radius:
+        10px;
+
+    font-size:
+        9px;
+
+    font-weight:
+        850;
+
+    cursor:pointer;
+
+}
+
+
+.toggle-btn:hover{
+
+    background:
+        rgba(255,255,255,.10);
+
+}
+
+
+/* =====================================================
+   LIST
+===================================================== */
+
+.list-container{
+
+    max-height:
+        300px;
+
+    overflow-y:
+        auto;
+
+    padding-right:
+        3px;
+
+}
+
+
+.list-container::-webkit-scrollbar{
+
+    width:4px;
+
+}
+
+
+.list-container::-webkit-scrollbar-thumb{
+
+    background:
+        rgba(255,255,255,.10);
+
+    border-radius:
+        10px;
+
+}
+
+
+/* =====================================================
+   DATA ITEM
+===================================================== */
+
+.data-item{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    margin-bottom:
+        9px;
+
+    padding:
+        13px;
+
+    border-radius:
+        16px;
+
+    background:
+        rgba(255,255,255,.025);
+
+    border:
+        1px solid
+        rgba(255,255,255,.06);
+
+}
+
+
+.data-info{
+
+    min-width:0;
+
+}
+
+
+.data-info p{
+
+    margin:0;
+
+    color:#E5E5EA;
+
+    font-size:
+        12px;
+
+    font-weight:
+        750;
+
+}
+
+
+.data-info small{
+
+    display:block;
+
+    margin-top:
+        4px;
+
+    color:
+        var(--muted);
+
+    font-size:
+        9px;
+
+}
+
+
+/* =====================================================
+   ACTION BUTTONS
+===================================================== */
+
+.action-btn-group{
+
+    display:flex;
+
+    gap:6px;
+
+    flex-shrink:0;
+
+}
+
+
+.sm-btn{
+
+    padding:
+        7px 10px;
+
+    border-radius:
+        9px;
+
+    font-size:
+        9px;
+
+    font-weight:
+        850;
+
+    cursor:pointer;
+
+    border:
+        1px solid
+        transparent;
+
+}
+
+
+.btn-approve{
+
+    color:
+        var(--green);
+
+    background:
+        rgba(48,209,88,.09);
+
+    border-color:
+        rgba(48,209,88,.18);
+
+}
+
+
+.btn-reject{
+
+    color:
+        var(--red);
+
+    background:
+        rgba(255,69,58,.09);
+
+    border-color:
+        rgba(255,69,58,.18);
+
+}
+
+
+/* =====================================================
+   PAYROLL TABLE
+===================================================== */
+
+.table-wrapper{
+
+    overflow-x:auto;
+
+    border-radius:
+        16px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.05);
+
+}
+
+
+.admin-table{
+
+    width:100%;
+
+    min-width:580px;
+
+    border-collapse:
+        collapse;
+
+}
+
+
+.admin-table th{
+
+    position:sticky;
+
+    top:0;
+
+    z-index:2;
+
+    padding:
+        11px 8px;
+
+    text-align:left;
+
+    background:
+        #15151E;
+
+    color:
+        #77777F;
+
+    font-size:
+        8px;
+
+    font-weight:
+        850;
+
+    letter-spacing:
+        .7px;
+
+    text-transform:
+        uppercase;
+
+}
+
+
+.admin-table td{
+
+    padding:
+        11px 8px;
+
+    border-top:
+        1px solid
+        rgba(255,255,255,.045);
+
+    color:#E7E7E9;
+
+    font-size:
+        10px;
+
+    vertical-align:
+        middle;
+
+}
+
+
+.inline-input{
+
+    width:
+        55px;
+
+    margin:0;
+
+    padding:
+        7px 5px;
+
+    text-align:center;
+
+    font-size:
+        10px;
+
+}
+
+
+.salary-input{
+
+    width:
+        70px;
+
+    color:
+        var(--green)!important;
+
+    font-weight:
+        850;
+
+}
+
+
+.table-action-btn{
+
+    padding:
+        5px;
+
+    border:none;
+
+    background:none;
+
+    cursor:pointer;
+
+    font-size:
+        14px;
+
+}
+
+
+.btn-save-row{
+
+    color:
+        var(--green);
+
+}
+
+
+.btn-delete-row{
+
+    color:
+        var(--red);
+
+    margin-left:
+        4px;
+
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+.status-badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    margin-top:
+        4px;
+
+    padding:
+        4px 7px;
+
+    border-radius:
+        8px;
+
+    font-size:
+        8px;
+
+    font-weight:
+        850;
+
+    text-transform:
+        uppercase;
+
+}
+
+
+.status-pending{
+
+    color:
+        var(--purple);
+
+    background:
+        rgba(191,90,242,.10);
+
+}
+
+
+.status-completed{
+
+    color:
+        var(--green);
+
+    background:
+        rgba(48,209,88,.10);
+
+}
+
+
+/* =====================================================
+   LEADS
+===================================================== */
+
+.lead-action-box{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-end;
+
+    gap:7px;
+
+}
+
+
+.lead-comms-group{
+
+    display:flex;
+
+    gap:7px;
+
+}
+
+
+.comm-link-btn{
+
+    width:30px;
+    height:30px;
+
+    display:inline-flex;
+
+    align-items:center;
+    justify-content:center;
+
+    text-decoration:none;
+
+    border-radius:
+        9px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    font-size:
+        13px;
+
+}
+
+
+.comm-call{
+
+    color:
+        var(--blue);
+
+}
+
+
+.comm-wa{
+
+    color:
+        #25D366;
+
+}
+
+
+.btn-delete-lead{
+
+    width:30px;
+    height:30px;
+
+    border:none;
+
+    border-radius:
+        9px;
+
+    color:
+        var(--red);
+
+    background:
+        rgba(255,69,58,.06);
+
+    cursor:pointer;
+
+}
+
+
+/* =====================================================
+   STRICT DAYS
+===================================================== */
+
+.strict-item{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    margin-top:
+        8px;
+
+    padding:
+        11px 13px;
+
+    border-radius:
+        13px;
+
+    color:#fff;
+
+    background:
+        rgba(255,69,58,.045);
+
+    border:
+        1px solid
+        rgba(255,69,58,.14);
+
+    font-size:
+        11px;
+
+    font-weight:
+        750;
+
+}
+
+
+/* =====================================================
+   PAYROLL CHANGE LEGEND
+===================================================== */
+
+.payroll-help{
+
+    display:flex;
+
+    gap:7px;
+
+    flex-wrap:wrap;
+
+    margin-top:
+        12px;
+
+}
+
+
+.help-pill{
+
+    padding:
+        5px 8px;
+
+    border-radius:
+        8px;
+
+    font-size:
+        8px;
+
+    font-weight:
+        800;
+
+}
+
+
+.help-add{
+
+    color:
+        var(--green);
+
+    background:
+        rgba(48,209,88,.08);
+
+}
+
+
+.help-reduce{
+
+    color:
+        var(--red);
+
+    background:
+        rgba(255,69,58,.08);
+
+}
+
+
+.help-modify{
+
+    color:
+        var(--orange);
+
+    background:
+        rgba(255,159,10,.08);
+
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+.footer-text{
+
+    margin-top:
+        32px;
+
+    text-align:center;
+
+    color:
+        #56565D;
+
+    font-size:
+        9px;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        1.5px;
+
+}
+
+
+/* =====================================================
+   TOAST
+===================================================== */
+
+.toast{
+
+    position:fixed;
+
+    left:50%;
+
+    bottom:24px;
+
+    z-index:9999;
+
+    width:
+        calc(100% - 30px);
+
+    max-width:
+        430px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:
+        14px 16px;
+
+    border-radius:
+        15px;
+
+    background:
+        rgba(20,20,28,.96);
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    backdrop-filter:
+        blur(20px);
+
+    box-shadow:
+        0 15px 40px
+        rgba(0,0,0,.55);
+
+    transform:
+        translate(-50%,130px);
+
+    transition:
+        .35s ease;
+
+    font-size:
+        11px;
+
+    font-weight:
+        750;
+
+}
+
+
+.toast.show{
+
+    transform:
+        translate(-50%,0);
+
+}
+
+
+.toast i{
+
+    color:
+        var(--green);
+
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media(max-width:390px){
+
+    .header h1{
+
+        font-size:
+            30px;
+
+    }
+
+    .card{
+
+        padding:
+            18px;
+
+    }
+
+    .mini-box{
+
+        padding:
+            14px;
+
+    }
+
+}
+
+</style>
+
 </head>
+
+
 <body>
+
+
 <div class="container">
-    <div class="header animate__animated animate__fadeIn">
-        <p>ROOT CONTROLLER</p>
-        <h1>Admin Terminal</h1>
-    </div>
 
-    <div class="admin-stats animate__animated animate__fadeInUp">
-        <div class="mini-box"><small>TOTAL STAFF</small><span id="stat-staff-count">0</span></div>
-        <div class="mini-box"><small>PENDING PAYOUTS</small><span id="stat-payout-count" style="color: var(--apple-orange);">0</span></div>
-    </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-orange);">
-        <h3><i class="fas fa-wallet" style="color: var(--apple-orange);"></i> Pending Payout Requests</h3>
-        <div class="list-container" id="payout-requests-list">
-            <div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending requests</p></div>
+    <!-- =================================================
+         HEADER
+    ================================================= -->
+
+    <div
+        class="header animate__animated animate__fadeIn"
+    >
+
+        <p>
+            ROOT CONTROLLER
+        </p>
+
+        <h1>
+            Admin Terminal
+        </h1>
+
+        <div
+            class="live-status"
+        >
+
+            <span
+                class="live-dot"
+            ></span>
+
+            REALTIME CONTROL ACTIVE
+
         </div>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-top: 3px solid var(--apple-green);">
-        <h3><i class="fas fa-chart-line" style="color: var(--apple-green);"></i> Staff Payroll & Controls</h3>
-        <div style="overflow-x: auto;">
-            <table class="admin-table">
-                <thead>
-                    <tr><th>Staff Profile</th><th>Wage</th><th>Streak</th><th>Punch In</th><th>Balance</th><th style="text-align: center;">Actions</th></tr>
-                </thead>
-                <tbody id="payment-performance-table">
-                    <tr><td colspan="6" style="text-align:center; opacity:0.5; padding:15px;">Loading structural metrics...</td></tr>
-                </tbody>
-            </table>
+
+    <!-- =================================================
+         STATS
+    ================================================= -->
+
+    <div
+        class="
+            admin-stats
+            animate__animated
+            animate__fadeInUp
+        "
+    >
+
+        <div
+            class="mini-box"
+        >
+
+            <small>
+                TOTAL STAFF
+            </small>
+
+            <span
+                id="stat-staff-count"
+            >
+                0
+            </span>
+
         </div>
+
+
+        <div
+            class="mini-box"
+        >
+
+            <small>
+                PENDING PAYOUTS
+            </small>
+
+            <span
+                id="stat-payout-count"
+                style="
+                    color:var(--orange)
+                "
+            >
+                0
+            </span>
+
+        </div>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-orange); display: flex; align-items: center; justify-content: space-between; padding: 18px 22px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-file-invoice-dollar" style="color: var(--apple-orange); font-size: 18px;"></i>
-            <div>
-                <h3 style="margin: 0; font-size: 14px; color: #FFF; text-transform: none; letter-spacing: normal;">Student Fees Ledger</h3>
-                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px;">Global collections & parameters log</small>
+
+    <!-- =================================================
+         PAYOUT REQUESTS
+    ================================================= -->
+
+    <div
+        class="
+            card
+            animate__animated
+            animate__fadeInUp
+        "
+        style="
+            border-left:
+                4px solid
+                var(--orange)
+        "
+    >
+
+        <h3>
+
+            <i
+                class="fas fa-wallet"
+                style="
+                    color:var(--orange)
+                "
+            ></i>
+
+            Pending Payout Requests
+
+        </h3>
+
+
+        <div
+            class="list-container"
+            id="payout-requests-list"
+        >
+
+            <div
+                style="
+                    text-align:center;
+                    padding:15px;
+                    opacity:.5
+                "
+            >
+
+                <p
+                    style="
+                        font-size:11px
+                    "
+                >
+                    No pending requests
+                </p>
+
             </div>
+
         </div>
-        <button class="toggle-btn" onclick="window.location.href='fees.html'" style="background: rgba(255, 159, 10, 0.12); color: var(--apple-orange); border: 1px solid rgba(255, 159, 10, 0.18); padding: 8px 14px;">
-            OPEN PANEL <i class="fas fa-arrow-right" style="margin-left: 4px; font-size: 9px;"></i>
+
+    </div>
+
+
+    <!-- =================================================
+         STAFF PAYROLL
+    ================================================= -->
+
+    <div
+        class="
+            card
+            animate__animated
+            animate__fadeInUp
+        "
+        style="
+            border-top:
+                3px solid
+                var(--green)
+        "
+    >
+
+        <h3>
+
+            <i
+                class="fas fa-chart-line"
+                style="
+                    color:var(--green)
+                "
+            ></i>
+
+            Staff Payroll & Controls
+
+        </h3>
+
+
+        <div
+            class="table-wrapper"
+        >
+
+            <table
+                class="admin-table"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Staff
+                        </th>
+
+                        <th>
+                            Wage
+                        </th>
+
+                        <th>
+                            Streak
+                        </th>
+
+                        <th>
+                            Punch
+                        </th>
+
+                        <th>
+                            Balance
+                        </th>
+
+                        <th
+                            style="
+                                text-align:center
+                            "
+                        >
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody
+                    id="payment-performance-table"
+                >
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            style="
+                                text-align:center;
+                                opacity:.5;
+                                padding:15px
+                            "
+                        >
+
+                            Loading staff metrics...
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            class="payroll-help"
+        >
+
+            <span
+                class="
+                    help-pill
+                    help-add
+                "
+            >
+                + ADD
+            </span>
+
+            <span
+                class="
+                    help-pill
+                    help-reduce
+                "
+            >
+                − REDUCE
+            </span>
+
+            <span
+                class="
+                    help-pill
+                    help-modify
+                "
+            >
+                ✎ MODIFY
+            </span>
+
+            <span
+                style="
+                    color:#666;
+                    font-size:8px;
+                    align-self:center
+                "
+            >
+                Salary changes are automatically logged.
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         FEES
+    ================================================= -->
+
+    <div
+        class="
+            card
+            animate__animated
+            animate__fadeInUp
+        "
+        style="
+            border-left:
+                4px solid
+                var(--orange);
+
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+
+            padding:
+                18px 20px;
+        "
+    >
+
+        <div
+            style="
+                display:flex;
+                align-items:center;
+                gap:12px;
+            "
+        >
+
+            <i
+                class="fas fa-file-invoice-dollar"
+                style="
+                    color:var(--orange);
+                    font-size:18px
+                "
+            ></i>
+
+            <div>
+
+                <h3
+                    style="
+                        margin:0;
+                        font-size:13px;
+                        color:#fff;
+                        text-transform:none;
+                        letter-spacing:normal
+                    "
+                >
+                    Student Fees Ledger
+                </h3>
+
+                <small
+                    style="
+                        color:var(--muted);
+                        font-size:9px
+                    "
+                >
+                    Global collections & parameters
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="toggle-btn"
+            onclick="
+                window.location.href='fees.html'
+            "
+            style="
+                color:var(--orange);
+                background:
+                    rgba(255,159,10,.09);
+                border-color:
+                    rgba(255,159,10,.18)
+            "
+        >
+
+            OPEN
+
+            <i
+                class="fas fa-arrow-right"
+            ></i>
+
         </button>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-blue);">
-        <h3><i class="fas fa-filter" style="color: var(--apple-blue);"></i> Realtime Leads Sync Pipeline</h3>
-        <div class="list-container" id="leads-realtime-list">
-            <div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">Waiting for pipeline stream...</p></div>
+
+    <!-- =================================================
+         LEADS
+    ================================================= -->
+
+    <div
+        class="
+            card
+            animate__animated
+            animate__fadeInUp
+        "
+        style="
+            border-left:
+                4px solid
+                var(--blue)
+        "
+    >
+
+        <h3>
+
+            <i
+                class="fas fa-filter"
+                style="
+                    color:var(--blue)
+                "
+            ></i>
+
+            Realtime Leads Pipeline
+
+        </h3>
+
+
+        <div
+            class="list-container"
+            id="leads-realtime-list"
+        >
+
+            <div
+                style="
+                    text-align:center;
+                    padding:15px;
+                    opacity:.5
+                "
+            >
+
+                <p
+                    style="
+                        font-size:11px
+                    "
+                >
+                    Waiting for pipeline...
+                </p>
+
+            </div>
+
         </div>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-top: 3px solid var(--cyber-purple);" id="broadcast-form-card">
-        <div class="collapse-header" onclick="toggleCollapseCard('broadcast-form-card')">
-            <h3><i class="fas fa-tasks" style="color: var(--cyber-purple);"></i> Broadcast Priority Assignment</h3>
-            <i class="fas fa-chevron-down collapse-icon"></i>
+
+    <!-- =================================================
+         TASK ASSIGNMENT
+    ================================================= -->
+
+    <div
+        class="
+            card
+            animate__animated
+            animate__fadeInUp
+        "
+        style="
+            border-top:
+                3px solid
+                var(--purple)
+        "
+        id="broadcast-form-card"
+    >
+
+        <div
+            class="collapse-header"
+            onclick="
+                toggleCollapseCard(
+                    'broadcast-form-card'
+                )
+            "
+        >
+
+            <h3>
+
+                <i
+                    class="fas fa-tasks"
+                    style="
+                        color:var(--purple)
+                    "
+                ></i>
+
+                Broadcast Priority Assignment
+
+            </h3>
+
+
+            <i
+                class="
+                    fas
+                    fa-chevron-down
+                    collapse-icon
+                "
+            ></i>
+
         </div>
-        <div class="collapse-content">
-            <select id="task-staff-select"><option value="">Select Target Staff</option></select>
-            <input type="text" id="task-desc" placeholder="Enter assignment details...">
-            <button class="btn" style="background: var(--cyber-purple); color: white;" onclick="assignTask()">DEPLOY TASK <i class="fas fa-bolt" style="font-size: 11px;"></i></button>
+
+
+        <div
+            class="collapse-content"
+        >
+
+            <select
+                id="task-staff-select"
+            >
+
+                <option value="">
+                    Select Target Staff
+                </option>
+
+            </select>
+
+
+            <input
+                type="text"
+                id="task-desc"
+                placeholder="Enter assignment details..."
+            >
+
+
+            <button
+                class="
+                    btn
+                    btn-purple
+                "
+                onclick="assignTask()"
+            >
+
+                DEPLOY TASK
+
+                <i
+                    class="fas fa-bolt"
+                ></i>
+
+            </button>
+
         </div>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--cyber-purple);">
-        <h3><i class="fas fa-project-diagram" style="color: var(--cyber-purple);"></i> Active Broadcast Assignments Pipeline</h3>
-        <div class="list-container" id="broadcast-tasks-list">
-            <div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active deployments monitored.</p></div>
+
+    <!-- =================================================
+         TASK PIPELINE
+    ================================================= -->
+
+    <div
+        class="
+            card
+            animate__animated
+            animate__fadeInUp
+        "
+        style="
+            border-left:
+                4px solid
+                var(--purple)
+        "
+    >
+
+        <h3>
+
+            <i
+                class="fas fa-project-diagram"
+                style="
+                    color:var(--purple)
+                "
+            ></i>
+
+            Active Broadcast Assignments
+
+        </h3>
+
+
+        <div
+            class="list-container"
+            id="broadcast-tasks-list"
+        >
+
+            <div
+                style="
+                    text-align:center;
+                    padding:15px;
+                    opacity:.5
+                "
+            >
+
+                <p
+                    style="
+                        font-size:11px
+                    "
+                >
+                    No active deployments.
+                </p>
+
+            </div>
+
         </div>
+
     </div>
 
-    <div class="card animate__animated animate__fadeInUp" style="border-left: 4px solid var(--apple-red);" id="strict-days-card">
-        <div class="collapse-header" onclick="toggleCollapseCard('strict-days-card')">
-            <h3><i class="fas fa-calendar-alt" style="color: var(--apple-red);"></i> Configure Strict Day Protocols</h3>
-            <i class="fas fa-chevron-down collapse-icon"></i>
+
+    <!-- =================================================
+         STRICT DAYS
+    ================================================= -->
+
+    <div
+        class="
+            card
+            animate__animated
+            animate__fadeInUp
+        "
+        style="
+            border-left:
+                4px solid
+                var(--red)
+        "
+        id="strict-days-card"
+    >
+
+        <div
+            class="collapse-header"
+            onclick="
+                toggleCollapseCard(
+                    'strict-days-card'
+                )
+            "
+        >
+
+            <h3>
+
+                <i
+                    class="fas fa-calendar-alt"
+                    style="
+                        color:var(--red)
+                    "
+                ></i>
+
+                Configure Strict Day Protocols
+
+            </h3>
+
+
+            <i
+                class="
+                    fas
+                    fa-chevron-down
+                    collapse-icon
+                "
+            ></i>
+
         </div>
-        <div class="collapse-content">
-            <input type="date" id="strict-date-input" style="margin-bottom: 8px;">
-            <button class="btn" style="background: var(--apple-red); color: white; margin-bottom: 15px;" onclick="setStrictDay()">LOCK DATE <i class="fas fa-lock" style="font-size: 11px;"></i></button>
-            <div id="strict-days-active-registry"></div>
+
+
+        <div
+            class="collapse-content"
+        >
+
+            <input
+                type="date"
+                id="strict-date-input"
+            >
+
+
+            <button
+                class="
+                    btn
+                    btn-red
+                "
+                onclick="setStrictDay()"
+                style="
+                    margin-bottom:15px
+                "
+            >
+
+                LOCK DATE
+
+                <i
+                    class="fas fa-lock"
+                ></i>
+
+            </button>
+
+
+            <div
+                id="strict-days-active-registry"
+            ></div>
+
         </div>
+
     </div>
 
-    <p class="footer-text">ADMIN CONTROL v2.9 • SECURE PROTOCOLS</p>
+
+    <p
+        class="footer-text"
+    >
+        BLACK TERMINAL • ADMIN CONTROL v3.0
+    </p>
+
 </div>
 
+
+<!-- =====================================================
+     TOAST
+===================================================== -->
+
+<div
+    class="toast"
+    id="toast"
+>
+
+    <i
+        class="fas fa-circle-check"
+    ></i>
+
+    <span
+        id="toast-text"
+    >
+        Done
+    </span>
+
+</div>
+
+
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.firebasestorage.app",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
 
-    document.addEventListener("DOMContentLoaded", () => { initAdminEngine(); });
+/* =====================================================
+   FIREBASE
+===================================================== */
 
-    function toggleCollapseCard(cardId) {
-        const cardElement = document.getElementById(cardId);
-        if (cardElement) { cardElement.classList.toggle('active'); }
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyCEyfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
+
+    authDomain:
+        "black-terminal-f2c91.firebaseapp.com",
+
+    databaseURL:
+        "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+
+    projectId:
+        "black-terminal-f2c91",
+
+    storageBucket:
+        "black-terminal-f2c91.firebasestorage.app",
+
+    messagingSenderId:
+        "552489994197",
+
+    appId:
+        "1:552489994197:web:7662331264c334ffbadf5c"
+
+};
+
+
+firebase.initializeApp(
+    firebaseConfig
+);
+
+
+const db =
+    firebase.database();
+
+
+/* =====================================================
+   ADMIN NAME
+===================================================== */
+
+const adminName =
+    localStorage.getItem(
+        "bt_admin_name"
+    )
+    ||
+    localStorage.getItem(
+        "adminName"
+    )
+    ||
+    "Admin";
+
+
+/* =====================================================
+   INIT
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    ()=>{
+
+        initAdminEngine();
+
+    }
+);
+
+
+/* =====================================================
+   TOAST
+===================================================== */
+
+let toastTimer;
+
+
+function showToast(
+    message
+){
+
+    const toast =
+        document.getElementById(
+            "toast"
+        );
+
+    const text =
+        document.getElementById(
+            "toast-text"
+        );
+
+
+    text.innerText =
+        message;
+
+
+    toast.classList.add(
+        "show"
+    );
+
+
+    clearTimeout(
+        toastTimer
+    );
+
+
+    toastTimer =
+        setTimeout(
+            ()=>{
+
+                toast.classList.remove(
+                    "show"
+                );
+
+            },
+            2800
+        );
+
+}
+
+
+/* =====================================================
+   COLLAPSE
+===================================================== */
+
+function toggleCollapseCard(
+    cardId
+){
+
+    const card =
+        document.getElementById(
+            cardId
+        );
+
+
+    if(card){
+
+        card.classList.toggle(
+            "active"
+        );
+
     }
 
-    function initAdminEngine() {
-        const todayStr = new Date().toISOString().split('T')[0];
+}
 
-        // Realtime Staff Engine
-        db.ref('staff').on('value', staffSnap => {
-            db.ref(`attendance`).on('value', attendanceSnap => {
-                const select = document.getElementById('task-staff-select');
-                const staffCountSpan = document.getElementById('stat-staff-count');
-                const performanceTable = document.getElementById('payment-performance-table');
-                
-                if(!select || !staffCountSpan || !performanceTable) return;
-                select.innerHTML = '<option value="">Select Target Staff</option>';
-                performanceTable.innerHTML = "";
-                
-                if(staffSnap.exists()){
-                    const staffData = staffSnap.val();
-                    const attendanceData = attendanceSnap.exists() ? attendanceSnap.val() : {};
-                    staffCountSpan.innerText = Object.keys(staffData).length;
-                    
-                    Object.keys(staffData).forEach(id => {
-                        const staff = staffData[id];
-                        
-                        const option = document.createElement('option');
-                        option.value = id; option.innerText = `${staff.name || 'Unknown'} (${id})`;
-                        select.appendChild(option);
-                        
-                        let punchTimeDisplay = `<span style="color: var(--apple-red); font-weight:600; font-size:11px;">Absent</span>`;
-                        if(attendanceData[id] && attendanceData[id][todayStr]) {
-                            const time = attendanceData[id][todayStr].time || "Present";
-                            punchTimeDisplay = `<span style="color: var(--apple-green); font-weight:700; font-size:11px;"><i class="fas fa-clock"></i> ${time}</span>`;
+
+/* =====================================================
+   LOCAL DATE
+===================================================== */
+
+function getLocalDate(){
+
+    const d =
+        new Date();
+
+
+    return (
+
+        d.getFullYear()
+        +
+        "-"
+        +
+        String(
+            d.getMonth()+1
+        ).padStart(
+            2,
+            "0"
+        )
+        +
+        "-"
+        +
+        String(
+            d.getDate()
+        ).padStart(
+            2,
+            "0"
+        )
+
+    );
+
+}
+
+
+/* =====================================================
+   DATE TIME
+===================================================== */
+
+function getActivityData(){
+
+    const now =
+        new Date();
+
+
+    return {
+
+        timestamp:
+            Date.now(),
+
+        date:
+            getLocalDate(),
+
+        time:
+            now.toLocaleTimeString(
+                "en-IN",
+                {
+                    hour:"2-digit",
+                    minute:"2-digit",
+                    second:"2-digit",
+                    hour12:true
+                }
+            )
+
+    };
+
+}
+
+
+/* =====================================================
+   ESCAPE
+===================================================== */
+
+function escapeHtml(
+    value
+){
+
+    return String(
+        value ?? ""
+    )
+
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+
+    .replace(
+        /</g,
+        "&lt;"
+    )
+
+    .replace(
+        />/g,
+        "&gt;"
+    )
+
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+
+    .replace(
+        /'/g,
+        "&#039;"
+    );
+
+}
+
+
+/* =====================================================
+   INIT ADMIN ENGINE
+===================================================== */
+
+function initAdminEngine(){
+
+    /* ================================================
+       STAFF + ATTENDANCE
+    ================================================ */
+
+    db.ref(
+        "staff"
+    )
+    .on(
+        "value",
+        staffSnap=>{
+
+            db.ref(
+                "attendance"
+            )
+            .once(
+                "value",
+                attendanceSnap=>{
+
+                    renderStaffTable(
+                        staffSnap,
+                        attendanceSnap
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    /* ================================================
+       PAYOUTS
+    ================================================ */
+
+    db.ref(
+        "salaryRequests"
+    )
+    .on(
+        "value",
+        renderPayoutRequests
+    );
+
+
+    /* ================================================
+       LEADS
+    ================================================ */
+
+    db.ref(
+        "leads"
+    )
+    .on(
+        "value",
+        renderLeads
+    );
+
+
+    /* ================================================
+       TASKS
+    ================================================ */
+
+    db.ref(
+        "tasks"
+    )
+    .on(
+        "value",
+        renderTasks
+    );
+
+
+    /* ================================================
+       STRICT DAYS
+    ================================================ */
+
+    db.ref(
+        "strictDays"
+    )
+    .on(
+        "value",
+        renderStrictDays
+    );
+
+}
+
+
+/* =====================================================
+   STAFF TABLE
+===================================================== */
+
+function renderStaffTable(
+    staffSnap,
+    attendanceSnap
+){
+
+    const select =
+        document.getElementById(
+            "task-staff-select"
+        );
+
+    const count =
+        document.getElementById(
+            "stat-staff-count"
+        );
+
+    const table =
+        document.getElementById(
+            "payment-performance-table"
+        );
+
+
+    if(
+        !select ||
+        !count ||
+        !table
+    ){
+
+        return;
+
+    }
+
+
+    select.innerHTML = `
+
+        <option value="">
+            Select Target Staff
+        </option>
+
+    `;
+
+
+    table.innerHTML =
+        "";
+
+
+    if(
+        !staffSnap.exists()
+    ){
+
+        count.innerText =
+            "0";
+
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="6"
+                    style="
+                        text-align:center;
+                        padding:20px;
+                        color:#666
+                    "
+                >
+
+                    No staff profiles found.
+
+                </td>
+
+            </tr>
+
+        `;
+
+
+        return;
+
+    }
+
+
+    const staffData =
+        staffSnap.val();
+
+
+    const attendanceData =
+        attendanceSnap.exists()
+        ?
+        attendanceSnap.val()
+        :
+        {};
+
+
+    const today =
+        getLocalDate();
+
+
+    const ids =
+        Object.keys(
+            staffData
+        );
+
+
+    count.innerText =
+        ids.length;
+
+
+    ids.forEach(
+        id=>{
+
+            const staff =
+                staffData[id] ||
+                {};
+
+
+            /* ----------------------------------------
+               STAFF SELECT
+            ---------------------------------------- */
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                id;
+
+
+            option.innerText =
+                `${staff.name || "Unknown"} (${id})`;
+
+
+            select.appendChild(
+                option
+            );
+
+
+            /* ----------------------------------------
+               PUNCH TIME
+            ---------------------------------------- */
+
+            let punch =
+                `
+
+                <span
+                    style="
+                        color:var(--red);
+                        font-weight:700;
+                        font-size:9px
+                    "
+                >
+                    ABSENT
+                </span>
+
+                `;
+
+
+            if(
+                attendanceData[id]
+                &&
+                attendanceData[id][today]
+            ){
+
+                const record =
+                    attendanceData[id][today];
+
+
+                const time =
+                    record.time
+                    ||
+                    record.punchInTime
+                    ||
+                    "Present";
+
+
+                punch = `
+
+                    <span
+                        style="
+                            color:var(--green);
+                            font-weight:800;
+                            font-size:9px;
+                            white-space:nowrap
+                        "
+                    >
+
+                        <i
+                            class="fas fa-clock"
+                        ></i>
+
+                        ${escapeHtml(time)}
+
+                    </span>
+
+                `;
+
+            }
+
+
+            /* ----------------------------------------
+               TABLE ROW
+            ---------------------------------------- */
+
+            table.innerHTML += `
+
+                <tr>
+
+                    <td>
+
+                        <b
+                            style="
+                                color:#fff;
+                                font-size:10px
+                            "
+                        >
+                            ${escapeHtml(id)}
+                        </b>
+
+                        <br>
+
+                        <span
+                            style="
+                                color:var(--text-sec);
+                                font-size:9px
+                            "
+                        >
+                            ${escapeHtml(
+                                staff.name ||
+                                "N/A"
+                            )}
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="number"
+                            class="inline-input"
+                            id="wage-${escapeHtml(id)}"
+                            value="${Number(
+                                staff.perDayWage || 0
+                            )}"
+                        >
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="number"
+                            class="inline-input"
+                            id="streak-${escapeHtml(id)}"
+                            value="${Number(
+                                staff.streak || 0
+                            )}"
+                        >
+
+                    </td>
+
+
+                    <td>
+
+                        ${punch}
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="number"
+                            class="
+                                inline-input
+                                salary-input
+                            "
+                            id="salary-${escapeHtml(id)}"
+                            value="${Number(
+                                staff.salary || 0
+                            )}"
+                        >
+
+                    </td>
+
+
+                    <td
+                        style="
+                            text-align:center;
+                            white-space:nowrap
+                        "
+                    >
+
+                        <button
+                            class="
+                                table-action-btn
+                                btn-save-row
+                            "
+                            onclick="
+                                updateStaffRow(
+                                    '${escapeHtml(id)}'
+                                )
+                            "
+                            title="Save Metrics"
+                        >
+
+                            <i
+                                class="fas fa-save"
+                            ></i>
+
+                        </button>
+
+
+                        <button
+                            class="
+                                table-action-btn
+                                btn-delete-row
+                            "
+                            onclick="
+                                deleteStaffRow(
+                                    '${escapeHtml(id)}',
+                                    '${escapeHtml(
+                                        staff.name || ""
+                                    )}'
+                                )
+                            "
+                            title="Delete Profile"
+                        >
+
+                            <i
+                                class="fas fa-trash-alt"
+                            ></i>
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   UPDATE STAFF ROW
+   IMPORTANT:
+   Creates salaryAdjustments audit.
+===================================================== */
+
+function updateStaffRow(
+    id
+){
+
+    const wageElement =
+        document.getElementById(
+            `wage-${id}`
+        );
+
+
+    const streakElement =
+        document.getElementById(
+            `streak-${id}`
+        );
+
+
+    const salaryElement =
+        document.getElementById(
+            `salary-${id}`
+        );
+
+
+    if(
+        !wageElement ||
+        !streakElement ||
+        !salaryElement
+    ){
+
+        alert(
+            "Staff fields not found."
+        );
+
+        return;
+
+    }
+
+
+    const targetWage =
+        parseInt(
+            wageElement.value
+        );
+
+
+    const targetStreak =
+        parseInt(
+            streakElement.value
+        );
+
+
+    const targetSalary =
+        parseInt(
+            salaryElement.value
+        );
+
+
+    if(
+        isNaN(targetWage)
+        ||
+        isNaN(targetStreak)
+        ||
+        isNaN(targetSalary)
+    ){
+
+        alert(
+            "Please enter valid numbers."
+        );
+
+        return;
+
+    }
+
+
+    if(
+        targetWage < 0
+        ||
+        targetStreak < 0
+        ||
+        targetSalary < 0
+    ){
+
+        alert(
+            "Negative values are not allowed."
+        );
+
+        return;
+
+    }
+
+
+    db.ref(
+        `staff/${id}`
+    )
+    .once(
+        "value"
+    )
+    .then(
+        snapshot=>{
+
+            const staff =
+                snapshot.val() ||
+                {};
+
+
+            const oldSalary =
+                Number(
+                    staff.salary || 0
+                );
+
+
+            const diff =
+                targetSalary -
+                oldSalary;
+
+
+            /*
+             * Salary reason
+             */
+
+            let reason =
+                "Manual admin update";
+
+
+            if(diff !== 0){
+
+                const enteredReason =
+                    prompt(
+                        diff > 0
+
+                        ?
+
+                        `₹${diff} salary ADD ho raha hai.\n\nReason / Basis enter karein:`
+
+                        :
+
+                        `₹${Math.abs(diff)} salary REDUCE ho raha hai.\n\nReason / Basis enter karein:`
+                    );
+
+
+                if(
+                    enteredReason === null
+                ){
+
+                    return;
+
+                }
+
+
+                reason =
+                    enteredReason.trim()
+                    ||
+                    "Manual admin adjustment";
+
+            }
+
+
+            /*
+             * Save staff
+             */
+
+            return db.ref(
+                `staff/${id}`
+            )
+            .update({
+
+                perDayWage:
+                    targetWage,
+
+                streak:
+                    targetStreak,
+
+                salary:
+                    targetSalary
+
+            })
+            .then(
+                ()=>{
+
+                    /*
+                     * Create audit
+                     */
+
+                    if(
+                        diff === 0
+                    ){
+
+                        showToast(
+                            "Staff metrics updated."
+                        );
+
+                        return;
+
+                    }
+
+
+                    let type =
+                        "modify";
+
+
+                    if(
+                        diff > 0
+                    ){
+
+                        type =
+                            "add";
+
+                    }
+                    else if(
+                        diff < 0
+                    ){
+
+                        type =
+                            "reduce";
+
+                    }
+
+
+                    const activity =
+                        getActivityData();
+
+
+                    return db.ref(
+                        `salaryAdjustments/${id}`
+                    )
+                    .push({
+
+                        type:
+                            type,
+
+                        action:
+                            type,
+
+                        amount:
+                            Math.abs(diff),
+
+                        changeAmount:
+                            Math.abs(diff),
+
+                        oldBalance:
+                            oldSalary,
+
+                        newBalance:
+                            targetSalary,
+
+                        reason:
+                            reason,
+
+                        note:
+                            reason,
+
+                        adminName:
+                            adminName,
+
+                        admin:
+                            adminName,
+
+                        date:
+                            activity.date,
+
+                        time:
+                            activity.time,
+
+                        timestamp:
+                            activity.timestamp,
+
+                        source:
+                            "Admin Manual Adjustment"
+
+                    })
+                    .then(
+                        ()=>{
+
+                            showToast(
+                                diff > 0
+                                ?
+                                `₹${diff} added & logged.`
+                                :
+                                `₹${Math.abs(diff)} reduced & logged.`
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            console.error(
+                error
+            );
+
+            alert(
+                "Update failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   PAYOUT REQUESTS
+===================================================== */
+
+function renderPayoutRequests(
+    snap
+){
+
+    const container =
+        document.getElementById(
+            "payout-requests-list"
+        );
+
+
+    const count =
+        document.getElementById(
+            "stat-payout-count"
+        );
+
+
+    if(
+        !container ||
+        !count
+    ){
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        "";
+
+
+    let pending =
+        0;
+
+
+    if(
+        snap.exists()
+    ){
+
+        snap.forEach(
+            child=>{
+
+                const reqId =
+                    child.key;
+
+
+                const data =
+                    child.val() ||
+                    {};
+
+
+                if(
+                    data.status !==
+                    "Pending"
+                ){
+
+                    return;
+
+                }
+
+
+                pending++;
+
+
+                /*
+                 * salaryRequests path is:
+                 * salaryRequests/{staffId}
+                 *
+                 * So reqId itself is staffId
+                 * if staffId wasn't explicitly saved.
+                 */
+
+                const staffId =
+                    data.staffId
+                    ||
+                    data.uid
+                    ||
+                    reqId;
+
+
+                const amount =
+                    Number(
+                        data.numericAmount
+                        ||
+                        String(
+                            data.amount || 0
+                        )
+                        .replace(
+                            /[^0-9]/g,
+                            ""
+                        )
+                        ||
+                        0
+                    );
+
+
+                const type =
+                    data.requestType
+                    ||
+                    "Payout";
+
+
+                const badge =
+                    type ===
+                    "Emergency Advance"
+
+                    ?
+
+                    `
+
+                    <span
+                        class="status-badge"
+                        style="
+                            color:var(--orange);
+                            background:
+                                rgba(255,159,10,.09)
+                        "
+                    >
+
+                        EMERGENCY ADVANCE
+
+                    </span>
+
+                    `
+
+                    :
+
+                    `
+
+                    <span
+                        class="status-badge"
+                        style="
+                            color:var(--blue);
+                            background:
+                                rgba(10,132,255,.09)
+                        "
+                    >
+
+                        REGULAR PAYOUT
+
+                    </span>
+
+                    `;
+
+
+                container.innerHTML += `
+
+                    <div
+                        class="data-item"
+                    >
+
+                        <div
+                            class="data-info"
+                        >
+
+                            <p>
+                                ${escapeHtml(
+                                    data.name ||
+                                    "Staff"
+                                )}
+                            </p>
+
+                            <small>
+
+                                Amount:
+
+                                <b
+                                    style="
+                                        color:var(--green)
+                                    "
+                                >
+                                    ₹${amount}
+                                </b>
+
+                            </small>
+
+                            ${badge}
+
+                        </div>
+
+
+                        <div
+                            class="
+                                action-btn-group
+                            "
+                        >
+
+                            <button
+                                class="
+                                    sm-btn
+                                    btn-approve
+                                "
+                                onclick="
+                                    resolvePayout(
+                                        '${escapeHtml(staffId)}',
+                                        '${escapeHtml(reqId)}',
+                                        true,
+                                        ${amount},
+                                        '${escapeHtml(type)}'
+                                    )
+                                "
+                            >
+                                APPROVE
+                            </button>
+
+
+                            <button
+                                class="
+                                    sm-btn
+                                    btn-reject
+                                "
+                                onclick="
+                                    resolvePayout(
+                                        '${escapeHtml(staffId)}',
+                                        '${escapeHtml(reqId)}',
+                                        false,
+                                        ${amount},
+                                        '${escapeHtml(type)}'
+                                    )
+                                "
+                            >
+                                REJECT
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+        );
+
+    }
+
+
+    count.innerText =
+        pending;
+
+
+    if(
+        pending === 0
+    ){
+
+        container.innerHTML = `
+
+            <div
+                style="
+                    text-align:center;
+                    padding:18px;
+                    color:#666
+                "
+            >
+
+                <i
+                    class="
+                        fas
+                        fa-circle-check
+                    "
+                    style="
+                        display:block;
+                        margin-bottom:7px;
+                        font-size:22px
+                    "
+                ></i>
+
+                <span
+                    style="
+                        font-size:10px
+                    "
+                >
+                    No pending payout requests.
+                </span>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+/* =====================================================
+   RESOLVE PAYOUT
+   Creates salaryAdjustments log.
+===================================================== */
+
+function resolvePayout(
+    staffId,
+    reqId,
+    isApproved,
+    amount,
+    requestType
+){
+
+    const action =
+        isApproved
+        ?
+        "APPROVE"
+        :
+        "REJECT";
+
+
+    if(
+        !confirm(
+            `Are you sure to ${action} this payout?`
+        )
+    ){
+
+        return;
+
+    }
+
+
+    if(
+        !isApproved
+    ){
+
+        db.ref(
+            `salaryRequests/${reqId}`
+        )
+        .update({
+
+            status:
+                "Rejected",
+
+            processedAt:
+                new Date().toISOString(),
+
+            processedBy:
+                adminName
+
+        })
+        .then(
+            ()=>{
+
+                showToast(
+                    "Payout rejected."
+                );
+
+            }
+        )
+        .catch(
+            error=>{
+
+                alert(
+                    "Reject failed: "+
+                    error.message
+                );
+
+            }
+        );
+
+
+        return;
+
+    }
+
+
+    /*
+     * Read staff first.
+     */
+
+    db.ref(
+        `staff/${staffId}`
+    )
+    .once(
+        "value"
+    )
+    .then(
+        snapshot=>{
+
+            if(
+                !snapshot.exists()
+            ){
+
+                throw new Error(
+                    "Staff profile not found."
+                );
+
+            }
+
+
+            const profile =
+                snapshot.val();
+
+
+            const oldSalary =
+                Number(
+                    profile.salary || 0
+                );
+
+
+            const deductAmount =
+                Math.max(
+                    0,
+                    Number(amount) || 0
+                );
+
+
+            const newSalary =
+                Math.max(
+                    0,
+                    oldSalary -
+                    deductAmount
+                );
+
+
+            /*
+             * Update salary
+             */
+
+            return db.ref(
+                `staff/${staffId}`
+            )
+            .update({
+
+                salary:
+                    newSalary
+
+            })
+            .then(
+                ()=>{
+
+                    const activity =
+                        getActivityData();
+
+
+                    /*
+                     * Proper salary activity
+                     */
+
+                    return db.ref(
+                        `salaryAdjustments/${staffId}`
+                    )
+                    .push({
+
+                        type:
+                            "reduce",
+
+                        action:
+                            "reduce",
+
+                        amount:
+                            deductAmount,
+
+                        changeAmount:
+                            deductAmount,
+
+                        oldBalance:
+                            oldSalary,
+
+                        newBalance:
+                            newSalary,
+
+                        reason:
+                            `${requestType} approved`,
+
+                        note:
+                            `${requestType} approved by admin`,
+
+                        adminName:
+                            adminName,
+
+                        admin:
+                            adminName,
+
+                        date:
+                            activity.date,
+
+                        time:
+                            activity.time,
+
+                        timestamp:
+                            activity.timestamp,
+
+                        source:
+                            "Admin Payout Approval",
+
+                        requestId:
+                            reqId
+
+                    });
+
+                }
+            )
+            .then(
+                ()=>{
+
+                    return db.ref(
+                        `salaryRequests/${reqId}`
+                    )
+                    .update({
+
+                        status:
+                            "Approved",
+
+                        processedAt:
+                            new Date().toISOString(),
+
+                        processedBy:
+                            adminName,
+
+                        approvedAmount:
+                            deductAmount
+
+                    });
+
+                }
+            );
+
+        }
+    )
+    .then(
+        ()=>{
+
+            showToast(
+                `₹${amount} payout approved & salary log created.`
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            console.error(
+                error
+            );
+
+            alert(
+                "Payout error: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   LEADS
+===================================================== */
+
+function renderLeads(
+    snap
+){
+
+    const container =
+        document.getElementById(
+            "leads-realtime-list"
+        );
+
+
+    if(!container)
+        return;
+
+
+    container.innerHTML =
+        "";
+
+
+    if(
+        !snap.exists()
+    ){
+
+        container.innerHTML = `
+
+            <div
+                style="
+                    text-align:center;
+                    padding:18px;
+                    color:#666;
+                    font-size:10px
+                "
+            >
+
+                No active leads found.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    const data =
+        snap.val();
+
+
+    const keys =
+        Object.keys(
+            data
+        );
+
+
+    keys.reverse();
+
+
+    keys.forEach(
+        key=>{
+
+            const item =
+                data[key] ||
+                {};
+
+
+            const name =
+                item.name
+                ||
+                item.clientName
+                ||
+                "Unnamed Client";
+
+
+            const phone =
+                item.phone
+                ||
+                "";
+
+
+            const cleanPhone =
+                phone.replace(
+                    /[^0-9]/g,
+                    ""
+                );
+
+
+            const status =
+                item.status
+                ||
+                "Pending";
+
+
+            const phoneForWa =
+                cleanPhone.length === 10
+                ?
+                "91"+cleanPhone
+                :
+                cleanPhone;
+
+
+            const comms =
+                cleanPhone
+
+                ?
+
+                `
+
+                <div
+                    class="lead-comms-group"
+                >
+
+                    <a
+                        href="tel:${cleanPhone}"
+                        class="
+                            comm-link-btn
+                            comm-call
+                        "
+                    >
+
+                        <i
+                            class="
+                                fas
+                                fa-phone-alt
+                            "
+                        ></i>
+
+                    </a>
+
+
+                    <a
+                        href="
+                            https://api.whatsapp.com/send?phone=${phoneForWa}
+                        "
+                        target="_blank"
+                        class="
+                            comm-link-btn
+                            comm-wa
+                        "
+                    >
+
+                        <i
+                            class="
+                                fab
+                                fa-whatsapp
+                            "
+                        ></i>
+
+                    </a>
+
+                </div>
+
+                `
+
+                :
+
+                "";
+
+
+            const badge =
+                status ===
+                    "Completed"
+                ||
+                status ===
+                    "Done"
+
+                ?
+
+                `
+
+                <span
+                    class="
+                        status-badge
+                        status-completed
+                    "
+                >
+                    ${escapeHtml(status)}
+                </span>
+
+                `
+
+                :
+
+                "";
+
+
+            container.innerHTML += `
+
+                <div
+                    class="data-item"
+                >
+
+                    <div
+                        class="data-info"
+                    >
+
+                        <p>
+                            ${escapeHtml(name)}
+                        </p>
+
+
+                        <small
+                            style="
+                                color:#fff
+                            "
+                        >
+
+                            <i
+                                class="
+                                    fas
+                                    fa-phone
+                                "
+                            ></i>
+
+                            ${escapeHtml(
+                                phone ||
+                                "No Contact"
+                            )}
+
+                        </small>
+
+
+                        <small
+                            style="
+                                color:var(--orange)
+                            "
+                        >
+
+                            <i
+                                class="
+                                    fas
+                                    fa-graduation-cap
+                                "
+                            ></i>
+
+                            ${escapeHtml(
+                                item.course ||
+                                "General"
+                            )}
+
+                        </small>
+
+
+                        <small>
+
+                            Handler:
+
+                            <b
+                                style="
+                                    color:#aaa
+                                "
+                            >
+                                ${escapeHtml(
+                                    item.assignedTo ||
+                                    item.staff ||
+                                    "Unassigned"
+                                )}
+                            </b>
+
+                        </small>
+
+                    </div>
+
+
+                    <div
+                        class="lead-action-box"
+                    >
+
+                        ${badge}
+
+
+                        <div
+                            style="
+                                display:flex;
+                                align-items:center;
+                                gap:4px
+                            "
+                        >
+
+                            ${comms}
+
+
+                            <button
+                                class="
+                                    btn-delete-lead
+                                "
+                                onclick="
+                                    deleteLeadRecord(
+                                        '${escapeHtml(key)}',
+                                        '${escapeHtml(name)}'
+                                    )
+                                "
+                            >
+
+                                <i
+                                    class="
+                                        fas
+                                        fa-trash-alt
+                                    "
+                                ></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   TASKS
+===================================================== */
+
+function renderTasks(
+    snap
+){
+
+    const container =
+        document.getElementById(
+            "broadcast-tasks-list"
+        );
+
+
+    if(!container)
+        return;
+
+
+    container.innerHTML =
+        "";
+
+
+    let total =
+        0;
+
+
+    if(
+        snap.exists()
+    ){
+
+        const all =
+            snap.val();
+
+
+        Object.keys(
+            all
+        )
+        .forEach(
+            staffId=>{
+
+                const tasks =
+                    all[staffId];
+
+
+                Object.keys(
+                    tasks || {}
+                )
+                .forEach(
+                    taskKey=>{
+
+                        total++;
+
+
+                        const task =
+                            tasks[taskKey] ||
+                            {};
+
+
+                        const done =
+                            task.status ===
+                            "Completed";
+
+
+                        let taskDate =
+                            "Recent";
+
+
+                        if(
+                            task.date
+                        ){
+
+                            try{
+
+                                const d =
+                                    new Date(
+                                        task.date
+                                    );
+
+
+                                taskDate =
+                                    d.toLocaleDateString(
+                                        "en-IN",
+                                        {
+                                            day:"2-digit",
+                                            month:"short"
+                                        }
+                                    )
+                                    +
+                                    " • "
+                                    +
+                                    d.toLocaleTimeString(
+                                        "en-IN",
+                                        {
+                                            hour:"2-digit",
+                                            minute:"2-digit"
+                                        }
+                                    );
+
+                            }
+                            catch(e){}
+
                         }
 
-                        performanceTable.innerHTML += `
-                            <tr>
-                                <td><b>${id}</b><br><span style="color:var(--text-sec); font-size:11px;">${staff.name || 'N/A'}</span></td>
-                                <td><input type="number" class="inline-input" id="wage-${id}" value="${staff.perDayWage || 0}"></td>
-                                <td><input type="number" class="inline-input" id="streak-${id}" value="${staff.streak || 0}"></td>
-                                <td>${punchTimeDisplay}</td>
-                                <td><input type="number" class="inline-input" id="salary-${id}" value="${staff.salary || 0}" style="color: var(--apple-green); font-weight:700; width: 65px;"></td>
-                                <td style="text-align: center;">
-                                    <button class="table-action-btn btn-save-row" onclick="updateStaffRow('${id}')" title="Save Metrics"><i class="fas fa-save"></i></button>
-                                    <button class="table-action-btn btn-delete-row" onclick="deleteStaffRow('${id}', '${staff.name || ''}')" title="Delete Profile"><i class="fas fa-trash-alt"></i></button>
-                                </td>
-                            </tr>`;
-                    });
-                } else { staffCountSpan.innerText = "0"; performanceTable.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.5;">No active profiles found.</td></tr>`; }
-            });
-        });
 
-        // Payout Tracker (With Dynamic Staff ID passing)
-        db.ref('salaryRequests').on('value', snap => {
-            const container = document.getElementById('payout-requests-list');
-            const payoutCountSpan = document.getElementById('stat-payout-count');
-            if(!container || !payoutCountSpan) return;
-            container.innerHTML = ""; let pendingCounter = 0;
-            if(snap.exists()) {
-                snap.forEach(child => {
-                    const reqId = child.key; const reqData = child.val();
-                    if(reqData.status === "Pending") {
-                        pendingCounter++;
-                        const reqTypeBadge = reqData.requestType === "Emergency Advance" 
-                            ? `<br><span class="lead-badge" style="background: rgba(255, 159, 10, 0.15); color: var(--apple-orange); font-size:9px; margin-top:4px; display:inline-block;">Emergency Advance</span>`
-                            : `<br><span class="lead-badge" style="background: rgba(10, 132, 255, 0.15); color: var(--apple-blue); font-size:9px; margin-top:4px; display:inline-block;">Regular Payout</span>`;
-                        
-                        const staffId = reqData.staffId || reqData.uid || reqId;
+                        let status =
+                            `
+
+                            <span
+                                class="
+                                    status-badge
+                                    status-pending
+                                "
+                            >
+
+                                <i
+                                    class="
+                                        fas
+                                        fa-hourglass-half
+                                    "
+                                ></i>
+
+                                Pending
+
+                            </span>
+
+                            `;
+
+
+                        if(
+                            done
+                        ){
+
+                            let completedTime =
+                                "";
+
+
+                            if(
+                                task.completedAt
+                            ){
+
+                                try{
+
+                                    completedTime =
+                                        new Date(
+                                            task.completedAt
+                                        )
+                                        .toLocaleTimeString(
+                                            "en-IN",
+                                            {
+                                                hour:"2-digit",
+                                                minute:"2-digit"
+                                            }
+                                        );
+
+                                }
+                                catch(e){}
+
+                            }
+
+
+                            status =
+                                `
+
+                                <span
+                                    class="
+                                        status-badge
+                                        status-completed
+                                    "
+                                >
+
+                                    <i
+                                        class="
+                                            fas
+                                            fa-check-circle
+                                        "
+                                    ></i>
+
+                                    Done
+
+                                    ${
+                                        completedTime
+                                        ?
+                                        " • "+
+                                        completedTime
+                                        :
+                                        ""
+                                    }
+
+                                </span>
+
+                                `;
+
+                        }
+
 
                         container.innerHTML += `
-                            <div class="data-item">
-                                <div class="data-info">
-                                    <p>${reqData.name}</p>
-                                    <small>Amount: <b style="color: var(--apple-green);">${reqData.amount}</b>${reqTypeBadge}</small>
-                                </div>
-                                <div class="action-btn-group">
-                                    <button class="sm-btn btn-approve" onclick="resolvePayout('${reqId}', true, '${staffId}', '${reqData.amount}', '${reqData.requestType || 'Advance Pay'}')">Approve</button>
-                                    <button class="sm-btn btn-reject" onclick="resolvePayout('${reqId}', false)">Reject</button>
-                                </div>
-                            </div>`;
-                    }
-                });
-            }
-            payoutCountSpan.innerText = pendingCounter;
-            if(pendingCounter === 0) container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No pending requests</p></div>`;
-        });
 
-        // Leads Pipeline Monitor
-        db.ref('leads').on('value', snap => {
-            const container = document.getElementById('leads-realtime-list');
-            if(!container) return; container.innerHTML = "";
-            if(snap.exists()) {
-                const leadsData = snap.val();
-                Object.keys(leadsData).forEach(key => {
-                    const item = leadsData[key];
-                    const activeClientName = item.name || item.clientName || 'Unnamed Client';
-                    const cleanedPhone = item.phone ? item.phone.replace(/[^0-9]/g, '') : '';
-                    const currentStatus = item.status || 'Pending';
-                    let badgeHtml = (currentStatus === "Completed" || currentStatus === "Done") ? `<span class="lead-badge" style="background: rgba(48, 209, 88, 0.15); color: var(--apple-green);">${currentStatus}</span>` : '';
-                    let commsHtml = cleanedPhone ? `<div class="lead-comms-group"><a href="tel:${cleanedPhone}" class="comm-link-btn comm-call"><i class="fas fa-phone-alt"></i></a><a href="https://api.whatsapp.com/send?phone=${cleanedPhone.length === 10 ? '91'+cleanedPhone : cleanedPhone}" target="_blank" class="comm-link-btn comm-wa"><i class="fab fa-whatsapp"></i></a></div>` : '';
+                            <div
+                                class="data-item"
+                                style="
+                                    border-left:
+                                        3px solid
+                                        ${
+                                            done
+                                            ?
+                                            "var(--green)"
+                                            :
+                                            "var(--purple)"
+                                        }
+                                "
+                            >
 
-                    container.innerHTML += `
-                        <div class="data-item">
-                            <div class="data-info">
-                                <p style="font-size:13px; margin-bottom: 2px; font-weight:700;">${activeClientName}</p>
-                                <small style="color: #fff; font-weight:600;"><i class="fas fa-phone-alt" style="font-size:10px;"></i> ${item.phone || 'No Contact'}</small>
-                                <small style="color: var(--apple-orange); font-weight:600;"><i class="fas fa-graduation-cap" style="font-size:10px;"></i> ${item.course || 'General'}</small>
-                                <small style="font-size:10px; color: var(--text-muted);">Handler: <b>${item.assignedTo || 'Unassigned'}</b></small>
+                                <div
+                                    class="data-info"
+                                >
+
+                                    <p
+                                        class="
+                                            ${
+                                                done
+                                                ?
+                                                "done-text"
+                                                :
+                                                ""
+                                            }
+                                        "
+                                    >
+
+                                        ${escapeHtml(
+                                            task.task ||
+                                            "Empty task"
+                                        )}
+
+                                    </p>
+
+
+                                    <small
+                                        style="
+                                            color:var(--purple)
+                                        "
+                                    >
+
+                                        <i
+                                            class="
+                                                fas
+                                                fa-user-shield
+                                            "
+                                        ></i>
+
+                                        Staff ID:
+
+                                        ${escapeHtml(
+                                            staffId
+                                        )}
+
+                                    </small>
+
+
+                                    <small>
+
+                                        ${taskDate}
+
+                                    </small>
+
+
+                                    ${status}
+
+                                </div>
+
+
+                                <button
+                                    class="
+                                        btn-delete-lead
+                                    "
+                                    onclick="
+                                        deleteBroadcastTask(
+                                            '${escapeHtml(staffId)}',
+                                            '${escapeHtml(taskKey)}'
+                                        )
+                                    "
+                                >
+
+                                    <i
+                                        class="
+                                            fas
+                                            fa-trash-alt
+                                        "
+                                    ></i>
+
+                                </button>
+
                             </div>
-                            <div class="lead-action-box">${badgeHtml}<div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">${commsHtml}<button class="btn-delete-lead" onclick="deleteLeadRecord('${key}', '${activeClientName}')"><i class="fas fa-trash-alt"></i></button></div></div>
-                        </div>`;
-                });
-            } else { container.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active leads found.</p></div>`; }
-        });
 
-        // Broadcast Tasks Pipeline
-        db.ref('tasks').on('value', snap => {
-            const taskContainer = document.getElementById('broadcast-tasks-list');
-            if(!taskContainer) return; taskContainer.innerHTML = ""; let taskCounter = 0;
-            if(snap.exists()) {
-                const allStaffTasks = snap.val();
-                Object.keys(allStaffTasks).forEach(staffId => {
-                    const staffTasksNode = allStaffTasks[staffId];
-                    Object.keys(staffTasksNode).forEach(taskKey => {
-                        taskCounter++; const taskData = staffTasksNode[taskKey]; const isDone = taskData.status === "Completed";
-                        let formattedDate = 'Recent Deploy';
-                        if(taskData.date) { try { formattedDate = new Date(taskData.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " | " + new Date(taskData.date).toLocaleDateString([], {month: 'short', day: 'numeric'}); } catch(e){} }
-                        let trackingMetaHtml = `<span class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> Pending</span>`;
-                        if(isDone && taskData.completedAt) { try { trackingMetaHtml = `<span class="status-badge status-completed"><i class="fas fa-check-circle"></i> Done ✅ at ${new Date(taskData.completedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`; } catch(e){} }
+                        `;
 
-                        taskContainer.innerHTML += `
-                            <div class="data-item" style="border-left: 3px solid ${isDone ? 'var(--apple-green)' : 'var(--cyber-purple)'};">
-                                <div class="data-info" style="max-width: 75%;">
-                                    <p style="font-size: 13px; font-weight: 600;" class="${isDone ? 'done-text' : ''}">${taskData.task || 'Empty payload'}</p>
-                                    <small style="color: var(--cyber-purple); font-weight: 700;"><i class="fas fa-user-shield"></i> Target ID: ${staffId}</small>
-                                    ${trackingMetaHtml}
-                                </div>
-                                <div><button class="btn-delete-lead" onclick="deleteBroadcastTask('${staffId}', '${taskKey}')"><i class="fas fa-trash-alt"></i></button></div>
-                            </div>`;
-                    });
-                });
+                    }
+                );
+
             }
-            if(taskCounter === 0) taskContainer.innerHTML = `<div style="text-align: center; padding: 15px; opacity: 0.5;"><p style="font-size: 12px;">No active deployments monitored.</p></div>`;
-        });
+        );
 
-        // Strict Days Tracker
-        db.ref('strictDays').on('value', snap => {
-            const registryBox = document.getElementById('strict-days-active-registry');
-            if(!registryBox) return; registryBox.innerHTML = "";
-            if(snap.exists()){
-                snap.forEach(child => {
-                    const nodeKey = child.key; const dateVal = child.val();
-                    registryBox.innerHTML += `<div class="strict-item"><span><i class="fas fa-calendar-check" style="color: var(--apple-red);"></i> ${dateVal}</span><i class="fas fa-times-circle" style="color: var(--text-muted); cursor:pointer;" onclick="removeStrictDay('${nodeKey}','${dateVal}')"></i></div>`;
-                });
-            } else { registryBox.innerHTML = `<p style="font-size:11px; color:var(--text-muted); text-align:center;">No strict schedules locked.</p>`; }
-        });
     }
 
-    // Manual Edit Flow
-    function updateStaffRow(id) {
-        const targetWage = parseInt(document.getElementById(`wage-${id}`).value);
-        const targetStreak = parseInt(document.getElementById(`streak-${id}`).value);
-        const targetSalary = parseInt(document.getElementById(`salary-${id}`).value);
-        
-        if(isNaN(targetWage) || isNaN(targetStreak) || isNaN(targetSalary)) return alert("Invalid inputs.");
-        
-        // Manual change log create karne ke liye pehle old salary check karenge
-        db.ref(`staff/${id}/salary`).once('value', snap => {
-            const oldSalary = snap.val() || 0;
-            const diff = oldSalary - targetSalary;
 
-            db.ref(`staff/${id}`).update({ perDayWage: targetWage, streak: targetStreak, salary: targetSalary }).then(() => {
-                if (diff > 0) {
-                    // Agar balance manual minus kiya hai toh notification ya log bhejo
-                    db.ref(`staff_logs/${id}`).push({
-                        message: `Reduce ${diff} by admin manual adjustment.`,
-                        restBalance: targetSalary,
-                        timestamp: new Date().toISOString()
-                    });
-                }
-                alert("Staff metrics updated!");
-            });
-        });
+    if(
+        total === 0
+    ){
+
+        container.innerHTML = `
+
+            <div
+                style="
+                    text-align:center;
+                    padding:18px;
+                    color:#666;
+                    font-size:10px
+                "
+            >
+
+                No active deployments monitored.
+
+            </div>
+
+        `;
+
     }
 
-    // Payout Logic with Automatic Message & Reason Logs
-    function resolvePayout(reqId, isApproved, staffId, amountString, requestType) {
-        if(!confirm(`Are you sure to ${isApproved ? 'APPROVE' : 'REJECT'} payout?`)) return;
-        
-        const deductAmount = parseInt(amountString) || 0;
+}
 
-        if(isApproved) {
-            db.ref(`staff/${staffId}`).transaction(profile => { 
-                if(profile) {
-                    let oldSalary = parseInt(profile.salary) || 0;
-                    let newSalary = Math.max(0, oldSalary - deductAmount);
-                    
-                    profile.salary = newSalary;
 
-                    // Yahan hum realtime text log create kar rahe hain jo staff ko dikhega
-                    db.ref(`staff_logs/${staffId}`).push({
-                        message: `Reduce ${deductAmount} for ${requestType}`,
-                        restBalance: newSalary,
-                        timestamp: new Date().toISOString()
-                    });
-                } 
-                return profile; 
-            }).then(() => {
-                db.ref(`salaryRequests/${reqId}`).update({ status: "Approved", processedAt: new Date().toISOString() }).then(() => { 
-                    alert("Payout approved! Log generated for staff app."); 
-                });
-            }).catch(err => alert("Error: " + err.message));
-        } else { 
-            db.ref(`salaryRequests/${reqId}`).update({ status: "Rejected", processedAt: new Date().toISOString() }).then(() => { alert("Rejected."); }); 
+/* =====================================================
+   STRICT DAYS
+===================================================== */
+
+function renderStrictDays(
+    snap
+){
+
+    const container =
+        document.getElementById(
+            "strict-days-active-registry"
+        );
+
+
+    if(!container)
+        return;
+
+
+    container.innerHTML =
+        "";
+
+
+    if(
+        !snap.exists()
+    ){
+
+        container.innerHTML = `
+
+            <p
+                style="
+                    text-align:center;
+                    color:#666;
+                    font-size:10px
+                "
+            >
+
+                No strict schedules locked.
+
+            </p>
+
+        `;
+
+        return;
+
+    }
+
+
+    snap.forEach(
+        child=>{
+
+            const key =
+                child.key;
+
+
+            const date =
+                child.val();
+
+
+            container.innerHTML += `
+
+                <div
+                    class="strict-item"
+                >
+
+                    <span>
+
+                        <i
+                            class="
+                                fas
+                                fa-calendar-check
+                            "
+                            style="
+                                color:var(--red);
+                                margin-right:5px
+                            "
+                        ></i>
+
+                        ${escapeHtml(date)}
+
+                    </span>
+
+
+                    <i
+                        class="
+                            fas
+                            fa-times-circle
+                        "
+                        style="
+                            color:#777;
+                            cursor:pointer
+                        "
+                        onclick="
+                            removeStrictDay(
+                                '${escapeHtml(key)}',
+                                '${escapeHtml(date)}'
+                            )
+                        "
+                    ></i>
+
+                </div>
+
+            `;
+
         }
+    );
+
+}
+
+
+/* =====================================================
+   DELETE STAFF
+===================================================== */
+
+function deleteStaffRow(
+    id,
+    name
+){
+
+    if(
+        !confirm(
+            `Delete profile [${name || id}]?`
+        )
+    ){
+
+        return;
+
     }
 
-    function deleteStaffRow(id, name) { if(!confirm(`Delete profile [${name || id}]?`)) return; db.ref(`staff/${id}`).remove(); }
-    function deleteLeadRecord(key, clientName) { if(!confirm(`Delete lead [${clientName}]?`)) return; db.ref(`leads/${key}`).remove(); }
-    function deleteBroadcastTask(staffId, taskKey) { if(!confirm("Revoke task?")) return; db.ref(`tasks/${staffId}/${taskKey}`).remove(); }
-    function removeStrictDay(nodeKey, dateStr) { if(!confirm(`Unlock [${dateStr}]?`)) return; db.ref(`strictDays/${nodeKey}`).remove(); }
-    function assignTask() {
-        const targetId = document.getElementById('task-staff-select').value; const desc = document.getElementById('task-desc').value.trim();
-        if(!targetId || !desc) return alert("Fill data.");
-        db.ref(`tasks/${targetId}`).push({ task: desc, date: new Date().toISOString(), status: "Pending" }).then(() => { alert("Deployed!"); document.getElementById('task-desc').value = ''; });
+
+    db.ref(
+        `staff/${id}`
+    )
+    .remove()
+    .then(
+        ()=>{
+
+            showToast(
+                "Staff profile deleted."
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            alert(
+                "Delete failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   DELETE LEAD
+===================================================== */
+
+function deleteLeadRecord(
+    key,
+    name
+){
+
+    if(
+        !confirm(
+            `Delete lead [${name}]?`
+        )
+    ){
+
+        return;
+
     }
-    function setStrictDay() {
-        const targetDate = document.getElementById('strict-date-input').value; if(!targetDate) return alert("Select date.");
-        db.ref('strictDays').push(targetDate).then(() => { alert("Locked!"); document.getElementById('strict-date-input').value = ''; });
+
+
+    db.ref(
+        `leads/${key}`
+    )
+    .remove()
+    .then(
+        ()=>{
+
+            showToast(
+                "Lead deleted."
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            alert(
+                "Delete failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   DELETE TASK
+===================================================== */
+
+function deleteBroadcastTask(
+    staffId,
+    taskKey
+){
+
+    if(
+        !confirm(
+            "Revoke this task?"
+        )
+    ){
+
+        return;
+
     }
+
+
+    db.ref(
+        `tasks/${staffId}/${taskKey}`
+    )
+    .remove()
+    .then(
+        ()=>{
+
+            showToast(
+                "Task revoked."
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            alert(
+                "Task revoke failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   ASSIGN TASK
+===================================================== */
+
+function assignTask(){
+
+    const targetId =
+        document.getElementById(
+            "task-staff-select"
+        ).value;
+
+
+    const desc =
+        document.getElementById(
+            "task-desc"
+        ).value.trim();
+
+
+    if(
+        !targetId ||
+        !desc
+    ){
+
+        alert(
+            "Select staff and enter assignment."
+        );
+
+        return;
+
+    }
+
+
+    db.ref(
+        `tasks/${targetId}`
+    )
+    .push({
+
+        task:
+            desc,
+
+        date:
+            new Date().toISOString(),
+
+        status:
+            "Pending",
+
+        assignedBy:
+            adminName,
+
+        assignedAt:
+            Date.now()
+
+    })
+    .then(
+        ()=>{
+
+            document.getElementById(
+                "task-desc"
+            ).value =
+                "";
+
+
+            showToast(
+                "Task deployed successfully."
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            alert(
+                "Task deployment failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   SET STRICT DAY
+===================================================== */
+
+function setStrictDay(){
+
+    const date =
+        document.getElementById(
+            "strict-date-input"
+        ).value;
+
+
+    if(!date){
+
+        alert(
+            "Please select a date."
+        );
+
+        return;
+
+    }
+
+
+    db.ref(
+        "strictDays"
+    )
+    .push(
+        date
+    )
+    .then(
+        ()=>{
+
+            document.getElementById(
+                "strict-date-input"
+            ).value =
+                "";
+
+
+            showToast(
+                `Strict day locked: ${date}`
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            alert(
+                "Unable to lock date: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   REMOVE STRICT DAY
+===================================================== */
+
+function removeStrictDay(
+    key,
+    date
+){
+
+    if(
+        !confirm(
+            `Unlock [${date}]?`
+        )
+    ){
+
+        return;
+
+    }
+
+
+    db.ref(
+        `strictDays/${key}`
+    )
+    .remove()
+    .then(
+        ()=>{
+
+            showToast(
+                "Strict day unlocked."
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            alert(
+                "Unable to unlock: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
 </script>
+
 </body>
 </html>
