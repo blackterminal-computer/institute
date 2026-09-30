@@ -1,353 +1,5020 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT Admin | Command Center</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root { 
-            --primary: #6366f1; --accent: #06b6d4; --danger: #f43f5e; 
-            --bg: #030712; --card: rgba(255,255,255,0.03); --success: #10b981; --gold: #facc15;
-            --glass-border: rgba(255, 255, 255, 0.08);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            background: var(--bg); color: #f8fafc; 
-            background-image: radial-gradient(circle at 0% 0%, #1e1b4b 0%, transparent 40%);
-            min-height: 100vh; padding-bottom: 100px;
-        }
 
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+<meta charset="UTF-8">
 
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .admin-profile { display: flex; align-items: center; gap: 12px; }
-        .avatar { width: 45px; height: 45px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--accent); }
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"
+>
 
-        .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: var(--card); border: 1px solid var(--glass-border); padding: 20px; border-radius: 28px; backdrop-filter: blur(10px); }
-        .stat-card i { font-size: 24px; color: var(--accent); margin-bottom: 10px; display: block; }
-        .stat-card h2 { font-size: 24px; font-weight: 800; }
-        .stat-card p { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+<title>BlackTerminal | Offer Command Center</title>
 
-        .tab-nav { 
-            background: rgba(255,255,255,0.02); padding: 8px; border-radius: 24px; 
-            display: flex; gap: 5px; border: 1px solid var(--glass-border); margin-bottom: 30px;
-            position: sticky; top: 15px; z-index: 1000; backdrop-filter: blur(20px);
-        }
-        .tab-link { flex: 1; border: none; background: none; color: #64748b; padding: 12px; border-radius: 18px; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .tab-link i { font-size: 20px; }
-        .tab-link.active { background: white; color: black; box-shadow: 0 10px 25px rgba(255,255,255,0.1); }
+<link
+    href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
+    rel="stylesheet"
+>
 
-        .panel-section { display: none; animation: fadeIn 0.5s ease; }
-        .panel-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+<link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+>
 
-        .card-form { background: var(--card); border: 1px solid var(--glass-border); padding: 25px; border-radius: 35px; margin-bottom: 20px; }
-        .input-box { margin-bottom: 20px; }
-        .input-box label { display: block; font-size: 10px; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; padding-left: 5px; }
-        .input-box input, .input-box select, .input-box textarea { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid #334155; padding: 16px; border-radius: 18px; color: white; outline: none; transition: 0.3s; font-size: 14px; }
+<style>
 
-        .btn-glow { 
-            width: 100%; padding: 18px; border-radius: 20px; border: none; 
-            background: linear-gradient(135deg, var(--primary), var(--accent)); 
-            color: white; font-weight: 800; font-size: 15px; cursor: pointer;
-            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3);
-        }
+/* =========================================================
+   ROOT
+========================================================= */
 
-        .live-item { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 15px; border-radius: 24px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; position: relative; }
-        .live-img { width: 50px; height: 50px; background: #1e293b; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .live-img img { width: 100%; height: 100%; object-fit: cover; }
-        .live-info { flex: 1; }
-        .live-info h4 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
-        .action-btns { display: flex; gap: 8px; }
-        .action-btn { width: 35px; height: 35px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
-        .edit-btn { background: rgba(6, 182, 212, 0.1); color: var(--accent); }
-        .del-btn { background: rgba(244, 63, 94, 0.1); color: var(--danger); }
-        .wa-btn { background: rgba(37, 211, 102, 0.1); color: #25d366; }
+:root{
 
-        .order-badge { position: absolute; top: -5px; left: -5px; background: var(--primary); color: white; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 800; }
-    </style>
+    --bg:#02040a;
+
+    --card:rgba(255,255,255,.045);
+
+    --card2:rgba(255,255,255,.025);
+
+    --border:rgba(255,255,255,.085);
+
+    --primary:#6366f1;
+
+    --cyan:#06b6d4;
+
+    --purple:#a855f7;
+
+    --pink:#ec4899;
+
+    --green:#10b981;
+
+    --red:#f43f5e;
+
+    --gold:#facc15;
+
+    --orange:#fb923c;
+
+    --text:#f8fafc;
+
+    --muted:#64748b;
+
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+*{
+
+    margin:0;
+
+    padding:0;
+
+    box-sizing:border-box;
+
+    font-family:
+        'Plus Jakarta Sans',
+        sans-serif;
+
+    -webkit-tap-highlight-color:transparent;
+
+}
+
+
+body{
+
+    min-height:100vh;
+
+    color:var(--text);
+
+    background:
+
+        radial-gradient(
+            circle at 100% 0%,
+            rgba(99,102,241,.18),
+            transparent 35%
+        ),
+
+        radial-gradient(
+            circle at 0% 55%,
+            rgba(6,182,212,.09),
+            transparent 30%
+        ),
+
+        var(--bg);
+
+    padding-bottom:60px;
+
+    overflow-x:hidden;
+
+}
+
+
+/* =========================================================
+   CONTAINER
+========================================================= */
+
+.container{
+
+    width:100%;
+
+    max-width:1050px;
+
+    margin:auto;
+
+    padding:20px;
+
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:8px 0 24px;
+
+}
+
+
+.brand-box{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+
+.brand-icon{
+
+    width:48px;
+
+    height:48px;
+
+    border-radius:16px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:22px;
+
+    color:white;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--cyan)
+        );
+
+    box-shadow:
+
+        0 12px 35px
+        rgba(99,102,241,.22);
+
+}
+
+
+.brand-title{
+
+    font-size:18px;
+
+    font-weight:900;
+
+    letter-spacing:.5px;
+
+}
+
+
+.brand-title span{
+
+    color:var(--cyan);
+
+}
+
+
+.brand-sub{
+
+    margin-top:3px;
+
+    color:var(--muted);
+
+    font-size:8px;
+
+    font-weight:800;
+
+    letter-spacing:1px;
+
+}
+
+
+.header-actions{
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+
+.header-btn{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:14px;
+
+    border:1px solid var(--border);
+
+    background:var(--card);
+
+    color:white;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    cursor:pointer;
+
+    font-size:19px;
+
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero{
+
+    position:relative;
+
+    overflow:hidden;
+
+    padding:27px;
+
+    border-radius:30px;
+
+    margin-bottom:20px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            rgba(99,102,241,.30),
+            rgba(168,85,247,.14),
+            rgba(6,182,212,.12)
+        );
+
+    border:1px solid rgba(255,255,255,.10);
+
+}
+
+
+.hero:before{
+
+    content:"";
+
+    position:absolute;
+
+    width:220px;
+
+    height:220px;
+
+    border-radius:50%;
+
+    right:-100px;
+
+    top:-110px;
+
+    background:
+
+        radial-gradient(
+            circle,
+            rgba(6,182,212,.25),
+            transparent 65%
+        );
+
+}
+
+
+.hero-content{
+
+    position:relative;
+
+    z-index:2;
+
+}
+
+
+.hero-badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:7px 11px;
+
+    border-radius:12px;
+
+    background:rgba(255,255,255,.06);
+
+    border:1px solid var(--border);
+
+    color:#cbd5e1;
+
+    font-size:8px;
+
+    font-weight:900;
+
+    margin-bottom:12px;
+
+}
+
+
+.hero h1{
+
+    font-size:25px;
+
+    font-weight:900;
+
+    letter-spacing:-.8px;
+
+}
+
+
+.hero p{
+
+    margin-top:8px;
+
+    max-width:650px;
+
+    color:#94a3b8;
+
+    font-size:10px;
+
+    line-height:1.7;
+
+}
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.stats{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(4,1fr);
+
+    gap:12px;
+
+    margin-bottom:20px;
+
+}
+
+
+.stat{
+
+    padding:18px;
+
+    border-radius:21px;
+
+    background:var(--card);
+
+    border:1px solid var(--border);
+
+    backdrop-filter:blur(15px);
+
+}
+
+
+.stat-icon{
+
+    width:35px;
+
+    height:35px;
+
+    border-radius:11px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:rgba(6,182,212,.08);
+
+    color:var(--cyan);
+
+    margin-bottom:10px;
+
+}
+
+
+.stat strong{
+
+    display:block;
+
+    font-size:22px;
+
+    font-weight:900;
+
+}
+
+
+.stat span{
+
+    color:var(--muted);
+
+    font-size:8px;
+
+    font-weight:800;
+
+    text-transform:uppercase;
+
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.tabs{
+
+    display:flex;
+
+    gap:7px;
+
+    padding:7px;
+
+    border-radius:20px;
+
+    background:rgba(255,255,255,.025);
+
+    border:1px solid var(--border);
+
+    margin-bottom:20px;
+
+    position:sticky;
+
+    top:10px;
+
+    z-index:900;
+
+    backdrop-filter:blur(20px);
+
+}
+
+
+.tab{
+
+    flex:1;
+
+    padding:11px 8px;
+
+    border:0;
+
+    border-radius:14px;
+
+    background:none;
+
+    color:#64748b;
+
+    cursor:pointer;
+
+    font-size:9px;
+
+    font-weight:900;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:5px;
+
+    transition:.25s;
+
+}
+
+
+.tab i{
+
+    font-size:17px;
+
+}
+
+
+.tab.active{
+
+    color:#000;
+
+    background:white;
+
+    box-shadow:
+        0 8px 25px
+        rgba(255,255,255,.10);
+
+}
+
+
+/* =========================================================
+   PANELS
+========================================================= */
+
+.panel{
+
+    display:none;
+
+    animation:panelIn .4s ease;
+
+}
+
+
+.panel.active{
+
+    display:block;
+
+}
+
+
+@keyframes panelIn{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(10px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+
+/* =========================================================
+   FORM CARD
+========================================================= */
+
+.form-card{
+
+    padding:24px;
+
+    border-radius:28px;
+
+    background:var(--card);
+
+    border:1px solid var(--border);
+
+    margin-bottom:20px;
+
+}
+
+
+.form-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-bottom:22px;
+
+}
+
+
+.form-title-icon{
+
+    width:38px;
+
+    height:38px;
+
+    border-radius:12px;
+
+    background:
+        rgba(99,102,241,.10);
+
+    color:#818cf8;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+
+.form-title h2{
+
+    font-size:16px;
+
+    font-weight:900;
+
+}
+
+
+.form-title p{
+
+    color:var(--muted);
+
+    font-size:8px;
+
+    margin-top:2px;
+
+}
+
+
+/* =========================================================
+   FORM GRID
+========================================================= */
+
+.form-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(2,1fr);
+
+    gap:14px;
+
+}
+
+
+.form-group{
+
+    margin-bottom:3px;
+
+}
+
+
+.form-group.full{
+
+    grid-column:1/-1;
+
+}
+
+
+.form-group label{
+
+    display:block;
+
+    margin:0 0 7px 4px;
+
+    color:#94a3b8;
+
+    font-size:8px;
+
+    font-weight:900;
+
+    letter-spacing:.8px;
+
+}
+
+
+.input,
+.select,
+.textarea{
+
+    width:100%;
+
+    padding:13px 14px;
+
+    border-radius:14px;
+
+    border:1px solid #243044;
+
+    outline:none;
+
+    background:
+
+        rgba(0,0,0,.22);
+
+    color:white;
+
+    font-size:11px;
+
+    transition:.2s;
+
+}
+
+
+.input:focus,
+.select:focus,
+.textarea:focus{
+
+    border-color:
+        rgba(6,182,212,.45);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(6,182,212,.05);
+
+}
+
+
+.select option{
+
+    background:#0b111d;
+
+    color:white;
+
+}
+
+
+.textarea{
+
+    min-height:80px;
+
+    resize:vertical;
+
+}
+
+
+/* =========================================================
+   COURSE PRESET BOX
+========================================================= */
+
+.preset-box{
+
+    grid-column:1/-1;
+
+    padding:16px;
+
+    border-radius:19px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            rgba(99,102,241,.08),
+            rgba(6,182,212,.05)
+        );
+
+    border:1px solid
+        rgba(99,102,241,.16);
+
+}
+
+
+.preset-label{
+
+    color:#a5b4fc;
+
+    font-size:8px;
+
+    font-weight:900;
+
+    letter-spacing:.8px;
+
+    margin-bottom:8px;
+
+    display:block;
+
+}
+
+
+.preset-row{
+
+    display:flex;
+
+    gap:9px;
+
+}
+
+
+.preset-row .select{
+
+    flex:1;
+
+}
+
+
+.auto-btn{
+
+    width:45px;
+
+    border:1px solid
+        rgba(6,182,212,.2);
+
+    background:
+        rgba(6,182,212,.08);
+
+    color:var(--cyan);
+
+    border-radius:13px;
+
+    cursor:pointer;
+
+    font-size:17px;
+
+}
+
+
+/* =========================================================
+   OFFER TYPE CARDS
+========================================================= */
+
+.offer-types{
+
+    grid-column:1/-1;
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(4,1fr);
+
+    gap:8px;
+
+}
+
+
+.offer-type{
+
+    padding:12px 7px;
+
+    border-radius:15px;
+
+    border:1px solid var(--border);
+
+    background:rgba(255,255,255,.025);
+
+    cursor:pointer;
+
+    text-align:center;
+
+    transition:.2s;
+
+}
+
+
+.offer-type i{
+
+    display:block;
+
+    font-size:19px;
+
+    margin-bottom:5px;
+
+}
+
+
+.offer-type span{
+
+    display:block;
+
+    font-size:7px;
+
+    font-weight:900;
+
+    color:#64748b;
+
+}
+
+
+.offer-type.active{
+
+    background:
+        rgba(99,102,241,.12);
+
+    border-color:
+        rgba(99,102,241,.40);
+
+}
+
+
+.offer-type.active span{
+
+    color:white;
+
+}
+
+
+.type-hot i{
+
+    color:#fb7185;
+
+}
+
+
+.type-flash i{
+
+    color:#facc15;
+
+}
+
+
+.type-puja i{
+
+    color:#fb923c;
+
+}
+
+
+.type-premium i{
+
+    color:#a855f7;
+
+}
+
+
+.type-new i{
+
+    color:#06b6d4;
+
+}
+
+
+.type-trend i{
+
+    color:#22c55e;
+
+}
+
+
+.type-free i{
+
+    color:#10b981;
+
+}
+
+
+.type-special i{
+
+    color:#818cf8;
+
+}
+
+
+/* =========================================================
+   TIMER
+========================================================= */
+
+.timer-options{
+
+    grid-column:1/-1;
+
+}
+
+
+.timer-row{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(5,1fr);
+
+    gap:7px;
+
+}
+
+
+.timer-btn{
+
+    padding:10px 5px;
+
+    border-radius:12px;
+
+    border:1px solid var(--border);
+
+    background:rgba(255,255,255,.025);
+
+    color:#64748b;
+
+    cursor:pointer;
+
+    font-size:8px;
+
+    font-weight:900;
+
+}
+
+
+.timer-btn.active{
+
+    color:white;
+
+    background:
+        rgba(244,63,94,.10);
+
+    border-color:
+        rgba(244,63,94,.38);
+
+}
+
+
+.custom-timer{
+
+    margin-top:10px;
+
+    display:none;
+
+}
+
+
+/* =========================================================
+   SWITCH
+========================================================= */
+
+.switch-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:14px;
+
+    border-radius:15px;
+
+    border:1px solid var(--border);
+
+    background:rgba(255,255,255,.025);
+
+}
+
+
+.switch-info strong{
+
+    display:block;
+
+    font-size:10px;
+
+}
+
+
+.switch-info span{
+
+    display:block;
+
+    margin-top:3px;
+
+    color:var(--muted);
+
+    font-size:8px;
+
+}
+
+
+.switch{
+
+    position:relative;
+
+    width:45px;
+
+    height:25px;
+
+}
+
+
+.switch input{
+
+    display:none;
+
+}
+
+
+.switch-slider{
+
+    position:absolute;
+
+    inset:0;
+
+    border-radius:30px;
+
+    background:#1e293b;
+
+    cursor:pointer;
+
+}
+
+
+.switch-slider:before{
+
+    content:"";
+
+    position:absolute;
+
+    width:19px;
+
+    height:19px;
+
+    left:3px;
+
+    top:3px;
+
+    background:white;
+
+    border-radius:50%;
+
+    transition:.25s;
+
+}
+
+
+.switch input:checked +
+.switch-slider{
+
+    background:var(--green);
+
+}
+
+
+.switch input:checked +
+.switch-slider:before{
+
+    transform:
+        translateX(20px);
+
+}
+
+
+/* =========================================================
+   SAVE BUTTON
+========================================================= */
+
+.save-btn{
+
+    width:100%;
+
+    margin-top:18px;
+
+    padding:16px;
+
+    border:0;
+
+    border-radius:17px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--cyan)
+        );
+
+    color:white;
+
+    font-size:11px;
+
+    font-weight:900;
+
+    cursor:pointer;
+
+    box-shadow:
+
+        0 15px 35px
+        rgba(99,102,241,.20);
+
+}
+
+
+.cancel-btn{
+
+    width:100%;
+
+    margin-top:9px;
+
+    padding:13px;
+
+    border:0;
+
+    background:none;
+
+    color:#64748b;
+
+    font-size:9px;
+
+    font-weight:800;
+
+    cursor:pointer;
+
+}
+
+
+/* =========================================================
+   LIVE HEADER
+========================================================= */
+
+.live-toolbar{
+
+    display:flex;
+
+    gap:9px;
+
+    margin-bottom:15px;
+
+}
+
+
+.search-box{
+
+    flex:1;
+
+    position:relative;
+
+}
+
+
+.search-box i{
+
+    position:absolute;
+
+    left:14px;
+
+    top:50%;
+
+    transform:translateY(-50%);
+
+    color:var(--cyan);
+
+}
+
+
+.search-box input{
+
+    width:100%;
+
+    padding:13px 14px 13px 39px;
+
+    border-radius:15px;
+
+    background:var(--card);
+
+    border:1px solid var(--border);
+
+    outline:none;
+
+    color:white;
+
+    font-size:10px;
+
+}
+
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+.filter-select{
+
+    width:130px;
+
+    border-radius:15px;
+
+    border:1px solid var(--border);
+
+    background:var(--card);
+
+    color:white;
+
+    padding:10px;
+
+    outline:none;
+
+    font-size:9px;
+
+}
+
+
+/* =========================================================
+   OFFER CARD
+========================================================= */
+
+.offer-list{
+
+    display:grid;
+
+    gap:13px;
+
+}
+
+
+.offer-card{
+
+    position:relative;
+
+    overflow:hidden;
+
+    display:grid;
+
+    grid-template-columns:95px 1fr auto;
+
+    gap:14px;
+
+    align-items:center;
+
+    padding:13px;
+
+    border-radius:23px;
+
+    background:
+
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.045),
+            rgba(255,255,255,.018)
+        );
+
+    border:1px solid var(--border);
+
+    transition:.25s;
+
+}
+
+
+.offer-card:hover{
+
+    border-color:
+        rgba(6,182,212,.22);
+
+    transform:translateY(-2px);
+
+}
+
+
+.offer-image{
+
+    width:95px;
+
+    height:80px;
+
+    border-radius:16px;
+
+    overflow:hidden;
+
+    background:#111827;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+
+.offer-image img{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+}
+
+
+.offer-main{
+
+    min-width:0;
+
+}
+
+
+.offer-name{
+
+    font-size:13px;
+
+    font-weight:900;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+}
+
+
+.offer-meta{
+
+    margin-top:5px;
+
+    color:#64748b;
+
+    font-size:8px;
+
+    line-height:1.7;
+
+}
+
+
+.price{
+
+    color:var(--cyan);
+
+    font-size:12px;
+
+    font-weight:900;
+
+}
+
+
+.old{
+
+    color:#64748b;
+
+    text-decoration:line-through;
+
+    font-size:8px;
+
+    margin-left:3px;
+
+}
+
+
+.offer-badge{
+
+    display:inline-block;
+
+    margin-top:5px;
+
+    padding:4px 7px;
+
+    border-radius:7px;
+
+    font-size:7px;
+
+    font-weight:900;
+
+    background:rgba(244,63,94,.10);
+
+    color:#fb7185;
+
+}
+
+
+.offer-badge.flash{
+
+    background:rgba(250,204,21,.10);
+
+    color:#facc15;
+
+}
+
+
+.offer-badge.puja{
+
+    background:rgba(251,146,60,.10);
+
+    color:#fb923c;
+
+}
+
+
+.offer-badge.premium{
+
+    background:rgba(168,85,247,.10);
+
+    color:#c084fc;
+
+}
+
+
+.offer-badge.free{
+
+    background:rgba(16,185,129,.10);
+
+    color:#34d399;
+
+}
+
+
+.offer-badge.special{
+
+    background:rgba(99,102,241,.10);
+
+    color:#a5b4fc;
+
+}
+
+
+.card-actions{
+
+    display:flex;
+
+    gap:6px;
+
+}
+
+
+.action{
+
+    width:36px;
+
+    height:36px;
+
+    border:0;
+
+    border-radius:11px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+}
+
+
+.edit{
+
+    background:
+        rgba(6,182,212,.09);
+
+    color:var(--cyan);
+
+}
+
+
+.toggle{
+
+    background:
+        rgba(16,185,129,.08);
+
+    color:var(--green);
+
+}
+
+
+.delete{
+
+    background:
+        rgba(244,63,94,.08);
+
+    color:var(--red);
+
+}
+
+
+.status{
+
+    position:absolute;
+
+    top:8px;
+
+    right:8px;
+
+    padding:4px 7px;
+
+    border-radius:7px;
+
+    font-size:6px;
+
+    font-weight:900;
+
+}
+
+
+.status.on{
+
+    background:rgba(16,185,129,.10);
+
+    color:#34d399;
+
+}
+
+
+.status.off{
+
+    background:rgba(244,63,94,.10);
+
+    color:#fb7185;
+
+}
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+.setting-card{
+
+    padding:22px;
+
+    border-radius:25px;
+
+    background:var(--card);
+
+    border:1px solid var(--border);
+
+    margin-bottom:15px;
+
+}
+
+
+.setting-card h3{
+
+    font-size:14px;
+
+    margin-bottom:5px;
+
+}
+
+
+.setting-card p{
+
+    color:var(--muted);
+
+    font-size:8px;
+
+    margin-bottom:17px;
+
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.empty{
+
+    text-align:center;
+
+    padding:60px 20px;
+
+    color:#64748b;
+
+}
+
+
+.empty i{
+
+    display:block;
+
+    font-size:38px;
+
+    margin-bottom:10px;
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+.toast{
+
+    position:fixed;
+
+    left:50%;
+
+    bottom:25px;
+
+    transform:
+        translate(-50%,120px);
+
+    z-index:9999;
+
+    min-width:250px;
+
+    max-width:90%;
+
+    padding:13px 17px;
+
+    border-radius:15px;
+
+    background:#0f172a;
+
+    border:1px solid var(--border);
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.5);
+
+    display:flex;
+
+    align-items:center;
+
+    gap:9px;
+
+    font-size:9px;
+
+    font-weight:800;
+
+    transition:.35s;
+
+}
+
+
+.toast.show{
+
+    transform:
+        translate(-50%,0);
+
+}
+
+
+.toast i{
+
+    color:var(--green);
+
+    font-size:17px;
+
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:700px){
+
+    .stats{
+
+        grid-template-columns:
+            repeat(2,1fr);
+
+    }
+
+
+    .form-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+
+    .form-group.full,
+    .preset-box,
+    .offer-types,
+    .timer-options{
+
+        grid-column:auto;
+
+    }
+
+
+    .offer-types{
+
+        grid-template-columns:
+            repeat(2,1fr);
+
+    }
+
+
+    .timer-row{
+
+        grid-template-columns:
+            repeat(3,1fr);
+
+    }
+
+
+    .offer-card{
+
+        grid-template-columns:
+            72px 1fr;
+
+    }
+
+
+    .offer-image{
+
+        width:72px;
+
+        height:70px;
+
+    }
+
+
+    .card-actions{
+
+        grid-column:1/-1;
+
+        justify-content:flex-end;
+
+        padding-top:2px;
+
+    }
+
+
+    .status{
+
+        right:7px;
+
+    }
+
+
+    .live-toolbar{
+
+        flex-direction:column;
+
+    }
+
+
+    .filter-select{
+
+        width:100%;
+
+    }
+
+}
+
+
+@media(max-width:400px){
+
+    .tabs{
+
+        gap:3px;
+
+    }
+
+    .tab{
+
+        font-size:7px;
+
+    }
+
+    .tab i{
+
+        font-size:15px;
+
+    }
+
+}
+
+</style>
+
 </head>
+
+
 <body>
 
+
 <div class="container">
-    <header>
-        <div class="admin-profile">
-            <div class="avatar"><i class="ri-shield-user-line"></i></div>
-            <div>
-                <h3 style="font-size: 16px; font-weight: 800; letter-spacing: 1px;">BT COMMAND</h3>
-                <p style="font-size: 10px; color: var(--success); font-weight: 800;">● SYSTEM ROOT ACCESS</p>
-            </div>
-        </div>
-        <button onclick="location.reload()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;"><i class="ri-refresh-line"></i></button>
-    </header>
 
-    <div class="grid-stats">
-        <div class="stat-card">
-            <i class="ri-book-open-line"></i>
-            <h2 id="total-courses">0</h2>
-            <p>Live Courses</p>
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
+
+<header class="header">
+
+    <div class="brand-box">
+
+        <div class="brand-icon">
+
+            <i class="ri-command-line"></i>
+
         </div>
-        <div class="stat-card">
-            <i class="ri-user-follow-line"></i>
-            <h2 id="total-refers">0</h2>
-            <p>Total Refers</p>
+
+        <div>
+
+            <div class="brand-title">
+
+                BLACK<span>TERMINAL</span>
+
+            </div>
+
+            <div class="brand-sub">
+
+                OFFER COMMAND CENTER
+
+            </div>
+
         </div>
+
     </div>
 
-    <nav class="tab-nav">
-        <button class="tab-link active" onclick="showTab('add', this)"><i class="ri-add-circle-line"></i>Add</button>
-        <button class="tab-link" onclick="showTab('live', this)"><i class="ri-broadcast-line"></i>Live</button>
-        <button class="tab-link" onclick="showTab('refer', this)"><i class="ri-hand-coin-line"></i>Refer</button>
-        <button class="tab-link" onclick="showTab('settings', this)"><i class="ri-settings-5-line"></i>Panel</button>
-    </nav>
 
-    <div id="add" class="panel-section active">
-        <div class="card-form">
-            <h3 id="form-title" style="margin-bottom: 20px;"><i class="ri-rocket-fill" style="color:var(--primary)"></i> Deploy Program</h3>
-            <input type="hidden" id="edit-id">
-            
-            <div class="grid-stats" style="margin-bottom:20px">
-                <div class="input-box" style="margin-bottom:0">
-                    <label>COURSE NAME</label>
-                    <input type="text" id="c-name" placeholder="e.g. Cyber Security">
-                </div>
-                <div class="input-box" style="margin-bottom:0">
-                    <label>ORDER (INDEX)</label>
-                    <input type="number" id="c-order" placeholder="1" value="1">
-                </div>
-            </div>
+    <div class="header-actions">
 
-            <div class="input-box">
-                <label>COURSE IMAGE URL (Comma for Multi-Image)</label>
-                <input type="text" id="c-img" placeholder="link1.jpg, link2.jpg">
-            </div>
-            <div class="input-box">
-                <label>YOUTUBE PREVIEW LINK</label>
-                <input type="text" id="c-yt" placeholder="https://youtube.com/watch?v=...">
-            </div>
-            <div class="grid-stats" style="margin-bottom:0">
-                <div class="input-box">
-                    <label>OLD PRICE</label>
-                    <input type="number" id="c-old" placeholder="2999">
-                </div>
-                <div class="input-box">
-                    <label>OFFER PRICE</label>
-                    <input type="number" id="c-new" placeholder="499">
-                </div>
-            </div>
+        <button
+            class="header-btn"
+            onclick="refreshPage()"
+        >
 
-            <div class="input-box">
-                <label>COURSE DURATION</label>
-                <input type="text" id="c-duration" placeholder="e.g. 6 Months / Lifetime">
-            </div>
+            <i class="ri-refresh-line"></i>
 
-            <div class="input-box">
-                <label>OFFER ENDS AT (TIMER)</label>
-                <input type="datetime-local" id="c-timer">
-            </div>
-            
-            <div class="input-box">
-                <label>CHOOSE ULTRA MODERN BADGE</label>
-                <select id="c-tag" onchange="toggleCustomBadge(this.value)">
-                    <option value="">No Badge</option>
-                    <option value="HOT">🔥 HOT SELLING</option>
-                    <option value="NEW">✨ NEWLY ADDED</option>
-                    <option value="TRENDING">📈 TRENDING</option>
-                    <option value="FREE">🎁 FREE COURSE</option>
-                    <option value="CUSTOM">➕ CUSTOM BADGE (Write Below)</option>
-                </select>
-            </div>
+        </button>
 
-            <div class="input-box" id="custom-badge-box" style="display:none;">
-                <label>ENTER CUSTOM BADGE TEXT</label>
-                <input type="text" id="c-custom-tag" placeholder="e.g. LIMITED OFFER">
-            </div>
-
-            <button class="btn-glow" id="submit-btn" onclick="addOrUpdateCourse()">DEPLOY TO TERMINAL</button>
-            <button id="cancel-edit" onclick="resetForm()" style="display:none; width: 100%; background: none; border: none; color: #94a3b8; margin-top: 15px; font-weight: 700; cursor:pointer;">Cancel Edit</button>
-        </div>
     </div>
 
-    <div id="live" class="panel-section">
-        <div id="live-list"></div>
+</header>
+
+
+<!-- =====================================================
+     HERO
+===================================================== -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <div class="hero-badge">
+
+            <i class="ri-shield-check-line"></i>
+
+            ADMIN OFFER CONTROL
+
+        </div>
+
+
+        <h1>
+
+            Offer Command Center ⚡
+
+        </h1>
+
+
+        <p>
+
+            Create powerful course offers, flash deals,
+            festival campaigns and limited-time promotions.
+            Everything here automatically syncs with the
+            student Offers page.
+
+        </p>
+
     </div>
 
-    <div id="refer" class="panel-section">
-        <div class="card-form">
-            <h3><i class="ri-gift-2-line"></i> Referral Rewards</h3>
-            <div class="input-box" style="margin-top:15px">
-                <label>AMOUNT PER REFER (₹)</label>
-                <input type="number" id="ref-amt">
-            </div>
-            <button class="btn-glow" style="background: var(--success);" onclick="updateRefer()">SYNC REWARD</button>
+</section>
+
+
+<!-- =====================================================
+     STATS
+===================================================== -->
+
+<div class="stats">
+
+
+    <div class="stat">
+
+        <div class="stat-icon">
+
+            <i class="ri-price-tag-3-line"></i>
+
         </div>
+
+        <strong id="totalOffers">
+            0
+        </strong>
+
+        <span>
+            Total Offers
+        </span>
+
     </div>
 
-    <div id="settings" class="panel-section">
-        <div class="card-form">
-            <h3><i class="ri-notification-3-line"></i> Global Banner</h3>
-            <div class="input-box" style="margin-top:15px">
-                <label>BANNER STATUS</label>
-                <select id="ann-show">
-                    <option value="true">SHOW BANNER</option>
-                    <option value="false">HIDE BANNER</option>
-                </select>
-            </div>
-            <div class="input-box">
-                <label>MESSAGE</label>
-                <textarea id="ann-text" rows="3"></textarea>
-            </div>
-            <button class="btn-glow" onclick="updateAnn()">UPDATE LIVE APP</button>
+
+    <div class="stat">
+
+        <div class="stat-icon">
+
+            <i class="ri-eye-line"></i>
+
         </div>
+
+        <strong id="activeOffers">
+            0
+        </strong>
+
+        <span>
+            Active
+        </span>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-icon">
+
+            <i class="ri-timer-line"></i>
+
+        </div>
+
+        <strong id="timerOffers">
+            0
+        </strong>
+
+        <span>
+            Timed Deals
+        </span>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-icon">
+
+            <i class="ri-eye-off-line"></i>
+
+        </div>
+
+        <strong id="disabledOffers">
+            0
+        </strong>
+
+        <span>
+            Disabled
+        </span>
+
     </div>
 
 </div>
 
+
+<!-- =====================================================
+     TABS
+===================================================== -->
+
+<nav class="tabs">
+
+    <button
+        class="tab active"
+        onclick="showTab('create',this)"
+    >
+
+        <i class="ri-add-circle-line"></i>
+
+        CREATE
+
+    </button>
+
+
+    <button
+        class="tab"
+        onclick="showTab('live',this)"
+    >
+
+        <i class="ri-broadcast-line"></i>
+
+        LIVE OFFERS
+
+    </button>
+
+
+    <button
+        class="tab"
+        onclick="showTab('settings',this)"
+    >
+
+        <i class="ri-settings-4-line"></i>
+
+        SETTINGS
+
+    </button>
+
+</nav>
+
+
+<!-- =====================================================
+     CREATE PANEL
+===================================================== -->
+
+<section
+    id="create"
+    class="panel active"
+>
+
+
+<div class="form-card">
+
+
+    <div class="form-title">
+
+        <div class="form-title-icon">
+
+            <i class="ri-rocket-2-line"></i>
+
+        </div>
+
+        <div>
+
+            <h2 id="formTitle">
+
+                Create New Offer
+
+            </h2>
+
+            <p>
+
+                Configure your course promotion
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <input
+        type="hidden"
+        id="editId"
+    >
+
+
+    <div class="form-grid">
+
+
+        <!-- =================================================
+             COURSE PRESET
+        ================================================== -->
+
+        <div class="preset-box">
+
+            <span class="preset-label">
+
+                QUICK COURSE SELECTOR
+
+            </span>
+
+
+            <div class="preset-row">
+
+                <select
+                    class="select"
+                    id="coursePreset"
+                    onchange="applyPreset()"
+                >
+
+                    <option value="">
+                        Select a computer course...
+                    </option>
+
+                </select>
+
+
+                <button
+                    type="button"
+                    class="auto-btn"
+                    onclick="applyPreset()"
+                    title="Auto Fill"
+                >
+
+                    <i class="ri-magic-line"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             COURSE NAME
+        ================================================== -->
+
+        <div class="form-group">
+
+            <label>
+                COURSE NAME
+            </label>
+
+            <input
+                class="input"
+                id="courseName"
+                placeholder="Example: Python Programming"
+            >
+
+        </div>
+
+
+        <!-- =================================================
+             CATEGORY
+        ================================================== -->
+
+        <div class="form-group">
+
+            <label>
+                CATEGORY
+            </label>
+
+            <select
+                class="select"
+                id="category"
+            >
+
+                <option value="programming">
+                    Programming
+                </option>
+
+                <option value="office">
+                    Office & Productivity
+                </option>
+
+                <option value="accounting">
+                    Accounting
+                </option>
+
+                <option value="design">
+                    Design
+                </option>
+
+                <option value="cybersecurity">
+                    Cyber Security
+                </option>
+
+                <option value="career">
+                    Career
+                </option>
+
+                <option value="other">
+                    Other
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- =================================================
+             PRICE
+        ================================================== -->
+
+        <div class="form-group">
+
+            <label>
+                ORIGINAL PRICE
+            </label>
+
+            <input
+                class="input"
+                id="oldPrice"
+                type="number"
+                placeholder="₹8000"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                SPECIAL OFFER PRICE
+            </label>
+
+            <input
+                class="input"
+                id="newPrice"
+                type="number"
+                placeholder="₹4999"
+            >
+
+        </div>
+
+
+        <!-- =================================================
+             DURATION
+        ================================================== -->
+
+        <div class="form-group">
+
+            <label>
+                COURSE DURATION
+            </label>
+
+            <input
+                class="input"
+                id="duration"
+                placeholder="6 Months"
+            >
+
+        </div>
+
+
+        <!-- =================================================
+             ORDER
+        ================================================== -->
+
+        <div class="form-group">
+
+            <label>
+                DISPLAY PRIORITY
+            </label>
+
+            <input
+                class="input"
+                id="displayOrder"
+                type="number"
+                value="1"
+                min="1"
+            >
+
+        </div>
+
+
+        <!-- =================================================
+             IMAGE
+        ================================================== -->
+
+        <div class="form-group full">
+
+            <label>
+                COURSE IMAGE URL
+            </label>
+
+            <input
+                class="input"
+                id="image"
+                placeholder="Image URL — use comma for multiple images"
+            >
+
+        </div>
+
+
+        <!-- =================================================
+             YOUTUBE
+        ================================================== -->
+
+        <div class="form-group full">
+
+            <label>
+                YOUTUBE PREVIEW VIDEO
+            </label>
+
+            <input
+                class="input"
+                id="youtube"
+                placeholder="https://youtube.com/watch?v=..."
+            >
+
+        </div>
+
+
+        <!-- =================================================
+             OFFER TYPES
+        ================================================== -->
+
+        <div class="form-group full">
+
+            <label>
+                OFFER STYLE
+            </label>
+
+        </div>
+
+
+        <div class="offer-types">
+
+
+            <div
+                class="offer-type type-hot active"
+                data-type="HOT"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-fire-fill"></i>
+
+                <span>
+                    HOT DEAL
+                </span>
+
+            </div>
+
+
+            <div
+                class="offer-type type-flash"
+                data-type="FLASH"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-flashlight-fill"></i>
+
+                <span>
+                    FLASH DEAL
+                </span>
+
+            </div>
+
+
+            <div
+                class="offer-type type-puja"
+                data-type="PUJA"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-sparkling-fill"></i>
+
+                <span>
+                    PUJA OFFER
+                </span>
+
+            </div>
+
+
+            <div
+                class="offer-type type-premium"
+                data-type="PREMIUM"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-vip-crown-2-fill"></i>
+
+                <span>
+                    PREMIUM
+                </span>
+
+            </div>
+
+
+            <div
+                class="offer-type type-new"
+                data-type="NEW"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-sparkling-2-fill"></i>
+
+                <span>
+                    NEW LAUNCH
+                </span>
+
+            </div>
+
+
+            <div
+                class="offer-type type-trend"
+                data-type="TRENDING"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-line-chart-fill"></i>
+
+                <span>
+                    TRENDING
+                </span>
+
+            </div>
+
+
+            <div
+                class="offer-type type-free"
+                data-type="FREE"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-gift-fill"></i>
+
+                <span>
+                    FREE
+                </span>
+
+            </div>
+
+
+            <div
+                class="offer-type type-special"
+                data-type="SPECIAL"
+                onclick="selectOfferType(this)"
+            >
+
+                <i class="ri-star-fill"></i>
+
+                <span>
+                    SPECIAL
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             CUSTOM BADGE
+        ================================================== -->
+
+        <div class="form-group full">
+
+            <label>
+                CUSTOM BADGE TEXT — OPTIONAL
+            </label>
+
+            <input
+                class="input"
+                id="customBadge"
+                placeholder="Example: REPUBLIC DAY OFFER"
+            >
+
+        </div>
+
+
+        <!-- =================================================
+             TIMER
+        ================================================== -->
+
+        <div class="timer-options">
+
+            <div class="form-group">
+
+                <label>
+                    OFFER COUNTDOWN TIMER
+                </label>
+
+
+                <div class="timer-row">
+
+
+                    <button
+                        type="button"
+                        class="timer-btn active"
+                        data-minutes="0"
+                        onclick="selectTimer(this)"
+                    >
+                        NO TIMER
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="2"
+                        onclick="selectTimer(this)"
+                    >
+                        2 MIN
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="3"
+                        onclick="selectTimer(this)"
+                    >
+                        3 MIN
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="5"
+                        onclick="selectTimer(this)"
+                    >
+                        5 MIN
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="10"
+                        onclick="selectTimer(this)"
+                    >
+                        10 MIN
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="15"
+                        onclick="selectTimer(this)"
+                    >
+                        15 MIN
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="30"
+                        onclick="selectTimer(this)"
+                    >
+                        30 MIN
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="60"
+                        onclick="selectTimer(this)"
+                    >
+                        1 HOUR
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="timer-btn"
+                        data-minutes="custom"
+                        onclick="selectTimer(this)"
+                    >
+                        CUSTOM
+                    </button>
+
+
+                </div>
+
+
+                <div
+                    class="custom-timer"
+                    id="customTimerBox"
+                >
+
+                    <input
+                        class="input"
+                        id="customTimerDate"
+                        type="datetime-local"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             DESCRIPTION
+        ================================================== -->
+
+        <div class="form-group full">
+
+            <label>
+                OFFER DESCRIPTION
+            </label>
+
+            <textarea
+                class="textarea"
+                id="description"
+                placeholder="Write a short attractive description..."
+            ></textarea>
+
+        </div>
+
+
+        <!-- =================================================
+             ENABLE
+        ================================================== -->
+
+        <div class="form-group full">
+
+            <div class="switch-row">
+
+                <div class="switch-info">
+
+                    <strong>
+                        SHOW OFFER TO STUDENTS
+                    </strong>
+
+                    <span>
+                        Students can see this offer on Offers page.
+                    </span>
+
+                </div>
+
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        id="enabled"
+                        checked
+                    >
+
+                    <span
+                        class="switch-slider"
+                    ></span>
+
+                </label>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <button
+        class="save-btn"
+        id="saveBtn"
+        onclick="saveOffer()"
+    >
+
+        <i class="ri-rocket-2-line"></i>
+
+        DEPLOY OFFER TO STUDENT APP
+
+    </button>
+
+
+    <button
+        class="cancel-btn"
+        id="cancelBtn"
+        onclick="resetForm()"
+        style="display:none"
+    >
+
+        Cancel Edit
+
+    </button>
+
+
+</div>
+
+</section>
+
+
+<!-- =====================================================
+     LIVE PANEL
+===================================================== -->
+
+<section
+    id="live"
+    class="panel"
+>
+
+
+    <div class="live-toolbar">
+
+        <div class="search-box">
+
+            <i class="ri-search-line"></i>
+
+            <input
+                id="offerSearch"
+                placeholder="Search offers..."
+            >
+
+        </div>
+
+
+        <select
+            class="filter-select"
+            id="statusFilter"
+        >
+
+            <option value="all">
+                All Offers
+            </option>
+
+            <option value="active">
+                Active
+            </option>
+
+            <option value="disabled">
+                Disabled
+            </option>
+
+            <option value="timer">
+                Timed Deals
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div
+        id="offerList"
+        class="offer-list"
+    ></div>
+
+
+</section>
+
+
+<!-- =====================================================
+     SETTINGS PANEL
+===================================================== -->
+
+<section
+    id="settings"
+    class="panel"
+>
+
+
+    <div class="setting-card">
+
+        <h3>
+            <i class="ri-notification-3-line"></i>
+            Global Announcement
+        </h3>
+
+        <p>
+            Optional announcement for your student application.
+        </p>
+
+
+        <div class="form-group">
+
+            <label>
+                ANNOUNCEMENT STATUS
+            </label>
+
+            <select
+                class="select"
+                id="announcementShow"
+            >
+
+                <option value="true">
+                    SHOW
+                </option>
+
+                <option value="false">
+                    HIDE
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                ANNOUNCEMENT MESSAGE
+            </label>
+
+            <textarea
+                class="textarea"
+                id="announcementText"
+                placeholder="Example: Republic Day special offer is live!"
+            ></textarea>
+
+        </div>
+
+
+        <button
+            class="save-btn"
+            onclick="saveAnnouncement()"
+        >
+
+            UPDATE ANNOUNCEMENT
+
+        </button>
+
+    </div>
+
+
+    <div class="setting-card">
+
+        <h3>
+            <i class="ri-information-line"></i>
+            Offer System
+        </h3>
+
+        <p>
+            All offers created from this panel are saved inside
+            Firestore collection <b>offers</b>. The student
+            Offers page reads the same collection in real time.
+        </p>
+
+    </div>
+
+
+</section>
+
+
+</div>
+
+
+<!-- =====================================================
+     TOAST
+===================================================== -->
+
+<div
+    class="toast"
+    id="toast"
+>
+
+    <i class="ri-checkbox-circle-fill"></i>
+
+    <span id="toastText">
+        Saved successfully
+    </span>
+
+</div>
+
+
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, setDoc, getDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-        authDomain: "black-terminal-f2c91.firebaseapp.com",
-        projectId: "black-terminal-f2c91",
-        storageBucket: "black-terminal-f2c91.appspot.com",
-        messagingSenderId: "552489994197",
-        appId: "1:552489994197:web:7662331264c334ffbadf5c"
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+import {
+
+    initializeApp
+
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+import {
+
+    getFirestore,
+
+    collection,
+
+    addDoc,
+
+    updateDoc,
+
+    deleteDoc,
+
+    doc,
+
+    setDoc,
+
+    getDoc,
+
+    onSnapshot,
+
+    query,
+
+    orderBy,
+
+    serverTimestamp
+
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyCEYfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
+
+    authDomain:
+        "black-terminal-f2c91.firebaseapp.com",
+
+    projectId:
+        "black-terminal-f2c91",
+
+    storageBucket:
+        "black-terminal-f2c91.firebasestorage.app",
+
+    messagingSenderId:
+        "552489994197",
+
+    appId:
+        "1:552489994197:web:7662331264c334ffbadf5c"
+
+};
+
+
+const app =
+    initializeApp(firebaseConfig);
+
+
+const db =
+    getFirestore(app);
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+let offers = [];
+
+let editingId = null;
+
+let selectedOfferType = "HOT";
+
+let selectedTimerMinutes = 0;
+
+
+/* =========================================================
+   COURSE DATABASE — 35 PRESETS
+========================================================= */
+
+const coursePresets = [
+
+    {
+        name:"Computer Basics",
+        category:"office",
+        duration:"2 Months",
+        oldPrice:"2500",
+        newPrice:"1500"
+    },
+
+    {
+        name:"MS Office",
+        category:"office",
+        duration:"3 Months",
+        oldPrice:"4500",
+        newPrice:"3000"
+    },
+
+    {
+        name:"MS Word Professional",
+        category:"office",
+        duration:"2 Months",
+        oldPrice:"3000",
+        newPrice:"2000"
+    },
+
+    {
+        name:"Advanced Excel",
+        category:"office",
+        duration:"3 Months",
+        oldPrice:"5000",
+        newPrice:"3000"
+    },
+
+    {
+        name:"PowerPoint Masterclass",
+        category:"office",
+        duration:"2 Months",
+        oldPrice:"3500",
+        newPrice:"2200"
+    },
+
+    {
+        name:"Tally Prime",
+        category:"accounting",
+        duration:"4 Months",
+        oldPrice:"5500",
+        newPrice:"4000"
+    },
+
+    {
+        name:"Tally + GST",
+        category:"accounting",
+        duration:"5 Months",
+        oldPrice:"6500",
+        newPrice:"4500"
+    },
+
+    {
+        name:"C Programming",
+        category:"programming",
+        duration:"4 Months",
+        oldPrice:"5000",
+        newPrice:"3500"
+    },
+
+    {
+        name:"C++ Programming",
+        category:"programming",
+        duration:"4 Months",
+        oldPrice:"6000",
+        newPrice:"4000"
+    },
+
+    {
+        name:"Java Programming",
+        category:"programming",
+        duration:"6 Months",
+        oldPrice:"7000",
+        newPrice:"5000"
+    },
+
+    {
+        name:"Python Programming",
+        category:"programming",
+        duration:"6 Months",
+        oldPrice:"8000",
+        newPrice:"6000"
+    },
+
+    {
+        name:"HTML & CSS",
+        category:"programming",
+        duration:"3 Months",
+        oldPrice:"4000",
+        newPrice:"2500"
+    },
+
+    {
+        name:"JavaScript",
+        category:"programming",
+        duration:"4 Months",
+        oldPrice:"6500",
+        newPrice:"4500"
+    },
+
+    {
+        name:"React JS",
+        category:"programming",
+        duration:"5 Months",
+        oldPrice:"9000",
+        newPrice:"6500"
+    },
+
+    {
+        name:"Web Development",
+        category:"programming",
+        duration:"6 Months",
+        oldPrice:"9000",
+        newPrice:"6500"
+    },
+
+    {
+        name:"Full Stack Development",
+        category:"programming",
+        duration:"12 Months",
+        oldPrice:"20000",
+        newPrice:"14999"
+    },
+
+    {
+        name:"Python + AI Basics",
+        category:"programming",
+        duration:"8 Months",
+        oldPrice:"12000",
+        newPrice:"8500"
+    },
+
+    {
+        name:"AI Tools for Professionals",
+        category:"programming",
+        duration:"3 Months",
+        oldPrice:"6000",
+        newPrice:"3999"
+    },
+
+    {
+        name:"Graphic Designing",
+        category:"design",
+        duration:"6 Months",
+        oldPrice:"9000",
+        newPrice:"6000"
+    },
+
+    {
+        name:"Adobe Photoshop",
+        category:"design",
+        duration:"4 Months",
+        oldPrice:"6500",
+        newPrice:"4500"
+    },
+
+    {
+        name:"Canva Designing",
+        category:"design",
+        duration:"2 Months",
+        oldPrice:"4000",
+        newPrice:"2500"
+    },
+
+    {
+        name:"Video Editing",
+        category:"design",
+        duration:"5 Months",
+        oldPrice:"9000",
+        newPrice:"6000"
+    },
+
+    {
+        name:"Digital Marketing",
+        category:"career",
+        duration:"6 Months",
+        oldPrice:"8000",
+        newPrice:"5500"
+    },
+
+    {
+        name:"Spoken English",
+        category:"career",
+        duration:"3 Months",
+        oldPrice:"2500",
+        newPrice:"1500"
+    },
+
+    {
+        name:"Data Entry Professional",
+        category:"career",
+        duration:"3 Months",
+        oldPrice:"3500",
+        newPrice:"2500"
+    },
+
+    {
+        name:"Computer Teacher Training",
+        category:"career",
+        duration:"6 Months",
+        oldPrice:"7000",
+        newPrice:"5000"
+    },
+
+    {
+        name:"PGDCA",
+        category:"career",
+        duration:"12 Months",
+        oldPrice:"9000",
+        newPrice:"6000"
+    },
+
+    {
+        name:"Advanced PGDCA",
+        category:"career",
+        duration:"12 Months",
+        oldPrice:"12000",
+        newPrice:"7500"
+    },
+
+    {
+        name:"Cyber Security",
+        category:"cybersecurity",
+        duration:"8 Months",
+        oldPrice:"15000",
+        newPrice:"9999"
+    },
+
+    {
+        name:"Ethical Hacking",
+        category:"cybersecurity",
+        duration:"8 Months",
+        oldPrice:"18000",
+        newPrice:"12000"
+    },
+
+    {
+        name:"Networking Fundamentals",
+        category:"cybersecurity",
+        duration:"5 Months",
+        oldPrice:"7000",
+        newPrice:"5000"
+    },
+
+    {
+        name:"Cloud Computing",
+        category:"programming",
+        duration:"6 Months",
+        oldPrice:"10000",
+        newPrice:"7000"
+    },
+
+    {
+        name:"Database Management",
+        category:"programming",
+        duration:"4 Months",
+        oldPrice:"7000",
+        newPrice:"5000"
+    },
+
+    {
+        name:"SQL Programming",
+        category:"programming",
+        duration:"3 Months",
+        oldPrice:"5000",
+        newPrice:"3500"
+    },
+
+    {
+        name:"Computer Hardware & Networking",
+        category:"cybersecurity",
+        duration:"6 Months",
+        oldPrice:"9000",
+        newPrice:"6500"
+    }
+
+];
+
+
+/* =========================================================
+   LOAD PRESETS INTO DROPDOWN
+========================================================= */
+
+const presetSelect =
+    document.getElementById(
+        "coursePreset"
+    );
+
+
+coursePresets.forEach(
+    (course,index) => {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+        option.value = index;
+
+        option.textContent =
+            course.name;
+
+        presetSelect.appendChild(
+            option
+        );
+
+    }
+);
+
+
+/* =========================================================
+   APPLY COURSE PRESET
+========================================================= */
+
+window.applyPreset =
+function(){
+
+    const index =
+        document.getElementById(
+            "coursePreset"
+        ).value;
+
+
+    if(index === "") return;
+
+
+    const course =
+        coursePresets[
+            Number(index)
+        ];
+
+
+    if(!course) return;
+
+
+    document.getElementById(
+        "courseName"
+    ).value =
+        course.name;
+
+
+    document.getElementById(
+        "category"
+    ).value =
+        course.category;
+
+
+    document.getElementById(
+        "duration"
+    ).value =
+        course.duration;
+
+
+    document.getElementById(
+        "oldPrice"
+    ).value =
+        course.oldPrice;
+
+
+    document.getElementById(
+        "newPrice"
+    ).value =
+        course.newPrice;
+
+
+    showToast(
+        "Course preset loaded"
+    );
+
+};
+
+
+/* =========================================================
+   OFFER TYPE
+========================================================= */
+
+window.selectOfferType =
+function(element){
+
+    document
+    .querySelectorAll(
+        ".offer-type"
+    )
+    .forEach(
+        x =>
+            x.classList.remove(
+                "active"
+            )
+    );
+
+
+    element.classList.add(
+        "active"
+    );
+
+
+    selectedOfferType =
+        element.dataset.type;
+
+};
+
+
+/* =========================================================
+   TIMER SELECT
+========================================================= */
+
+window.selectTimer =
+function(element){
+
+    document
+    .querySelectorAll(
+        ".timer-btn"
+    )
+    .forEach(
+        x =>
+            x.classList.remove(
+                "active"
+            )
+    );
+
+
+    element.classList.add(
+        "active"
+    );
+
+
+    const value =
+        element.dataset.minutes;
+
+
+    if(value === "custom"){
+
+        selectedTimerMinutes =
+            "custom";
+
+
+        document
+        .getElementById(
+            "customTimerBox"
+        )
+        .style.display =
+            "block";
+
+    }
+
+    else{
+
+        selectedTimerMinutes =
+            Number(value);
+
+
+        document
+        .getElementById(
+            "customTimerBox"
+        )
+        .style.display =
+            "none";
+
+    }
+
+};
+
+
+/* =========================================================
+   CREATE EXPIRY
+========================================================= */
+
+function getExpiryDate(){
+
+    if(
+        selectedTimerMinutes === 0
+    ){
+
+        return "";
+
+    }
+
+
+    if(
+        selectedTimerMinutes ===
+        "custom"
+    ){
+
+        return document
+            .getElementById(
+                "customTimerDate"
+            )
+            .value || "";
+
+    }
+
+
+    const expiry =
+        new Date(
+            Date.now() +
+            (
+                selectedTimerMinutes *
+                60 *
+                1000
+            )
+        );
+
+
+    return expiry
+        .toISOString();
+
+}
+
+
+/* =========================================================
+   SAVE OFFER
+========================================================= */
+
+window.saveOffer =
+async function(){
+
+    const id =
+        document.getElementById(
+            "editId"
+        ).value;
+
+
+    const name =
+        document.getElementById(
+            "courseName"
+        ).value.trim();
+
+
+    const newPrice =
+        document.getElementById(
+            "newPrice"
+        ).value.trim();
+
+
+    if(
+        !name ||
+        !newPrice
+    ){
+
+        alert(
+            "Course name and offer price are required."
+        );
+
+        return;
+
+    }
+
+
+    const oldPrice =
+        document.getElementById(
+            "oldPrice"
+        ).value.trim();
+
+
+    const expiryDate =
+        getExpiryDate();
+
+
+    let badge =
+        selectedOfferType;
+
+
+    const customBadge =
+        document.getElementById(
+            "customBadge"
+        ).value.trim();
+
+
+    if(customBadge){
+
+        badge =
+            customBadge;
+
+    }
+
+
+    const data = {
+
+        name:name,
+
+        category:
+            document.getElementById(
+                "category"
+            ).value,
+
+        oldPrice:oldPrice,
+
+        newPrice:newPrice,
+
+        duration:
+            document.getElementById(
+                "duration"
+            ).value.trim(),
+
+        image:
+            document.getElementById(
+                "image"
+            ).value.trim(),
+
+        ytLink:
+            document.getElementById(
+                "youtube"
+            ).value.trim(),
+
+        tag:badge,
+
+        offerType:
+            selectedOfferType,
+
+        customBadge:
+            customBadge,
+
+        expiryDate:expiryDate,
+
+        order:
+            Number(
+                document.getElementById(
+                    "displayOrder"
+                ).value
+            ) || 1,
+
+        description:
+            document.getElementById(
+                "description"
+            ).value.trim(),
+
+        enabled:
+            document.getElementById(
+                "enabled"
+            ).checked,
+
+        updatedAt:
+            serverTimestamp()
+
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
 
-    // Custom Badge Toggle Logic
-    window.toggleCustomBadge = (val) => {
-        document.getElementById('custom-badge-box').style.display = (val === 'CUSTOM') ? 'block' : 'none';
-    };
+    try{
 
-    window.showTab = (id, btn) => {
-        document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        btn.classList.add('active');
-    };
 
-    window.addOrUpdateCourse = async () => {
-        const id = document.getElementById('edit-id').value;
-        const tagSelect = document.getElementById('c-tag').value;
-        const customTag = document.getElementById('c-custom-tag').value;
-        
-        // Use custom tag if selected
-        const finalTag = (tagSelect === 'CUSTOM') ? customTag : tagSelect;
+        if(id){
 
-        const data = {
-            name: document.getElementById('c-name').value,
-            order: parseInt(document.getElementById('c-order').value) || 1,
-            image: document.getElementById('c-img').value,
-            ytLink: document.getElementById('c-yt').value,
-            oldPrice: document.getElementById('c-old').value,
-            newPrice: document.getElementById('c-new').value,
-            duration: document.getElementById('c-duration').value,
-            tag: finalTag,
-            expiryDate: document.getElementById('c-timer').value,
-            timestamp: serverTimestamp()
-        };
+            await updateDoc(
 
-        if(!data.name || !data.newPrice) return alert("Fill Name and Price!");
+                doc(
+                    db,
+                    "offers",
+                    id
+                ),
 
-        try {
-            if(id) {
-                await setDoc(doc(db, "courses", id), data, { merge: true });
-                alert("Course Updated!");
-            } else {
-                await addDoc(collection(db, "courses"), data);
-                alert("Course Added!");
-            }
-            resetForm();
-        } catch(e) { alert("Error: " + e.message); }
-    };
+                data
 
-    window.resetForm = () => {
-        document.getElementById('edit-id').value = "";
-        document.getElementById('form-title').innerHTML = `<i class="ri-rocket-fill" style="color:var(--primary)"></i> Deploy Program`;
-        document.getElementById('submit-btn').innerText = "DEPLOY TO TERMINAL";
-        document.getElementById('cancel-edit').style.display = "none";
-        ['c-name', 'c-img', 'c-yt', 'c-old', 'c-new', 'c-timer', 'c-duration', 'c-custom-tag'].forEach(i => document.getElementById(i).value = "");
-        document.getElementById('c-order').value = "1";
-        document.getElementById('c-tag').value = "";
-        document.getElementById('custom-badge-box').style.display = 'none';
-        showTab('add', document.querySelector('.tab-link'));
-    };
+            );
 
-    window.editCourse = (id, dataStr) => {
-        const data = JSON.parse(decodeURIComponent(dataStr));
-        const standardTags = ['HOT', 'NEW', 'TRENDING', 'FREE', ''];
-        
-        document.getElementById('edit-id').value = id;
-        document.getElementById('c-name').value = data.name;
-        document.getElementById('c-order').value = data.order || 1;
-        document.getElementById('c-img').value = data.image || "";
-        document.getElementById('c-yt').value = data.ytLink || "";
-        document.getElementById('c-old').value = data.oldPrice || "";
-        document.getElementById('c-new').value = data.newPrice || "";
-        document.getElementById('c-duration').value = data.duration || "";
-        document.getElementById('c-timer').value = data.expiryDate || "";
-        
-        // Handle Badge Logic for Edit
-        if (standardTags.includes(data.tag)) {
-            document.getElementById('c-tag').value = data.tag;
-            document.getElementById('custom-badge-box').style.display = 'none';
-        } else {
-            document.getElementById('c-tag').value = 'CUSTOM';
-            document.getElementById('c-custom-tag').value = data.tag || "";
-            document.getElementById('custom-badge-box').style.display = 'block';
+
+            showToast(
+                "Offer updated successfully"
+            );
+
         }
-        
-        document.getElementById('form-title').innerText = "📝 Edit Program";
-        document.getElementById('submit-btn').innerText = "UPDATE COURSE";
-        document.getElementById('cancel-edit').style.display = "block";
-        showTab('add', document.querySelectorAll('.tab-link')[0]);
-    };
 
-    window.shareWA = (name, price) => {
-        const msg = `🔥 *New Course Alert!*%0A🚀 *Course:* ${name}%0A💰 *Price:* ₹${price}%0A%0AJoin Now: ${window.location.origin}`;
-        window.open(`https://wa.me/?text=${msg}`);
-    };
+        else{
 
-    const q = query(collection(db, "courses"), orderBy("order", "asc"));
-    onSnapshot(q, (snap) => {
-        document.getElementById('total-courses').innerText = snap.size;
-        const list = document.getElementById('live-list');
-        list.innerHTML = snap.docs.map(d => {
-            const data = d.data();
-            const dataStr = encodeURIComponent(JSON.stringify(data));
-            return `
-            <div class="live-item">
-                <div class="order-badge">#${data.order || 0}</div>
-                <div class="live-img">${data.image ? `<img src="${data.image.split(',')[0]}">` : `<i class="ri-book-fill"></i>`}</div>
-                <div class="live-info">
-                    <h4>${data.name}</h4>
-                    <p style="font-size:10px; color:#94a3b8;">${data.duration || 'No duration set'}</p>
-                    <p style="font-size:11px; color:var(--accent); font-weight:800;">₹${data.newPrice} ${data.tag ? `[${data.tag}]` : ''}</p>
-                </div>
-                <div class="action-btns">
-                    <button class="action-btn wa-btn" onclick="shareWA('${data.name}', '${data.newPrice}')"><i class="ri-whatsapp-line"></i></button>
-                    <button class="action-btn edit-btn" onclick="editCourse('${d.id}', '${dataStr}')"><i class="ri-edit-box-line"></i></button>
-                    <button class="action-btn del-btn" onclick="deleteCourse('${d.id}')"><i class="ri-delete-bin-line"></i></button>
-                </div>
-            </div>`;
-        }).join('');
+            await addDoc(
+
+                collection(
+                    db,
+                    "offers"
+                ),
+
+                {
+
+                    ...data,
+
+                    createdAt:
+                        serverTimestamp()
+
+                }
+
+            );
+
+
+            showToast(
+                "New offer deployed"
+            );
+
+        }
+
+
+        resetForm();
+
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(
+            "Error: " +
+            error.message
+        );
+
+    }
+
+};
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+window.resetForm =
+function(){
+
+    editingId = null;
+
+
+    document.getElementById(
+        "editId"
+    ).value = "";
+
+
+    document.getElementById(
+        "formTitle"
+    ).innerText =
+        "Create New Offer";
+
+
+    document.getElementById(
+        "saveBtn"
+    ).innerHTML =
+        `
+        <i class="ri-rocket-2-line"></i>
+        DEPLOY OFFER TO STUDENT APP
+        `;
+
+
+    document.getElementById(
+        "cancelBtn"
+    ).style.display =
+        "none";
+
+
+    [
+        "courseName",
+        "oldPrice",
+        "newPrice",
+        "duration",
+        "image",
+        "youtube",
+        "customBadge",
+        "description"
+    ]
+    .forEach(
+        id =>
+            document.getElementById(
+                id
+            ).value = ""
+    );
+
+
+    document.getElementById(
+        "displayOrder"
+    ).value =
+        "1";
+
+
+    document.getElementById(
+        "enabled"
+    ).checked =
+        true;
+
+
+    document.getElementById(
+        "coursePreset"
+    ).value =
+        "";
+
+
+    selectedOfferType =
+        "HOT";
+
+
+    document
+    .querySelectorAll(
+        ".offer-type"
+    )
+    .forEach(
+        x =>
+            x.classList.remove(
+                "active"
+            )
+    );
+
+
+    document
+    .querySelector(
+        '.offer-type[data-type="HOT"]'
+    )
+    .classList.add(
+        "active"
+    );
+
+
+    selectedTimerMinutes =
+        0;
+
+
+    document
+    .querySelectorAll(
+        ".timer-btn"
+    )
+    .forEach(
+        x =>
+            x.classList.remove(
+                "active"
+            )
+    );
+
+
+    document
+    .querySelector(
+        '.timer-btn[data-minutes="0"]'
+    )
+    .classList.add(
+        "active"
+    );
+
+
+    document.getElementById(
+        "customTimerBox"
+    ).style.display =
+        "none";
+
+};
+
+
+/* =========================================================
+   EDIT
+========================================================= */
+
+window.editOffer =
+function(id){
+
+    const offer =
+        offers.find(
+            x =>
+                x.id === id
+        );
+
+
+    if(!offer) return;
+
+
+    editingId =
+        id;
+
+
+    document.getElementById(
+        "editId"
+    ).value =
+        id;
+
+
+    document.getElementById(
+        "formTitle"
+    ).innerText =
+        "Edit Offer";
+
+
+    document.getElementById(
+        "saveBtn"
+    ).innerHTML =
+        `
+        <i class="ri-save-3-line"></i>
+        UPDATE OFFER
+        `;
+
+
+    document.getElementById(
+        "cancelBtn"
+    ).style.display =
+        "block";
+
+
+    document.getElementById(
+        "courseName"
+    ).value =
+        offer.name || "";
+
+
+    document.getElementById(
+        "category"
+    ).value =
+        offer.category || "programming";
+
+
+    document.getElementById(
+        "oldPrice"
+    ).value =
+        offer.oldPrice || "";
+
+
+    document.getElementById(
+        "newPrice"
+    ).value =
+        offer.newPrice || "";
+
+
+    document.getElementById(
+        "duration"
+    ).value =
+        offer.duration || "";
+
+
+    document.getElementById(
+        "image"
+    ).value =
+        offer.image || "";
+
+
+    document.getElementById(
+        "youtube"
+    ).value =
+        offer.ytLink || "";
+
+
+    document.getElementById(
+        "customBadge"
+    ).value =
+        offer.customBadge || "";
+
+
+    document.getElementById(
+        "displayOrder"
+    ).value =
+        offer.order || 1;
+
+
+    document.getElementById(
+        "description"
+    ).value =
+        offer.description || "";
+
+
+    document.getElementById(
+        "enabled"
+    ).checked =
+        offer.enabled !== false;
+
+
+    selectedOfferType =
+        offer.offerType ||
+        "HOT";
+
+
+    document
+    .querySelectorAll(
+        ".offer-type"
+    )
+    .forEach(
+        x =>
+            x.classList.remove(
+                "active"
+            )
+    );
+
+
+    const typeButton =
+        document.querySelector(
+            `.offer-type[data-type="${selectedOfferType}"]`
+        );
+
+
+    if(typeButton){
+
+        typeButton.classList.add(
+            "active"
+        );
+
+    }
+
+
+    /* EDIT TIMER */
+
+    if(offer.expiryDate){
+
+        selectedTimerMinutes =
+            "custom";
+
+
+        document
+        .querySelectorAll(
+            ".timer-btn"
+        )
+        .forEach(
+            x =>
+                x.classList.remove(
+                    "active"
+                )
+        );
+
+
+        document
+        .querySelector(
+            '.timer-btn[data-minutes="custom"]'
+        )
+        .classList.add(
+            "active"
+        );
+
+
+        document.getElementById(
+            "customTimerBox"
+        ).style.display =
+            "block";
+
+
+        try{
+
+            const date =
+                new Date(
+                    offer.expiryDate
+                );
+
+
+            if(
+                !isNaN(
+                    date.getTime()
+                )
+            ){
+
+                const local =
+                    new Date(
+                        date.getTime() -
+                        date.getTimezoneOffset()
+                        * 60000
+                    )
+                    .toISOString()
+                    .slice(
+                        0,
+                        16
+                    );
+
+
+                document.getElementById(
+                    "customTimerDate"
+                ).value =
+                    local;
+
+            }
+
+        }
+        catch(e){}
+
+    }
+
+
+    showTab(
+        "create",
+        document.querySelector(
+            ".tab"
+        )
+    );
+
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
     });
 
-    window.deleteCourse = async (id) => confirm("Delete this course?") && await deleteDoc(doc(db, "courses", id));
-    window.updateRefer = async () => await setDoc(doc(db, "settings", "referral"), { amount: document.getElementById('ref-amt').value });
-    window.updateAnn = async () => await setDoc(doc(db, "settings", "announcement"), { text: document.getElementById('ann-text').value, show: document.getElementById('ann-show').value === "true" });
-    getDoc(doc(db, "settings", "referral")).then(s => { if(s.exists()) document.getElementById('ref-amt').value = s.data().amount; });
-    getDoc(doc(db, "settings", "announcement")).then(s => { if(s.exists()){ document.getElementById('ann-text').value = s.data().text; document.getElementById('ann-show').value = s.data().show.toString(); } });
-    onSnapshot(collection(db, "referrals"), snap => { document.getElementById('total-refers').innerText = snap.size; });
+};
+
+
+/* =========================================================
+   DELETE
+========================================================= */
+
+window.deleteOffer =
+async function(id){
+
+    const offer =
+        offers.find(
+            x =>
+                x.id === id
+        );
+
+
+    if(!offer) return;
+
+
+    const yes =
+        confirm(
+            `Delete "${offer.name}" permanently?`
+        );
+
+
+    if(!yes) return;
+
+
+    try{
+
+        await deleteDoc(
+            doc(
+                db,
+                "offers",
+                id
+            )
+        );
+
+
+        showToast(
+            "Offer deleted"
+        );
+
+    }
+
+    catch(error){
+
+        alert(
+            "Delete failed: " +
+            error.message
+        );
+
+    }
+
+};
+
+
+/* =========================================================
+   TOGGLE
+========================================================= */
+
+window.toggleOffer =
+async function(id){
+
+    const offer =
+        offers.find(
+            x =>
+                x.id === id
+        );
+
+
+    if(!offer) return;
+
+
+    try{
+
+        await updateDoc(
+
+            doc(
+                db,
+                "offers",
+                id
+            ),
+
+            {
+
+                enabled:
+                    offer.enabled === false,
+
+                updatedAt:
+                    serverTimestamp()
+
+            }
+
+        );
+
+
+        showToast(
+            offer.enabled === false
+            ?
+            "Offer activated"
+            :
+            "Offer disabled"
+        );
+
+    }
+
+    catch(error){
+
+        alert(
+            error.message
+        );
+
+    }
+
+};
+
+
+/* =========================================================
+   LIVE OFFERS
+========================================================= */
+
+const offersQuery =
+    query(
+        collection(
+            db,
+            "offers"
+        ),
+        orderBy(
+            "order",
+            "asc"
+        )
+    );
+
+
+onSnapshot(
+
+    offersQuery,
+
+    snapshot => {
+
+        offers = [];
+
+
+        snapshot.forEach(
+            docSnap => {
+
+                offers.push({
+
+                    id:
+                        docSnap.id,
+
+                    ...docSnap.data()
+
+                });
+
+            }
+        );
+
+
+        updateStats();
+
+        renderOffers();
+
+    },
+
+    error => {
+
+        console.error(
+            "Offers listener:",
+            error
+        );
+
+    }
+
+);
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+function updateStats(){
+
+    const total =
+        offers.length;
+
+
+    const active =
+        offers.filter(
+            x =>
+                x.enabled !== false
+        ).length;
+
+
+    const timed =
+        offers.filter(
+            x =>
+                x.expiryDate
+        ).length;
+
+
+    const disabled =
+        total - active;
+
+
+    document.getElementById(
+        "totalOffers"
+    ).innerText =
+        total;
+
+
+    document.getElementById(
+        "activeOffers"
+    ).innerText =
+        active;
+
+
+    document.getElementById(
+        "timerOffers"
+    ).innerText =
+        timed;
+
+
+    document.getElementById(
+        "disabledOffers"
+    ).innerText =
+        disabled;
+
+}
+
+
+/* =========================================================
+   RENDER OFFERS
+========================================================= */
+
+function renderOffers(){
+
+    const list =
+        document.getElementById(
+            "offerList"
+        );
+
+
+    const search =
+        document.getElementById(
+            "offerSearch"
+        )
+        .value
+        .toLowerCase()
+        .trim();
+
+
+    const filter =
+        document.getElementById(
+            "statusFilter"
+        )
+        .value;
+
+
+    const filtered =
+        offers.filter(
+            offer => {
+
+
+                const matchesSearch =
+                    !search ||
+
+                    String(
+                        offer.name || ""
+                    )
+                    .toLowerCase()
+                    .includes(search);
+
+
+                let matchesFilter =
+                    true;
+
+
+                if(
+                    filter === "active"
+                ){
+
+                    matchesFilter =
+                        offer.enabled !== false;
+
+                }
+
+
+                if(
+                    filter === "disabled"
+                ){
+
+                    matchesFilter =
+                        offer.enabled === false;
+
+                }
+
+
+                if(
+                    filter === "timer"
+                ){
+
+                    matchesFilter =
+                        !!offer.expiryDate;
+
+                }
+
+
+                return (
+                    matchesSearch &&
+                    matchesFilter
+                );
+
+            }
+        );
+
+
+    if(!filtered.length){
+
+        list.innerHTML = `
+
+            <div class="empty">
+
+                <i class="ri-inbox-archive-line"></i>
+
+                <p>
+                    No offers found.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    list.innerHTML =
+        filtered
+        .map(
+            offer =>
+                offerCardHTML(
+                    offer
+                )
+        )
+        .join("");
+
+}
+
+
+/* =========================================================
+   CARD HTML
+========================================================= */
+
+function offerCardHTML(offer){
+
+    const image =
+        offer.image
+        ?
+        String(
+            offer.image
+        )
+        .split(",")[0]
+        .trim()
+        :
+        "";
+
+
+    const type =
+        String(
+            offer.offerType ||
+            ""
+        )
+        .toLowerCase();
+
+
+    let badgeClass =
+        "";
+
+
+    if(type === "flash")
+        badgeClass = "flash";
+
+
+    if(type === "puja")
+        badgeClass = "puja";
+
+
+    if(type === "premium")
+        badgeClass = "premium";
+
+
+    if(type === "free")
+        badgeClass = "free";
+
+
+    if(type === "special")
+        badgeClass = "special";
+
+
+    const badge =
+        offer.customBadge ||
+        offer.tag ||
+        "SPECIAL OFFER";
+
+
+    return `
+
+        <div
+            class="offer-card"
+        >
+
+            <div
+                class="status ${
+                    offer.enabled !== false
+                    ?
+                    "on"
+                    :
+                    "off"
+                }"
+            >
+
+                ${
+                    offer.enabled !== false
+                    ?
+                    "LIVE"
+                    :
+                    "OFF"
+                }
+
+            </div>
+
+
+            <div class="offer-image">
+
+                ${
+                    image
+
+                    ?
+
+                    `
+                    <img
+                        src="${escapeAttribute(image)}"
+                        onerror="
+                            this.style.display='none'
+                        "
+                    >
+                    `
+
+                    :
+
+                    `
+                    <i
+                        class="ri-graduation-cap-line"
+                        style="
+                            font-size:30px;
+                            color:#334155;
+                        "
+                    ></i>
+                    `
+                }
+
+            </div>
+
+
+            <div class="offer-main">
+
+                <div class="offer-name">
+
+                    ${escapeHTML(
+                        offer.name ||
+                        "Untitled Offer"
+                    )}
+
+                </div>
+
+
+                <div class="offer-meta">
+
+                    ${escapeHTML(
+                        offer.category ||
+                        "Other"
+                    )}
+
+                    •
+
+                    ${escapeHTML(
+                        offer.duration ||
+                        "No duration"
+                    )}
+
+                    <br>
+
+
+                    <span class="price">
+
+                        ₹${escapeHTML(
+                            offer.newPrice ||
+                            "0"
+                        )}
+
+                    </span>
+
+
+                    ${
+                        offer.oldPrice
+
+                        ?
+
+                        `
+                        <span class="old">
+
+                            ₹${escapeHTML(
+                                offer.oldPrice
+                            )}
+
+                        </span>
+                        `
+
+                        :
+
+                        ""
+                    }
+
+
+                    ${
+                        offer.expiryDate
+
+                        ?
+
+                        `
+                        <br>
+                        ⏱ Timed Offer
+                        `
+
+                        :
+
+                        ""
+                    }
+
+                </div>
+
+
+                <div
+                    class="offer-badge ${badgeClass}"
+                >
+
+                    ${escapeHTML(
+                        badge
+                    )}
+
+                </div>
+
+            </div>
+
+
+            <div class="card-actions">
+
+
+                <button
+                    class="action edit"
+                    onclick="
+                        editOffer(
+                            '${offer.id}'
+                        )
+                    "
+                    title="Edit"
+                >
+
+                    <i class="ri-edit-box-line"></i>
+
+                </button>
+
+
+                <button
+                    class="action toggle"
+                    onclick="
+                        toggleOffer(
+                            '${offer.id}'
+                        )
+                    "
+                    title="Enable / Disable"
+                >
+
+                    <i class="${
+                        offer.enabled !== false
+                        ?
+                        "ri-eye-off-line"
+                        :
+                        "ri-eye-line"
+                    }"></i>
+
+                </button>
+
+
+                <button
+                    class="action delete"
+                    onclick="
+                        deleteOffer(
+                            '${offer.id}'
+                        )
+                    "
+                    title="Delete"
+                >
+
+                    <i class="ri-delete-bin-line"></i>
+
+                </button>
+
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+   SEARCH EVENTS
+========================================================= */
+
+document
+.getElementById(
+    "offerSearch"
+)
+.addEventListener(
+    "input",
+    renderOffers
+);
+
+
+document
+.getElementById(
+    "statusFilter"
+)
+.addEventListener(
+    "change",
+    renderOffers
+);
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+window.showTab =
+function(id,button){
+
+    document
+    .querySelectorAll(
+        ".panel"
+    )
+    .forEach(
+        panel =>
+            panel.classList.remove(
+                "active"
+            )
+    );
+
+
+    document
+    .querySelectorAll(
+        ".tab"
+    )
+    .forEach(
+        tab =>
+            tab.classList.remove(
+                "active"
+            )
+    );
+
+
+    document
+    .getElementById(
+        id
+    )
+    .classList.add(
+        "active"
+    );
+
+
+    if(button){
+
+        button.classList.add(
+            "active"
+        );
+
+    }
+    else{
+
+        const tab =
+            document.querySelector(
+                `.tab[onclick*="'${id}'"]`
+            );
+
+        if(tab)
+            tab.classList.add(
+                "active"
+            );
+
+    }
+
+};
+
+
+/* =========================================================
+   ANNOUNCEMENT
+========================================================= */
+
+window.saveAnnouncement =
+async function(){
+
+    const text =
+        document.getElementById(
+            "announcementText"
+        ).value.trim();
+
+
+    const show =
+        document.getElementById(
+            "announcementShow"
+        ).value === "true";
+
+
+    try{
+
+        await setDoc(
+
+            doc(
+                db,
+                "settings",
+                "announcement"
+            ),
+
+            {
+
+                text:text,
+
+                show:show,
+
+                updatedAt:
+                    serverTimestamp()
+
+            },
+
+            {
+                merge:true
+            }
+
+        );
+
+
+        showToast(
+            "Announcement updated"
+        );
+
+    }
+
+    catch(error){
+
+        alert(
+            error.message
+        );
+
+    }
+
+};
+
+
+/* =========================================================
+   LOAD ANNOUNCEMENT
+========================================================= */
+
+getDoc(
+    doc(
+        db,
+        "settings",
+        "announcement"
+    )
+)
+.then(
+    snap => {
+
+        if(
+            snap.exists()
+        ){
+
+            const data =
+                snap.data();
+
+
+            document.getElementById(
+                "announcementText"
+            ).value =
+                data.text ||
+                "";
+
+
+            document.getElementById(
+                "announcementShow"
+            ).value =
+                String(
+                    data.show !== false
+                );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+function showToast(message){
+
+    document.getElementById(
+        "toastText"
+    ).innerText =
+        message;
+
+
+    const toast =
+        document.getElementById(
+            "toast"
+        );
+
+
+    toast.classList.add(
+        "show"
+    );
+
+
+    clearTimeout(
+        window.__toastTimer
+    );
+
+
+    window.__toastTimer =
+        setTimeout(
+            () => {
+
+                toast.classList.remove(
+                    "show"
+                );
+
+            },
+            2600
+        );
+
+}
+
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+window.refreshPage =
+function(){
+
+    location.reload();
+
+};
+
+
+/* =========================================================
+   SECURITY HELPERS
+========================================================= */
+
+function escapeHTML(value){
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+function escapeAttribute(value){
+
+    return String(value)
+        .replace(
+            /"/g,
+            "&quot;"
+        );
+
+}
+
+
+/* =========================================================
+   INITIAL STATE
+========================================================= */
+
+resetForm();
+
 </script>
+
 </body>
 </html>
