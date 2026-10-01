@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -10,15 +11,18 @@
 
     <title>Defaulters | BlackTerminal</title>
 
+
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
 
     <!-- Font Awesome -->
     <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     >
+
 
     <!-- Lottie -->
     <script
@@ -39,8 +43,6 @@
 
     --card: rgba(20, 21, 28, 0.82);
 
-    --card-light: rgba(255,255,255,0.055);
-
     --border: rgba(255,255,255,0.09);
 
     --text: #ffffff;
@@ -59,7 +61,6 @@
 
     --shadow:
         0 20px 60px rgba(0,0,0,0.45);
-
 }
 
 
@@ -108,11 +109,8 @@ body {
         var(--bg);
 
     padding:
-
         calc(env(safe-area-inset-top) + 18px)
-
         16px
-
         calc(env(safe-area-inset-bottom) + 30px);
 
     -webkit-font-smoothing: antialiased;
@@ -183,10 +181,6 @@ body {
 }
 
 
-/* =========================================================
-   BRAND
-========================================================= */
-
 .brand {
 
     display: flex;
@@ -209,7 +203,6 @@ body {
 .brand i {
 
     color: var(--orange);
-
 }
 
 
@@ -284,8 +277,6 @@ body {
     -webkit-backdrop-filter: blur(35px);
 }
 
-
-/* Orange top glow */
 
 .main-card::before {
 
@@ -382,7 +373,9 @@ body {
 }
 
 
-/* COUNT */
+/* =========================================================
+   COUNT
+========================================================= */
 
 .count-box {
 
@@ -512,6 +505,8 @@ body {
 
 .student-item {
 
+    position: relative;
+
     display: flex;
 
     align-items: center;
@@ -544,6 +539,40 @@ body {
 .student-item:active {
 
     transform: scale(0.985);
+}
+
+
+/* =========================================================
+   DELETE HOLD EFFECT
+========================================================= */
+
+.student-item.long-pressing {
+
+    background: rgba(255,69,58,0.10);
+
+    border-color: rgba(255,69,58,0.35);
+
+    transform: scale(0.98);
+}
+
+.student-item.long-pressing::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+
+    bottom: 0;
+
+    height: 3px;
+
+    width: var(--hold-progress, 0%);
+
+    background: var(--red);
+
+    border-radius: 0 5px 5px 0;
+
 }
 
 
@@ -958,6 +987,7 @@ body {
             Dashboard
         </a>
 
+
         <div class="brand">
 
             <i class="fas fa-shield-halved"></i>
@@ -969,19 +999,23 @@ body {
     </div>
 
 
+
     <!-- =====================================================
          HEADER
     ====================================================== -->
 
     <div class="header">
 
-        <h1>Absence Logs</h1>
+        <h1>
+            Absence Logs
+        </h1>
 
         <p>
-            Monitor students with consecutive attendance gaps.
+            Monitor students with attendance gaps.
         </p>
 
     </div>
+
 
 
     <!-- =====================================================
@@ -1002,6 +1036,7 @@ body {
                     <i class="fas fa-user-clock"></i>
 
                 </div>
+
 
                 <div>
 
@@ -1036,6 +1071,7 @@ body {
         </div>
 
 
+
         <!-- SEARCH -->
 
         <div class="search-box">
@@ -1052,7 +1088,8 @@ body {
         </div>
 
 
-        <!-- LIST -->
+
+        <!-- STUDENT LIST -->
 
         <div
             id="defaulter-list"
@@ -1082,9 +1119,11 @@ body {
     </div>
 
 
+
     <div class="footer">
 
         <i class="fas fa-lock"></i>
+
         Secure attendance terminal
 
     </div>
@@ -1126,7 +1165,9 @@ const firebaseConfig = {
 };
 
 
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(
+    firebaseConfig
+);
 
 
 const fs =
@@ -1152,6 +1193,7 @@ const searchInput =
     document.getElementById(
         "searchInput"
     );
+
 
 
 /* =========================================================
@@ -1184,7 +1226,6 @@ function getLocalDateString(
         ).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
-
 }
 
 
@@ -1201,7 +1242,6 @@ function getDateBefore(
     );
 
     return date;
-
 }
 
 
@@ -1238,13 +1278,12 @@ function escapeHtml(value) {
             /'/g,
             "&#039;"
         );
-
 }
 
 
 
 /* =========================================================
-   CREATE ACTION BUTTONS
+   ACTION BUTTONS
 ========================================================= */
 
 function createActionButtons(
@@ -1263,7 +1302,9 @@ function createActionButtons(
     let waHtml = "";
 
 
-    if (cleanPhone.length >= 10) {
+    if (
+        cleanPhone.length >= 10
+    ) {
 
 
         const finalNumber =
@@ -1355,13 +1396,362 @@ function createActionButtons(
 
 
 /* =========================================================
+   DELETE STUDENT
+========================================================= */
+
+async function deleteStudent(
+    studentName,
+    studentElement
+) {
+
+
+    const confirmed =
+        confirm(
+
+            `Delete "${studentName}" permanently from the Students list?\n\nThe student's attendance history will remain in the attendance collection.`
+
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+
+        /* Disable visual interaction */
+
+        studentElement.style.opacity =
+            "0.5";
+
+        studentElement.style.pointerEvents =
+            "none";
+
+
+        /* Delete student document */
+
+        await fs
+            .collection("students")
+            .doc(studentName)
+            .delete();
+
+
+        /* Remove from local array */
+
+        defaulterData =
+            defaulterData.filter(
+                student =>
+                    student.name !==
+                    studentName
+            );
+
+
+        /* Update count */
+
+        countSpan.innerText =
+            defaulterData.length;
+
+
+        /* Re-render */
+
+        renderList(
+            defaulterData
+        );
+
+
+        alert(
+            `${studentName} has been deleted successfully.`
+        );
+
+
+    } catch (error) {
+
+
+        console.error(
+            "Delete student error:",
+            error
+        );
+
+
+        studentElement.style.opacity =
+            "1";
+
+        studentElement.style.pointerEvents =
+            "auto";
+
+
+        alert(
+            "Unable to delete this student. Please check Firebase permissions."
+        );
+
+    }
+
+}
+
+
+
+/* =========================================================
+   LONG PRESS
+========================================================= */
+
+function enableLongPress(
+    element,
+    studentName
+) {
+
+
+    let pressTimer = null;
+
+    let progressTimer = null;
+
+    let startTime = 0;
+
+    let longPressTriggered = false;
+
+    const HOLD_TIME = 1200;
+
+
+    function startPress(event) {
+
+
+        /*
+         * Do not activate long press when
+         * pressing action buttons.
+         */
+
+        if (
+            event.target.closest(
+                ".action-btn"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        longPressTriggered =
+            false;
+
+        startTime =
+            Date.now();
+
+
+        element.classList.add(
+            "long-pressing"
+        );
+
+
+        element.style.setProperty(
+            "--hold-progress",
+            "0%"
+        );
+
+
+        pressTimer =
+            setTimeout(
+                () => {
+
+
+                    longPressTriggered =
+                        true;
+
+
+                    element.style.setProperty(
+                        "--hold-progress",
+                        "100%"
+                    );
+
+
+                    element.classList.remove(
+                        "long-pressing"
+                    );
+
+
+                    const studentElement =
+                        element;
+
+
+                    deleteStudent(
+                        studentName,
+                        studentElement
+                    );
+
+
+                },
+                HOLD_TIME
+            );
+
+
+        progressTimer =
+            setInterval(
+                () => {
+
+
+                    const elapsed =
+                        Date.now() -
+                        startTime;
+
+
+                    const percentage =
+                        Math.min(
+                            100,
+                            (
+                                elapsed /
+                                HOLD_TIME
+                            ) * 100
+                        );
+
+
+                    element.style.setProperty(
+                        "--hold-progress",
+                        percentage + "%"
+                    );
+
+
+                },
+                20
+            );
+
+    }
+
+
+    function cancelPress() {
+
+
+        if (
+            pressTimer
+        ) {
+
+            clearTimeout(
+                pressTimer
+            );
+
+        }
+
+
+        if (
+            progressTimer
+        ) {
+
+            clearInterval(
+                progressTimer
+            );
+
+        }
+
+
+        element.classList.remove(
+            "long-pressing"
+        );
+
+
+        element.style.setProperty(
+            "--hold-progress",
+            "0%"
+        );
+
+    }
+
+
+
+    /* Touch */
+
+    element.addEventListener(
+        "touchstart",
+        startPress,
+        {
+            passive: true
+        }
+    );
+
+
+    element.addEventListener(
+        "touchend",
+        cancelPress
+    );
+
+
+    element.addEventListener(
+        "touchcancel",
+        cancelPress
+    );
+
+
+    element.addEventListener(
+        "touchmove",
+        cancelPress
+    );
+
+
+
+    /* Mouse */
+
+    element.addEventListener(
+        "mousedown",
+        startPress
+    );
+
+
+    element.addEventListener(
+        "mouseup",
+        cancelPress
+    );
+
+
+    element.addEventListener(
+        "mouseleave",
+        cancelPress
+    );
+
+
+    /*
+     * Prevent normal click after
+     * long press.
+     */
+
+    element.addEventListener(
+        "click",
+        function(event) {
+
+            if (
+                longPressTriggered
+            ) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+                longPressTriggered =
+                    false;
+
+            }
+
+        },
+        true
+    );
+
+}
+
+
+
+/* =========================================================
    RENDER LIST
 ========================================================= */
 
-function renderList(data) {
+function renderList(
+    data
+) {
 
 
-    if (!data.length) {
+    if (
+        !data.length
+    ) {
+
 
         listContainer.innerHTML = `
 
@@ -1373,9 +1763,11 @@ function renderList(data) {
 
                 </div>
 
+
                 <h3>
                     All students are synchronized
                 </h3>
+
 
                 <p>
                     No current attendance defaulters were found.
@@ -1384,6 +1776,7 @@ function renderList(data) {
             </div>
 
         `;
+
 
         return;
 
@@ -1418,7 +1811,7 @@ function renderList(data) {
 
                 <div
                     class="student-item"
-                    data-name="${safeName.toLowerCase()}"
+                    data-student-name="${safeName}"
                 >
 
 
@@ -1447,12 +1840,15 @@ function renderList(data) {
 
                                 Absent for
                                 ${student.absentDays}
-                                ${student.absentDays === 1 ? "day" : "days"}
+                                ${
+                                    Number(student.absentDays) === 1
+                                        ? "day"
+                                        : "days"
+                                }
 
                             </div>
 
                         </div>
-
 
                     </div>
 
@@ -1485,6 +1881,55 @@ function renderList(data) {
     listContainer.innerHTML =
         html;
 
+
+
+    /* ---------------------------------------------------------
+       ENABLE LONG PRESS FOR EVERY STUDENT
+    --------------------------------------------------------- */
+
+    listContainer
+        .querySelectorAll(
+            ".student-item"
+        )
+        .forEach(
+            element => {
+
+
+                const studentName =
+                    element.getAttribute(
+                        "data-student-name"
+                    );
+
+
+                /*
+                 * Decode HTML entities safely
+                 * by using the original data match.
+                 */
+
+                const originalStudent =
+                    data.find(
+                        student =>
+                            escapeHtml(
+                                student.name
+                            ) ===
+                            studentName
+                    );
+
+
+                if (
+                    originalStudent
+                ) {
+
+                    enableLongPress(
+                        element,
+                        originalStudent.name
+                    );
+
+                }
+
+            }
+        );
+
 }
 
 
@@ -1495,7 +1940,7 @@ function renderList(data) {
 
 searchInput.addEventListener(
     "input",
-    function () {
+    function() {
 
 
         const search =
@@ -1504,7 +1949,9 @@ searchInput.addEventListener(
                 .toLowerCase();
 
 
-        if (!search) {
+        if (
+            !search
+        ) {
 
             renderList(
                 defaulterData
@@ -1543,12 +1990,13 @@ async function generateDefaultersList() {
     try {
 
 
-        /* -----------------------------------------------------
-           DATE
-        ----------------------------------------------------- */
+        /* =====================================================
+           TODAY
+        ===================================================== */
 
         const today =
             new Date();
+
 
         today.setHours(
             0,
@@ -1590,23 +2038,10 @@ async function generateDefaultersList() {
             );
 
 
-        const limitDate =
-            getDateBefore(
-                30,
-                today
-            );
 
-
-        const limitDateStr =
-            getLocalDateString(
-                limitDate
-            );
-
-
-
-        /* -----------------------------------------------------
-           STUDENTS
-        ----------------------------------------------------- */
+        /* =====================================================
+           FETCH ALL STUDENTS
+        ===================================================== */
 
         const allStudentsSnap =
             await fs
@@ -1629,33 +2064,37 @@ async function generateDefaultersList() {
 
 
 
-        /* -----------------------------------------------------
-           ATTENDANCE
-        ----------------------------------------------------- */
+        /* =====================================================
+           IMPORTANT:
+           FETCH COMPLETE ATTENDANCE HISTORY
+           
+           No 30-day limit.
+           This allows exact absent-day calculation
+           for old students.
+        ===================================================== */
 
         const attendanceSnap =
             await fs
                 .collection("attendance")
-                .where(
-                    "date",
-                    ">=",
-                    limitDateStr
-                )
                 .get();
 
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
            ATTENDANCE MAP
-        ----------------------------------------------------- */
+        ===================================================== */
 
-        const studentAttendanceMap = {};
+        const studentAttendanceMap =
+            {};
+
 
         const presentToday =
             new Set();
 
+
         const presentYesterday =
             new Set();
+
 
         const presentDayBefore =
             new Set();
@@ -1696,11 +2135,13 @@ async function generateDefaultersList() {
                         .toLowerCase();
 
 
+
                 if (
                     !studentAttendanceMap[key]
                 ) {
 
-                    studentAttendanceMap[key] = [];
+                    studentAttendanceMap[key] =
+                        [];
 
                 }
 
@@ -1711,6 +2152,8 @@ async function generateDefaultersList() {
                     );
 
 
+
+                /* Today */
 
                 if (
                     attendanceDate ===
@@ -1724,6 +2167,8 @@ async function generateDefaultersList() {
                 }
 
 
+                /* Yesterday */
+
                 if (
                     attendanceDate ===
                     yesterdayStr
@@ -1735,6 +2180,8 @@ async function generateDefaultersList() {
 
                 }
 
+
+                /* Day before */
 
                 if (
                     attendanceDate ===
@@ -1752,11 +2199,12 @@ async function generateDefaultersList() {
 
 
 
-        /* -----------------------------------------------------
-           BUILD DATA
-        ----------------------------------------------------- */
+        /* =====================================================
+           BUILD DEFAULTER DATA
+        ===================================================== */
 
-        defaulterData = [];
+        defaulterData =
+            [];
 
 
         allStudentsSnap.docs.forEach(
@@ -1778,7 +2226,9 @@ async function generateDefaultersList() {
 
 
 
-                /* Present today */
+                /* ------------------------------------------------
+                   PRESENT TODAY
+                ------------------------------------------------ */
 
                 if (
                     presentToday.has(
@@ -1792,7 +2242,9 @@ async function generateDefaultersList() {
 
 
 
-                /* Present previous 2 days */
+                /* ------------------------------------------------
+                   PRESENT YESTERDAY + DAY BEFORE
+                ------------------------------------------------ */
 
                 if (
 
@@ -1814,12 +2266,12 @@ async function generateDefaultersList() {
 
 
 
-                /* ------------------------------------------------
-                   ABSENT DAYS
-                ------------------------------------------------ */
+                /* =================================================
+                   CALCULATE EXACT ABSENT DAYS
+                ================================================= */
 
                 let totalAbsentDays =
-                    2;
+                    0;
 
 
                 const studentDates =
@@ -1829,11 +2281,19 @@ async function generateDefaultersList() {
 
 
 
+                /* -------------------------------------------------
+                   STUDENT HAS ATTENDANCE HISTORY
+                ------------------------------------------------- */
+
                 if (
                     studentDates &&
-                    studentDates.length
+                    studentDates.length > 0
                 ) {
 
+
+                    /*
+                     * Sort latest attendance first.
+                     */
 
                     studentDates.sort(
                         (a, b) =>
@@ -1856,7 +2316,7 @@ async function generateDefaultersList() {
                     );
 
 
-                    const dayDiff =
+                    totalAbsentDays =
                         Math.floor(
 
                             (
@@ -1876,25 +2336,38 @@ async function generateDefaultersList() {
                         );
 
 
-                    if (
-                        dayDiff > 0
-                    ) {
-
-                        totalAbsentDays =
-                            dayDiff;
-
-                    }
+                }
 
 
-                } else if (
+                /* -------------------------------------------------
+                   NO ATTENDANCE HISTORY
+                ------------------------------------------------- */
+
+                else if (
                     studentData.createdAt
                 ) {
 
 
-                    const createdDate =
+                    let createdDate =
                         new Date(
                             studentData.createdAt
                         );
+
+
+                    /*
+                     * Handle Firestore Timestamp
+                     */
+
+                    if (
+                        studentData.createdAt &&
+                        typeof studentData.createdAt.toDate ===
+                            "function"
+                    ) {
+
+                        createdDate =
+                            studentData.createdAt.toDate();
+
+                    }
 
 
                     createdDate.setHours(
@@ -1905,7 +2378,7 @@ async function generateDefaultersList() {
                     );
 
 
-                    const registrationDiff =
+                    totalAbsentDays =
                         Math.floor(
 
                             (
@@ -1924,29 +2397,24 @@ async function generateDefaultersList() {
 
                         );
 
-
-                    if (
-                        registrationDiff > 2
-                    ) {
-
-                        totalAbsentDays =
-                            registrationDiff;
-
-                    }
-
-
-                } else {
-
-                    totalAbsentDays =
-                        "30+";
-
                 }
 
 
+                /*
+                 * Never display negative value.
+                 */
 
-                /* ------------------------------------------------
+                totalAbsentDays =
+                    Math.max(
+                        0,
+                        totalAbsentDays
+                    );
+
+
+
+                /* =================================================
                    PHONE
-                ------------------------------------------------ */
+                ================================================= */
 
                 const rawPhone =
                     studentData.phoneNumber ||
@@ -1954,6 +2422,10 @@ async function generateDefaultersList() {
                     "";
 
 
+
+                /* =================================================
+                   ADD STUDENT
+                ================================================= */
 
                 defaulterData.push({
 
@@ -1968,48 +2440,50 @@ async function generateDefaultersList() {
 
                 });
 
-
             }
         );
 
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
+           REMOVE ZERO-DAY STUDENTS
+        ===================================================== */
+
+        defaulterData =
+            defaulterData.filter(
+                student =>
+                    Number(
+                        student.absentDays
+                    ) > 0
+            );
+
+
+
+        /* =====================================================
            SORT
-        ----------------------------------------------------- */
+           Highest absent days first
+        ===================================================== */
 
         defaulterData.sort(
-            (a, b) => {
-
-                const aDays =
-                    a.absentDays === "30+"
-                        ? 999
-                        : Number(a.absentDays);
-
-                const bDays =
-                    b.absentDays === "30+"
-                        ? 999
-                        : Number(b.absentDays);
-
-                return bDays - aDays;
-
-            }
+            (a, b) =>
+                Number(b.absentDays) -
+                Number(a.absentDays)
         );
 
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
            UPDATE COUNT
-        ----------------------------------------------------- */
+        ===================================================== */
 
         countSpan.innerText =
             defaulterData.length;
 
 
 
-        /* -----------------------------------------------------
+        /* =====================================================
            RENDER
-        ----------------------------------------------------- */
+        ===================================================== */
 
         renderList(
             defaulterData
