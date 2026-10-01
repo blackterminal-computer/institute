@@ -1,221 +1,2040 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Smart Attendance</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #6366f1; --accent: #06b6d4; --bg: #020617; --card: #0f172a; --glass: rgba(255, 255, 255, 0.03); }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; position: relative; overflow-x: hidden; }
-        .att-container { width: 100%; max-width: 400px; background: var(--card); padding: 40px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); text-align: center; z-index: 1; }
-        .loc-icon { width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 20px; border: 2px dashed var(--primary); }
-        .status-box { background: var(--glass); padding: 15px; border-radius: 18px; margin-bottom: 25px; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        #checkin-btn { width: 100%; padding: 18px; border: none; border-radius: 18px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 800; cursor: pointer; transition: 0.3s; margin-bottom: 12px; }
-        #checkin-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        
-        /* Request Button Styling */
-        #request-trigger-btn { width: 100%; padding: 14px; border: 1px solid #ef4444; border-radius: 18px; background: rgba(239, 68, 68, 0.05); color: #ef4444; font-weight: 700; cursor: pointer; transition: 0.3s; display: none; }
-        #request-trigger-btn:hover { background: rgba(239, 68, 68, 0.15); }
-        
-        .back-home { margin-top: 20px; display: inline-block; font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 700; }
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-        /* Custom Modal Backdrop */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s ease; padding: 20px; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        
-        /* Modal Window */
-        .modal-card { width: 100%; max-width: 360px; background: #1e293b; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); padding: 25px; text-align: left; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: translateY(20px); transition: 0.3s ease; }
-        .modal-overlay.active .modal-card { transform: translateY(0); }
-        .modal-card h3 { font-size: 18px; margin-bottom: 8px; font-weight: 800; }
-        .modal-card p { font-size: 13px; opacity: 0.7; margin-bottom: 20px; line-height: 1.4; }
-        
-        /* Colorful Badges */
-        .badge-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-        .reason-badge { padding: 8px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
-        
-        .badge-online { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .badge-online:hover, .badge-online.selected { background: #10b981; color: #020617; }
-        
-        .badge-gps { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-        .badge-gps:hover, .badge-gps.selected { background: #f59e0b; color: #020617; }
-        
-        .badge-network { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .badge-network:hover, .badge-network.selected { background: #3b82f6; color: #020617; }
-        
-        /* Custom input inside modal */
-        .modal-input { width: 100%; padding: 12px 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; font-size: 13px; outline: none; margin-bottom: 20px; transition: 0.3s; }
-        .modal-input:focus { border-color: var(--primary); }
-        
-        /* Action buttons inside modal */
-        .modal-actions { display: flex; gap: 10px; }
-        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; }
-        .btn-cancel { background: rgba(255,255,255,0.05); color: #94a3b8; }
-        .btn-cancel:hover { background: rgba(255,255,255,0.1); }
-        .btn-submit { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
-        .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-    </style>
+<title>BT | Smart Attendance</title>
+
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+/* =========================
+   ROOT
+========================= */
+
+:root{
+    --primary:#6366f1;
+    --primary2:#8b5cf6;
+    --cyan:#06b6d4;
+
+    --green:#22c55e;
+    --red:#ef4444;
+    --orange:#f59e0b;
+
+    --bg:#020617;
+    --card:#0f172a;
+
+    --text:#f8fafc;
+    --muted:#94a3b8;
+
+    --glass:rgba(255,255,255,.045);
+    --border:rgba(255,255,255,.08);
+}
+
+
+/* =========================
+   RESET
+========================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Plus Jakarta Sans',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    background:
+        radial-gradient(circle at 20% 10%,rgba(99,102,241,.18),transparent 30%),
+        radial-gradient(circle at 90% 80%,rgba(6,182,212,.12),transparent 30%),
+        var(--bg);
+
+    color:var(--text);
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    padding:20px;
+
+    overflow-x:hidden;
+}
+
+
+/* =========================
+   BACKGROUND EFFECT
+========================= */
+
+body::before{
+    content:"";
+    position:fixed;
+
+    width:280px;
+    height:280px;
+
+    background:rgba(99,102,241,.12);
+
+    filter:blur(100px);
+
+    top:-100px;
+    right:-100px;
+
+    pointer-events:none;
+}
+
+body::after{
+    content:"";
+    position:fixed;
+
+    width:220px;
+    height:220px;
+
+    background:rgba(6,182,212,.08);
+
+    filter:blur(100px);
+
+    bottom:-80px;
+    left:-80px;
+
+    pointer-events:none;
+}
+
+
+/* =========================
+   MAIN CARD
+========================= */
+
+.att-container{
+
+    width:100%;
+    max-width:430px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.07),
+            rgba(255,255,255,.025)
+        );
+
+    border:1px solid var(--border);
+
+    border-radius:32px;
+
+    padding:30px 24px;
+
+    text-align:center;
+
+    backdrop-filter:blur(25px);
+    -webkit-backdrop-filter:blur(25px);
+
+    box-shadow:
+        0 30px 80px rgba(0,0,0,.45);
+
+    position:relative;
+
+    z-index:2;
+}
+
+
+/* =========================
+   TOP BRAND
+========================= */
+
+.brand{
+
+    font-size:12px;
+
+    font-weight:800;
+
+    letter-spacing:2px;
+
+    color:#818cf8;
+
+    margin-bottom:20px;
+
+}
+
+
+/* =========================
+   LOCATION ICON
+========================= */
+
+.loc-icon{
+
+    width:88px;
+    height:88px;
+
+    margin:0 auto 18px;
+
+    border-radius:28px;
+
+    display:flex;
+
+    justify-content:center;
+    align-items:center;
+
+    font-size:40px;
+
+    color:#818cf8;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(99,102,241,.18),
+            rgba(6,182,212,.08)
+        );
+
+    border:1px solid rgba(129,140,248,.25);
+
+    box-shadow:
+        0 15px 40px rgba(99,102,241,.12);
+
+}
+
+
+/* =========================
+   TITLE
+========================= */
+
+h2{
+
+    font-size:25px;
+
+    font-weight:800;
+
+    margin-bottom:7px;
+
+}
+
+.subtitle{
+
+    font-size:12px;
+
+    color:var(--muted);
+
+    line-height:1.5;
+
+    margin-bottom:22px;
+
+}
+
+
+/* =========================
+   STUDENT
+========================= */
+
+.student-box{
+
+    background:rgba(255,255,255,.035);
+
+    border:1px solid rgba(255,255,255,.06);
+
+    padding:12px;
+
+    border-radius:15px;
+
+    margin-bottom:14px;
+
+}
+
+.student-label{
+
+    color:#64748b;
+
+    font-size:10px;
+
+    text-transform:uppercase;
+
+    letter-spacing:1px;
+
+}
+
+.student-name{
+
+    font-size:14px;
+
+    font-weight:700;
+
+    margin-top:3px;
+
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.status-box{
+
+    background:rgba(255,255,255,.045);
+
+    border:1px solid rgba(255,255,255,.06);
+
+    min-height:54px;
+
+    padding:14px;
+
+    border-radius:16px;
+
+    margin-bottom:18px;
+
+    font-size:12px;
+
+    font-weight:700;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:9px;
+
+    transition:.3s;
+
+}
+
+.status-icon{
+
+    font-size:18px;
+
+}
+
+
+/* =========================
+   MAIN BUTTON
+========================= */
+
+#checkin-btn{
+
+    width:100%;
+
+    padding:17px;
+
+    border:none;
+
+    border-radius:17px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary2),
+            var(--cyan)
+        );
+
+    color:white;
+
+    font-size:13px;
+
+    font-weight:800;
+
+    letter-spacing:.3px;
+
+    cursor:pointer;
+
+    box-shadow:
+        0 15px 35px rgba(99,102,241,.22);
+
+    transition:.25s;
+
+    margin-bottom:10px;
+
+}
+
+#checkin-btn:active{
+
+    transform:scale(.98);
+
+}
+
+#checkin-btn:disabled{
+
+    opacity:.35;
+
+    cursor:not-allowed;
+
+    box-shadow:none;
+
+}
+
+
+/* =========================
+   REQUEST BUTTON
+========================= */
+
+#request-trigger-btn{
+
+    width:100%;
+
+    padding:14px;
+
+    border:1px solid rgba(239,68,68,.35);
+
+    border-radius:17px;
+
+    background:rgba(239,68,68,.07);
+
+    color:#f87171;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    display:none;
+
+    transition:.25s;
+
+}
+
+#request-trigger-btn:active{
+
+    transform:scale(.98);
+
+}
+
+
+/* =========================
+   HOME
+========================= */
+
+.back-home{
+
+    margin-top:22px;
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    font-size:11px;
+
+    color:#67e8f9;
+
+    text-decoration:none;
+
+    font-weight:700;
+
+}
+
+
+/* =========================
+   MODAL
+========================= */
+
+.modal-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(2,6,23,.86);
+
+    backdrop-filter:blur(12px);
+
+    -webkit-backdrop-filter:blur(12px);
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:20px;
+
+    z-index:50;
+
+    opacity:0;
+
+    pointer-events:none;
+
+    transition:.3s;
+
+}
+
+.modal-overlay.active{
+
+    opacity:1;
+
+    pointer-events:auto;
+
+}
+
+.modal-card{
+
+    width:100%;
+
+    max-width:370px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #172033,
+            #0f172a
+        );
+
+    border:1px solid rgba(255,255,255,.1);
+
+    border-radius:25px;
+
+    padding:24px;
+
+    box-shadow:
+        0 30px 70px rgba(0,0,0,.6);
+
+    transform:translateY(20px) scale(.96);
+
+    transition:.3s;
+
+}
+
+.modal-overlay.active .modal-card{
+
+    transform:translateY(0) scale(1);
+
+}
+
+.modal-card h3{
+
+    font-size:19px;
+
+    font-weight:800;
+
+    margin-bottom:8px;
+
+}
+
+.modal-card p{
+
+    font-size:12px;
+
+    color:var(--muted);
+
+    line-height:1.5;
+
+    margin-bottom:18px;
+
+}
+
+
+/* =========================
+   BADGES
+========================= */
+
+.badge-container{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:8px;
+
+    margin-bottom:18px;
+
+}
+
+.reason-badge{
+
+    padding:9px 12px;
+
+    border-radius:12px;
+
+    font-size:11px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    border:1px solid transparent;
+
+    transition:.2s;
+
+}
+
+.badge-online{
+
+    background:rgba(16,185,129,.1);
+
+    color:#34d399;
+
+}
+
+.badge-online.selected{
+
+    background:#10b981;
+
+    color:#020617;
+
+}
+
+.badge-gps{
+
+    background:rgba(245,158,11,.1);
+
+    color:#fbbf24;
+
+}
+
+.badge-gps.selected{
+
+    background:#f59e0b;
+
+    color:#020617;
+
+}
+
+.badge-network{
+
+    background:rgba(59,130,246,.1);
+
+    color:#60a5fa;
+
+}
+
+.badge-network.selected{
+
+    background:#3b82f6;
+
+    color:white;
+
+}
+
+
+/* =========================
+   INPUT
+========================= */
+
+.modal-input{
+
+    width:100%;
+
+    padding:13px 14px;
+
+    background:rgba(0,0,0,.2);
+
+    border:1px solid rgba(255,255,255,.09);
+
+    border-radius:13px;
+
+    color:white;
+
+    outline:none;
+
+    font-size:12px;
+
+    margin-bottom:18px;
+
+}
+
+.modal-input:focus{
+
+    border-color:#6366f1;
+
+}
+
+
+/* =========================
+   MODAL BUTTONS
+========================= */
+
+.modal-actions{
+
+    display:flex;
+
+    gap:9px;
+
+}
+
+.modal-btn{
+
+    flex:1;
+
+    padding:12px;
+
+    border:none;
+
+    border-radius:12px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.btn-cancel{
+
+    background:rgba(255,255,255,.06);
+
+    color:#94a3b8;
+
+}
+
+.btn-submit{
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--cyan)
+        );
+
+    color:white;
+
+}
+
+.btn-submit:disabled{
+
+    opacity:.4;
+
+}
+
+
+/* =========================
+   SUCCESS MODAL
+========================= */
+
+.success-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(2,6,23,.82);
+
+    backdrop-filter:blur(12px);
+
+    -webkit-backdrop-filter:blur(12px);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:20px;
+
+    z-index:100;
+
+    opacity:0;
+
+    pointer-events:none;
+
+    transition:.3s;
+
+}
+
+.success-overlay.active{
+
+    opacity:1;
+
+    pointer-events:auto;
+
+}
+
+.success-card{
+
+    width:100%;
+
+    max-width:340px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #10251c,
+            #0f172a
+        );
+
+    border:1px solid rgba(34,197,94,.22);
+
+    border-radius:28px;
+
+    padding:30px 24px;
+
+    text-align:center;
+
+    box-shadow:
+        0 30px 80px rgba(0,0,0,.6);
+
+    transform:scale(.85);
+
+    transition:.3s;
+
+}
+
+.success-overlay.active .success-card{
+
+    transform:scale(1);
+
+}
+
+
+/* =========================
+   SUCCESS ICON
+========================= */
+
+.success-icon{
+
+    width:75px;
+    height:75px;
+
+    border-radius:50%;
+
+    margin:0 auto 18px;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    font-size:40px;
+
+    color:#22c55e;
+
+    background:rgba(34,197,94,.12);
+
+    border:2px solid rgba(34,197,94,.3);
+
+}
+
+.success-card h3{
+
+    font-size:21px;
+
+    font-weight:800;
+
+    margin-bottom:7px;
+
+}
+
+.success-card p{
+
+    font-size:12px;
+
+    color:#94a3b8;
+
+    line-height:1.5;
+
+}
+
+.success-date{
+
+    margin-top:15px;
+
+    padding:11px;
+
+    border-radius:13px;
+
+    background:rgba(255,255,255,.045);
+
+    color:#cbd5e1;
+
+    font-size:11px;
+
+    font-weight:700;
+
+}
+
+.success-close{
+
+    width:100%;
+
+    margin-top:18px;
+
+    padding:13px;
+
+    border:none;
+
+    border-radius:13px;
+
+    background:#22c55e;
+
+    color:#02150b;
+
+    font-weight:800;
+
+    cursor:pointer;
+
+}
+
+
+/* =========================
+   SPINNER
+========================= */
+
+.spinner{
+
+    width:17px;
+
+    height:17px;
+
+    border:2px solid rgba(255,255,255,.25);
+
+    border-top-color:white;
+
+    border-radius:50%;
+
+    animation:spin .7s linear infinite;
+
+}
+
+@keyframes spin{
+
+    to{
+        transform:rotate(360deg);
+    }
+
+}
+
+</style>
 </head>
+
+
 <body>
-    <div class="att-container">
-        <div class="loc-icon"><i class="ri-map-pin-user-fill"></i></div>
-        <h2>Smart Attendance</h2>
-        <p style="font-size: 13px; opacity: 0.6; margin-bottom: 25px;">Verified location check within premises.</p>
-        <div id="status" class="status-box"><i class="ri-loader-4-line ri-spin"></i> Checking Location...</div>
-        
-        <button id="checkin-btn" onclick="markAttendance()" disabled>MARK ATTENDANCE <i class="ri-fingerprint-line"></i></button>
-        
-        <button id="request-trigger-btn" onclick="toggleModal(true)">REQUEST ATTENDANCE <i class="ri-mail-send-line"></i></button>
-        
-        <a href="index.html" class="back-home"><i class="ri-arrow-left-line"></i> Back to Dashboard</a>
+
+
+<!-- =========================
+     MAIN ATTENDANCE
+========================= -->
+
+<div class="att-container">
+
+    <div class="brand">
+        BLACKTERMINAL
     </div>
 
-    <div id="request-modal" class="modal-overlay">
-        <div class="modal-card">
-            <h3>Attendance Request</h3>
-            <p>Please select a pre-set reason or type a custom message below to send to your administrator.</p>
-            
-            <div class="badge-container">
-                <div class="reason-badge badge-online" onclick="selectBadge(this, 'Online Class')">Online Class</div>
-                <div class="reason-badge badge-gps" onclick="selectBadge(this, 'GPS Error')">GPS Error</div>
-                <div class="reason-badge badge-network" onclick="selectBadge(this, 'Network Error')">Network Error</div>
-            </div>
-            
-            <input type="text" id="custom-reason" class="modal-input" placeholder="Or type a custom reason here..." oninput="clearBadgeSelection()">
-            
-            <div class="modal-actions">
-                <button class="modal-btn btn-cancel" onclick="toggleModal(false)">Cancel</button>
-                <button id="submit-request-btn" class="modal-btn btn-submit" onclick="submitAttendanceRequest()">Submit Request</button>
-            </div>
+
+    <div class="loc-icon">
+
+        <i class="ri-map-pin-user-fill"></i>
+
+    </div>
+
+
+    <h2>
+        Smart Attendance
+    </h2>
+
+
+    <p class="subtitle">
+        Your attendance is verified using your
+        current location.
+    </p>
+
+
+    <div class="student-box">
+
+        <div class="student-label">
+            Student
         </div>
+
+        <div
+            id="student-display"
+            class="student-name">
+            Checking...
+        </div>
+
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        const firebaseConfig = { apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI", authDomain: "black-terminal-f2c91.firebaseapp.com", projectId: "black-terminal-f2c91", storageBucket: "black-terminal-f2c91.appspot.com", messagingSenderId: "552489994197", appId: "1:552489994197:web:7662331264c334ffbadf5c" };
-        const app = initializeApp(firebaseConfig); const db = getFirestore(app);
-        const INST_LAT = 21.940550; const INST_LON = 86.737409; const ALLOWED_RANGE = 0.05;
-        const statusBox = document.getElementById('status'); const btn = document.getElementById('checkin-btn');
-        const reqTriggerBtn = document.getElementById('request-trigger-btn');
-        const student = localStorage.getItem('studentName');
 
-        let selectedReasonStr = "";
+    <div
+        id="status"
+        class="status-box">
 
-        function initLocation() {
-            if (!student || student === "Guest") { statusBox.innerHTML = "⚠️ Update Name in Profile"; return; }
-            navigator.geolocation.getCurrentPosition(pos => {
-                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, INST_LAT, INST_LON);
-                if(dist <= ALLOWED_RANGE) { 
-                    statusBox.style.color = "#22c55e"; 
-                    statusBox.innerHTML = 'Verified: At Center'; 
-                    btn.disabled = false; 
-                    reqTriggerBtn.style.display = "none";
-                }
-                else { 
-                    statusBox.style.color = "#ef4444"; 
-                    statusBox.innerHTML = `Out of Range (${(dist*1000).toFixed(0)}m)`; 
-                    reqTriggerBtn.style.display = "block";
-                }
-            }, e => {
-                statusBox.innerHTML = "⚠️ Enable GPS";
-                reqTriggerBtn.style.display = "block";
-            }, { enableHighAccuracy: true });
+        <i class="ri-loader-4-line ri-spin status-icon"></i>
+
+        Checking Location...
+
+    </div>
+
+
+    <button
+        id="checkin-btn"
+        onclick="markAttendance()"
+        disabled>
+
+        MARK ATTENDANCE
+
+        <i class="ri-fingerprint-line"></i>
+
+    </button>
+
+
+    <button
+        id="request-trigger-btn"
+        onclick="toggleModal(true)">
+
+        REQUEST ATTENDANCE
+
+        <i class="ri-mail-send-line"></i>
+
+    </button>
+
+
+    <a
+        href="index.html"
+        class="back-home">
+
+        <i class="ri-arrow-left-line"></i>
+
+        Back to Dashboard
+
+    </a>
+
+</div>
+
+
+
+<!-- =========================
+     REQUEST MODAL
+========================= -->
+
+<div
+    id="request-modal"
+    class="modal-overlay">
+
+    <div class="modal-card">
+
+        <h3>
+            Attendance Request
+        </h3>
+
+        <p>
+            Select a reason or enter your
+            own message to send an attendance
+            request to the administrator.
+        </p>
+
+
+        <div class="badge-container">
+
+            <div
+                class="reason-badge badge-online"
+                onclick="selectBadge(this,'Online Class')">
+
+                Online Class
+
+            </div>
+
+
+            <div
+                class="reason-badge badge-gps"
+                onclick="selectBadge(this,'GPS Error')">
+
+                GPS Error
+
+            </div>
+
+
+            <div
+                class="reason-badge badge-network"
+                onclick="selectBadge(this,'Network Error')">
+
+                Network Error
+
+            </div>
+
+        </div>
+
+
+        <input
+            type="text"
+            id="custom-reason"
+            class="modal-input"
+            placeholder="Or type a custom reason..."
+            oninput="clearBadgeSelection()"
+        >
+
+
+        <div class="modal-actions">
+
+            <button
+                class="modal-btn btn-cancel"
+                onclick="toggleModal(false)">
+
+                Cancel
+
+            </button>
+
+
+            <button
+                id="submit-request-btn"
+                class="modal-btn btn-submit"
+                onclick="submitAttendanceRequest()">
+
+                Submit Request
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================
+     SUCCESS MODAL
+========================= -->
+
+<div
+    id="success-overlay"
+    class="success-overlay">
+
+    <div class="success-card">
+
+        <div class="success-icon">
+
+            <i class="ri-check-line"></i>
+
+        </div>
+
+
+        <h3 id="success-title">
+            Attendance Successful
+        </h3>
+
+
+        <p id="success-message">
+            Your attendance has been marked successfully.
+        </p>
+
+
+        <div
+            id="success-date"
+            class="success-date">
+
+        </div>
+
+
+        <button
+            class="success-close"
+            onclick="closeSuccess()">
+
+            DONE
+
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<script type="module">
+
+
+/* =========================
+   FIREBASE
+========================= */
+
+import {
+    initializeApp
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    updateDoc,
+    serverTimestamp
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyCEfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+
+    authDomain:
+        "black-terminal-f2c91.firebaseapp.com",
+
+    projectId:
+        "black-terminal-f2c91",
+
+    storageBucket:
+        "black-terminal-f2c91.appspot.com",
+
+    messagingSenderId:
+        "552489994197",
+
+    appId:
+        "1:552489994197:web:7662331264c334ffbadf5c"
+
+};
+
+
+const app =
+    initializeApp(firebaseConfig);
+
+
+const db =
+    getFirestore(app);
+
+
+/* =========================
+   CENTER LOCATION
+========================= */
+
+const INST_LAT =
+    21.940550;
+
+const INST_LON =
+    86.737409;
+
+
+/*
+ * 0.05 KM = 50 METERS
+ */
+
+const ALLOWED_RANGE =
+    0.05;
+
+
+/* =========================
+   ELEMENTS
+========================= */
+
+const statusBox =
+    document.getElementById("status");
+
+const btn =
+    document.getElementById("checkin-btn");
+
+const reqTriggerBtn =
+    document.getElementById("request-trigger-btn");
+
+const studentDisplay =
+    document.getElementById("student-display");
+
+
+/* =========================
+   STUDENT
+========================= */
+
+const student =
+    localStorage.getItem("studentName");
+
+
+let selectedReasonStr =
+    "";
+
+
+/* =========================
+   DATE
+========================= */
+
+function getToday(){
+
+    const d =
+        new Date();
+
+    const year =
+        d.getFullYear();
+
+    const month =
+        String(
+            d.getMonth()+1
+        ).padStart(2,"0");
+
+    const day =
+        String(
+            d.getDate()
+        ).padStart(2,"0");
+
+    return `${year}-${month}-${day}`;
+
+}
+
+
+function getReadableDate(){
+
+    return new Date()
+        .toLocaleDateString(
+            "en-IN",
+            {
+                day:"2-digit",
+                month:"long",
+                year:"numeric"
+            }
+        );
+
+}
+
+
+/* =========================
+   DISTANCE
+========================= */
+
+function calculateDistance(
+    la1,
+    lo1,
+    la2,
+    lo2
+){
+
+    const R = 6371;
+
+    const dLa =
+        (la2-la1)
+        *Math.PI/180;
+
+    const dLo =
+        (lo2-lo1)
+        *Math.PI/180;
+
+    const a =
+        Math.sin(dLa/2)**2 +
+
+        Math.cos(la1*Math.PI/180) *
+
+        Math.cos(la2*Math.PI/180) *
+
+        Math.sin(dLo/2)**2;
+
+    return R *
+        2 *
+        Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(1-a)
+        );
+
+}
+
+
+/* =========================
+   LOCATION
+========================= */
+
+function initLocation(){
+
+    if(
+        !student ||
+        student === "Guest"
+    ){
+
+        studentDisplay.textContent =
+            "Guest";
+
+        statusBox.innerHTML =
+            `<i class="ri-error-warning-line"></i>
+             Update Name in Profile`;
+
+        statusBox.style.color =
+            "#f59e0b";
+
+        return;
+
+    }
+
+
+    studentDisplay.textContent =
+        student;
+
+
+    if(!navigator.geolocation){
+
+        statusBox.innerHTML =
+            `<i class="ri-error-warning-line"></i>
+             GPS not supported`;
+
+        statusBox.style.color =
+            "#ef4444";
+
+        reqTriggerBtn.style.display =
+            "block";
+
+        return;
+
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        position => {
+
+            const dist =
+                calculateDistance(
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    INST_LAT,
+                    INST_LON
+                );
+
+
+            if(dist <= ALLOWED_RANGE){
+
+                statusBox.style.color =
+                    "#22c55e";
+
+                statusBox.innerHTML =
+                    `<i class="ri-checkbox-circle-fill"></i>
+                     Verified • You are at the Center`;
+
+
+                btn.disabled =
+                    false;
+
+
+                reqTriggerBtn.style.display =
+                    "none";
+
+            }
+
+            else{
+
+                statusBox.style.color =
+                    "#ef4444";
+
+                statusBox.innerHTML =
+                    `<i class="ri-map-pin-off-line"></i>
+                     Out of Range • ${(dist*1000).toFixed(0)}m away`;
+
+
+                reqTriggerBtn.style.display =
+                    "block";
+
+            }
+
+        },
+
+        error => {
+
+            console.log(error);
+
+
+            statusBox.style.color =
+                "#f59e0b";
+
+            statusBox.innerHTML =
+                `<i class="ri-gps-line"></i>
+                 Enable GPS / Location Permission`;
+
+
+            reqTriggerBtn.style.display =
+                "block";
+
+        },
+
+        {
+
+            enableHighAccuracy:true,
+
+            timeout:10000,
+
+            maximumAge:0
+
         }
-        
-        function calculateDistance(la1, lo1, la2, lo2) { const R = 6371; const dLa = (la2-la1)*Math.PI/180; const dLo = (lo2-lo1)*Math.PI/180; const a = Math.sin(dLa/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2; return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 
-        window.markAttendance = async () => {
-            btn.disabled = true; btn.innerHTML = 'Processing...';
-            const t = new Date(); const tStr = t.toISOString().split('T')[0];
-            try {
-                const sRef = doc(db, "students", student); const sSnap = await getDoc(sRef);
-                let newStreak = 1;
-                if(sSnap.exists()){
-                    const d = sSnap.data(); const last = d.lastAttendanceDate;
-                    if(last){
-                        const lDate = new Date(last); const yest = new Date(); yest.setDate(t.getDate()-1);
-                        if(lDate.toDateString() === yest.toDateString()) newStreak = (d.streak || 0) + 1;
-                        else if(lDate.toDateString() === t.toDateString()) newStreak = d.streak;
-                    }
+    );
+
+}
+
+
+/* =========================
+   MARK ATTENDANCE
+========================= */
+
+window.markAttendance =
+async function(){
+
+    if(!student){
+
+        alert(
+            "Student name not found."
+        );
+
+        return;
+
+    }
+
+
+    btn.disabled =
+        true;
+
+
+    btn.innerHTML =
+        `<span class="spinner"></span>
+         Processing Attendance...`;
+
+
+    const t =
+        new Date();
+
+    const tStr =
+        getToday();
+
+
+    try{
+
+        /*
+         * Student document
+         */
+
+        const sRef =
+            doc(
+                db,
+                "students",
+                student
+            );
+
+
+        const sSnap =
+            await getDoc(sRef);
+
+
+        /*
+         * Check today's attendance
+         */
+
+        const attendanceRef =
+            doc(
+                db,
+                "attendance",
+                `${student}_${tStr}`
+            );
+
+
+        const attendanceSnap =
+            await getDoc(
+                attendanceRef
+            );
+
+
+        /*
+         * Already marked
+         */
+
+        if(attendanceSnap.exists()){
+
+            showSuccess(
+                "Already Present",
+                "Your attendance for today has already been recorded.",
+                tStr,
+                true
+            );
+
+            btn.disabled =
+                true;
+
+            btn.innerHTML =
+                `ALREADY MARKED <i class="ri-check-double-line"></i>`;
+
+            return;
+
+        }
+
+
+        /* =====================
+           STREAK
+        ===================== */
+
+        let newStreak =
+            1;
+
+
+        if(sSnap.exists()){
+
+            const d =
+                sSnap.data();
+
+
+            const last =
+                d.lastAttendanceDate;
+
+
+            if(last){
+
+                const lDate =
+                    new Date(last);
+
+
+                const yesterday =
+                    new Date(t);
+
+
+                yesterday.setDate(
+                    t.getDate()-1
+                );
+
+
+                if(
+                    lDate.toDateString() ===
+                    yesterday.toDateString()
+                ){
+
+                    newStreak =
+                        (d.streak || 0)+1;
+
                 }
-                await setDoc(doc(db, "attendance", `${student}_${tStr}`), { 
-                    studentName: student, 
-                    userName: student, 
-                    date: tStr, 
-                    timestamp: serverTimestamp() 
-                });
-                await updateDoc(sRef, { streak: newStreak, lastAttendanceDate: tStr });
-                
-                // Перенаправление на страницу чата при успешной отметке
-                statusBox.innerHTML = "✅ Success!"; 
-                setTimeout(() => location.href = "chat.html", 1500);
-            } catch (e) { alert("Error!"); btn.disabled = false; }
-        };
 
-        /* Custom Modal Controller Functions */
-        window.toggleModal = (show) => {
-            const modal = document.getElementById('request-modal');
-            if(show) {
-                modal.classList.add('active');
-            } else {
-                modal.classList.remove('active');
-                // reset state on close
-                document.getElementById('custom-reason').value = "";
-                clearBadgeSelection();
-            }
-        };
+                else if(
+                    lDate.toDateString() ===
+                    t.toDateString()
+                ){
 
-        window.selectBadge = (element, reasonValue) => {
-            clearBadgeSelection();
-            element.classList.add('selected');
-            document.getElementById('custom-reason').value = ""; // clear typed input if user picks a badge
-            selectedReasonStr = reasonValue;
-        };
+                    newStreak =
+                        d.streak || 1;
 
-        window.clearBadgeSelection = () => {
-            document.querySelectorAll('.reason-badge').forEach(b => b.classList.remove('selected'));
-            selectedReasonStr = "";
-        };
+                }
 
-        window.submitAttendanceRequest = async () => {
-            const typedReason = document.getElementById('custom-reason').value.trim();
-            const finalReason = typedReason || selectedReasonStr;
+                else{
 
-            if (!finalReason) { 
-                alert("Please select a badge or write a custom reason!"); 
-                return; 
+                    newStreak =
+                        1;
+
+                }
+
             }
 
-            const submitBtn = document.getElementById('submit-request-btn');
-            submitBtn.disabled = true; 
-            submitBtn.innerHTML = 'Sending...';
-            
-            const t = new Date(); const tStr = t.toISOString().split('T')[0];
+        }
 
-            try {
-                await setDoc(doc(db, "attendance_requests", `${student}_${tStr}`), {
-                    studentName: student,
-                    date: tStr,
-                    reason: finalReason,
-                    status: "Pending",
-                    timestamp: serverTimestamp()
-                });
-                alert("Attendance Request submitted successfully!");
-                toggleModal(false);
-                
-                // Перенаправление на страницу чата при отправке запроса
-                location.href = "chat.html";
-            } catch (e) {
-                alert("Failed to submit request. Please try again.");
-                submitBtn.disabled = false; 
-                submitBtn.innerHTML = 'Submit Request';
+
+        /* =====================
+           SAVE ATTENDANCE
+        ===================== */
+
+        await setDoc(
+            attendanceRef,
+            {
+
+                studentName:
+                    student,
+
+                userName:
+                    student,
+
+                date:
+                    tStr,
+
+                timestamp:
+                    serverTimestamp()
+
             }
-        };
+        );
 
-        window.onload = initLocation;
-    </script>
+
+        /* =====================
+           UPDATE STUDENT
+        ===================== */
+
+        if(sSnap.exists()){
+
+            await updateDoc(
+                sRef,
+                {
+
+                    streak:
+                        newStreak,
+
+                    lastAttendanceDate:
+                        tStr
+
+                }
+            );
+
+        }
+
+
+        /* =====================
+           SUCCESS
+        ===================== */
+
+        statusBox.style.color =
+            "#22c55e";
+
+        statusBox.innerHTML =
+            `<i class="ri-checkbox-circle-fill"></i>
+             Attendance Recorded Successfully`;
+
+
+        btn.innerHTML =
+            `PRESENT ✓`;
+
+
+        /*
+         * NO REDIRECT
+         */
+
+        showSuccess(
+            "Present Successfully!",
+            `${student}, your attendance has been recorded successfully.`,
+            tStr,
+            false
+        );
+
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(
+            "Attendance failed.\n\n" +
+            error.message
+        );
+
+
+        btn.disabled =
+            false;
+
+        btn.innerHTML =
+            `MARK ATTENDANCE
+             <i class="ri-fingerprint-line"></i>`;
+
+    }
+
+};
+
+
+/* =========================
+   SUCCESS POPUP
+========================= */
+
+function showSuccess(
+    title,
+    message,
+    date,
+    already
+){
+
+    const overlay =
+        document.getElementById(
+            "success-overlay"
+        );
+
+
+    document.getElementById(
+        "success-title"
+    ).textContent =
+        title;
+
+
+    document.getElementById(
+        "success-message"
+    ).textContent =
+        message;
+
+
+    document.getElementById(
+        "success-date"
+    ).innerHTML =
+
+        `<i class="ri-calendar-check-line"></i>
+         ${formatDate(date)}`;
+
+
+    overlay.classList.add(
+        "active"
+    );
+
+}
+
+
+function formatDate(date){
+
+    const d =
+        new Date(
+            date + "T00:00:00"
+        );
+
+
+    return d.toLocaleDateString(
+        "en-IN",
+        {
+            weekday:"long",
+            day:"2-digit",
+            month:"long",
+            year:"numeric"
+        }
+    );
+
+}
+
+
+window.closeSuccess =
+function(){
+
+    document
+        .getElementById(
+            "success-overlay"
+        )
+        .classList.remove(
+            "active"
+        );
+
+};
+
+
+/* =========================
+   REQUEST MODAL
+========================= */
+
+window.toggleModal =
+function(show){
+
+    const modal =
+        document.getElementById(
+            "request-modal"
+        );
+
+
+    if(show){
+
+        modal.classList.add(
+            "active"
+        );
+
+    }
+
+    else{
+
+        modal.classList.remove(
+            "active"
+        );
+
+
+        document.getElementById(
+            "custom-reason"
+        ).value = "";
+
+
+        clearBadgeSelection();
+
+    }
+
+};
+
+
+/* =========================
+   BADGE
+========================= */
+
+window.selectBadge =
+function(
+    element,
+    reasonValue
+){
+
+    document
+        .querySelectorAll(
+            ".reason-badge"
+        )
+        .forEach(
+            b=>b.classList.remove(
+                "selected"
+            )
+        );
+
+
+    element.classList.add(
+        "selected"
+    );
+
+
+    document.getElementById(
+        "custom-reason"
+    ).value = "";
+
+
+    selectedReasonStr =
+        reasonValue;
+
+};
+
+
+window.clearBadgeSelection =
+function(){
+
+    document
+        .querySelectorAll(
+            ".reason-badge"
+        )
+        .forEach(
+            b=>b.classList.remove(
+                "selected"
+            )
+        );
+
+
+    selectedReasonStr =
+        "";
+
+};
+
+
+/* =========================
+   SUBMIT REQUEST
+========================= */
+
+window.submitAttendanceRequest =
+async function(){
+
+    const typedReason =
+        document
+        .getElementById(
+            "custom-reason"
+        )
+        .value
+        .trim();
+
+
+    const finalReason =
+        typedReason ||
+        selectedReasonStr;
+
+
+    if(!finalReason){
+
+        alert(
+            "Please select a reason or type your own reason."
+        );
+
+        return;
+
+    }
+
+
+    const submitBtn =
+        document.getElementById(
+            "submit-request-btn"
+        );
+
+
+    submitBtn.disabled =
+        true;
+
+
+    submitBtn.innerHTML =
+        `<span class="spinner"></span> Sending...`;
+
+
+    const tStr =
+        getToday();
+
+
+    try{
+
+        await setDoc(
+
+            doc(
+                db,
+                "attendance_requests",
+                `${student}_${tStr}`
+            ),
+
+            {
+
+                studentName:
+                    student,
+
+                date:
+                    tStr,
+
+                reason:
+                    finalReason,
+
+                status:
+                    "Pending",
+
+                timestamp:
+                    serverTimestamp()
+
+            }
+
+        );
+
+
+        /*
+         * Close request modal
+         */
+
+        toggleModal(false);
+
+
+        /*
+         * Show success popup
+         */
+
+        showSuccess(
+
+            "Request Submitted!",
+
+            "Your attendance request has been sent successfully to the administrator.",
+
+            tStr,
+
+            false
+
+        );
+
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(
+            "Failed to submit request.\n\n" +
+            error.message
+        );
+
+    }
+
+
+    submitBtn.disabled =
+        false;
+
+
+    submitBtn.innerHTML =
+        "Submit Request";
+
+};
+
+
+/* =========================
+   CLOSE MODAL ON BACKDROP
+========================= */
+
+document
+.getElementById("request-modal")
+.addEventListener(
+    "click",
+    function(e){
+
+        if(e.target === this){
+
+            toggleModal(false);
+
+        }
+
+    }
+);
+
+
+/* =========================
+   START
+========================= */
+
+window.onload =
+    initLocation;
+
+</script>
+
 </body>
 </html>
