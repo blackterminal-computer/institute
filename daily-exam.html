@@ -1,384 +1,2175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BT | Terminal Exam v2.0</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <style>
-        :root {
-            --primary: #6366f1;
-            --accent: #06b6d4;
-            --bg: #020617;
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --success: #10b981;
-            --danger: #f43f5e;
-            --terminal-green: #10b981;
-        }
+<meta charset="UTF-8">
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            background: var(--bg); 
-            color: #f8fafc; 
-            min-height: 100vh;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 20px;
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
-            overflow-x: hidden;
-        }
+<meta name="viewport"
+content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 
-        body::before {
-            content: " ";
-            position: fixed;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-            z-index: 100;
-            background-size: 100% 4px, 3px 100%;
-            pointer-events: none;
-            opacity: 0.3;
-        }
+<title>BT | Terminal Exam v3</title>
 
-        .stats-bar { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; z-index: 10; }
-        
-        .brand { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
-        .brand i { color: var(--accent); }
+<link
+href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
+rel="stylesheet">
 
-        .timer-pill { 
-            background: rgba(16, 185, 129, 0.1); 
-            color: var(--success); 
-            padding: 8px 16px; 
-            border-radius: 12px; 
-            border: 1px solid rgba(16, 185, 129, 0.2); 
-            font-family: 'Fira Code', monospace;
-            font-weight: 600; 
-            font-size: 14px; 
-        }
+<link
+href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+rel="stylesheet">
 
-        .timer-warning { 
-            background: rgba(244, 63, 94, 0.15); 
-            color: var(--danger); 
-            border-color: var(--danger); 
-            animation: pulse 1s infinite; 
-        }
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-        .card { 
-            width: 100%; 
-            max-width: 600px; 
-            background: var(--glass); 
-            border: 1px solid var(--glass-border); 
-            padding: 32px 24px; 
-            border-radius: 24px; 
-            backdrop-filter: blur(20px); 
-            position: relative; 
-        }
 
-        #q-num { font-family: 'Fira Code', monospace; font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; display: block; opacity: 0.8; }
-        #q { font-size: 22px; font-weight: 700; line-height: 1.4; margin-bottom: 28px; color: #fff; }
-        
-        .options-grid { display: grid; gap: 14px; }
-        .opt { 
-            background: rgba(255,255,255,0.03); 
-            border: 1px solid var(--glass-border); 
-            padding: 20px; 
-            border-radius: 16px; 
-            cursor: pointer; 
-            transition: 0.2s all; 
-            display: flex; 
-            align-items: center; 
-            font-weight: 500; 
-            font-size: 16px;
-        }
-        
-        .opt:hover:not(.lock) { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); transform: translateX(4px); }
-        .opt.correct { background: rgba(16, 185, 129, 0.15) !important; border-color: var(--success) !important; color: var(--success); font-weight: 700; }
-        .opt.wrong { background: rgba(244, 63, 94, 0.15) !important; border-color: var(--danger) !important; color: var(--danger); animation: shake 0.4s; }
-        .opt.lock { cursor: default; }
-        
-        .footer { width: 100%; max-width: 600px; margin-top: 24px; display: flex; justify-content: flex-end; }
-        
-        .btn-primary { 
-            padding: 14px 28px; 
-            border-radius: 14px; 
-            background: #fff; 
-            color: #000; 
-            font-weight: 700; 
-            border: none;
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px;
-        }
+<style>
 
-        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+:root{
+--primary:#6366f1;
+--accent:#06b6d4;
+--bg:#020617;
+--card:#0f172a;
+--glass:rgba(255,255,255,.045);
+--border:rgba(255,255,255,.09);
+--green:#10b981;
+--red:#f43f5e;
+--yellow:#f59e0b;
+--muted:#94a3b8;
+}
 
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
-    </style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Plus Jakarta Sans',sans-serif;
+-webkit-tap-highlight-color:transparent;
+}
+
+body{
+background:
+radial-gradient(circle at 0% 0%,rgba(99,102,241,.18),transparent 38%),
+radial-gradient(circle at 100% 100%,rgba(6,182,212,.12),transparent 38%),
+var(--bg);
+color:#f8fafc;
+min-height:100vh;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:18px;
+overflow-x:hidden;
+}
+
+body:before{
+content:"";
+position:fixed;
+inset:0;
+background:linear-gradient(
+rgba(255,255,255,.012) 50%,
+transparent 50%
+);
+background-size:100% 4px;
+pointer-events:none;
+z-index:99;
+}
+
+.topbar{
+width:100%;
+max-width:650px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:15px;
+}
+
+.brand{
+font-weight:800;
+font-size:19px;
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.brand i{
+color:var(--accent);
+}
+
+.user-pill{
+font-size:10px;
+color:#cbd5e1;
+background:var(--glass);
+border:1px solid var(--border);
+padding:8px 11px;
+border-radius:12px;
+max-width:150px;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+.screen{
+width:100%;
+max-width:650px;
+}
+
+.card{
+background:rgba(15,23,42,.72);
+border:1px solid var(--border);
+border-radius:25px;
+padding:25px;
+backdrop-filter:blur(20px);
+-webkit-backdrop-filter:blur(20px);
+box-shadow:0 25px 70px rgba(0,0,0,.28);
+}
+
+.hero{
+text-align:center;
+padding:35px 24px;
+}
+
+.hero-icon{
+width:78px;
+height:78px;
+border-radius:24px;
+margin:0 auto 18px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:38px;
+color:#67e8f9;
+background:rgba(6,182,212,.08);
+border:1px solid rgba(6,182,212,.2);
+}
+
+.hero h1{
+font-size:27px;
+font-weight:800;
+margin-bottom:8px;
+}
+
+.hero p{
+font-size:12px;
+color:var(--muted);
+line-height:1.6;
+}
+
+.config{
+margin-top:18px;
+}
+
+.config-title{
+font-size:11px;
+font-weight:800;
+color:#64748b;
+letter-spacing:1.5px;
+margin-bottom:10px;
+}
+
+.choice-grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:9px;
+margin-bottom:18px;
+}
+
+.choice{
+padding:13px 8px;
+border-radius:13px;
+border:1px solid var(--border);
+background:rgba(255,255,255,.025);
+color:#cbd5e1;
+cursor:pointer;
+font-size:11px;
+font-weight:700;
+text-align:center;
+}
+
+.choice.active{
+background:rgba(99,102,241,.18);
+border-color:#6366f1;
+color:#a5b4fc;
+}
+
+select{
+width:100%;
+background:#111827;
+border:1px solid var(--border);
+color:white;
+padding:13px;
+border-radius:13px;
+outline:none;
+margin-bottom:16px;
+}
+
+.start-btn{
+width:100%;
+padding:16px;
+border:0;
+border-radius:15px;
+background:linear-gradient(135deg,#6366f1,#06b6d4);
+color:white;
+font-weight:800;
+cursor:pointer;
+font-size:13px;
+box-shadow:0 15px 35px rgba(99,102,241,.18);
+}
+
+.info-row{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:8px;
+margin-top:18px;
+}
+
+.info{
+background:rgba(255,255,255,.025);
+border:1px solid var(--border);
+border-radius:13px;
+padding:11px;
+text-align:center;
+}
+
+.info b{
+display:block;
+font-size:15px;
+}
+
+.info span{
+font-size:9px;
+color:#64748b;
+}
+
+.exam-top{
+display:flex;
+align-items:center;
+justify-content:space-between;
+margin-bottom:12px;
+}
+
+.q-count{
+font-family:'Fira Code';
+font-size:11px;
+color:var(--accent);
+}
+
+.timer{
+font-family:'Fira Code';
+font-weight:700;
+font-size:14px;
+padding:8px 12px;
+border-radius:11px;
+color:var(--green);
+background:rgba(16,185,129,.08);
+border:1px solid rgba(16,185,129,.18);
+}
+
+.timer.warning{
+color:var(--red);
+background:rgba(244,63,94,.1);
+border-color:var(--red);
+animation:pulse 1s infinite;
+}
+
+.progress{
+height:5px;
+background:rgba(255,255,255,.05);
+border-radius:10px;
+overflow:hidden;
+margin-bottom:22px;
+}
+
+.progress-fill{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,var(--primary),var(--accent));
+transition:.4s;
+}
+
+.category{
+font-size:10px;
+color:#67e8f9;
+font-family:'Fira Code';
+margin-bottom:8px;
+text-transform:uppercase;
+}
+
+.question{
+font-size:21px;
+line-height:1.45;
+font-weight:700;
+margin-bottom:22px;
+}
+
+.options{
+display:grid;
+gap:11px;
+}
+
+.opt{
+padding:16px;
+border-radius:14px;
+border:1px solid var(--border);
+background:rgba(255,255,255,.025);
+cursor:pointer;
+display:flex;
+align-items:center;
+gap:12px;
+font-size:14px;
+transition:.2s;
+}
+
+.opt:hover:not(.locked){
+background:rgba(255,255,255,.06);
+transform:translateX(3px);
+}
+
+.opt-key{
+width:28px;
+height:28px;
+border-radius:8px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-family:'Fira Code';
+font-size:11px;
+color:var(--accent);
+border:1px solid rgba(6,182,212,.25);
+flex-shrink:0;
+}
+
+.opt.correct{
+border-color:var(--green);
+background:rgba(16,185,129,.12);
+color:#6ee7b7;
+}
+
+.opt.wrong{
+border-color:var(--red);
+background:rgba(244,63,94,.12);
+color:#fb7185;
+animation:shake .35s;
+}
+
+.locked{
+cursor:default;
+}
+
+.explanation{
+margin-top:15px;
+padding:13px;
+border-radius:13px;
+font-size:11px;
+line-height:1.5;
+background:rgba(99,102,241,.07);
+border:1px solid rgba(99,102,241,.15);
+color:#cbd5e1;
+display:none;
+}
+
+.bottom{
+display:flex;
+justify-content:flex-end;
+margin-top:18px;
+}
+
+.next{
+border:0;
+border-radius:13px;
+padding:13px 20px;
+background:#fff;
+color:#000;
+font-weight:800;
+cursor:pointer;
+}
+
+.next:disabled{
+opacity:.25;
+cursor:not-allowed;
+}
+
+.result-icon{
+width:80px;
+height:80px;
+border-radius:25px;
+margin:0 auto 18px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:42px;
+color:#34d399;
+background:rgba(16,185,129,.1);
+border:1px solid rgba(16,185,129,.2);
+}
+
+.result{
+text-align:center;
+}
+
+.result h2{
+font-size:25px;
+margin-bottom:6px;
+}
+
+.result-sub{
+font-size:12px;
+color:var(--muted);
+}
+
+.score{
+font-family:'Fira Code';
+font-size:34px;
+font-weight:700;
+color:var(--accent);
+margin:16px 0;
+}
+
+.result-grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:8px;
+margin:18px 0;
+}
+
+.result-stat{
+padding:13px 5px;
+border-radius:13px;
+background:rgba(255,255,255,.025);
+border:1px solid var(--border);
+}
+
+.result-stat b{
+display:block;
+font-size:15px;
+}
+
+.result-stat span{
+font-size:9px;
+color:#64748b;
+}
+
+.rank-title{
+text-align:left;
+font-size:10px;
+font-weight:800;
+color:#64748b;
+letter-spacing:1px;
+margin:22px 0 10px;
+}
+
+.rank-row{
+display:grid;
+grid-template-columns:35px 1fr auto;
+align-items:center;
+padding:12px 0;
+border-bottom:1px solid rgba(255,255,255,.05);
+font-size:12px;
+}
+
+.rank-num{
+font-family:'Fira Code';
+color:var(--accent);
+}
+
+.rank-xp{
+font-family:'Fira Code';
+color:var(--green);
+font-size:11px;
+}
+
+.restart{
+width:100%;
+padding:14px;
+margin-top:18px;
+border:0;
+border-radius:13px;
+background:linear-gradient(135deg,#6366f1,#06b6d4);
+color:white;
+font-weight:800;
+cursor:pointer;
+}
+
+.hidden{
+display:none!important;
+}
+
+@keyframes shake{
+0%,100%{transform:translateX(0)}
+25%{transform:translateX(-7px)}
+75%{transform:translateX(7px)}
+}
+
+@keyframes pulse{
+50%{transform:scale(1.05);opacity:.75}
+}
+
+@media(max-width:500px){
+
+body{
+padding:12px;
+}
+
+.card{
+padding:20px 16px;
+}
+
+.question{
+font-size:19px;
+}
+
+.opt{
+padding:14px;
+font-size:13px;
+}
+
+.choice-grid{
+grid-template-columns:repeat(3,1fr);
+}
+
+}
+
+</style>
 </head>
+
+
 <body>
 
-    <div class="stats-bar">
-        <div class="brand"><i class="ri-terminal-box-fill"></i>BT_TERMINAL</div>
-        <div class="timer-pill" id="timer-box"><i class="ri-timer-flash-line"></i> <span id="timer">40:00</span></div>
-    </div>
 
-    <div class="card" id="examBox">
-        <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 24px; overflow: hidden;">
-            <div id="p-fill" style="height: 100%; background: var(--accent); width: 0%; transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-        </div>
-        <span id="q-num">Initializing...</span>
-        <h3 id="q">Fetching System Data...</h3>
-        <div class="options-grid" id="options"></div>
-        <div class="footer"><button id="nextBtn" class="btn-primary" disabled>Next Sequence <i class="ri-arrow-right-line"></i></button></div>
-    </div>
+<div class="topbar">
 
-    <div class="card" id="lockBox" style="display:none; text-align: center;">
-        <div style="margin-bottom: 20px;">
-            <i class="ri-checkbox-circle-fill" style="font-size: 56px; color: var(--success);"></i>
-        </div>
-        <h2 style="font-weight: 800; font-size: 24px;">Terminal Sync Complete</h2>
-        
-        <p id="score-text" style="font-family: 'Fira Code'; margin: 12px 0 4px 0; color: var(--accent); font-size: 18px;"></p>
-        <p id="time-taken-text" style="font-family: 'Fira Code'; margin-bottom: 12px; color: var(--success); font-size: 14px; opacity: 0.9;"></p>
-        
-        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 20px; border: 1px solid var(--glass-border); margin: 24px 0;">
-            <p style="font-size: 10px; font-weight: 800; opacity: 0.5; letter-spacing: 2px;">NEXT PROTOCOL UNLOCKS IN</p>
-            <div id="count" style="font-size: 28px; font-weight: 700; color: #fff; margin-top: 8px; font-family: 'Fira Code';">00:00:00</div>
-        </div>
+<div class="brand">
+<i class="ri-terminal-box-fill"></i>
+BT_TERMINAL
+</div>
 
-        <div style="text-align: left;">
-            <p style="font-size: 11px; font-weight: 800; opacity: 0.5; margin-bottom: 12px;">SYSTEM RANKINGS</p>
-            <table style="width:100%; border-collapse: collapse;"><tbody id="leaderboard-body"></tbody></table>
-        </div>
-    </div>
+<div
+class="user-pill"
+id="user-name">
+Student
+</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, updateDoc, increment, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+</div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-            authDomain: "black-terminal-f2c91.firebaseapp.com",
-            projectId: "black-terminal-f2c91",
-            storageBucket: "black-terminal-f2c91.appspot.com",
-            messagingSenderId: "552489994197",
-            appId: "1:552489994197:web:7662331264c334ffbadf5c"
-        };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+<div class="screen">
 
-        const manualQuestions = [
-            { question: "Which company developed the Java programming language?", a: "Microsoft", b: "Sun Microsystems", c: "Google", d: "Apple", correct: "B" },
-            { question: "What does SQL stand for?", a: "Structured Query Language", b: "Simple Query Level", c: "System Quick Layer", d: "Standard Query List", correct: "A" },
-            { question: "In CSS, which property is used to make text bold?", a: "text-decoration", b: "font-style", c: "font-weight", d: "bold-text", correct: "C" },
-            { question: "Which data structure follows the Last-In-First-Out (LIFO) principle?", a: "Queue", b: "Stack", c: "Array", d: "Linked List", correct: "B" },
-            { question: "What is the default port number for HTTP?", a: "443", b: "21", c: "80", d: "25", correct: "C" },
-            { question: "Which of the following is a client-side scripting language?", a: "PHP", b: "Python", c: "JavaScript", d: "Ruby", correct: "C" },
-            { question: "What does the 'S' in HTTPS stand for?", a: "Standard", b: "Secure", d: "System", c: "Simple", correct: "B" },
-            { question: "Which HTML tag is used to create a hyperlink?", a: "<link>", b: "<a>", c: "<href>", d: "<url>", correct: "B" },
-            { question: "In JavaScript, which keyword is used to declare a block-scoped variable?", a: "var", b: "set", c: "let", d: "block", correct: "C" },
-            { question: "Which operating system is based on the Linux kernel?", a: "Windows", b: "Android", c: "iOS", d: "macOS", correct: "B" },
-            { question: "What is the primary function of a Router?", a: "Store data", b: "Forward data packets", c: "Compile code", d: "Display graphics", correct: "B" },
-            { question: "Which of these is a CSS framework?", a: "React", b: "Bootstrap", c: "Node.js", d: "Django", correct: "B" },
-            { question: "What does API stand for?", a: "App Program Interface", b: "Application Programming Interface", c: "Applied Protocol Integration", d: "Automated Process Input", correct: "B" },
-            { question: "Which Git command is used to stage changes?", a: "git commit", b: "git push", c: "git add", d: "git init", correct: "C" },
-            { question: "Which language is primarily used for Android app development?", a: "Swift", b: "Kotlin", c: "PHP", d: "Objective-C", correct: "B" },
-            { question: "What is the extension of a Python file?", a: ".py", b: ".pt", c: ".python", d: ".exe", correct: "A" },
-            { question: "Which logic gate returns true only if both inputs are true?", a: "OR", b: "NOT", c: "AND", d: "XOR", correct: "C" },
-            { question: "What is the purpose of 'Docker'?", a: "Styling", b: "Containerization", c: "Documentation", d: "Hardware testing", correct: "B" },
-            { question: "Which HTML tag is used to define an internal style sheet?", a: "<css>", b: "<script>", c: "<style>", d: "<layout>", correct: "C" },
-            { question: "What is the full form of RAM?", a: "Read Access Memory", b: "Random Access Memory", c: "Rapid Action Module", d: "Remote Area Memory", correct: "B" },
-            { question: "Which of these is an example of Cloud Storage?", a: "CPU", b: "Google Drive", c: "Keyboard", d: "VLC", correct: "B" },
-            { question: "Which symbol is used for comments in Python?", a: "//", b: "/*", c: "#", d: "--", correct: "C" },
-            { question: "What does DNS stand for?", a: "Data Node System", b: "Domain Name System", c: "Digital Network Service", d: "Dynamic Name Storage", correct: "B" },
-            { question: "In SQL, which clause is used to filter records?", a: "WHERE", b: "GROUP BY", c: "ORDER BY", d: "SELECT", correct: "A" },
-            { question: "Which company owns GitHub?", a: "Google", b: "Microsoft", c: "Amazon", d: "Facebook", correct: "B" },
-            { question: "What is 'npm' in the context of Node.js?", a: "New Program Manager", b: "Node Package Manager", c: "Node Project Module", d: "Normal Process Mode", correct: "B" },
-            { question: "Which CSS property controls the size of text?", a: "text-size", b: "font-style", c: "font-size", d: "text-style", correct: "C" },
-            { question: "What does JSON stand for?", a: "Java Object Notation", b: "JavaScript Object Notation", c: "Joint System Object Node", d: "None", correct: "B" },
-            { question: "Which device is considered the 'Brain' of the computer?", a: "RAM", b: "Hard Drive", c: "CPU", d: "Monitor", correct: "C" },
-            { question: "What is the base of a Hexadecimal system?", a: "2", b: "8", c: "10", d: "16", correct: "D" },
-            { question: "Which HTTP status code represents 'Internal Server Error'?", a: "404", b: "200", c: "500", d: "403", correct: "C" },
-            { question: "In HTML, which attribute is used to provide an image path?", a: "href", b: "path", c: "src", d: "link", correct: "C" },
-            { question: "Which of these is a Backend framework?", a: "Angular", b: "Vue.js", c: "Express.js", d: "Sass", correct: "C" },
-            { question: "What is a 'Bug' in software?", a: "Hardware failure", b: "An error in code", c: "A virus", d: "A type of hacker", correct: "B" },
-            { question: "Which unit is used to measure CPU clock speed?", a: "MB", b: "GHz", c: "Watts", d: "TB", correct: "B" },
-            { question: "What is the full form of PDF?", a: "Printable Document Format", b: "Portable Document Format", c: "Personal Data File", d: "Portable Digital File", correct: "B" },
-            { question: "Which programming language is known as the 'Mother of Languages'?", a: "Python", b: "Java", c: "C", d: "Assembly", correct: "C" },
-            { question: "What does BIOS stand for?", a: "Binary Input Output System", b: "Basic Input Output System", c: "Better Integrated OS", d: "Base Internal OS", correct: "B" },
-            { question: "Which CSS value is used to center a block element horizontally?", a: "align: center", b: "margin: auto", c: "text-align: center", d: "padding: auto", correct: "B" },
-            { question: "What is the primary role of an IP Address?", a: "Storage", b: "Identifying a device on a network", c: "Compiling code", d: "Creating websites", correct: "B" },
-            { question: "Which of these is a Version Control System?", a: "Git", b: "Docker", c: "NPM", d: "AWS", correct: "A" },
-            { question: "What is the purpose of 'head' tag in HTML?", a: "To show content", b: "To store metadata", c: "To create footer", d: "To insert images", correct: "B" },
-            { question: "Which language is used for styling web pages?", a: "HTML", b: "SQL", c: "CSS", d: "XML", correct: "C" },
-            { question: "What is the result of 10 % 3 in programming?", a: "3", b: "30", c: "1", d: "0", correct: "C" },
-            { question: "Which tag is used for the largest heading in HTML?", a: "<h6>", b: "<head>", c: "<h1>", d: "<header>", correct: "C" },
-            { question: "What does UI stand for?", a: "User Interface", b: "User Integration", c: "Unit Input", d: "Universal Interface", correct: "A" },
-            { question: "Which of these is NOT a programming language?", b: "Python", c: "Java", a: "HTML", d: "C++", correct: "A" },
-            { question: "What is the full form of URL?", a: "Uniform Resource Locator", b: "United Resource Link", c: "Universal Record Locator", d: "None", correct: "A" },
-            { question: "Which keyword is used to return a value from a function?", a: "give", b: "send", c: "return", d: "back", correct: "C" },
-            { question: "Who is known as the founder of Microsoft?", a: "Steve Jobs", b: "Elon Musk", c: "Bill Gates", d: "Jeff Bezos", correct: "C" }
-        ];
 
-        let student = localStorage.getItem("studentName") || "Root_User";
-        let questions = [], index = 0, score = 0, locked = false;
-        let totalTimeLimit = 40 * 60; // 40 minutes in seconds
-        let timeRemaining = totalTimeLimit;
-        let timerInterval;
-        let startTime;
+<!-- =========================
+     START SCREEN
+========================= -->
 
-        const todayStr = new Date().toDateString();
-        if (localStorage.getItem("daily_done_" + student) === todayStr) {
-            // Load saved score and time if already done today
-            score = localStorage.getItem("last_score_" + student) || 0;
-            const savedTime = localStorage.getItem("last_time_" + student) || "00:00";
-            lockScreen(savedTime);
-        } else {
-            initExam();
-        }
+<div
+id="startScreen"
+class="card hero">
 
-        function initExam() {
-            questions = [...manualQuestions].sort(() => Math.random() - 0.5);
-            startTime = Date.now();
-            showQ();
-            startGlobalTimer();
-        }
+<div class="hero-icon">
+<i class="ri-cpu-line"></i>
+</div>
 
-        function showQ() {
-            if (index >= questions.length) { finish(); return; }
-            locked = false;
-            document.getElementById("nextBtn").disabled = true;
-            
-            const q = questions[index];
-            const examBox = document.getElementById("examBox");
-            
-            examBox.style.transform = "translateY(10px)";
-            setTimeout(() => examBox.style.transform = "translateY(0px)", 50);
+<h1>
+Terminal Exam
+</h1>
 
-            document.getElementById("q-num").innerText = `Sequence ${index + 1} // ${questions.length}`;
-            document.getElementById("p-fill").style.width = ((index + 1) / questions.length * 100) + "%";
-            document.getElementById("q").innerText = q.question;
-            
-            const opts = [{id:'A', v:q.a}, {id:'B', v:q.b}, {id:'C', v:q.c}, {id:'D', v:q.d}];
-            document.getElementById("options").innerHTML = opts.map(o => `
-                <div class="opt" onclick="window.selectOpt('${o.id}', this)">
-                    <span style="font-family:'Fira Code'; color:var(--accent); margin-right:15px; font-size:12px; border: 1px solid rgba(6,182,212,0.2); padding: 2px 6px; border-radius: 4px;">${o.id}</span> ${o.v}
-                </div>
-            `).join('');
-        }
+<p>
+Test your computer knowledge across programming,
+web development, databases, networking,
+security, hardware and cloud computing.
+</p>
 
-        window.selectOpt = (v, el) => {
-            if (locked) return;
-            locked = true;
-            document.getElementById("nextBtn").disabled = false;
-            const correct = questions[index].correct;
-            
-            if (v === correct) { 
-                el.classList.add("correct"); 
-                score++; 
-                if (window.navigator.vibrate) window.navigator.vibrate(50);
-            } else { 
-                el.classList.add("wrong");
-                document.querySelectorAll(".opt").forEach(o => {
-                    const optionText = o.innerText.split(' ').slice(1).join(' ');
-                    if(optionText === questions[index][correct.toLowerCase()]) o.classList.add("correct");
-                });
-            }
-            document.querySelectorAll(".opt").forEach(o => o.classList.add("lock"));
-        };
 
-        document.getElementById("nextBtn").onclick = () => { index++; showQ(); };
+<div class="config">
 
-        function startGlobalTimer() {
-            timerInterval = setInterval(() => {
-                timeRemaining--;
-                
-                let mins = Math.floor(timeRemaining / 60);
-                let secs = timeRemaining % 60;
-                document.getElementById("timer").innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-                
-                if(timeRemaining <= 60) document.getElementById("timer-box").classList.add("timer-warning");
-                
-                if (timeRemaining <= 0) { 
-                    clearInterval(timerInterval);
-                    finish(); 
-                }
-            }, 1000);
-        }
 
-        async function finish() {
-            clearInterval(timerInterval);
-            
-            // Calculate time taken
-            const timeDiff = Date.now() - startTime;
-            const totalSecsTaken = Math.floor(timeDiff / 1000);
-            const displayMins = Math.floor(totalSecsTaken / 60);
-            const displaySecs = totalSecsTaken % 60;
-            const timeTakenStr = `${displayMins}m ${displaySecs}s`;
+<div class="config-title">
+NUMBER OF QUESTIONS
+</div>
 
-            localStorage.setItem("daily_done_" + student, new Date().toDateString());
-            localStorage.setItem("last_score_" + student, score);
-            localStorage.setItem("last_time_" + student, timeTakenStr);
-            
-            if((score / questions.length) >= 0.7) {
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#06b6d4', '#10b981'] });
-            }
+<div class="choice-grid">
 
-            if(student !== "Root_User") {
-                try {
-                    await updateDoc(doc(db, "students", student), { 
-                        xp: increment(score * 10),
-                        lastTime: timeTakenStr 
-                    });
-                } catch (e) { console.error("Sync Error", e); }
-            }
-            lockScreen(timeTakenStr);
-        }
+<div
+class="choice active"
+data-count="20">
+20
+</div>
 
-        async function lockScreen(finalTime) {
-            document.getElementById("examBox").style.display = "none";
-            document.getElementById("lockBox").style.display = "block";
-            
-            const totalQs = manualQuestions.length;
-            document.getElementById("score-text").innerText = `Accuracy: ${Math.round((score/totalQs)*100)}% [${score}/${totalQs}]`;
-            document.getElementById("time-taken-text").innerText = `Total Time Taken: ${finalTime}`;
-            
-            const countdown = () => {
-                const now = new Date();
-                const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
-                const diff = midnight - now;
-                if (diff <= 0) { localStorage.removeItem("daily_done_" + student); location.reload(); }
-                let h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-                let m = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
-                let s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
-                document.getElementById("count").innerText = `${h}:${m}:${s}`;
-            };
-            setInterval(countdown, 1000); countdown();
+<div
+class="choice"
+data-count="40">
+40
+</div>
 
-            try {
-                const snap = await getDocs(collection(db, "students"));
-                let p = []; snap.forEach(d => p.push({ n: d.id, x: d.data().xp || 0 }));
-                p.sort((a, b) => b.x - a.x);
-                document.getElementById("leaderboard-body").innerHTML = p.slice(0, 5).map((u, i) => `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding: 12px 0; font-family:'Fira Code'; font-size:12px; color:var(--accent);">0${i+1}</td>
-                        <td style="padding: 12px 0; font-weight: 600;">${u.n}</td>
-                        <td style="padding: 12px 0; text-align: right; color: var(--success); font-family:'Fira Code'; font-size:12px;">${u.x}XP</td>
-                    </tr>
-                `).join('');
-            } catch(e) {}
-        }
-    </script>
+<div
+class="choice"
+data-count="60">
+60
+</div>
+
+</div>
+
+
+<div class="config-title">
+CATEGORY
+</div>
+
+<select id="categorySelect">
+
+<option value="All">
+All Computer Topics
+</option>
+
+</select>
+
+
+<div class="config-title">
+DIFFICULTY
+</div>
+
+<div class="choice-grid">
+
+<div
+class="choice active"
+data-level="Mixed">
+Mixed
+</div>
+
+<div
+class="choice"
+data-level="Easy">
+Easy
+</div>
+
+<div
+class="choice"
+data-level="Hard">
+Hard
+</div>
+
+</div>
+
+
+<button
+class="start-btn"
+onclick="startExam()">
+
+START EXAM
+
+<i class="ri-arrow-right-line"></i>
+
+</button>
+
+
+<div class="info-row">
+
+<div class="info">
+
+<b>1000+</b>
+<span>QUESTIONS</span>
+
+</div>
+
+<div class="info">
+
+<b>40 MIN</b>
+<span>TIME</span>
+
+</div>
+
+<div class="info">
+
+<b>XP</b>
+<span>REWARD</span>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================
+     EXAM
+========================= -->
+
+<div
+id="examScreen"
+class="card hidden">
+
+
+<div class="exam-top">
+
+<div
+id="qCount"
+class="q-count">
+QUESTION 01 / 40
+</div>
+
+<div
+id="timerBox"
+class="timer">
+
+<i class="ri-timer-line"></i>
+
+<span id="timer">
+40:00
+</span>
+
+</div>
+
+</div>
+
+
+<div class="progress">
+
+<div
+id="progressFill"
+class="progress-fill">
+</div>
+
+</div>
+
+
+<div
+id="category"
+class="category">
+PROGRAMMING
+</div>
+
+
+<div
+id="question"
+class="question">
+Loading...
+</div>
+
+
+<div
+id="options"
+class="options">
+</div>
+
+
+<div
+id="explanation"
+class="explanation">
+</div>
+
+
+<div class="bottom">
+
+<button
+id="nextBtn"
+class="next"
+disabled>
+
+Next
+
+<i class="ri-arrow-right-line"></i>
+
+</button>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================
+     RESULT
+========================= -->
+
+<div
+id="resultScreen"
+class="card result hidden">
+
+
+<div class="result-icon">
+
+<i class="ri-checkbox-circle-fill"></i>
+
+</div>
+
+
+<h2>
+Exam Complete
+</h2>
+
+
+<p class="result-sub">
+Terminal synchronization completed.
+</p>
+
+
+<div
+id="score"
+class="score">
+0%
+</div>
+
+
+<div class="result-grid">
+
+<div class="result-stat">
+
+<b id="correctStat">
+0
+</b>
+
+<span>
+CORRECT
+</span>
+
+</div>
+
+
+<div class="result-stat">
+
+<b id="wrongStat">
+0
+</b>
+
+<span>
+WRONG
+</span>
+
+</div>
+
+
+<div class="result-stat">
+
+<b id="timeStat">
+0m
+</b>
+
+<span>
+TIME
+</span>
+
+</div>
+
+</div>
+
+
+<div
+id="xpStat"
+style="
+font-family:'Fira Code';
+color:#34d399;
+font-size:13px;
+">
++0 XP
+</div>
+
+
+<div class="rank-title">
+SYSTEM RANKINGS
+</div>
+
+
+<div id="leaderboard">
+Loading...
+</div>
+
+
+<button
+class="restart"
+onclick="location.reload()">
+
+BACK TO TERMINAL
+
+<i class="ri-refresh-line"></i>
+
+</button>
+
+</div>
+
+</div>
+
+
+
+<script type="module">
+
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+import {
+initializeApp
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+import {
+getFirestore,
+doc,
+updateDoc,
+increment,
+collection,
+getDocs
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+const firebaseConfig={
+
+apiKey:
+"AIzaSyCEfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+
+authDomain:
+"black-terminal-f2c91.firebaseapp.com",
+
+projectId:
+"black-terminal-f2c91",
+
+storageBucket:
+"black-terminal-f2c91.appspot.com",
+
+messagingSenderId:
+"552489994197",
+
+appId:
+"1:552489994197:web:7662331264c334ffbadf5c"
+
+};
+
+
+const app=
+initializeApp(firebaseConfig);
+
+const db=
+getFirestore(app);
+
+
+/* =========================================================
+   STUDENT
+========================================================= */
+
+const student=
+localStorage.getItem("studentName")
+||"Root_User";
+
+document.getElementById("user-name").textContent=
+student;
+
+
+/* =========================================================
+   QUESTION DATA
+   102 TOPICS × 10 FORMATS = 1020+ MCQs
+========================================================= */
+
+const facts=[
+
+["HTML","Web","markup language used to structure web pages","structuring web page content"],
+["CSS","Web","style sheet language used to control presentation","styling web pages"],
+["JavaScript","Programming","scripting language commonly used to add interactivity to web pages","browser interactivity"],
+["Python","Programming","high-level programming language known for readable syntax","automation and application development"],
+["Java","Programming","object-oriented programming language designed for portability","enterprise application development"],
+["C","Programming","procedural programming language widely used for systems programming","low-level and systems programming"],
+["C++","Programming","general-purpose language that extends C with object-oriented features","performance-focused software"],
+["C#","Programming","programming language developed by Microsoft for the .NET ecosystem","Windows and .NET development"],
+["SQL","Database","language used to query and manipulate relational data","working with relational databases"],
+["Git","DevOps","distributed version control system","tracking source-code changes"],
+["GitHub","DevOps","platform for hosting and collaborating on Git repositories","remote code collaboration"],
+["Docker","DevOps","platform for packaging applications in containers","containerized application deployment"],
+["Kubernetes","DevOps","system for orchestrating containerized workloads","container orchestration"],
+["Linux","Operating System","open-source operating-system kernel","server and embedded systems"],
+["Android","Mobile","mobile operating system built around the Linux kernel","mobile devices"],
+["iOS","Mobile","Apple mobile operating system","iPhone and iPad software"],
+["Windows","Operating System","Microsoft desktop operating system","personal computers"],
+["macOS","Operating System","Apple desktop operating system","Mac computers"],
+["Ubuntu","Operating System","Linux distribution based on Debian","desktop and server Linux"],
+["MySQL","Database","open-source relational database management system","storing relational application data"],
+["PostgreSQL","Database","open-source object-relational database system","advanced relational data workloads"],
+["MongoDB","Database","document-oriented NoSQL database","storing JSON-like documents"],
+["Redis","Database","in-memory data structure store","caching and fast data access"],
+["Firebase","Cloud","Google platform providing backend and app-development services","authentication and realtime app services"],
+["Firestore","Cloud","cloud-hosted NoSQL document database from Firebase","storing application documents"],
+["Node.js","Runtime","JavaScript runtime built on the V8 engine","server-side JavaScript"],
+["Express.js","Web","minimal Node.js web framework","building HTTP APIs"],
+["React","Web","JavaScript library for building user interfaces","component-based web interfaces"],
+["Angular","Web","TypeScript-based web application framework","structured single-page applications"],
+["Vue.js","Web","progressive JavaScript framework for user interfaces","building interactive front ends"],
+["Bootstrap","Web","front-end CSS framework with reusable UI components","responsive web design"],
+["Tailwind CSS","Web","utility-first CSS framework","rapid interface styling"],
+["REST","Web","architectural style for networked APIs using standard HTTP semantics","designing web APIs"],
+["JSON","Data","text-based format for structured data exchange","exchanging API data"],
+["XML","Data","markup-based format for structured data","document and data exchange"],
+["HTTP","Networking","application-layer protocol used for web communication","transferring web resources"],
+["HTTPS","Networking","HTTP protected with TLS encryption","secure web communication"],
+["DNS","Networking","system that maps domain names to network addresses","resolving domain names"],
+["DHCP","Networking","protocol that automatically provides network configuration","assigning IP configuration"],
+["TCP","Networking","connection-oriented transport protocol","reliable network delivery"],
+["UDP","Networking","connectionless transport protocol","low-latency network communication"],
+["IP","Networking","protocol used for addressing and routing packets","network packet addressing"],
+["IPv4","Networking","32-bit Internet Protocol addressing scheme","traditional IP addressing"],
+["IPv6","Networking","128-bit Internet Protocol addressing scheme","large-scale IP addressing"],
+["Router","Networking","device that forwards packets between networks","connecting different networks"],
+["Switch","Networking","network device that forwards frames within a LAN","connecting devices in a local network"],
+["Firewall","Security","system that filters network traffic according to rules","controlling network access"],
+["VPN","Security","technology that creates an encrypted tunnel over a network","private remote network access"],
+["TLS","Security","cryptographic protocol used to secure network communications","encrypting connections"],
+["SSH","Security","secure protocol for remote command-line access","administering remote systems"],
+["AES","Security","symmetric encryption standard","encrypting stored or transmitted data"],
+["RSA","Security","public-key cryptographic algorithm","digital signatures and key exchange"],
+["Hashing","Security","one-way transformation of data into a digest","password and integrity checking"],
+["MFA","Security","authentication approach requiring multiple factors","strengthening account login security"],
+["Phishing","Security","social-engineering attack that tricks users into revealing information","stealing credentials"],
+["Malware","Security","general term for malicious software","compromising systems"],
+["Antivirus","Security","software designed to detect and handle malicious programs","malware protection"],
+["Burp Suite","Security","web security testing platform","testing web application security"],
+["Wireshark","Networking","packet analysis tool","inspecting network traffic"],
+["Nmap","Security","network discovery and security auditing tool","scanning networks and services"],
+["API","Web","interface that lets software components communicate","integrating software services"],
+["SDK","Development","set of tools and libraries for building software for a platform","platform-specific development"],
+["IDE","Development","integrated environment for writing and debugging code","software development"],
+["Compiler","Programming","program that translates source code into another form such as machine code","building compiled programs"],
+["Interpreter","Programming","program that executes source code or an intermediate representation","running interpreted programs"],
+["Algorithm","Computer Science","finite procedure for solving a problem","problem solving"],
+["Variable","Programming","named storage location whose value can change","holding program data"],
+["Function","Programming","reusable block of code that performs a task","organizing reusable logic"],
+["Loop","Programming","control structure that repeats instructions","repeating program operations"],
+["Array","Data Structure","ordered collection of elements accessed by index","storing indexed data"],
+["Stack","Data Structure","last-in-first-out data structure","managing nested operations"],
+["Queue","Data Structure","first-in-first-out data structure","processing items in arrival order"],
+["Linked List","Data Structure","sequence of nodes connected by links","dynamic sequential storage"],
+["Tree","Data Structure","hierarchical data structure composed of nodes","representing hierarchical data"],
+["Graph","Data Structure","collection of vertices connected by edges","modeling relationships"],
+["Binary Search","Algorithm","search technique that repeatedly halves a sorted search range","fast lookup in sorted data"],
+["Sorting","Algorithm","process of arranging data according to an order","organizing records"],
+["Recursion","Programming","technique where a function calls itself on smaller subproblems","solving recursive problems"],
+["OOP","Programming","programming paradigm based on objects and their behavior","organizing large programs"],
+["Class","Programming","blueprint for creating objects in object-oriented programming","defining object structure"],
+["Object","Programming","runtime instance of a class or structured entity","representing data and behavior"],
+["Inheritance","Programming","OOP mechanism where one class derives features from another","reusing class behavior"],
+["Polymorphism","Programming","OOP concept allowing one interface to represent different implementations","flexible object-oriented design"],
+["Encapsulation","Programming","bundling data with controlled access to its implementation","protecting object state"],
+["Abstraction","Programming","hiding implementation details behind essential interfaces","simplifying complex systems"],
+["RAM","Hardware","volatile memory used for active programs and data","temporary working storage"],
+["ROM","Hardware","non-volatile memory traditionally used for firmware","storing persistent firmware"],
+["CPU","Hardware","processor that executes program instructions","general computation"],
+["GPU","Hardware","processor optimized for parallel graphics and compute workloads","graphics and parallel computation"],
+["SSD","Hardware","solid-state storage device with no spinning platters","fast persistent storage"],
+["HDD","Hardware","magnetic storage device using spinning disks","mass persistent storage"],
+["BIOS","Hardware","firmware interface used to initialize hardware on traditional PCs","starting computer hardware"],
+["UEFI","Hardware","modern firmware interface that replaces legacy BIOS functions","booting modern PCs"],
+["Cache","Hardware","small fast memory used to keep frequently accessed data","reducing access latency"],
+["Motherboard","Hardware","main circuit board connecting computer components","connecting system hardware"],
+["HTTP 404","Web","status code indicating a requested resource was not found","reporting missing web resources"],
+["HTTP 500","Web","status code indicating an internal server error","reporting server-side failures"],
+["Port 80","Networking","standard TCP port commonly associated with HTTP","web HTTP services"],
+["Port 443","Networking","standard TCP port commonly associated with HTTPS","secure web services"],
+["Cloud Computing","Cloud","delivery of computing resources over the internet","on-demand infrastructure"],
+["Virtual Machine","Cloud","software-based computer running an operating system in isolation","running isolated operating systems"],
+["Serverless","Cloud","cloud execution model where infrastructure management is abstracted from developers","event-driven cloud functions"]
+
+];
+
+
+/* =========================================================
+   BUILD 1020+ QUESTIONS
+========================================================= */
+
+const categories=
+[...new Set(facts.map(x=>x[1]))];
+
+
+const questionBank=[];
+
+
+function shuffle(arr){
+
+return [...arr]
+.sort(()=>Math.random()-.5);
+
+}
+
+
+function pickWrong(index,field,count=3){
+
+const values=[];
+
+for(let i=0;i<facts.length;i++){
+
+if(i!==index){
+
+const v=facts[i][field];
+
+if(!values.includes(v))
+values.push(v);
+
+}
+
+}
+
+return shuffle(values).slice(0,count);
+
+}
+
+
+facts.forEach((f,index)=>{
+
+const name=f[0];
+const cat=f[1];
+const definition=f[2];
+const use=f[3];
+
+
+/* Q1 */
+
+questionBank.push({
+q:`What is ${name}?`,
+a:definition,
+d:pickWrong(index,2),
+cat,
+level:"Easy"
+});
+
+
+/* Q2 */
+
+questionBank.push({
+q:`Which category does ${name} belong to?`,
+a:cat,
+d:pickWrong(index,1),
+cat,
+level:"Easy"
+});
+
+
+/* Q3 */
+
+questionBank.push({
+q:`What is a common use of ${name}?`,
+a:use,
+d:pickWrong(index,3),
+cat,
+level:"Easy"
+});
+
+
+/* Q4 */
+
+questionBank.push({
+q:`Which technology is described as: "${definition}"?`,
+a:name,
+d:pickWrong(index,0),
+cat,
+level:"Medium"
+});
+
+
+/* Q5 */
+
+questionBank.push({
+q:`Which technology is mainly associated with ${use}?`,
+a:name,
+d:pickWrong(index,0),
+cat,
+level:"Medium"
+});
+
+
+/* Q6 */
+
+questionBank.push({
+q:`Which term best matches this definition: "${definition}"?`,
+a:name,
+d:pickWrong(index,0),
+cat,
+level:"Medium"
+});
+
+
+/* Q7 */
+
+questionBank.push({
+q:`A developer needs ${use}. Which technology could be relevant?`,
+a:name,
+d:pickWrong(index,0),
+cat,
+level:"Medium"
+});
+
+
+/* Q8 */
+
+questionBank.push({
+q:`Which statement correctly describes ${name}?`,
+a:definition,
+d:pickWrong(index,2),
+cat,
+level:"Hard"
+});
+
+
+/* Q9 */
+
+questionBank.push({
+q:`Which option identifies ${name} correctly?`,
+a:`${name} is a ${cat} technology`,
+d:shuffle([
+`It is primarily a cooking technology`,
+`It is a biological classification`,
+`It is unrelated to computing`
+]),
+cat,
+level:"Hard"
+});
+
+
+/* Q10 */
+
+questionBank.push({
+q:`In computer technology, ${name} is best connected with:`,
+a:use,
+d:pickWrong(index,3),
+cat,
+level:"Hard"
+});
+
+});
+
+
+/*
+102 facts × 10 = 1020 questions
+*/
+
+console.log(
+"Question bank:",
+questionBank.length
+);
+
+
+/* =========================================================
+   DAILY LOCK
+========================================================= */
+
+const today=
+new Date().toDateString();
+
+const dailyKey=
+"daily_done_"+student;
+
+if(
+localStorage.getItem(dailyKey)
+===today
+){
+
+showAlreadyCompleted();
+
+}
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+let selectedCount=20;
+
+let selectedCategory="All";
+
+let selectedLevel="Mixed";
+
+let questions=[];
+
+let index=0;
+
+let score=0;
+
+let wrong=0;
+
+let locked=false;
+
+let timerInterval=null;
+
+let timeRemaining=40*60;
+
+let startTime=0;
+
+
+/* =========================================================
+   CATEGORY SELECT
+========================================================= */
+
+const categorySelect=
+document.getElementById(
+"categorySelect"
+);
+
+
+categories
+.sort()
+.forEach(cat=>{
+
+const option=
+document.createElement("option");
+
+option.value=cat;
+
+option.textContent=cat;
+
+categorySelect.appendChild(option);
+
+});
+
+
+categorySelect.onchange=()=>{
+
+selectedCategory=
+categorySelect.value;
+
+};
+
+
+/* =========================================================
+   QUESTION COUNT BUTTONS
+========================================================= */
+
+document
+.querySelectorAll("[data-count]")
+.forEach(btn=>{
+
+btn.onclick=()=>{
+
+document
+.querySelectorAll("[data-count]")
+.forEach(x=>
+x.classList.remove("active")
+);
+
+btn.classList.add("active");
+
+selectedCount=
+Number(btn.dataset.count);
+
+};
+
+});
+
+
+/* =========================================================
+   LEVEL BUTTONS
+========================================================= */
+
+document
+.querySelectorAll("[data-level]")
+.forEach(btn=>{
+
+btn.onclick=()=>{
+
+document
+.querySelectorAll("[data-level]")
+.forEach(x=>
+x.classList.remove("active")
+);
+
+btn.classList.add("active");
+
+selectedLevel=
+btn.dataset.level;
+
+};
+
+});
+
+
+/* =========================================================
+   START EXAM
+========================================================= */
+
+window.startExam=function(){
+
+let pool=
+questionBank;
+
+
+if(selectedCategory!=="All"){
+
+pool=
+pool.filter(
+q=>q.cat===selectedCategory
+);
+
+}
+
+
+if(selectedLevel!=="Mixed"){
+
+pool=
+pool.filter(
+q=>q.level===selectedLevel
+);
+
+}
+
+
+pool=
+shuffle(pool);
+
+
+/*
+Don't allow more questions
+than available.
+*/
+
+questions=
+pool.slice(
+0,
+Math.min(
+selectedCount,
+pool.length
+)
+);
+
+
+if(!questions.length){
+
+alert(
+"No questions available for this selection."
+);
+
+return;
+
+}
+
+
+document
+.getElementById("startScreen")
+.classList.add("hidden");
+
+
+document
+.getElementById("examScreen")
+.classList.remove("hidden");
+
+
+startTime=
+Date.now();
+
+timeRemaining=
+40*60;
+
+index=0;
+score=0;
+wrong=0;
+
+showQuestion();
+
+startTimer();
+
+};
+
+
+/* =========================================================
+   SHOW QUESTION
+========================================================= */
+
+function showQuestion(){
+
+if(index>=questions.length){
+
+finishExam();
+
+return;
+
+}
+
+
+locked=false;
+
+
+document
+.getElementById("nextBtn")
+.disabled=true;
+
+
+const q=
+questions[index];
+
+
+document
+.getElementById("qCount")
+.textContent=
+`QUESTION ${String(index+1).padStart(2,"0")} / ${questions.length}`;
+
+
+document
+.getElementById("category")
+.textContent=
+q.cat+" • "+q.level;
+
+
+document
+.getElementById("question")
+.textContent=
+q.q;
+
+
+document
+.getElementById("progressFill")
+.style.width=
+((index+1)/questions.length*100)+"%";
+
+
+document
+.getElementById("explanation")
+.style.display=
+"none";
+
+
+/*
+Options
+*/
+
+const options=
+shuffle([
+q.a,
+...q.d
+]);
+
+
+const labels=[
+"A","B","C","D"
+];
+
+
+document
+.getElementById("options")
+.innerHTML=
+options.map((text,i)=>`
+
+<div
+class="opt"
+data-value="${escapeHTML(text)}"
+onclick="selectOption(this)">
+
+<div class="opt-key">
+${labels[i]}
+</div>
+
+<div>
+${escapeHTML(text)}
+</div>
+
+</div>
+
+`).join("");
+
+
+/*
+Store correct answer text
+*/
+
+window.currentCorrect=
+q.a;
+
+
+/*
+Keyboard
+*/
+
+window.currentOptions=
+options;
+
+}
+
+
+/* =========================================================
+   SELECT ANSWER
+========================================================= */
+
+window.selectOption=
+function(el){
+
+if(locked)
+return;
+
+locked=true;
+
+
+const answer=
+el.innerText
+.replace(/^[A-D]\s*/,"")
+.trim();
+
+
+const correct=
+window.currentCorrect;
+
+
+if(answer===correct){
+
+el.classList.add("correct");
+
+score++;
+
+if(navigator.vibrate)
+navigator.vibrate(45);
+
+}else{
+
+el.classList.add("wrong");
+
+wrong++;
+
+
+/*
+Highlight correct
+*/
+
+document
+.querySelectorAll(".opt")
+.forEach(option=>{
+
+const text=
+option.innerText
+.replace(/^[A-D]\s*/,"")
+.trim();
+
+if(text===correct)
+option.classList.add("correct");
+
+});
+
+}
+
+
+document
+.querySelectorAll(".opt")
+.forEach(x=>
+x.classList.add("locked")
+);
+
+
+document
+.getElementById("nextBtn")
+.disabled=false;
+
+
+/*
+Explanation
+*/
+
+const exp=
+document.getElementById("explanation");
+
+exp.innerHTML=
+`<b>Correct answer:</b> ${escapeHTML(correct)}`;
+
+exp.style.display=
+"block";
+
+};
+
+
+/* =========================================================
+   NEXT
+========================================================= */
+
+document
+.getElementById("nextBtn")
+.onclick=()=>{
+
+index++;
+
+showQuestion();
+
+};
+
+
+/* =========================================================
+   KEYBOARD A B C D
+========================================================= */
+
+document.addEventListener(
+"keydown",
+e=>{
+
+if(
+document
+.getElementById("examScreen")
+.classList.contains("hidden")
+)
+return;
+
+
+if(locked)
+return;
+
+
+const map={
+a:0,
+b:1,
+c:2,
+d:3
+};
+
+
+const key=
+e.key.toLowerCase();
+
+
+if(
+map[key]!==undefined
+){
+
+const options=
+document.querySelectorAll(".opt");
+
+if(options[map[key]]){
+
+selectOption(
+options[map[key]]
+);
+
+}
+
+}
+
+});
+
+
+/* =========================================================
+   TIMER
+========================================================= */
+
+function startTimer(){
+
+clearInterval(timerInterval);
+
+
+timerInterval=
+setInterval(()=>{
+
+timeRemaining--;
+
+
+const mins=
+Math.floor(
+timeRemaining/60
+);
+
+
+const secs=
+timeRemaining%60;
+
+
+document
+.getElementById("timer")
+.textContent=
+`${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+
+
+if(timeRemaining<=60){
+
+document
+.getElementById("timerBox")
+.classList.add("warning");
+
+}
+
+
+if(timeRemaining<=0){
+
+clearInterval(timerInterval);
+
+finishExam();
+
+}
+
+},1000);
+
+}
+
+
+/* =========================================================
+   FINISH
+========================================================= */
+
+async function finishExam(){
+
+clearInterval(timerInterval);
+
+
+const totalTime=
+Math.floor(
+(Date.now()-startTime)/1000
+);
+
+
+const mins=
+Math.floor(totalTime/60);
+
+
+const secs=
+totalTime%60;
+
+
+const timeText=
+`${mins}m ${secs}s`;
+
+
+const accuracy=
+Math.round(
+(score/questions.length)*100
+);
+
+
+const xp=
+score*10;
+
+
+/*
+Daily lock
+*/
+
+localStorage.setItem(
+dailyKey,
+today
+);
+
+
+localStorage.setItem(
+"last_score_"+student,
+score
+);
+
+
+localStorage.setItem(
+"last_time_"+student,
+timeText
+);
+
+
+/*
+Confetti
+*/
+
+if(accuracy>=70){
+
+confetti({
+
+particleCount:140,
+
+spread:80,
+
+origin:{y:.6}
+
+});
+
+}
+
+
+/*
+Firebase XP
+*/
+
+if(student!=="Root_User"){
+
+try{
+
+await updateDoc(
+
+doc(
+db,
+"students",
+student
+),
+
+{
+
+xp:
+increment(xp),
+
+lastTime:
+timeText,
+
+lastExamScore:
+score,
+
+lastExamAccuracy:
+accuracy
+
+}
+
+);
+
+}catch(error){
+
+console.error(
+"Firebase XP error",
+error
+);
+
+}
+
+}
+
+
+showResult(
+accuracy,
+score,
+wrong,
+timeText,
+xp
+);
+
+}
+
+
+/* =========================================================
+   RESULT
+========================================================= */
+
+async function showResult(
+accuracy,
+correct,
+wrongCount,
+timeText,
+xp
+){
+
+document
+.getElementById("examScreen")
+.classList.add("hidden");
+
+
+document
+.getElementById("resultScreen")
+.classList.remove("hidden");
+
+
+document
+.getElementById("score")
+.textContent=
+accuracy+"%";
+
+
+document
+.getElementById("correctStat")
+.textContent=
+correct;
+
+
+document
+.getElementById("wrongStat")
+.textContent=
+wrongCount;
+
+
+document
+.getElementById("timeStat")
+.textContent=
+timeText;
+
+
+document
+.getElementById("xpStat")
+.textContent=
+`+${xp} XP`;
+
+
+loadLeaderboard();
+
+}
+
+
+/* =========================================================
+   LEADERBOARD
+========================================================= */
+
+async function loadLeaderboard(){
+
+const box=
+document.getElementById(
+"leaderboard"
+);
+
+
+try{
+
+const snap=
+await getDocs(
+collection(db,"students")
+);
+
+
+const users=[];
+
+
+snap.forEach(d=>{
+
+const data=
+d.data();
+
+
+users.push({
+
+name:d.id,
+
+xp:data.xp||0
+
+});
+
+});
+
+
+users.sort(
+(a,b)=>b.xp-a.xp
+);
+
+
+box.innerHTML=
+users
+.slice(0,5)
+.map((u,i)=>`
+
+<div class="rank-row">
+
+<div class="rank-num">
+${String(i+1).padStart(2,"0")}
+</div>
+
+<div>
+${escapeHTML(u.name)}
+</div>
+
+<div class="rank-xp">
+${u.xp} XP
+</div>
+
+</div>
+
+`)
+.join("");
+
+
+if(!users.length){
+
+box.innerHTML=
+`<div style="color:#64748b;font-size:12px;">
+No ranking data yet.
+</div>`;
+
+}
+
+}catch(error){
+
+console.error(error);
+
+box.innerHTML=
+`<div style="color:#64748b;font-size:12px;">
+Leaderboard unavailable.
+</div>`;
+
+}
+
+}
+
+
+/* =========================================================
+   ALREADY COMPLETED
+========================================================= */
+
+function showAlreadyCompleted(){
+
+document
+.getElementById("startScreen")
+.innerHTML=`
+
+<div class="hero-icon">
+
+<i class="ri-lock-2-line"></i>
+
+</div>
+
+<h1>
+Daily Exam Completed
+</h1>
+
+<p>
+You have already completed today's
+Terminal Exam.
+</p>
+
+<div
+style="
+margin:22px 0;
+padding:18px;
+border-radius:16px;
+background:rgba(255,255,255,.03);
+border:1px solid rgba(255,255,255,.08);
+">
+
+<div
+style="
+font-size:10px;
+color:#64748b;
+letter-spacing:1px;
+">
+
+TODAY'S SCORE
+
+</div>
+
+<div
+style="
+font-family:'Fira Code';
+font-size:28px;
+color:#06b6d4;
+margin-top:6px;
+">
+
+${localStorage.getItem("last_score_"+student)||0}
+
+</div>
+
+<div
+style="
+font-size:11px;
+color:#94a3b8;
+margin-top:5px;
+">
+
+Time:
+${localStorage.getItem("last_time_"+student)||"Unknown"}
+
+</div>
+
+</div>
+
+<p style="
+font-size:11px;
+color:#64748b;
+">
+
+Next exam will unlock automatically tomorrow.
+
+</p>
+
+`;
+
+}
+
+
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function escapeHTML(value){
+
+return String(value??"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+</script>
+
 </body>
 </html>
