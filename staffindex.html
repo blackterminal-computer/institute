@@ -1682,6 +1682,20 @@ body{
     font-size:9px;
 }
 
+/* TASK RIGHT SIDE */
+
+.task-right{
+    display:flex;
+
+    align-items:center;
+
+    justify-content:flex-end;
+
+    gap:7px;
+
+    flex-shrink:0;
+}
+
 /* TASK AMOUNT */
 
 .task-amount{
@@ -1746,6 +1760,11 @@ body{
 
     border-color:
         rgba(48,209,88,.18);
+}
+
+.task-action-btn:disabled{
+    cursor:default;
+    opacity:.95;
 }
 
 /* INPUT */
@@ -1948,6 +1967,7 @@ input:focus{
         padding:7px 8px;
         font-size:7px;
     }
+
 }
 
 </style>
@@ -2852,6 +2872,12 @@ let isAttendanceMarkedToday =
 let currentSalaryBalance =
     0;
 
+let currentDailyWage =
+    500;
+
+let currentTaskCount =
+    0;
+
 let historyLoaded =
     false;
 
@@ -3439,7 +3465,7 @@ function renderSalaryActivity(
                     "fa-pen-to-square";
 
                 title =
-                    "Salary Modified";
+                    "Salary Modified`;
 
 
                 if(
@@ -4188,17 +4214,14 @@ function markAttendance(){
                                 today
                             ){
 
-                                staff.salary =
-                                    (
-                                        staff.salary ||
-                                        0
-                                    )
-                                    +
-                                    (
-                                        staff.perDayWage ||
-                                        500
-                                    );
-
+                                /*
+                                 * IMPORTANT:
+                                 * Daily wage is NOT added here.
+                                 *
+                                 * Earnings are now generated
+                                 * only when Priority Assignments
+                                 * are completed.
+                                 */
 
                                 staff.streak =
                                     (
@@ -4720,6 +4743,51 @@ function getDayName(
 
 /* TASKS */
 
+function getTaskReward(){
+
+    if(
+        currentTaskCount <= 0
+    ){
+
+        return 0;
+
+    }
+
+
+    return (
+        currentDailyWage /
+        currentTaskCount
+    );
+
+}
+
+
+function formatMoney(
+    amount
+){
+
+    const rounded =
+        Math.round(
+            Number(amount || 0) * 100
+        ) / 100;
+
+
+    return rounded
+        .toLocaleString(
+            "en-IN",
+            {
+                minimumFractionDigits:
+                    rounded % 1 === 0
+                    ? 0
+                    : 2,
+
+                maximumFractionDigits:2
+            }
+        );
+
+}
+
+
 function loadTasks(){
 
     db.ref(
@@ -4736,6 +4804,10 @@ function loadTasks(){
 
 
             if(!snap.exists()){
+
+                currentTaskCount =
+                    0;
+
 
                 container.innerHTML = `
 
@@ -4771,19 +4843,56 @@ function loadTasks(){
             }
 
 
-            container.innerHTML =
-                "";
+            const tasks = [];
 
 
             snap.forEach(
                 child=>{
 
+                    tasks.push({
+
+                        id:
+                            child.key,
+
+                        data:
+                            child.val() || {}
+
+                    });
+
+                }
+            );
+
+
+            /*
+             * The full daily wage is divided equally
+             * across all Priority Assignments.
+             *
+             * Completed tasks remain part of the
+             * calculation so the task amount does not
+             * change after another task is completed.
+             */
+
+            currentTaskCount =
+                tasks.length;
+
+
+            const taskReward =
+                getTaskReward();
+
+
+            container.innerHTML =
+                "";
+
+
+            tasks.forEach(
+                item=>{
+
                     const taskId =
-                        child.key;
+                        item.id;
 
 
                     const task =
-                        child.val() || {};
+                        item.data;
 
 
                     const isDone =
@@ -4796,15 +4905,6 @@ function loadTasks(){
                             task.task ||
                             "Untitled Task"
                         );
-
-
-                    /*
-                     * Every task automatically
-                     * carries a fixed reward of ₹100.
-                     */
-
-                    const taskAmount =
-                        100;
 
 
                     container.innerHTML += `
@@ -4875,53 +4975,59 @@ function loadTasks(){
 
 
                             <div
-                                class="task-amount"
-                                title="Task Reward"
+                                class="task-right"
                             >
 
-                                ₹${taskAmount}
+                                <div
+                                    class="task-amount"
+                                    title="Equal share of daily wage"
+                                >
 
-                            </div>
+                                    ₹${formatMoney(taskReward)}
+
+                                </div>
 
 
-                            <button
-                                class="
-                                    task-action-btn
+                                <button
+                                    class="
+                                        task-action-btn
+                                        ${
+                                            isDone
+                                            ?
+                                            "completed"
+                                            :
+                                            ""
+                                        }
+                                    "
+
                                     ${
                                         isDone
                                         ?
-                                        "completed"
+                                        "disabled"
                                         :
-                                        ""
+                                        `onclick="completeTask('${taskId}')"`
                                     }
-                                "
+                                >
 
-                                ${
-                                    isDone
-                                    ?
-                                    "disabled"
-                                    :
-                                    `onclick="completeTask('${taskId}')"`
-                                }
-                            >
+                                    ${
+                                        isDone
+                                        ?
+                                        `
+                                        <i
+                                            class="fas fa-check"
+                                        ></i>
 
-                                ${
-                                    isDone
-                                    ?
-                                    `
-                                    <i
-                                        class="fas fa-check"
-                                    ></i>
+                                        DONE
+                                        `
+                                        :
+                                        `
+                                        MARK DONE
+                                        `
+                                    }
 
-                                    DONE
-                                    `
-                                    :
-                                    `
-                                    MARK DONE
-                                    `
-                                }
+                                </button>
 
-                            </button>
+                            </div>
 
                         </div>
 
@@ -4944,7 +5050,7 @@ function completeTask(
 
     if(
         !confirm(
-            "Have you completed this task?"
+            "Have you really completed this task?"
         )
     ){
 
@@ -4953,34 +5059,138 @@ function completeTask(
     }
 
 
-    db.ref(
-        `tasks/${staffId}/${taskId}`
-    )
-    .update({
-
-        status:
-            "Completed",
-
-        completedAt:
-            Date.now(),
-
-        amount:
-            100
-
-    })
-    .then(()=>{
-
-        showToast(
-            "Task marked as completed. ₹100 earned."
+    const taskRef =
+        db.ref(
+            `tasks/${staffId}/${taskId}`
         );
 
-    })
-    .catch(
-        error=>{
 
-            alert(
-                "Task update failed: "+
-                error.message
+    /*
+     * First transaction locks the task completion.
+     * If another request already completed the task,
+     * no second earning is generated.
+     */
+
+    taskRef.transaction(
+        task=>{
+
+            if(
+                !task
+                ||
+                task.status ===
+                "Completed"
+            ){
+
+                return;
+
+            }
+
+
+            const reward =
+                getTaskReward();
+
+
+            task.status =
+                "Completed";
+
+
+            task.completedAt =
+                Date.now();
+
+
+            task.amount =
+                reward;
+
+
+            return task;
+
+        },
+        (error, committed)=>{
+
+            if(error){
+
+                console.error(
+                    "Task completion transaction:",
+                    error
+                );
+
+
+                alert(
+                    "Task completion failed: "+
+                    error.message
+                );
+
+                return;
+
+            }
+
+
+            if(!committed){
+
+                showToast(
+                    "This task has already been completed."
+                );
+
+                return;
+
+            }
+
+
+            const reward =
+                getTaskReward();
+
+
+            db.ref(
+                `staff/${staffId}`
+            )
+            .transaction(
+                staff=>{
+
+                    if(!staff){
+
+                        return staff;
+
+                    }
+
+
+                    staff.salary =
+                        Number(
+                            staff.salary ||
+                            0
+                        )
+                        +
+                        Number(
+                            reward
+                        );
+
+
+                    return staff;
+
+                },
+                (salaryError)=>{
+
+                    if(salaryError){
+
+                        console.error(
+                            "Salary transaction:",
+                            salaryError
+                        );
+
+
+                        alert(
+                            "Task completed, but earning update failed. Please contact Admin."
+                        );
+
+                        return;
+
+                    }
+
+
+                    showToast(
+                        `Task completed. ₹${formatMoney(reward)} earned.`
+                    );
+
+                }
             );
 
         }
@@ -5609,7 +5819,7 @@ function initSystem(){
                 );
 
 
-            const dailyWage =
+            currentDailyWage =
                 Number(
                     value.perDayWage ||
                     500
@@ -5619,19 +5829,19 @@ function initSystem(){
             document.getElementById(
                 "daily-rate"
             ).innerText =
-                `₹${dailyWage}`;
+                `₹${formatMoney(currentDailyWage)}`;
 
 
             document.getElementById(
                 "total-earning"
             ).innerText =
-                `₹${currentSalaryBalance}`;
+                `₹${formatMoney(currentSalaryBalance)}`;
 
 
             document.getElementById(
                 "activity-current-balance"
             ).innerText =
-                `₹${currentSalaryBalance}`;
+                `₹${formatMoney(currentSalaryBalance)}`;
 
 
             document.getElementById(
@@ -5646,7 +5856,7 @@ function initSystem(){
                     (
                         currentSalaryBalance /
                         (
-                            dailyWage *
+                            currentDailyWage *
                             25
                         )
                     ) *
@@ -5659,6 +5869,22 @@ function initSystem(){
                 "salary-progress"
             ).style.width =
                 percent+"%";
+
+
+            /*
+             * Refresh task amounts whenever
+             * the Daily Wage changes.
+             */
+
+            if(
+                document.getElementById(
+                    "task-list"
+                )
+            ){
+
+                loadTasks();
+
+            }
 
 
             db.ref(
