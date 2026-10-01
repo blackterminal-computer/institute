@@ -339,7 +339,7 @@ button{cursor:pointer}
 
 table{
   width:100%;
-  min-width:700px;
+  min-width:780px;
   border-collapse:collapse;
 }
 
@@ -384,6 +384,25 @@ tr:hover td{
   font-size:13px;
   font-weight:800;
   object-fit:cover;
+}
+
+.faculty-name-wrap{
+  min-width:0;
+}
+
+.faculty-name{
+  display:block;
+  color:#f4f7ff;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.faculty-designation{
+  display:block;
+  margin-top:3px;
+  color:#778197;
+  font-size:9px;
+  white-space:nowrap;
 }
 
 .status{
@@ -660,7 +679,6 @@ tr:hover td{
 }
 </style>
 </head>
-
 
 <body>
 
@@ -1071,7 +1089,7 @@ tr:hover td{
 
       <div>
         <h3>Faculty Management</h3>
-        <p>Add, edit or deactivate faculty</p>
+        <p>Add, edit designation or deactivate faculty</p>
       </div>
 
     </div>
@@ -1096,6 +1114,7 @@ tr:hover td{
 
         <tr>
           <th>Faculty</th>
+          <th>Designation</th>
           <th>Mobile</th>
           <th>Rate / Hour</th>
           <th>Status</th>
@@ -1372,6 +1391,20 @@ tr:hover td{
         </div>
 
 
+        <!-- NEW DESIGNATION FIELD -->
+
+        <div class="field">
+
+          <label>Designation / Work</label>
+
+          <input
+            id="facultyDesignation"
+            placeholder="Owner & CEO / Faculty / Accountant"
+          >
+
+        </div>
+
+
         <div class="field">
 
           <label>Mobile</label>
@@ -1577,10 +1610,8 @@ tr:hover td{
 
 <script type="module">
 
-
 /* =====================================================
    FIREBASE — BLACK TERMINAL PROJECT
-   SAME CONFIG AS FACULTY LOGIN + FACULTY DASHBOARD
 ===================================================== */
 
 import {
@@ -1799,11 +1830,39 @@ async function loadFaculty(){
     snap.forEach(
       item => {
 
+        const data =
+          item.data();
+
+
         facultyList.push({
 
           id:item.id,
 
-          ...item.data()
+          ...data,
+
+          /*
+
+            Compatibility:
+
+            If old faculty documents
+            already have role/designation,
+            both will work.
+
+          */
+
+          designation:
+            data.designation ||
+            data.role ||
+            data.work ||
+            data.position ||
+            "Faculty",
+
+          role:
+            data.role ||
+            data.designation ||
+            data.work ||
+            data.position ||
+            "Faculty"
 
         });
 
@@ -1853,7 +1912,7 @@ function renderFaculty(){
 
       <tr>
 
-        <td colspan="5">
+        <td colspan="6">
 
           <div class="empty">
             No faculty added yet.
@@ -1908,6 +1967,12 @@ function renderFaculty(){
           `;
 
 
+        const designation =
+          f.designation ||
+          f.role ||
+          "Faculty";
+
+
         return `
 
           <tr>
@@ -1918,13 +1983,34 @@ function renderFaculty(){
 
                 ${avatar}
 
-                <strong>
-                  ${escapeHtml(
-                    f.name || "-"
-                  )}
-                </strong>
+                <div class="faculty-name-wrap">
+
+                  <strong class="faculty-name">
+                    ${escapeHtml(
+                      f.name || "-"
+                    )}
+                  </strong>
+
+                  <small class="faculty-designation">
+                    ${escapeHtml(
+                      designation
+                    )}
+                  </small>
+
+                </div>
 
               </div>
+
+            </td>
+
+
+            <td>
+
+              <strong>
+                ${escapeHtml(
+                  designation
+                )}
+              </strong>
 
             </td>
 
@@ -1968,6 +2054,7 @@ function renderFaculty(){
 
               <button
                 class="icon-btn"
+                title="Edit Faculty"
                 onclick="editFaculty('${escapeAttr(f.id)}')"
               >
 
@@ -1978,6 +2065,7 @@ function renderFaculty(){
 
               <button
                 class="icon-btn"
+                title="Delete Faculty"
                 onclick="deleteFaculty('${escapeAttr(f.id)}')"
               >
 
@@ -2059,7 +2147,11 @@ function fillFacultySelects(){
 
 
             option.textContent =
-              `${f.name} — ${f.mobile}`;
+              `${f.name} — ${
+                f.designation ||
+                f.role ||
+                "Faculty"
+              } — ${f.mobile}`;
 
 
             select.appendChild(
@@ -2098,6 +2190,12 @@ function(){
 
   document.getElementById(
     "facultyName"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "facultyDesignation"
   ).value =
     "";
 
@@ -2171,6 +2269,16 @@ function(id){
 
 
   document.getElementById(
+    "facultyDesignation"
+  ).value =
+    f.designation ||
+    f.role ||
+    f.work ||
+    f.position ||
+    "";
+
+
+  document.getElementById(
     "facultyMobile"
   ).value =
     f.mobile || "";
@@ -2215,6 +2323,14 @@ async function(){
   const name =
     document.getElementById(
       "facultyName"
+    )
+    .value
+    .trim();
+
+
+  const designation =
+    document.getElementById(
+      "facultyDesignation"
     )
     .value
     .trim();
@@ -2265,11 +2381,28 @@ async function(){
   }
 
 
+  if(!designation){
+
+    toast(
+      "Designation is required"
+    );
+
+    return;
+
+  }
+
+
   try{
 
     const data = {
 
       name,
+
+      /* Main designation field */
+      designation,
+
+      /* Compatibility with Student Dashboard */
+      role:designation,
 
       mobile,
 
