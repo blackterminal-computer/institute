@@ -1,2483 +1,1614 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BlackTerminal — Smart Attendance</title>
 
-<title>BT | Smart Attendance</title>
-
-<link
-href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
-rel="stylesheet">
-
-<link
-href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-rel="stylesheet">
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 
-/* =====================================================
-   ROOT
-===================================================== */
-
-:root{
-
-    --primary:#6366f1;
-    --purple:#8b5cf6;
-    --cyan:#06b6d4;
-
-    --green:#22c55e;
-    --red:#ef4444;
-    --orange:#f59e0b;
-
-    --bg:#020617;
-
-    --text:#f8fafc;
-    --muted:#94a3b8;
-
-    --glass:rgba(255,255,255,.045);
-
-    --border:rgba(255,255,255,.085);
-
-}
-
-
-/* =====================================================
-   RESET
-===================================================== */
-
 *{
-
     margin:0;
     padding:0;
-
     box-sizing:border-box;
-
-    font-family:
-        'Plus Jakarta Sans',
-        sans-serif;
-
     -webkit-tap-highlight-color:transparent;
-
 }
 
+:root{
+    --bg:#070812;
+    --card:#111321;
+    --card2:#151829;
+    --border:rgba(255,255,255,.08);
+    --text:#f5f7ff;
+    --muted:#8d93aa;
+    --purple:#8b5cf6;
+    --purple2:#a855f7;
+    --cyan:#22d3ee;
+    --green:#22c55e;
+    --red:#ef4444;
+    --yellow:#f59e0b;
+}
 
 body{
-
     min-height:100vh;
-
     background:
-
-        radial-gradient(
-            circle at 15% 0%,
-            rgba(99,102,241,.20),
-            transparent 32%
-        ),
-
-        radial-gradient(
-            circle at 100% 70%,
-            rgba(6,182,212,.11),
-            transparent 30%
-        ),
-
-        radial-gradient(
-            circle at 40% 100%,
-            rgba(139,92,246,.08),
-            transparent 30%
-        ),
-
+        radial-gradient(circle at 20% 0%,rgba(139,92,246,.18),transparent 32%),
+        radial-gradient(circle at 100% 20%,rgba(34,211,238,.10),transparent 28%),
         var(--bg);
-
     color:var(--text);
-
-    padding:14px;
-
-    overflow-x:hidden;
-
+    font-family:"Plus Jakarta Sans",sans-serif;
+    padding-bottom:40px;
 }
 
-
-/* =====================================================
-   DECORATIVE GLOW
-===================================================== */
-
-body::before{
-
-    content:"";
-
-    position:fixed;
-
-    width:240px;
-    height:240px;
-
-    top:-110px;
-    right:-80px;
-
-    background:
-        rgba(99,102,241,.14);
-
-    filter:blur(90px);
-
-    pointer-events:none;
-
+button{
+    font-family:inherit;
 }
 
-
-body::after{
-
-    content:"";
-
-    position:fixed;
-
-    width:220px;
-    height:220px;
-
-    bottom:-100px;
-    left:-80px;
-
-    background:
-        rgba(6,182,212,.08);
-
-    filter:blur(90px);
-
-    pointer-events:none;
-
-}
-
-
-/* =====================================================
-   MAIN
-===================================================== */
-
-.att-container{
-
+.container{
     width:100%;
-
-    max-width:460px;
-
-    min-height:calc(100vh - 28px);
-
+    max-width:520px;
     margin:auto;
-
-    position:relative;
-
-    z-index:2;
-
-    display:flex;
-
-    flex-direction:column;
-
+    padding:16px;
 }
 
+/* HEADER */
 
-/* =====================================================
-   HEADER
-===================================================== */
-
-.top-header{
-
+.header{
     display:flex;
-
+    align-items:center;
     justify-content:space-between;
-
-    align-items:center;
-
-    padding:8px 4px 18px;
-
+    margin-bottom:18px;
 }
 
-
-.logo-area{
-
+.brand{
     display:flex;
-
     align-items:center;
-
-    gap:10px;
-
+    gap:11px;
 }
 
-
-.logo-box{
-
-    width:40px;
-    height:40px;
-
-    border-radius:13px;
-
-    display:flex;
-
-    align-items:center;
-    justify-content:center;
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--primary),
-            var(--purple)
-        );
-
-    box-shadow:
-        0 10px 25px
-        rgba(99,102,241,.25);
-
-    font-size:18px;
-
-}
-
-
-.logo-title{
-
-    font-size:13px;
-
-    font-weight:800;
-
-    letter-spacing:.2px;
-
-}
-
-
-.logo-subtitle{
-
-    margin-top:2px;
-
-    color:#64748b;
-
-    font-size:7px;
-
-    font-weight:800;
-
-    letter-spacing:1.1px;
-
-}
-
-
-.live-status{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:5px;
-
-    padding:7px 10px;
-
-    border-radius:20px;
-
-    background:
-        rgba(34,197,94,.07);
-
-    border:
-        1px solid
-        rgba(34,197,94,.15);
-
-    color:#4ade80;
-
-    font-size:7px;
-
-    font-weight:800;
-
-}
-
-
-.live-dot{
-
-    width:5px;
-    height:5px;
-
-    border-radius:50%;
-
-    background:#22c55e;
-
-    box-shadow:
-        0 0 9px #22c55e;
-
-}
-
-
-/* =====================================================
-   HERO
-===================================================== */
-
-.hero-card{
-
-    position:relative;
-
-    overflow:hidden;
-
-    padding:25px 20px 22px;
-
-    border-radius:30px;
-
-    background:
-
-        linear-gradient(
-            145deg,
-            rgba(99,102,241,.12),
-            rgba(255,255,255,.035)
-        );
-
-    border:
-        1px solid var(--border);
-
-    box-shadow:
-        0 25px 70px
-        rgba(0,0,0,.30);
-
-    text-align:center;
-
-}
-
-
-/* hero glow */
-
-.hero-card::before{
-
-    content:"";
-
-    position:absolute;
-
-    width:170px;
-    height:170px;
-
-    top:-90px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    background:
-        rgba(99,102,241,.18);
-
-    filter:blur(65px);
-
-}
-
-
-.hero-card::after{
-
-    content:"";
-
-    position:absolute;
-
-    width:100px;
-    height:100px;
-
-    right:-50px;
-    bottom:-50px;
-
-    border-radius:50%;
-
-    background:
-        rgba(6,182,212,.10);
-
-    filter:blur(30px);
-
-}
-
-
-/* =====================================================
-   LOCATION RING
-===================================================== */
-
-.location-wrap{
-
-    position:relative;
-
-    width:90px;
-    height:90px;
-
-    margin:0 auto 16px;
-
-    display:flex;
-
-    align-items:center;
-    justify-content:center;
-
-}
-
-
-.location-ring{
-
-    position:absolute;
-
-    inset:0;
-
-    border-radius:50%;
-
-    border:
-        1px solid
-        rgba(99,102,241,.25);
-
-    animation:
-        pulseRing 2.5s ease-in-out infinite;
-
-}
-
-
-.location-ring.two{
-
-    inset:8px;
-
-    border-color:
-        rgba(6,182,212,.20);
-
-    animation-delay:.4s;
-
-}
-
-
-@keyframes pulseRing{
-
-    0%,100%{
-
-        transform:scale(.92);
-
-        opacity:.5;
-
-    }
-
-    50%{
-
-        transform:scale(1.06);
-
-        opacity:1;
-
-    }
-
-}
-
-
-.location-icon{
-
-    width:64px;
-    height:64px;
-
-    border-radius:21px;
-
-    display:flex;
-
-    align-items:center;
-    justify-content:center;
-
-    position:relative;
-
-    z-index:2;
-
-    color:#a5b4fc;
-
-    font-size:30px;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            rgba(99,102,241,.24),
-            rgba(6,182,212,.10)
-        );
-
-    border:
-        1px solid
-        rgba(129,140,248,.28);
-
-    box-shadow:
-        0 15px 35px
-        rgba(99,102,241,.18);
-
-}
-
-
-/* =====================================================
-   HERO TEXT
-===================================================== */
-
-.hero-card h1{
-
-    font-size:24px;
-
-    font-weight:800;
-
-    letter-spacing:-.6px;
-
-    margin-bottom:7px;
-
-}
-
-
-.hero-description{
-
-    max-width:300px;
-
-    margin:auto;
-
-    color:var(--muted);
-
-    font-size:10px;
-
-    line-height:1.55;
-
-}
-
-
-/* =====================================================
-   STUDENT / LAST ATTENDANCE GRID
-===================================================== */
-
-.info-grid{
-
-    display:grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap:8px;
-
-    margin-top:16px;
-
-}
-
-
-.info-card{
-
-    min-width:0;
-
-    padding:12px;
-
-    text-align:left;
-
-    border-radius:15px;
-
-    background:
-        rgba(255,255,255,.035);
-
-    border:
-        1px solid
-        rgba(255,255,255,.06);
-
-}
-
-
-.info-card.full{
-
-    grid-column:
-        span 2;
-
-}
-
-
-.info-label{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:5px;
-
-    color:#64748b;
-
-    font-size:7px;
-
-    font-weight:800;
-
-    letter-spacing:.7px;
-
-    text-transform:uppercase;
-
-}
-
-
-.info-label i{
-
-    font-size:11px;
-
-}
-
-
-.info-value{
-
-    margin-top:5px;
-
-    color:#f1f5f9;
-
-    font-size:10px;
-
-    font-weight:800;
-
-    overflow:hidden;
-
-    text-overflow:ellipsis;
-
-    white-space:nowrap;
-
-}
-
-
-/* =====================================================
-   POLICY
-===================================================== */
-
-.policy-card{
-
-    margin-top:10px;
-
-    padding:12px;
-
-    border-radius:16px;
-
-    text-align:left;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            rgba(245,158,11,.075),
-            rgba(239,68,68,.035)
-        );
-
-    border:
-        1px solid
-        rgba(245,158,11,.14);
-
-}
-
-
-.policy-head{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:6px;
-
-    color:#fbbf24;
-
-    font-size:9px;
-
-    font-weight:800;
-
-}
-
-
-.policy-head i{
-
-    font-size:14px;
-
-}
-
-
-.policy-text{
-
-    margin-top:5px;
-
-    color:#94a3b8;
-
-    font-size:8px;
-
-    line-height:1.55;
-
-}
-
-
-.policy-text strong{
-
-    color:#fbbf24;
-
-}
-
-
-/* =====================================================
-   ATTENDANCE ACTION AREA
-===================================================== */
-
-.action-section{
-
-    margin-top:12px;
-
-    padding:13px;
-
-    border-radius:21px;
-
-    background:
-        rgba(255,255,255,.025);
-
-    border:
-        1px solid
-        var(--border);
-
-}
-
-
-.status-box{
-
-    min-height:46px;
-
-    padding:10px 12px;
-
-    border-radius:13px;
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    gap:7px;
-
-    background:
-        rgba(255,255,255,.035);
-
-    border:
-        1px solid
-        rgba(255,255,255,.06);
-
-    color:#cbd5e1;
-
-    font-size:9px;
-
-    font-weight:800;
-
-    text-align:center;
-
-    margin-bottom:9px;
-
-}
-
-
-.status-icon{
-
-    font-size:15px;
-
-}
-
-
-/* =====================================================
-   MAIN BUTTON
-===================================================== */
-
-#checkin-btn{
-
-    width:100%;
-
-    min-height:52px;
-
-    border:none;
-
-    border-radius:15px;
-
-    color:white;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            var(--primary),
-            var(--purple),
-            var(--cyan)
-        );
-
-    font-size:11px;
-
-    font-weight:800;
-
-    letter-spacing:.2px;
-
-    cursor:pointer;
-
-    box-shadow:
-        0 12px 30px
-        rgba(99,102,241,.20);
-
-    transition:.2s;
-
-}
-
-
-#checkin-btn i{
-
-    margin-left:5px;
-
-    font-size:15px;
-
-}
-
-
-#checkin-btn:active{
-
-    transform:scale(.98);
-
-}
-
-
-#checkin-btn:disabled{
-
-    opacity:.35;
-
-    cursor:not-allowed;
-
-    box-shadow:none;
-
-}
-
-
-/* =====================================================
-   REQUEST CARD
-===================================================== */
-
-.request-card{
-
-    margin-top:9px;
-
-    padding:11px 12px;
-
-    border-radius:15px;
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:space-between;
-
-    gap:10px;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            rgba(245,158,11,.07),
-            rgba(239,68,68,.035)
-        );
-
-    border:
-        1px solid
-        rgba(245,158,11,.13);
-
-}
-
-
-.request-info{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:9px;
-
-    min-width:0;
-
-    text-align:left;
-
-}
-
-
-.request-icon{
-
-    width:35px;
-    height:35px;
-
-    flex-shrink:0;
-
-    border-radius:11px;
-
-    display:flex;
-
-    align-items:center;
-    justify-content:center;
-
-    color:#fbbf24;
-
-    background:
-        rgba(245,158,11,.10);
-
-    font-size:16px;
-
-}
-
-
-.request-title{
-
-    color:#e2e8f0;
-
-    font-size:9px;
-
-    font-weight:800;
-
-}
-
-
-.request-subtitle{
-
-    margin-top:3px;
-
-    color:#64748b;
-
-    font-size:7px;
-
-}
-
-
-.request-btn{
-
-    flex-shrink:0;
-
-    border:none;
-
-    padding:9px 11px;
-
-    border-radius:11px;
-
-    color:#fbbf24;
-
-    background:
-        rgba(245,158,11,.10);
-
-    border:
-        1px solid
-        rgba(245,158,11,.18);
-
-    font-size:7px;
-
-    font-weight:800;
-
-    cursor:pointer;
-
-}
-
-
-.request-btn:active{
-
-    transform:scale(.95);
-
-}
-
-
-/* =====================================================
-   HOME
-===================================================== */
-
-.back-home{
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
-
-    gap:5px;
-
-    margin-top:13px;
-
-    color:#67e8f9;
-
-    text-decoration:none;
-
-    font-size:8px;
-
-    font-weight:700;
-
-}
-
-
-/* =====================================================
-   REQUEST MODAL
-===================================================== */
-
-.request-overlay{
-
-    position:fixed;
-
-    inset:0;
-
-    z-index:100;
-
-    display:flex;
-
-    align-items:flex-end;
-
-    justify-content:center;
-
-    padding:10px;
-
-    background:
-        rgba(2,6,23,.80);
-
-    backdrop-filter:blur(13px);
-
-    -webkit-backdrop-filter:blur(13px);
-
-    opacity:0;
-
-    pointer-events:none;
-
-    transition:.3s;
-
-}
-
-
-.request-overlay.active{
-
-    opacity:1;
-
-    pointer-events:auto;
-
-}
-
-
-.request-modal{
-
-    width:100%;
-
-    max-width:450px;
-
-    padding:20px;
-
-    border-radius:
-        27px 27px 20px 20px;
-
-    background:
-
-        linear-gradient(
-            145deg,
-            #111827,
-            #0f172a
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.10);
-
-    box-shadow:
-        0 -20px 80px
-        rgba(0,0,0,.55);
-
-    transform:
-        translateY(80px);
-
-    transition:.35s;
-
-}
-
-
-.request-overlay.active
-.request-modal{
-
-    transform:
-        translateY(0);
-
-}
-
-
-/* modal top */
-
-.modal-top{
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:space-between;
-
-    margin-bottom:16px;
-
-}
-
-
-.modal-title-area{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:9px;
-
-}
-
-
-.modal-icon{
-
-    width:40px;
-    height:40px;
-
-    border-radius:13px;
-
-    display:flex;
-
-    align-items:center;
-    justify-content:center;
-
-    background:
-        rgba(245,158,11,.10);
-
-    border:
-        1px solid
-        rgba(245,158,11,.18);
-
-    color:#fbbf24;
-
-    font-size:19px;
-
-}
-
-
-.modal-title{
-
-    font-size:13px;
-
-    font-weight:800;
-
-}
-
-
-.modal-subtitle{
-
-    margin-top:3px;
-
-    color:#64748b;
-
-    font-size:8px;
-
-}
-
-
-.close-btn{
-
-    width:34px;
-    height:34px;
-
-    border:none;
-
-    border-radius:11px;
-
-    background:
-        rgba(255,255,255,.05);
-
-    color:#94a3b8;
-
-    font-size:18px;
-
-}
-
-
-/* =====================================================
-   REASONS
-===================================================== */
-
-.reason-label{
-
-    display:block;
-
-    text-align:left;
-
-    margin-bottom:8px;
-
-    color:#94a3b8;
-
-    font-size:8px;
-
-    font-weight:800;
-
-    letter-spacing:.7px;
-
-}
-
-
-.reason-grid{
-
-    display:grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap:7px;
-
-}
-
-
-.reason-item{
-
-    position:relative;
-
-}
-
-
-.reason-item input{
-
-    position:absolute;
-
-    opacity:0;
-
-}
-
-
-.reason-item label{
-
-    min-height:54px;
-
-    padding:9px;
-
-    display:flex;
-
-    align-items:center;
-
-    gap:7px;
-
-    border-radius:13px;
-
-    border:
-        1px solid
-        rgba(255,255,255,.07);
-
-    background:
-        rgba(255,255,255,.025);
-
-    color:#cbd5e1;
-
-    font-size:7px;
-
-    font-weight:700;
-
-    cursor:pointer;
-
-    text-align:left;
-
-    transition:.2s;
-
-}
-
-
-.reason-item label i{
-
-    flex-shrink:0;
-
-    font-size:17px;
-
-    color:#64748b;
-
-}
-
-
-.reason-item input:checked + label{
-
-    background:
-        rgba(245,158,11,.09);
-
-    border-color:
-        rgba(245,158,11,.40);
-
-    color:#fff;
-
-}
-
-
-.reason-item input:checked + label i{
-
-    color:#fbbf24;
-
-}
-
-
-/* =====================================================
-   CUSTOM REASON
-===================================================== */
-
-.custom-reason{
-
-    width:100%;
-
-    min-height:72px;
-
-    margin-top:8px;
-
-    padding:11px;
-
-    border:none;
-
-    outline:none;
-
-    resize:none;
-
-    border-radius:13px;
-
-    background:
-        rgba(255,255,255,.035);
-
-    border:
-        1px solid
-        rgba(255,255,255,.08);
-
-    color:white;
-
-    font-size:9px;
-
-    display:none;
-
-}
-
-
-.custom-reason.show{
-
-    display:block;
-
-}
-
-
-/* =====================================================
-   SEND
-===================================================== */
-
-.send-request{
-
-    width:100%;
-
-    margin-top:11px;
-
-    min-height:48px;
-
-    border:none;
-
+.logo{
+    width:42px;
+    height:42px;
     border-radius:14px;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            #f59e0b,
-            #ef4444
-        );
-
-    color:white;
-
-    font-size:9px;
-
-    font-weight:800;
-
-    cursor:pointer;
-
-}
-
-
-.send-request:disabled{
-
-    opacity:.4;
-
-}
-
-
-.request-note{
-
-    margin-top:8px;
-
-    color:#64748b;
-
-    font-size:7px;
-
-    text-align:center;
-
-    line-height:1.5;
-
-}
-
-
-/* =====================================================
-   SUCCESS
-===================================================== */
-
-.success-overlay{
-
-    position:fixed;
-
-    inset:0;
-
-    z-index:200;
-
     display:flex;
-
     align-items:center;
-
     justify-content:center;
+    font-size:19px;
+    font-weight:800;
+    background:linear-gradient(135deg,#7c3aed,#06b6d4);
+    box-shadow:0 8px 25px rgba(124,58,237,.3);
+}
 
-    padding:20px;
+.brandText strong{
+    display:block;
+    font-size:15px;
+    letter-spacing:.2px;
+}
 
+.brandText span{
+    color:var(--muted);
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:1.4px;
+}
+
+.live{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 10px;
+    border-radius:30px;
+    background:rgba(34,197,94,.09);
+    border:1px solid rgba(34,197,94,.18);
+    color:#4ade80;
+    font-size:10px;
+    font-weight:800;
+}
+
+.liveDot{
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 10px #22c55e;
+}
+
+/* HERO */
+
+.hero{
+    position:relative;
+    overflow:hidden;
+    border:1px solid var(--border);
+    border-radius:28px;
     background:
-        rgba(2,6,23,.82);
-
-    backdrop-filter:blur(12px);
-
-    opacity:0;
-
-    pointer-events:none;
-
-    transition:.3s;
-
-}
-
-
-.success-overlay.active{
-
-    opacity:1;
-
-    pointer-events:auto;
-
-}
-
-
-.success-card{
-
-    width:100%;
-
-    max-width:340px;
-
-    padding:28px 22px;
-
-    border-radius:27px;
-
+        linear-gradient(145deg,rgba(139,92,246,.15),rgba(17,19,33,.92) 60%);
+    padding:28px 20px 24px;
     text-align:center;
-
-    background:
-
-        linear-gradient(
-            145deg,
-            #10251c,
-            #0f172a
-        );
-
-    border:
-        1px solid
-        rgba(34,197,94,.22);
-
-    box-shadow:
-        0 30px 80px
-        rgba(0,0,0,.6);
-
-    transform:scale(.85);
-
-    transition:.3s;
-
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
 }
 
-
-.success-overlay.active
-.success-card{
-
-    transform:scale(1);
-
+.heroGlow{
+    position:absolute;
+    width:180px;
+    height:180px;
+    border-radius:50%;
+    background:rgba(139,92,246,.13);
+    filter:blur(35px);
+    left:50%;
+    top:-70px;
+    transform:translateX(-50%);
 }
 
+.locationIcon{
+    position:relative;
+    width:92px;
+    height:92px;
+    margin:0 auto 18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
 
-.success-icon{
+.locationIcon .ring{
+    position:absolute;
+    border:1px solid rgba(139,92,246,.35);
+    border-radius:50%;
+    animation:pulse 2.5s infinite;
+}
 
+.locationIcon .ring:nth-child(1){
     width:70px;
     height:70px;
+}
 
-    margin:0 auto 16px;
+.locationIcon .ring:nth-child(2){
+    width:92px;
+    height:92px;
+    animation-delay:.6s;
+}
 
-    border-radius:50%;
-
+.locationIcon .pin{
+    width:50px;
+    height:50px;
+    border-radius:18px;
     display:flex;
-
     align-items:center;
     justify-content:center;
-
-    color:#22c55e;
-
-    background:
-        rgba(34,197,94,.12);
-
-    border:
-        2px solid
-        rgba(34,197,94,.28);
-
-    font-size:36px;
-
+    background:linear-gradient(135deg,#8b5cf6,#06b6d4);
+    font-size:24px;
+    box-shadow:0 12px 30px rgba(139,92,246,.35);
 }
 
+@keyframes pulse{
+    0%,100%{
+        transform:scale(.92);
+        opacity:.35;
+    }
+    50%{
+        transform:scale(1.08);
+        opacity:.8;
+    }
+}
 
-.success-card h3{
-
-    font-size:19px;
-
+.hero h1{
+    font-size:25px;
     font-weight:800;
-
+    margin-bottom:8px;
 }
 
-
-.success-card p{
-
-    margin-top:7px;
-
-    color:#94a3b8;
-
-    font-size:10px;
-
-    line-height:1.5;
-
+.hero p{
+    max-width:340px;
+    margin:auto;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.7;
 }
 
+/* INFO */
 
-.success-date{
+.infoGrid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:12px;
+}
 
-    margin-top:14px;
+.infoCard{
+    padding:15px;
+    border:1px solid var(--border);
+    border-radius:19px;
+    background:rgba(17,19,33,.78);
+}
 
-    padding:10px;
-
-    border-radius:12px;
-
-    background:
-        rgba(255,255,255,.045);
-
-    color:#cbd5e1;
-
+.infoLabel{
+    color:var(--muted);
     font-size:9px;
-
-    font-weight:700;
-
-}
-
-
-.success-close{
-
-    width:100%;
-
-    margin-top:16px;
-
-    padding:12px;
-
-    border:none;
-
-    border-radius:12px;
-
-    background:#22c55e;
-
-    color:#02150b;
-
-    font-size:10px;
-
+    text-transform:uppercase;
+    letter-spacing:1px;
     font-weight:800;
-
+    margin-bottom:7px;
 }
 
+.infoValue{
+    font-size:13px;
+    font-weight:700;
+    word-break:break-word;
+}
 
-/* =====================================================
-   SPINNER
-===================================================== */
+/* POLICY */
 
-.spinner{
+.policy{
+    margin-top:12px;
+    padding:14px 16px;
+    border:1px solid rgba(245,158,11,.13);
+    border-radius:18px;
+    background:rgba(245,158,11,.05);
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
 
-    width:16px;
-    height:16px;
+.policyIcon{
+    width:38px;
+    height:38px;
+    flex-shrink:0;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(245,158,11,.10);
+    font-size:17px;
+}
 
-    border:
-        2px solid
-        rgba(255,255,255,.25);
+.policy strong{
+    font-size:11px;
+}
 
-    border-top-color:white;
+.policy p{
+    margin-top:3px;
+    color:var(--muted);
+    font-size:9px;
+    line-height:1.5;
+}
 
+/* MAIN ACTION */
+
+.actionCard{
+    margin-top:12px;
+    padding:18px;
+    border:1px solid var(--border);
+    border-radius:24px;
+    background:rgba(17,19,33,.86);
+}
+
+.statusBox{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border-radius:15px;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.05);
+    margin-bottom:13px;
+}
+
+.statusDot{
+    width:9px;
+    height:9px;
     border-radius:50%;
-
-    display:inline-block;
-
-    animation:
-        spin .7s linear infinite;
-
+    background:var(--yellow);
+    box-shadow:0 0 12px var(--yellow);
+    flex-shrink:0;
 }
 
+.statusText{
+    font-size:11px;
+    font-weight:700;
+}
 
-@keyframes spin{
+.statusSub{
+    color:var(--muted);
+    font-size:9px;
+    margin-top:2px;
+}
 
+.markBtn{
+    width:100%;
+    border:none;
+    border-radius:17px;
+    padding:16px;
+    color:white;
+    font-size:13px;
+    font-weight:800;
+    cursor:pointer;
+    background:linear-gradient(135deg,#7c3aed,#06b6d4);
+    box-shadow:0 14px 30px rgba(124,58,237,.25);
+    transition:.2s;
+}
+
+.markBtn:active{
+    transform:scale(.98);
+}
+
+.markBtn:disabled{
+    opacity:.55;
+}
+
+/* REQUEST */
+
+.requestCard{
+    margin-top:12px;
+    padding:16px;
+    border-radius:21px;
+    border:1px solid rgba(34,211,238,.12);
+    background:linear-gradient(135deg,rgba(34,211,238,.055),rgba(139,92,246,.055));
+}
+
+.requestTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.requestInfo{
+    display:flex;
+    align-items:center;
+    gap:11px;
+}
+
+.requestIcon{
+    width:40px;
+    height:40px;
+    border-radius:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(34,211,238,.10);
+    font-size:18px;
+}
+
+.requestInfo strong{
+    display:block;
+    font-size:11px;
+}
+
+.requestInfo span{
+    display:block;
+    color:var(--muted);
+    font-size:9px;
+    margin-top:3px;
+}
+
+.requestBtn{
+    border:none;
+    padding:10px 13px;
+    border-radius:12px;
+    background:rgba(139,92,246,.14);
+    border:1px solid rgba(139,92,246,.22);
+    color:#c4b5fd;
+    font-size:9px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+/* REQUEST STATUS PANEL */
+
+.requestsPanel{
+    margin-top:12px;
+    border:1px solid var(--border);
+    border-radius:24px;
+    background:rgba(17,19,33,.86);
+    overflow:hidden;
+}
+
+.panelHeader{
+    padding:17px 17px 13px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid rgba(255,255,255,.055);
+}
+
+.panelTitle{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.panelTitleIcon{
+    width:34px;
+    height:34px;
+    border-radius:11px;
+    background:rgba(139,92,246,.11);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:15px;
+}
+
+.panelTitle strong{
+    font-size:12px;
+}
+
+.panelTitle span{
+    display:block;
+    color:var(--muted);
+    font-size:8px;
+    margin-top:2px;
+}
+
+.refresh{
+    color:var(--muted);
+    font-size:9px;
+}
+
+.requestsList{
+    padding:10px;
+}
+
+.emptyRequests{
+    text-align:center;
+    padding:28px 15px;
+    color:var(--muted);
+}
+
+.emptyIcon{
+    font-size:28px;
+    margin-bottom:8px;
+}
+
+.emptyRequests strong{
+    display:block;
+    color:#c5c9d8;
+    font-size:11px;
+    margin-bottom:4px;
+}
+
+.emptyRequests span{
+    font-size:9px;
+}
+
+/* REQUEST ITEM */
+
+.requestItem{
+    padding:14px;
+    border-radius:17px;
+    background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.055);
+    margin-bottom:8px;
+}
+
+.requestItem:last-child{
+    margin-bottom:0;
+}
+
+.requestItemTop{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+}
+
+.reason{
+    font-size:11px;
+    font-weight:700;
+    line-height:1.4;
+}
+
+.requestDate{
+    color:var(--muted);
+    font-size:8px;
+    margin-top:4px;
+}
+
+.badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:6px 9px;
+    border-radius:20px;
+    font-size:8px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.badge.pending{
+    color:#fbbf24;
+    background:rgba(245,158,11,.09);
+    border:1px solid rgba(245,158,11,.14);
+}
+
+.badge.accepted{
+    color:#4ade80;
+    background:rgba(34,197,94,.09);
+    border:1px solid rgba(34,197,94,.14);
+}
+
+.badge.rejected{
+    color:#f87171;
+    background:rgba(239,68,68,.09);
+    border:1px solid rgba(239,68,68,.14);
+}
+
+.requestDetails{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    margin-top:12px;
+}
+
+.detail{
+    padding:9px 10px;
+    border-radius:11px;
+    background:rgba(255,255,255,.025);
+}
+
+.detail label{
+    display:block;
+    color:#6f758b;
+    font-size:7px;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    font-weight:800;
+    margin-bottom:4px;
+}
+
+.detail span{
+    display:block;
+    color:#cdd1df;
+    font-size:8px;
+    line-height:1.4;
+}
+
+.pendingTime{
+    color:#fbbf24 !important;
+}
+
+.acceptedTime{
+    color:#4ade80 !important;
+}
+
+.rejectedTime{
+    color:#f87171 !important;
+}
+
+.requestReason{
+    margin-top:9px;
+    padding:9px 10px;
+    border-radius:11px;
+    background:rgba(255,255,255,.025);
+    color:#969caf;
+    font-size:8px;
+    line-height:1.5;
+}
+
+/* MODAL */
+
+.overlay{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    background:rgba(0,0,0,.72);
+    backdrop-filter:blur(10px);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+}
+
+.overlay.show{
+    display:flex;
+}
+
+.modal{
+    width:100%;
+    max-width:520px;
+    max-height:90vh;
+    overflow:auto;
+    border-radius:28px 28px 0 0;
+    background:#10121f;
+    border:1px solid rgba(255,255,255,.08);
+    padding:20px;
+    animation:slideUp .25s ease;
+}
+
+@keyframes slideUp{
+    from{
+        transform:translateY(100%);
+    }
     to{
-        transform:rotate(360deg);
+        transform:translateY(0);
     }
-
 }
 
+.modalHandle{
+    width:42px;
+    height:4px;
+    border-radius:5px;
+    background:#363a4c;
+    margin:0 auto 18px;
+}
 
-/* =====================================================
-   MOBILE
-===================================================== */
+.modal h2{
+    font-size:18px;
+    margin-bottom:5px;
+}
 
-@media(max-width:380px){
+.modalSub{
+    color:var(--muted);
+    font-size:10px;
+    line-height:1.5;
+    margin-bottom:16px;
+}
 
-    body{
+.reasonGrid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+}
 
-        padding:9px;
+.reasonBtn{
+    min-height:68px;
+    text-align:left;
+    padding:12px;
+    border-radius:15px;
+    border:1px solid rgba(255,255,255,.07);
+    background:rgba(255,255,255,.025);
+    color:white;
+    cursor:pointer;
+}
 
+.reasonBtn.active{
+    border-color:rgba(139,92,246,.6);
+    background:rgba(139,92,246,.12);
+}
+
+.reasonBtn .emoji{
+    font-size:17px;
+    margin-bottom:6px;
+}
+
+.reasonBtn strong{
+    display:block;
+    font-size:9px;
+}
+
+.reasonBtn span{
+    display:block;
+    color:var(--muted);
+    font-size:7px;
+    margin-top:2px;
+}
+
+textarea{
+    width:100%;
+    min-height:85px;
+    resize:none;
+    margin-top:10px;
+    padding:12px;
+    border-radius:14px;
+    outline:none;
+    color:white;
+    background:#0b0d18;
+    border:1px solid rgba(255,255,255,.08);
+    font-family:inherit;
+    font-size:10px;
+    display:none;
+}
+
+textarea.show{
+    display:block;
+}
+
+.modalActions{
+    display:flex;
+    gap:9px;
+    margin-top:14px;
+}
+
+.cancelBtn,
+.submitRequestBtn{
+    flex:1;
+    padding:14px;
+    border-radius:15px;
+    font-size:10px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.cancelBtn{
+    color:#a1a6b8;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.07);
+}
+
+.submitRequestBtn{
+    color:white;
+    border:none;
+    background:linear-gradient(135deg,#7c3aed,#06b6d4);
+}
+
+/* SUCCESS */
+
+.successOverlay{
+    position:fixed;
+    inset:0;
+    z-index:200;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(0,0,0,.75);
+    backdrop-filter:blur(12px);
+}
+
+.successOverlay.show{
+    display:flex;
+}
+
+.successBox{
+    width:100%;
+    max-width:350px;
+    text-align:center;
+    padding:30px 22px;
+    border-radius:27px;
+    background:#111321;
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 30px 80px rgba(0,0,0,.4);
+}
+
+.successIcon{
+    width:70px;
+    height:70px;
+    margin:0 auto 15px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(34,197,94,.12);
+    color:#4ade80;
+    font-size:30px;
+}
+
+.successBox h3{
+    font-size:18px;
+    margin-bottom:6px;
+}
+
+.successBox p{
+    color:var(--muted);
+    font-size:10px;
+    line-height:1.6;
+}
+
+.successClose{
+    width:100%;
+    margin-top:18px;
+    border:none;
+    padding:13px;
+    border-radius:14px;
+    color:white;
+    background:linear-gradient(135deg,#7c3aed,#06b6d4);
+    font-size:10px;
+    font-weight:800;
+}
+
+/* TOAST */
+
+.toast{
+    position:fixed;
+    left:50%;
+    bottom:20px;
+    z-index:500;
+    transform:translate(-50%,120px);
+    width:calc(100% - 30px);
+    max-width:460px;
+    padding:13px 15px;
+    border-radius:15px;
+    background:#181b2a;
+    border:1px solid rgba(255,255,255,.09);
+    box-shadow:0 15px 40px rgba(0,0,0,.4);
+    color:#e8eaf2;
+    font-size:10px;
+    font-weight:700;
+    text-align:center;
+    transition:.3s;
+}
+
+.toast.show{
+    transform:translate(-50%,0);
+}
+
+@media(max-width:360px){
+    .reasonGrid{
+        grid-template-columns:1fr;
     }
 
-
-    .att-container{
-
-        min-height:
-            calc(100vh - 18px);
-
+    .requestDetails{
+        grid-template-columns:1fr;
     }
-
-
-    .hero-card{
-
-        padding:
-            20px 15px 17px;
-
-    }
-
-
-    .hero-card h1{
-
-        font-size:21px;
-
-    }
-
-
-    .reason-item label{
-
-        font-size:6.8px;
-
-    }
-
 }
 
 </style>
-
 </head>
-
 
 <body>
 
+<div class="container">
 
-<div class="att-container">
+    <!-- HEADER -->
 
+    <header class="header">
 
-    <!-- =================================================
-         HEADER
-    ================================================= -->
+        <div class="brand">
 
-    <div class="top-header">
-
-
-        <div class="logo-area">
-
-            <div class="logo-box">
-
-                <i class="ri-shield-check-fill"></i>
-
+            <div class="logo">
+                BT
             </div>
 
+            <div class="brandText">
+                <strong>BlackTerminal</strong>
+                <span>STUDENT ATTENDANCE</span>
+            </div>
+
+        </div>
+
+        <div class="live">
+            <span class="liveDot"></span>
+            LIVE
+        </div>
+
+    </header>
+
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <div class="heroGlow"></div>
+
+        <div class="locationIcon">
+
+            <div class="ring"></div>
+            <div class="ring"></div>
+
+            <div class="pin">
+                📍
+            </div>
+
+        </div>
+
+        <h1>Smart Attendance</h1>
+
+        <p>
+            Your attendance is verified using your current location.
+            Make sure you are inside the institute area.
+        </p>
+
+    </section>
+
+
+    <!-- STUDENT INFO -->
+
+    <div class="infoGrid">
+
+        <div class="infoCard">
+
+            <div class="infoLabel">
+                Student
+            </div>
+
+            <div class="infoValue" id="studentName">
+                Loading...
+            </div>
+
+        </div>
+
+
+        <div class="infoCard">
+
+            <div class="infoLabel">
+                Last Attendance
+            </div>
+
+            <div class="infoValue" id="lastAttendance">
+                Loading...
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- POLICY -->
+
+    <div class="policy">
+
+        <div class="policyIcon">
+            ⚡
+        </div>
+
+        <div>
+
+            <strong>Attendance Policy</strong>
+
+            <p>
+                Maintain minimum 70% attendance.
+                Attendance below requirement may attract ₹500 fine.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ATTENDANCE ACTION -->
+
+    <section class="actionCard">
+
+        <div class="statusBox">
+
+            <div class="statusDot" id="statusDot"></div>
 
             <div>
 
-                <div class="logo-title">
-
-                    BlackTerminal
-
+                <div class="statusText" id="locationStatus">
+                    Checking your location...
                 </div>
 
-
-                <div class="logo-subtitle">
-
-                    STUDENT ATTENDANCE
-
+                <div class="statusSub" id="locationSub">
+                    Please allow location permission.
                 </div>
 
             </div>
-
-        </div>
-
-
-        <div class="live-status">
-
-            <span class="live-dot"></span>
-
-            LIVE
-
-        </div>
-
-
-    </div>
-
-
-    <!-- =================================================
-         HERO
-    ================================================= -->
-
-    <div class="hero-card">
-
-
-        <div class="location-wrap">
-
-            <div class="location-ring"></div>
-
-            <div class="location-ring two"></div>
-
-
-            <div class="location-icon">
-
-                <i class="ri-map-pin-user-fill"></i>
-
-            </div>
-
-        </div>
-
-
-        <h1>
-
-            Smart Attendance
-
-        </h1>
-
-
-        <p class="hero-description">
-
-            Your location is verified before
-            marking today's attendance.
-
-        </p>
-
-
-        <!-- INFO -->
-
-        <div class="info-grid">
-
-
-            <div class="info-card">
-
-                <div class="info-label">
-
-                    <i class="ri-user-line"></i>
-
-                    Student
-
-                </div>
-
-
-                <div
-                    id="student-display"
-                    class="info-value">
-
-                    Checking...
-
-                </div>
-
-            </div>
-
-
-            <div class="info-card">
-
-                <div class="info-label">
-
-                    <i class="ri-calendar-check-line"></i>
-
-                    Last Attendance
-
-                </div>
-
-
-                <div
-                    id="last-attendance-date"
-                    class="info-value">
-
-                    Checking...
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-
-        <!-- POLICY -->
-
-        <div class="policy-card">
-
-            <div class="policy-head">
-
-                <i class="ri-information-fill"></i>
-
-                Attendance Policy
-
-            </div>
-
-
-            <div class="policy-text">
-
-                Maintain at least
-                <strong>70% attendance</strong>.
-                Attendance below 70% may result
-                in a <strong>₹500 fine</strong>.
-
-            </div>
-
-        </div>
-
-
-    </div>
-
-
-    <!-- =================================================
-         ACTION SECTION
-    ================================================= -->
-
-    <div class="action-section">
-
-
-        <div
-            id="status"
-            class="status-box">
-
-            <i
-                class="ri-loader-4-line ri-spin status-icon">
-            </i>
-
-            Checking Location...
 
         </div>
 
 
         <button
-            id="checkin-btn"
+            class="markBtn"
+            id="markBtn"
             onclick="markAttendance()"
-            disabled>
-
-            MARK ATTENDANCE
-
-            <i class="ri-fingerprint-line"></i>
-
+            disabled
+        >
+            📍 MARK ATTENDANCE
         </button>
 
 
-        <!-- REQUEST ATTENDANCE -->
+        <!-- REQUEST -->
 
-        <div class="request-card">
+        <div class="requestCard">
 
+            <div class="requestTop">
 
-            <div class="request-info">
+                <div class="requestInfo">
 
-
-                <div class="request-icon">
-
-                    <i class="ri-git-pull-request-line"></i>
-
-                </div>
-
-
-                <div>
-
-                    <div class="request-title">
-
-                        Unable to mark attendance?
-
+                    <div class="requestIcon">
+                        📝
                     </div>
 
+                    <div>
 
-                    <div class="request-subtitle">
+                        <strong>Unable to mark attendance?</strong>
 
-                        Send a request to admin
+                        <span>
+                            Send a request to admin for review.
+                        </span>
 
                     </div>
 
                 </div>
 
+                <button
+                    class="requestBtn"
+                    onclick="openRequestModal()"
+                >
+                    REQUEST
+                </button>
 
             </div>
 
+        </div>
 
-            <button
-                class="request-btn"
-                onclick="openRequestModal()">
+    </section>
 
-                REQUEST
 
-            </button>
+    <!-- MY REQUESTS -->
 
+    <section class="requestsPanel">
+
+        <div class="panelHeader">
+
+            <div class="panelTitle">
+
+                <div class="panelTitleIcon">
+                    📋
+                </div>
+
+                <div>
+
+                    <strong>My Attendance Requests</strong>
+
+                    <span>
+                        Track your request status
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="refresh" id="requestCount">
+                0 requests
+            </div>
 
         </div>
 
 
-    </div>
+        <div
+            class="requestsList"
+            id="requestsList"
+        >
 
+            <div class="emptyRequests">
 
-    <!-- HOME -->
+                <div class="emptyIcon">
+                    📭
+                </div>
 
-    <a
-        href="index.html"
-        class="back-home">
+                <strong>No requests yet</strong>
 
-        <i class="ri-arrow-left-line"></i>
+                <span>
+                    Your attendance requests will appear here.
+                </span>
 
-        Back to Dashboard
+            </div>
 
-    </a>
+        </div>
 
+    </section>
 
 </div>
 
 
-
-<!-- =====================================================
-     REQUEST MODAL
-===================================================== -->
+<!-- REQUEST MODAL -->
 
 <div
-    id="request-overlay"
-    class="request-overlay">
+    class="overlay"
+    id="requestModal"
+    onclick="closeModalOutside(event)"
+>
+
+    <div class="modal">
+
+        <div class="modalHandle"></div>
+
+        <h2>Request Attendance</h2>
+
+        <div class="modalSub">
+            Select the reason why you could not mark your attendance.
+            Admin will review your request.
+        </div>
 
 
-    <div class="request-modal">
-
-
-        <div class="modal-top">
-
-
-            <div class="modal-title-area">
-
-
-                <div class="modal-icon">
-
-                    <i class="ri-git-pull-request-line"></i>
-
-                </div>
-
-
-                <div>
-
-                    <div class="modal-title">
-
-                        Attendance Request
-
-                    </div>
-
-
-                    <div class="modal-subtitle">
-
-                        Tell us what went wrong
-
-                    </div>
-
-                </div>
-
-
-            </div>
-
+        <div class="reasonGrid">
 
             <button
-                class="close-btn"
-                onclick="closeRequestModal()">
+                class="reasonBtn"
+                data-reason="GPS / Location Error"
+                onclick="selectReason(this)"
+            >
 
-                <i class="ri-close-line"></i>
+                <div class="emoji">📍</div>
+
+                <strong>GPS / Location Error</strong>
+
+                <span>Location verification failed</span>
 
             </button>
 
 
-        </div>
+            <button
+                class="reasonBtn"
+                data-reason="Internet / Connection Error"
+                onclick="selectReason(this)"
+            >
+
+                <div class="emoji">🌐</div>
+
+                <strong>Connection Error</strong>
+
+                <span>Internet problem</span>
+
+            </button>
 
 
-        <label class="reason-label">
+            <button
+                class="reasonBtn"
+                data-reason="Device / Browser Problem"
+                onclick="selectReason(this)"
+            >
 
-            SELECT A REASON
+                <div class="emoji">📱</div>
 
-        </label>
+                <strong>Device Problem</strong>
 
+                <span>Phone or browser issue</span>
 
-        <div class="reason-grid">
-
-
-            <!-- GPS -->
-
-            <div class="reason-item">
-
-                <input
-                    type="radio"
-                    name="attendanceReason"
-                    id="reasonGps"
-                    value="GPS / Location Error"
-                    onchange="handleReasonChange()">
+            </button>
 
 
-                <label for="reasonGps">
+            <button
+                class="reasonBtn"
+                data-reason="I Don't Know the Reason"
+                onclick="selectReason(this)"
+            >
 
-                    <i class="ri-map-pin-off-line"></i>
+                <div class="emoji">❓</div>
 
-                    <span>
-                        GPS / Location Error
-                    </span>
+                <strong>I Don't Know</strong>
 
-                </label>
+                <span>Unable to identify issue</span>
 
-            </div>
-
-
-            <!-- INTERNET -->
-
-            <div class="reason-item">
-
-                <input
-                    type="radio"
-                    name="attendanceReason"
-                    id="reasonInternet"
-                    value="Internet / Connection Error"
-                    onchange="handleReasonChange()">
+            </button>
 
 
-                <label for="reasonInternet">
+            <button
+                class="reasonBtn"
+                data-reason="Other Reason"
+                onclick="selectReason(this)"
+            >
 
-                    <i class="ri-wifi-off-line"></i>
+                <div class="emoji">✏️</div>
 
-                    <span>
-                        Internet / Connection Error
-                    </span>
+                <strong>Other Reason</strong>
 
-                </label>
+                <span>Write your reason</span>
 
-            </div>
-
-
-            <!-- DEVICE -->
-
-            <div class="reason-item">
-
-                <input
-                    type="radio"
-                    name="attendanceReason"
-                    id="reasonDevice"
-                    value="Device / Browser Problem"
-                    onchange="handleReasonChange()">
-
-
-                <label for="reasonDevice">
-
-                    <i class="ri-smartphone-line"></i>
-
-                    <span>
-                        Device / Browser Problem
-                    </span>
-
-                </label>
-
-            </div>
-
-
-            <!-- UNKNOWN -->
-
-            <div class="reason-item">
-
-                <input
-                    type="radio"
-                    name="attendanceReason"
-                    id="reasonUnknown"
-                    value="I Don't Know the Reason"
-                    onchange="handleReasonChange()">
-
-
-                <label for="reasonUnknown">
-
-                    <i class="ri-question-line"></i>
-
-                    <span>
-                        I Don't Know
-                    </span>
-
-                </label>
-
-            </div>
-
-
-            <!-- OTHER -->
-
-            <div class="reason-item">
-
-                <input
-                    type="radio"
-                    name="attendanceReason"
-                    id="reasonOther"
-                    value="Other"
-                    onchange="handleReasonChange()">
-
-
-                <label for="reasonOther">
-
-                    <i class="ri-edit-2-line"></i>
-
-                    <span>
-                        Other Reason
-                    </span>
-
-                </label>
-
-            </div>
-
+            </button>
 
         </div>
 
 
         <textarea
             id="customReason"
-            class="custom-reason"
-            maxlength="200"
-            placeholder="Explain your problem..."></textarea>
+            placeholder="Write your reason here..."
+        ></textarea>
 
 
-        <button
-            id="sendRequestBtn"
-            class="send-request"
-            onclick="submitAttendanceRequest()">
+        <div class="modalActions">
 
-            <i class="ri-send-plane-fill"></i>
+            <button
+                class="cancelBtn"
+                onclick="closeRequestModal()"
+            >
+                CANCEL
+            </button>
 
-            SEND ATTENDANCE REQUEST
-
-        </button>
-
-
-        <div class="request-note">
-
-            Your request will be reviewed by
-            the administrator before approval.
+            <button
+                class="submitRequestBtn"
+                id="submitRequestBtn"
+                onclick="submitAttendanceRequest()"
+            >
+                SEND REQUEST
+            </button>
 
         </div>
-
 
     </div>
 
 </div>
 
 
-
-<!-- =====================================================
-     SUCCESS
-===================================================== -->
+<!-- SUCCESS -->
 
 <div
-    id="success-overlay"
-    class="success-overlay">
+    class="successOverlay"
+    id="successOverlay"
+>
 
+    <div class="successBox">
 
-    <div class="success-card">
-
-
-        <div class="success-icon">
-
-            <i class="ri-check-line"></i>
-
+        <div class="successIcon">
+            ✓
         </div>
 
+        <h3>Request Sent</h3>
 
-        <h3 id="success-title">
-
-            Success
-
-        </h3>
-
-
-        <p id="success-message">
-
+        <p>
+            Your attendance request has been submitted successfully.
+            You can track its status in the
+            <b>My Attendance Requests</b> panel.
         </p>
 
-
-        <div
-            id="success-date"
-            class="success-date">
-
-        </div>
-
-
         <button
-            class="success-close"
-            onclick="closeSuccess()">
-
-            DONE
-
+            class="successClose"
+            onclick="closeSuccess()"
+        >
+            OKAY
         </button>
-
 
     </div>
 
 </div>
 
+
+<!-- TOAST -->
+
+<div
+    class="toast"
+    id="toast"
+></div>
 
 
 <script type="module">
 
-
-/* =====================================================
-   FIREBASE
-===================================================== */
-
 import {
     initializeApp
-}
-from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
     getFirestore,
     doc,
-    setDoc,
     getDoc,
+    setDoc,
     updateDoc,
-    serverTimestamp
-}
-from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    serverTimestamp,
+    collection,
+    query,
+    where,
+    onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+
+/* =========================================================
+   FIREBASE CONFIG
+========================================================= */
 
 const firebaseConfig = {
 
-    apiKey:
-        "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+    apiKey: "YOUR_FIREBASE_API_KEY",
 
-    authDomain:
-        "black-terminal-f2c91.firebaseapp.com",
+    authDomain: "black-terminal-f2c91.firebaseapp.com",
 
-    projectId:
-        "black-terminal-f2c91",
+    projectId: "black-terminal-f2c91",
 
-    storageBucket:
-        "black-terminal-f2c91.appspot.com",
+    storageBucket: "black-terminal-f2c91.firebasestorage.app",
 
-    messagingSenderId:
-        "552489994197",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
 
-    appId:
-        "1:552489994197:web:7662331264c334ffbadf5c"
+    appId: "YOUR_FIREBASE_APP_ID"
 
 };
 
 
-const app =
-    initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
 
 
-const db =
-    getFirestore(app);
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+const INST_LAT = 21.940550;
+
+const INST_LON = 86.737409;
+
+const ALLOWED_RANGE = 0.05; // 50 meters
 
 
-/* =====================================================
-   LOCATION
-===================================================== */
-
-const INST_LAT =
-    21.940550;
-
-
-const INST_LON =
-    86.737409;
-
-
-/*
-   50 meter radius
-*/
-
-const ALLOWED_RANGE =
-    0.05;
-
-
-/* =====================================================
-   ELEMENTS
-===================================================== */
-
-const statusBox =
-    document.getElementById("status");
-
-
-const btn =
-    document.getElementById("checkin-btn");
-
-
-const studentDisplay =
-    document.getElementById("student-display");
-
-
-const lastAttendanceDate =
-    document.getElementById(
-        "last-attendance-date"
-    );
-
-
-/* =====================================================
+/* =========================================================
    STUDENT
-===================================================== */
+========================================================= */
 
-const student =
-    localStorage.getItem("studentName");
+const studentName =
+    localStorage.getItem("studentName") || "";
 
 
-/* =====================================================
-   TODAY
-===================================================== */
+const studentNameEl =
+    document.getElementById("studentName");
+
+const lastAttendanceEl =
+    document.getElementById("lastAttendance");
+
+const markBtn =
+    document.getElementById("markBtn");
+
+const locationStatus =
+    document.getElementById("locationStatus");
+
+const locationSub =
+    document.getElementById("locationSub");
+
+const statusDot =
+    document.getElementById("statusDot");
+
+
+if(!studentName){
+
+    studentNameEl.textContent = "Student";
+
+    showToast("Student name not found.");
+
+}else{
+
+    studentNameEl.textContent = studentName;
+
+}
+
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
 
 function getToday(){
 
-    const d =
-        new Date();
+    const now = new Date();
 
+    const y = now.getFullYear();
 
-    const year =
-        d.getFullYear();
+    const m = String(now.getMonth()+1).padStart(2,"0");
 
+    const d = String(now.getDate()).padStart(2,"0");
 
-    const month =
-        String(
-            d.getMonth()+1
-        ).padStart(2,"0");
-
-
-    const day =
-        String(
-            d.getDate()
-        ).padStart(2,"0");
-
-
-    return `${year}-${month}-${day}`;
+    return `${y}-${m}-${d}`;
 
 }
 
 
-/* =====================================================
-   FORMAT DATE
-===================================================== */
+function formatDate(dateString){
 
-function formatDate(date){
+    if(!dateString) return "—";
 
-    if(!date)
-        return "No attendance record";
+    const d = new Date(dateString);
 
+    if(isNaN(d.getTime())) return dateString;
 
-    if(
-        typeof date.toDate ===
-        "function"
-    ){
-
-        date =
-            date.toDate();
-
-    }
-
-
-    let d;
-
-
-    if(
-        typeof date === "string" &&
-        /^\d{4}-\d{2}-\d{2}$/.test(date)
-    ){
-
-        d =
-            new Date(
-                date + "T00:00:00"
-            );
-
-    }
-
-    else{
-
-        d =
-            new Date(date);
-
-    }
-
-
-    if(
-        isNaN(d.getTime())
-    ){
-
-        return "No attendance record";
-
-    }
-
-
-    return d.toLocaleDateString(
-        "en-IN",
-        {
-
-            day:"2-digit",
-
-            month:"short",
-
-            year:"numeric"
-
-        }
-    );
+    return d.toLocaleDateString("en-IN",{
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+    });
 
 }
 
 
-/* =====================================================
-   LAST ATTENDANCE
-===================================================== */
+function formatDateTime(value){
 
-async function loadLastAttendance(){
+    if(!value) return "—";
 
-    if(
-        !student ||
-        student === "Guest"
-    ){
+    let date;
 
-        lastAttendanceDate.textContent =
-            "Student not found";
+    if(value?.toDate){
 
-        return;
+        date = value.toDate();
+
+    }else if(value instanceof Date){
+
+        date = value;
+
+    }else{
+
+        date = new Date(value);
 
     }
 
+    if(isNaN(date.getTime())) return "—";
+
+    return date.toLocaleString("en-IN",{
+
+        day:"2-digit",
+        month:"short",
+        year:"numeric",
+
+        hour:"2-digit",
+        minute:"2-digit"
+
+    });
+
+}
+
+
+/* =========================================================
+   TIMESTAMP CONVERSION
+========================================================= */
+
+function timestampToDate(value){
+
+    if(!value) return null;
+
+    if(typeof value.toDate === "function"){
+
+        return value.toDate();
+
+    }
+
+    if(value.seconds){
+
+        return new Date(value.seconds * 1000);
+
+    }
+
+    if(value instanceof Date){
+
+        return value;
+
+    }
+
+    const d = new Date(value);
+
+    return isNaN(d.getTime()) ? null : d;
+
+}
+
+
+/* =========================================================
+   RESPONSE TIME
+========================================================= */
+
+function calculateResponseTime(requestedAt, reviewedAt){
+
+    const start = timestampToDate(requestedAt);
+
+    const end = timestampToDate(reviewedAt);
+
+    if(!start || !end){
+
+        return "—";
+
+    }
+
+    let seconds =
+        Math.max(
+            0,
+            Math.floor(
+                (end.getTime() - start.getTime()) / 1000
+            )
+        );
+
+
+    const days =
+        Math.floor(seconds / 86400);
+
+    seconds %= 86400;
+
+
+    const hours =
+        Math.floor(seconds / 3600);
+
+    seconds %= 3600;
+
+
+    const minutes =
+        Math.floor(seconds / 60);
+
+
+    if(days > 0){
+
+        return `${days}d ${hours}h`;
+
+    }
+
+    if(hours > 0){
+
+        return `${hours}h ${minutes}m`;
+
+    }
+
+    return `${Math.max(minutes,1)} min`;
+
+}
+
+
+/* =========================================================
+   PENDING TIME
+========================================================= */
+
+function calculatePendingTime(requestedAt){
+
+    const start =
+        timestampToDate(requestedAt);
+
+    if(!start){
+
+        return "Waiting for timestamp...";
+
+    }
+
+    const diff =
+        Math.max(
+            0,
+            Date.now() - start.getTime()
+        );
+
+    const minutes =
+        Math.floor(diff / 60000);
+
+    if(minutes < 1){
+
+        return "Just now";
+
+    }
+
+    if(minutes < 60){
+
+        return `${minutes} min waiting`;
+
+    }
+
+    const hours =
+        Math.floor(minutes / 60);
+
+    if(hours < 24){
+
+        return `${hours}h ${minutes % 60}m waiting`;
+
+    }
+
+    const days =
+        Math.floor(hours / 24);
+
+    return `${days}d ${hours % 24}h waiting`;
+
+}
+
+
+/* =========================================================
+   LOAD STUDENT INFO
+========================================================= */
+
+async function loadStudentInfo(){
+
+    if(!studentName) return;
 
     try{
 
-        const ref =
-            doc(
-                db,
-                "students",
-                student
-            );
-
+        const studentRef =
+            doc(db,"students",studentName);
 
         const snap =
-            await getDoc(ref);
+            await getDoc(studentRef);
 
 
-        if(
-            snap.exists()
-        ){
+        if(!snap.exists()){
 
-            const data =
-                snap.data();
+            lastAttendanceEl.textContent =
+                "No attendance";
 
-
-            lastAttendanceDate.textContent =
-                data.lastAttendanceDate
-                    ? formatDate(
-                        data.lastAttendanceDate
-                    )
-                    : "No record";
+            return;
 
         }
 
-        else{
 
-            lastAttendanceDate.textContent =
-                "No record";
+        const data = snap.data();
 
-        }
 
-    }
+        lastAttendanceEl.textContent =
+            data.lastAttendanceDate
+            ? formatDate(data.lastAttendanceDate)
+            : "No attendance";
 
-    catch(error){
+
+    }catch(error){
 
         console.error(error);
 
-        lastAttendanceDate.textContent =
-            "Unable to load";
+        lastAttendanceEl.textContent =
+            "Unavailable";
 
     }
 
 }
 
 
-/* =====================================================
+/* =========================================================
    DISTANCE
-===================================================== */
+========================================================= */
 
 function calculateDistance(
     lat1,
@@ -2486,193 +1617,144 @@ function calculateDistance(
     lon2
 ){
 
-    const R =
-        6371;
-
+    const R = 6371;
 
     const dLat =
-        (lat2-lat1)
-        *Math.PI/180;
-
+        (lat2-lat1) * Math.PI / 180;
 
     const dLon =
-        (lon2-lon1)
-        *Math.PI/180;
-
+        (lon2-lon1) * Math.PI / 180;
 
     const a =
+        Math.sin(dLat/2) *
+        Math.sin(dLat/2) +
 
-        Math.sin(dLat/2) ** 2
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) *
+        Math.sin(dLon/2);
 
-        +
-
-        Math.cos(
-            lat1*Math.PI/180
-        )
-
-        *
-
-        Math.cos(
-            lat2*Math.PI/180
-        )
-
-        *
-
-        Math.sin(dLon/2) ** 2;
-
-
-    return R *
+    const c =
         2 *
         Math.atan2(
             Math.sqrt(a),
             Math.sqrt(1-a)
         );
 
+    return R*c;
+
 }
 
 
-/* =====================================================
-   LOCATION CHECK
-===================================================== */
+/* =========================================================
+   LOCATION
+========================================================= */
 
-function initLocation(){
+function checkLocation(){
 
-    if(
-        !student ||
-        student === "Guest"
-    ){
+    if(!navigator.geolocation){
 
-        studentDisplay.textContent =
-            "Update Profile Name";
+        locationStatus.textContent =
+            "Location not supported";
 
+        locationSub.textContent =
+            "Your browser does not support GPS.";
 
-        statusBox.innerHTML =
-
-            `<i class="ri-error-warning-line"></i>
-             Please update your student profile.`;
-
-
-        statusBox.style.color =
-            "#f59e0b";
-
-
-        btn.disabled =
-            true;
-
-
-        return;
-
-    }
-
-
-    studentDisplay.textContent =
-        student;
-
-
-    loadLastAttendance();
-
-
-    if(
-        !navigator.geolocation
-    ){
-
-        statusBox.innerHTML =
-
-            `<i class="ri-error-warning-line"></i>
-             GPS is not supported on this device.`;
-
-
-        statusBox.style.color =
+        statusDot.style.background =
             "#ef4444";
 
-
-        btn.disabled =
-            true;
-
+        markBtn.disabled = true;
 
         return;
 
     }
+
+
+    locationStatus.textContent =
+        "Checking your location...";
+
+    locationSub.textContent =
+        "Please wait.";
+
+    statusDot.style.background =
+        "#f59e0b";
 
 
     navigator.geolocation.getCurrentPosition(
 
         position => {
 
+            const lat =
+                position.coords.latitude;
+
+            const lon =
+                position.coords.longitude;
+
 
             const distance =
                 calculateDistance(
-
-                    position.coords.latitude,
-
-                    position.coords.longitude,
-
+                    lat,
+                    lon,
                     INST_LAT,
-
                     INST_LON
-
                 );
 
 
-            if(
-                distance <= ALLOWED_RANGE
-            ){
+            if(distance <= ALLOWED_RANGE){
 
-                statusBox.innerHTML =
+                locationStatus.textContent =
+                    "You are inside institute area";
 
-                    `<i class="ri-checkbox-circle-fill"></i>
-                     Location Verified • You are at the Center`;
+                locationSub.textContent =
+                    `${Math.round(distance*1000)}m from institute`;
 
-
-                statusBox.style.color =
+                statusDot.style.background =
                     "#22c55e";
 
+                statusDot.style.boxShadow =
+                    "0 0 12px #22c55e";
 
-                btn.disabled =
-                    false;
+                markBtn.disabled = false;
 
-            }
+            }else{
 
-            else{
+                locationStatus.textContent =
+                    "You are outside institute area";
 
-                statusBox.innerHTML =
+                locationSub.textContent =
+                    `${Math.round(distance*1000)}m away • Required within 50m`;
 
-                    `<i class="ri-map-pin-off-line"></i>
-                     Outside Center • ${(distance*1000).toFixed(0)}m away`;
-
-
-                statusBox.style.color =
+                statusDot.style.background =
                     "#ef4444";
 
+                statusDot.style.boxShadow =
+                    "0 0 12px #ef4444";
 
-                btn.disabled =
-                    true;
+                markBtn.disabled = true;
 
             }
 
         },
-
 
         error => {
 
-            console.log(error);
+            console.error(error);
 
+            locationStatus.textContent =
+                "GPS / Location Error";
 
-            statusBox.innerHTML =
+            locationSub.textContent =
+                "You can send an attendance request below.";
 
-                `<i class="ri-gps-line"></i>
-                 Location unavailable • Request attendance below`;
+            statusDot.style.background =
+                "#ef4444";
 
+            statusDot.style.boxShadow =
+                "0 0 12px #ef4444";
 
-            statusBox.style.color =
-                "#f59e0b";
-
-
-            btn.disabled =
-                true;
+            markBtn.disabled = true;
 
         },
-
 
         {
 
@@ -2689,152 +1771,62 @@ function initLocation(){
 }
 
 
-/* =====================================================
+/* =========================================================
    MARK ATTENDANCE
-===================================================== */
+========================================================= */
 
-window.markAttendance =
-async function(){
+window.markAttendance = async function(){
 
-    if(!student){
+    if(!studentName){
 
-        alert(
-            "Student name not found."
-        );
+        showToast("Student name not found.");
 
         return;
 
     }
 
 
-    btn.disabled =
-        true;
+    markBtn.disabled = true;
 
-
-    btn.innerHTML =
-
-        `<span class="spinner"></span>
-         Processing...`;
-
-
-    const today =
-        getToday();
-
-
-    const now =
-        new Date();
+    markBtn.textContent =
+        "MARKING...";
 
 
     try{
 
-
-        const studentRef =
-            doc(
-                db,
-                "students",
-                student
-            );
+        const today =
+            getToday();
 
 
-        const studentSnap =
-            await getDoc(
-                studentRef
-            );
+        const attendanceId =
+            `${studentName}_${today}`;
 
 
         const attendanceRef =
             doc(
                 db,
                 "attendance",
-                `${student}_${today}`
+                attendanceId
             );
 
 
-        const attendanceSnap =
-            await getDoc(
-                attendanceRef
+        const existing =
+            await getDoc(attendanceRef);
+
+
+        if(existing.exists()){
+
+            showToast(
+                "Today's attendance is already marked."
             );
 
-
-        /* already marked */
-
-        if(
-            attendanceSnap.exists()
-        ){
-
-            btn.innerHTML =
-                `ALREADY MARKED
-                 <i class="ri-check-double-line"></i>`;
-
-
-            showSuccess(
-
-                "Already Present",
-
-                "Your attendance for today has already been recorded.",
-
-                today
-
-            );
-
+            markBtn.textContent =
+                "✓ ATTENDANCE MARKED";
 
             return;
 
         }
 
-
-        /* streak */
-
-        let streak =
-            1;
-
-
-        if(
-            studentSnap.exists()
-        ){
-
-            const data =
-                studentSnap.data();
-
-
-            const last =
-                data.lastAttendanceDate;
-
-
-            if(last){
-
-                const lastDate =
-                    new Date(last);
-
-
-                const yesterday =
-                    new Date(now);
-
-
-                yesterday.setDate(
-                    now.getDate()-1
-                );
-
-
-                if(
-
-                    lastDate.toDateString()
-                    ===
-                    yesterday.toDateString()
-
-                ){
-
-                    streak =
-                        (data.streak || 0)+1;
-
-                }
-
-            }
-
-        }
-
-
-        /* save */
 
         await setDoc(
 
@@ -2842,173 +1834,183 @@ async function(){
 
             {
 
-                studentName:
-                    student,
+                studentName:studentName,
 
-                userName:
-                    student,
+                date:today,
 
-                date:
-                    today,
+                status:"present",
 
-                timestamp:
-                    serverTimestamp()
+                timestamp:serverTimestamp()
 
             }
 
         );
 
 
-        /* update student */
-
-        if(
-            studentSnap.exists()
-        ){
-
-            await updateDoc(
-
-                studentRef,
-
-                {
-
-                    streak:
-                        streak,
-
-                    lastAttendanceDate:
-                        today
-
-                }
-
+        const studentRef =
+            doc(
+                db,
+                "students",
+                studentName
             );
+
+
+        const studentSnap =
+            await getDoc(studentRef);
+
+
+        let streak = 1;
+
+
+        if(studentSnap.exists()){
+
+            const data =
+                studentSnap.data();
+
+            streak =
+                Number(data.streak || 0) + 1;
 
         }
 
 
-        lastAttendanceDate.textContent =
-            formatDate(today);
+        await setDoc(
 
+            studentRef,
 
-        statusBox.innerHTML =
+            {
 
-            `<i class="ri-checkbox-circle-fill"></i>
-             Attendance Recorded Successfully`;
+                lastAttendanceDate:today,
 
+                streak:streak
 
-        statusBox.style.color =
-            "#22c55e";
+            },
 
-
-        btn.innerHTML =
-
-            `PRESENT ✓`;
-
-
-        showSuccess(
-
-            "Present Successfully!",
-
-            `${student}, your attendance has been recorded successfully.`,
-
-            today
+            {merge:true}
 
         );
 
-    }
 
-    catch(error){
+        markBtn.textContent =
+            "✓ ATTENDANCE MARKED";
+
+        locationStatus.textContent =
+            "Attendance marked successfully";
+
+        locationSub.textContent =
+            "Today's attendance has been recorded.";
+
+        statusDot.style.background =
+            "#22c55e";
+
+        statusDot.style.boxShadow =
+            "0 0 12px #22c55e";
+
+
+        loadStudentInfo();
+
+
+        showToast(
+            "Attendance marked successfully!"
+        );
+
+
+    }catch(error){
 
         console.error(error);
 
+        markBtn.disabled = false;
 
-        alert(
-            "Attendance failed.\n\n" +
-            error.message
+        markBtn.textContent =
+            "📍 MARK ATTENDANCE";
+
+        showToast(
+            "Could not mark attendance. Try again."
         );
-
-
-        btn.disabled =
-            false;
-
-
-        btn.innerHTML =
-
-            `MARK ATTENDANCE
-             <i class="ri-fingerprint-line"></i>`;
 
     }
 
 };
 
 
-/* =====================================================
-   OPEN REQUEST
-===================================================== */
+/* =========================================================
+   REQUEST MODAL
+========================================================= */
 
-window.openRequestModal =
-function(){
+let selectedReason = "";
 
-    if(
-        !student ||
-        student === "Guest"
-    ){
 
-        alert(
-            "Please update your student name first."
+window.openRequestModal = function(){
+
+    selectedReason = "";
+
+    document
+        .querySelectorAll(".reasonBtn")
+        .forEach(btn =>
+            btn.classList.remove("active")
         );
 
-        return;
+
+    document
+        .getElementById("customReason")
+        .classList.remove("show");
+
+    document
+        .getElementById("customReason")
+        .value = "";
+
+
+    document
+        .getElementById("requestModal")
+        .classList.add("show");
+
+};
+
+
+window.closeRequestModal = function(){
+
+    document
+        .getElementById("requestModal")
+        .classList.remove("show");
+
+};
+
+
+window.closeModalOutside = function(event){
+
+    if(event.target.id === "requestModal"){
+
+        closeRequestModal();
 
     }
 
-
-    document
-        .getElementById(
-            "request-overlay"
-        )
-        .classList.add("active");
-
 };
 
 
-/* =====================================================
-   CLOSE REQUEST
-===================================================== */
+/* =========================================================
+   SELECT REASON
+========================================================= */
 
-window.closeRequestModal =
-function(){
+window.selectReason = function(button){
 
     document
-        .getElementById(
-            "request-overlay"
-        )
-        .classList.remove("active");
-
-};
-
-
-/* =====================================================
-   REASON CHANGE
-===================================================== */
-
-window.handleReasonChange =
-function(){
-
-    const selected =
-        document.querySelector(
-            'input[name="attendanceReason"]:checked'
+        .querySelectorAll(".reasonBtn")
+        .forEach(btn =>
+            btn.classList.remove("active")
         );
+
+
+    button.classList.add("active");
+
+
+    selectedReason =
+        button.dataset.reason;
 
 
     const custom =
-        document.getElementById(
-            "customReason"
-        );
+        document.getElementById("customReason");
 
 
-    if(
-        selected &&
-        selected.value === "Other"
-    ){
+    if(selectedReason === "Other Reason"){
 
         custom.classList.add("show");
 
@@ -3017,9 +2019,7 @@ function(){
             100
         );
 
-    }
-
-    else{
+    }else{
 
         custom.classList.remove("show");
 
@@ -3030,36 +2030,24 @@ function(){
 };
 
 
-/* =====================================================
-   SUBMIT REQUEST
-===================================================== */
+/* =========================================================
+   SUBMIT ATTENDANCE REQUEST
+========================================================= */
 
-window.submitAttendanceRequest =
-async function(){
+window.submitAttendanceRequest = async function(){
 
-    if(
-        !student ||
-        student === "Guest"
-    ){
+    if(!studentName){
 
-        alert(
-            "Student name not found."
-        );
+        showToast("Student name not found.");
 
         return;
 
     }
 
 
-    const selected =
-        document.querySelector(
-            'input[name="attendanceReason"]:checked'
-        );
+    if(!selectedReason){
 
-
-    if(!selected){
-
-        alert(
+        showToast(
             "Please select a reason."
         );
 
@@ -3068,27 +2056,23 @@ async function(){
     }
 
 
-    let reason =
-        selected.value;
+    let finalReason =
+        selectedReason;
 
 
-    if(
-        selected.value === "Other"
-    ){
+    if(selectedReason === "Other Reason"){
 
         const custom =
             document
-                .getElementById(
-                    "customReason"
-                )
+                .getElementById("customReason")
                 .value
                 .trim();
 
 
         if(!custom){
 
-            alert(
-                "Please explain your problem."
+            showToast(
+                "Please write your reason."
             );
 
             return;
@@ -3096,123 +2080,51 @@ async function(){
         }
 
 
-        reason =
+        finalReason =
             custom;
 
     }
 
 
-    const today =
-        getToday();
-
-
-    const sendBtn =
+    const submitBtn =
         document.getElementById(
-            "sendRequestBtn"
+            "submitRequestBtn"
         );
 
 
-    sendBtn.disabled =
-        true;
+    submitBtn.disabled = true;
 
-
-    sendBtn.innerHTML =
-
-        `<span class="spinner"></span>
-         Sending...`;
+    submitBtn.textContent =
+        "SENDING...";
 
 
     try{
 
-
-        /* check attendance */
-
-        const attendanceRef =
-            doc(
-                db,
-                "attendance",
-                `${student}_${today}`
-            );
+        const today =
+            getToday();
 
 
-        const attendanceSnap =
-            await getDoc(
-                attendanceRef
-            );
+        const requestId =
+            `${studentName}_${today}`;
 
-
-        if(
-            attendanceSnap.exists()
-        ){
-
-            alert(
-                "Your attendance is already marked for today."
-            );
-
-
-            sendBtn.disabled =
-                false;
-
-
-            sendBtn.innerHTML =
-
-                `<i class="ri-send-plane-fill"></i>
-                 SEND ATTENDANCE REQUEST`;
-
-            return;
-
-        }
-
-
-        /* unique request */
 
         const requestRef =
             doc(
                 db,
                 "attendance_requests",
-                `${student}_${today}`
+                requestId
             );
 
 
         const existing =
-            await getDoc(
-                requestRef
-            );
+            await getDoc(requestRef);
 
 
-        if(
-            existing.exists()
-        ){
-
-            closeRequestModal();
-
-
-            showSuccess(
-
-                "Request Already Sent",
-
-                "You already have a pending attendance request for today.",
-
-                today
-
-            );
-
-
-            sendBtn.disabled =
-                false;
-
-
-            sendBtn.innerHTML =
-
-                `<i class="ri-send-plane-fill"></i>
-                 SEND ATTENDANCE REQUEST`;
-
-            return;
-
-        }
-
-
-        /* save */
+        /*
+         * If an old request exists, allow the student
+         * to submit it again. This is especially useful
+         * after a rejected request.
+         */
 
         await setDoc(
 
@@ -3220,22 +2132,23 @@ async function(){
 
             {
 
-                studentName:
-                    student,
+                studentName:studentName,
 
-                date:
-                    today,
+                date:today,
 
-                reason:
-                    reason,
+                reason:finalReason,
 
-                status:
-                    "pending",
+                status:"pending",
 
-                timestamp:
-                    serverTimestamp()
+                timestamp:serverTimestamp(),
 
-            }
+                reviewedAt:null,
+
+                responseTime:null
+
+            },
+
+            {merge:true}
 
         );
 
@@ -3243,178 +2156,581 @@ async function(){
         closeRequestModal();
 
 
-        showSuccess(
-
-            "Request Submitted",
-
-            "Your attendance request has been sent to the administrator for review.",
-
-            today
-
-        );
-
-
-        sendBtn.disabled =
-            false;
-
-
-        sendBtn.innerHTML =
-
-            `<i class="ri-send-plane-fill"></i>
-             SEND ATTENDANCE REQUEST`;
-
-
-        /* reset */
-
-        const selectedInput =
-            document.querySelector(
-                'input[name="attendanceReason"]:checked'
-            );
-
-
-        if(selectedInput){
-
-            selectedInput.checked =
-                false;
-
-        }
-
-
         document
-            .getElementById(
-                "customReason"
-            )
-            .value = "";
+            .getElementById("successOverlay")
+            .classList.add("show");
 
 
-        document
-            .getElementById(
-                "customReason"
-            )
-            .classList.remove(
-                "show"
-            );
-
-    }
-
-    catch(error){
+    }catch(error){
 
         console.error(error);
 
-
-        alert(
-            "Could not submit request.\n\n" +
-            error.message
+        showToast(
+            "Request could not be sent. Please try again."
         );
 
+    }finally{
 
-        sendBtn.disabled =
-            false;
+        submitBtn.disabled = false;
 
-
-        sendBtn.innerHTML =
-
-            `<i class="ri-send-plane-fill"></i>
-             SEND ATTENDANCE REQUEST`;
+        submitBtn.textContent =
+            "SEND REQUEST";
 
     }
 
 };
 
 
-/* =====================================================
+/* =========================================================
+   REALTIME REQUESTS
+========================================================= */
+
+function listenToRequests(){
+
+    if(!studentName){
+
+        return;
+
+    }
+
+
+    const requestsRef =
+        collection(
+            db,
+            "attendance_requests"
+        );
+
+
+    /*
+     * No orderBy() here intentionally.
+     * This avoids requiring a Firestore composite index.
+     */
+
+    const q =
+        query(
+            requestsRef,
+            where(
+                "studentName",
+                "==",
+                studentName
+            )
+        );
+
+
+    onSnapshot(
+
+        q,
+
+        snapshot => {
+
+            const requests =
+                snapshot.docs.map(docSnap => ({
+
+                    id:docSnap.id,
+
+                    ...docSnap.data()
+
+                }));
+
+
+            requests.sort(
+
+                (a,b) => {
+
+                    const aDate =
+                        timestampToDate(a.timestamp);
+
+                    const bDate =
+                        timestampToDate(b.timestamp);
+
+
+                    return (
+                        (bDate?.getTime() || 0) -
+                        (aDate?.getTime() || 0)
+                    );
+
+                }
+
+            );
+
+
+            renderRequests(requests);
+
+        },
+
+        error => {
+
+            console.error(
+                "Request listener error:",
+                error
+            );
+
+
+            document
+                .getElementById("requestsList")
+                .innerHTML = `
+
+                    <div class="emptyRequests">
+
+                        <div class="emptyIcon">
+                            ⚠️
+                        </div>
+
+                        <strong>
+                            Could not load requests
+                        </strong>
+
+                        <span>
+                            Please check your internet connection.
+                        </span>
+
+                    </div>
+
+                `;
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   RENDER REQUESTS
+========================================================= */
+
+function renderRequests(requests){
+
+    const list =
+        document.getElementById(
+            "requestsList"
+        );
+
+
+    const count =
+        document.getElementById(
+            "requestCount"
+        );
+
+
+    count.textContent =
+        `${requests.length} ${
+            requests.length === 1
+            ? "request"
+            : "requests"
+        }`;
+
+
+    if(!requests.length){
+
+        list.innerHTML = `
+
+            <div class="emptyRequests">
+
+                <div class="emptyIcon">
+                    📭
+                </div>
+
+                <strong>
+                    No requests yet
+                </strong>
+
+                <span>
+                    Your attendance requests will appear here.
+                </span>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    list.innerHTML =
+        requests
+            .map(request => createRequestHTML(request))
+            .join("");
+
+}
+
+
+/* =========================================================
+   REQUEST HTML
+========================================================= */
+
+function createRequestHTML(request){
+
+    const status =
+        String(
+            request.status || "pending"
+        ).toLowerCase();
+
+
+    let statusClass =
+        "pending";
+
+    let statusText =
+        "PENDING";
+
+    let statusIcon =
+        "●";
+
+
+    if(status === "accepted"){
+
+        statusClass =
+            "accepted";
+
+        statusText =
+            "ACCEPTED";
+
+        statusIcon =
+            "✓";
+
+    }else if(status === "rejected"){
+
+        statusClass =
+            "rejected";
+
+        statusText =
+            "REJECTED";
+
+        statusIcon =
+            "×";
+
+    }
+
+
+    const requestedAt =
+        formatDateTime(
+            request.timestamp
+        );
+
+
+    const reviewedAt =
+        formatDateTime(
+            request.reviewedAt
+        );
+
+
+    let responseText =
+        "Waiting for admin";
+
+
+    let responseClass =
+        "pendingTime";
+
+
+    if(status === "accepted" || status === "rejected"){
+
+        responseText =
+            request.responseTime
+            ? formatStoredResponseTime(
+                request.responseTime
+              )
+            : calculateResponseTime(
+                request.timestamp,
+                request.reviewedAt
+              );
+
+
+        responseClass =
+            status === "accepted"
+            ? "acceptedTime"
+            : "rejectedTime";
+
+
+    }else{
+
+        responseText =
+            calculatePendingTime(
+                request.timestamp
+            );
+
+    }
+
+
+    const reason =
+        escapeHTML(
+            request.reason || "No reason provided"
+        );
+
+
+    const date =
+        escapeHTML(
+            request.date || "—"
+        );
+
+
+    return `
+
+        <div class="requestItem">
+
+            <div class="requestItemTop">
+
+                <div>
+
+                    <div class="reason">
+                        ${reason}
+                    </div>
+
+                    <div class="requestDate">
+                        Attendance date: ${date}
+                    </div>
+
+                </div>
+
+
+                <div class="badge ${statusClass}">
+                    ${statusIcon}
+                    ${statusText}
+                </div>
+
+            </div>
+
+
+            <div class="requestDetails">
+
+                <div class="detail">
+
+                    <label>
+                        Requested
+                    </label>
+
+                    <span>
+                        ${requestedAt}
+                    </span>
+
+                </div>
+
+
+                <div class="detail">
+
+                    <label>
+                        Reviewed
+                    </label>
+
+                    <span>
+                        ${
+                            status === "pending"
+                            ? "Waiting..."
+                            : reviewedAt
+                        }
+                    </span>
+
+                </div>
+
+
+                <div class="detail">
+
+                    <label>
+                        Response Time
+                    </label>
+
+                    <span class="${responseClass}">
+                        ${responseText}
+                    </span>
+
+                </div>
+
+
+                <div class="detail">
+
+                    <label>
+                        Status
+                    </label>
+
+                    <span>
+                        ${
+                            status === "pending"
+                            ? "Waiting for admin review"
+                            : status === "accepted"
+                            ? "Attendance approved"
+                            : "Request rejected"
+                        }
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="requestReason">
+
+                <b>Reason:</b>
+                ${reason}
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+   STORED RESPONSE TIME
+========================================================= */
+
+function formatStoredResponseTime(value){
+
+    if(value === null || value === undefined){
+
+        return "—";
+
+    }
+
+
+    /*
+     * Supports minutes stored as a number.
+     */
+
+    if(typeof value === "number"){
+
+        if(value < 1){
+
+            return "Less than 1 min";
+
+        }
+
+        if(value < 60){
+
+            return `${Math.round(value)} min`;
+
+        }
+
+
+        const hours =
+            Math.floor(value / 60);
+
+        const minutes =
+            Math.round(value % 60);
+
+
+        if(hours < 24){
+
+            return `${hours}h ${minutes}m`;
+
+        }
+
+
+        const days =
+            Math.floor(hours / 24);
+
+        return `${days}d ${hours % 24}h`;
+
+    }
+
+
+    return String(value);
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(value){
+
+    return String(value)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
+}
+
+
+/* =========================================================
    SUCCESS
-===================================================== */
+========================================================= */
 
-function showSuccess(
-    title,
-    message,
-    date
-){
+window.closeSuccess = function(){
 
-    document.getElementById(
-        "success-title"
-    ).textContent =
-        title;
+    document
+        .getElementById("successOverlay")
+        .classList.remove("show");
+
+};
 
 
-    document.getElementById(
-        "success-message"
-    ).textContent =
+/* =========================================================
+   TOAST
+========================================================= */
+
+let toastTimer;
+
+
+function showToast(message){
+
+    const toast =
+        document.getElementById("toast");
+
+
+    toast.textContent =
         message;
 
 
-    document.getElementById(
-        "success-date"
-    ).innerHTML =
-
-        `<i class="ri-calendar-check-line"></i>
-         &nbsp;
-         ${formatDate(date)}`;
+    toast.classList.add("show");
 
 
-    document
-        .getElementById(
-            "success-overlay"
-        )
-        .classList.add(
-            "active"
+    clearTimeout(toastTimer);
+
+
+    toastTimer =
+        setTimeout(
+
+            () => {
+
+                toast.classList.remove("show");
+
+            },
+
+            2800
+
         );
 
 }
 
 
-/* =====================================================
-   CLOSE SUCCESS
-===================================================== */
+/* =========================================================
+   INIT
+========================================================= */
 
-window.closeSuccess =
-function(){
+loadStudentInfo();
 
-    document
-        .getElementById(
-            "success-overlay"
-        )
-        .classList.remove(
-            "active"
-        );
+checkLocation();
 
-};
+listenToRequests();
 
 
-/* =====================================================
-   CLOSE MODAL OUTSIDE
-===================================================== */
+/*
+ * Refresh pending timers every minute.
+ * Realtime Firestore updates are still used for status.
+ */
 
-document
-    .getElementById(
-        "request-overlay"
-    )
-    .addEventListener(
-        "click",
-        function(e){
+setInterval(
 
-            if(
-                e.target === this
-            ){
+    () => {
 
-                closeRequestModal();
+        if(studentName){
 
-            }
+            listenToRequests();
 
         }
-    );
 
+    },
 
-/* =====================================================
-   START
-===================================================== */
+    60000
 
-window.onload =
-    initLocation;
+);
 
 </script>
 
 </body>
-
 </html>
