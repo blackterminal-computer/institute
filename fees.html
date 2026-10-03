@@ -709,6 +709,18 @@ button{
     rgba(255,80,100,.15);
 }
 
+.payment-badge.pending{
+
+  color:#ffb454;
+
+  background:
+    rgba(255,180,84,.08);
+
+  border:
+    1px solid
+    rgba(255,180,84,.18);
+}
+
 .payment-badge.paid{
 
   color:#00f5a0;
@@ -791,6 +803,15 @@ button{
     rgba(0,245,160,.10);
 }
 
+.custom-payment-box.pending-box{
+
+  background:
+    rgba(255,180,84,.035);
+
+  border-color:
+    rgba(255,180,84,.13);
+}
+
 .custom-payment-label{
 
   display:flex;
@@ -821,6 +842,15 @@ button{
   font-size:8px;
 
   font-weight:800;
+}
+
+.pending-fee-label{
+
+  color:#ffb454;
+
+  font-size:8px;
+
+  font-weight:900;
 }
 
 .custom-payment-row{
@@ -970,6 +1000,20 @@ button{
       135deg,
       #00f5a0,
       #00b8ff
+    );
+}
+
+.swipe-action.pending{
+
+  color:#151008;
+
+  border:0;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffcf70,
+      #ff9f43
     );
 }
 
@@ -1233,7 +1277,7 @@ button{
 
 
 /* =====================================================
-   PAID LOG
+   PAYMENT LOG
 ===================================================== */
 
 .table-wrap{
@@ -1245,7 +1289,7 @@ table{
 
   border-collapse:collapse;
 
-  min-width:450px;
+  min-width:520px;
 }
 
 th,
@@ -1280,6 +1324,13 @@ td{
   font-weight:800;
 }
 
+.pending-amount{
+
+  color:#ffb454;
+
+  font-weight:800;
+}
+
 .status-paid{
 
   display:inline-block;
@@ -1292,6 +1343,28 @@ td{
   border:
     1px solid
     rgba(0,245,160,.16);
+
+  border-radius:7px;
+
+  padding:4px 6px;
+
+  font-size:8px;
+
+  font-weight:900;
+}
+
+.status-pending{
+
+  display:inline-block;
+
+  color:#ffb454;
+
+  background:
+    rgba(255,180,84,.08);
+
+  border:
+    1px solid
+    rgba(255,180,84,.18);
 
   border-radius:7px;
 
@@ -1461,10 +1534,6 @@ td{
 }
 
 
-/* =====================================================
-   VERY SMALL
-===================================================== */
-
 @media(max-width:360px){
 
   .student-details{
@@ -1512,13 +1581,8 @@ td{
 
 <body>
 
-
 <div class="container">
 
-
-  <!-- ===================================================
-       HEADER
-  ==================================================== -->
 
   <div class="header">
 
@@ -1553,10 +1617,6 @@ td{
   </div>
 
 
-
-  <!-- ===================================================
-       SUMMARY
-  ==================================================== -->
 
   <div class="summary-grid">
 
@@ -1613,10 +1673,6 @@ td{
 
 
 
-  <!-- ===================================================
-       ADD STUDENT
-  ==================================================== -->
-
   <div class="card">
 
     <div class="card-title">
@@ -1666,10 +1722,6 @@ td{
 
 
 
-  <!-- ===================================================
-       FEES SWIPE CARD
-  ==================================================== -->
-
   <div class="card">
 
 
@@ -1684,8 +1736,6 @@ td{
     </div>
 
 
-
-    <!-- SEARCH -->
 
     <div class="search-wrap">
 
@@ -1729,8 +1779,6 @@ td{
 
 
 
-    <!-- QUEUE INFO -->
-
     <div class="queue-info">
 
       <div
@@ -1749,8 +1797,6 @@ td{
 
 
 
-    <!-- LOADER -->
-
     <div
       id="loader"
       class="loader show"
@@ -1764,16 +1810,12 @@ td{
 
 
 
-    <!-- SWIPE STAGE -->
-
     <div
       id="swipeStage"
       class="swipe-stage"
     ></div>
 
 
-
-    <!-- PROGRESS -->
 
     <div class="progress-wrap">
 
@@ -1806,17 +1848,13 @@ td{
 
 
 
-  <!-- ===================================================
-       PAID LOG
-  ==================================================== -->
-
   <div class="card">
 
 
     <div class="card-title">
 
       <h2>
-        Paid Students Log
+        Fee Payment Log
       </h2>
 
       <span id="paidLogCount">
@@ -1844,7 +1882,11 @@ td{
             </th>
 
             <th>
-              Amount
+              Received
+            </th>
+
+            <th>
+              Pending
             </th>
 
             <th>
@@ -1878,10 +1920,6 @@ td{
 ></div>
 
 
-
-<!-- =====================================================
-     JSPDF
-===================================================== -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -1990,7 +2028,7 @@ document.getElementById(
 ===================================================== */
 
 const CACHE_VERSION =
-  "fees_swipe_v2";
+  "fees_swipe_v3_underpayment";
 
 
 const STUDENT_CACHE_KEY =
@@ -2138,8 +2176,15 @@ function sanitizePhoneNumber(value){
 
 
 /* =====================================================
-   PAYMENT AMOUNT HELPERS
+   PAYMENT HELPERS
 ===================================================== */
+
+/*
+ * Returns the amount actually received.
+ *
+ * Old records without amount are treated as ₹500
+ * only when their status is PAID.
+ */
 
 function getPaymentAmount(
   name
@@ -2170,18 +2215,152 @@ function getPaymentAmount(
     );
 
 
-  return Number.isFinite(
-    amount
-  )
-    ? amount
-    : 0;
+  if(
+    Number.isFinite(amount) &&
+    amount > 0
+  ){
+
+    return Math.round(
+      amount
+    );
+
+  }
+
+
+  if(
+    payment.status === "paid"
+  ){
+
+    return MONTHLY_FEE;
+
+  }
+
+
+  return 0;
 
 }
 
 
-function getEnteredPaymentAmount(){
+/*
+ * Remaining amount.
+ *
+ * ₹500 fee
+ * ₹300 received
+ * ₹200 pending
+ */
+
+function getPendingAmount(
+  name
+){
+
+  const received =
+    getPaymentAmount(
+      name
+    );
+
+
+  return Math.max(
+    0,
+    MONTHLY_FEE -
+    received
+  );
+
+}
+
+
+/*
+ * Full payment status.
+ */
+
+function isFullyPaid(
+  name
+){
+
+  const received =
+    getPaymentAmount(
+      name
+    );
+
+
+  const status =
+    getPaymentStatus(
+      name
+    );
+
+
+  return (
+    status === "paid" &&
+    received >= MONTHLY_FEE
+  );
+
+}
+
+
+/*
+ * Payment status:
+ *
+ * paid    = ₹500 or more
+ * pending = partial payment
+ * unpaid  = nothing received
+ */
+
+function getPaymentStatus(
+  name
+){
+
+  const key =
+    normalizeName(
+      name
+    );
+
+
+  const payment =
+    paymentStates[key];
+
+
+  const received =
+    getPaymentAmount(
+      name
+    );
+
+
+  if(
+    payment?.status === "paid" &&
+    received >= MONTHLY_FEE
+  ){
+
+    return "paid";
+
+  }
+
+
+  if(
+    received > 0 &&
+    received < MONTHLY_FEE
+  ){
+
+    return "pending";
+
+  }
+
+
+  return "unpaid";
+
+}
+
+
+/*
+ * Read current card input.
+ */
+
+function getEnteredPaymentAmount(
+  card=null
+){
 
   const input =
+    card?.querySelector(
+      "#customPaymentInput"
+    ) ||
     document.getElementById(
       "customPaymentInput"
     );
@@ -2201,7 +2380,9 @@ function getEnteredPaymentAmount(){
 
 
   if(
-    !Number.isFinite(amount) ||
+    !Number.isFinite(
+      amount
+    ) ||
     amount <= 0
   ){
 
@@ -2213,6 +2394,77 @@ function getEnteredPaymentAmount(){
   return Math.round(
     amount
   );
+
+}
+
+
+/*
+ * Amount to display/send as due.
+ *
+ * If student already paid ₹300,
+ * WhatsApp reminder will say ₹200.
+ */
+
+function getDueAmountForStudent(
+  name,
+  card=null
+){
+
+  const pending =
+    getPendingAmount(
+      name
+    );
+
+
+  if(
+    pending > 0 &&
+    getPaymentStatus(name) === "pending"
+  ){
+
+    return pending;
+
+  }
+
+
+  if(card){
+
+    const input =
+      card.querySelector(
+        "#customPaymentInput"
+      );
+
+
+    if(input){
+
+      const entered =
+        Number(
+          input.value
+        );
+
+
+      if(
+        Number.isFinite(
+          entered
+        ) &&
+        entered > 0
+      ){
+
+        return Math.max(
+          0,
+          MONTHLY_FEE -
+          Math.round(
+            entered
+          )
+        );
+
+      }
+
+    }
+
+  }
+
+
+  return MONTHLY_FEE;
 
 }
 
@@ -2848,37 +3100,13 @@ function getFinalStudentNames(){
 
 
 /* =====================================================
-   PAYMENT STATUS
-===================================================== */
-
-function getPaymentStatus(
-  name
-){
-
-  const key =
-    normalizeName(
-      name
-    );
-
-
-  return (
-    paymentStates[key]?.status ===
-    "paid"
-  )
-  ? "paid"
-  : "unpaid";
-
-}
-
-
-/* =====================================================
    PAYMENT LOCAL UPDATE
 ===================================================== */
 
 function setLocalPaymentStatus(
   name,
   status,
-  amount=MONTHLY_FEE
+  amount=0
 ){
 
   const key =
@@ -2893,7 +3121,18 @@ function setLocalPaymentStatus(
 
     status,
 
-    amount
+    amount:
+
+      Number.isFinite(
+        Number(amount)
+      )
+      ? Math.max(
+          0,
+          Math.round(
+            Number(amount)
+          )
+        )
+      : 0
 
   };
 
@@ -3040,6 +3279,15 @@ function rebuildQueue(){
     getFinalStudentNames();
 
 
+  /*
+   * Queue includes:
+   *
+   * 1. Unpaid students
+   * 2. Underpaid / partial-payment students
+   *
+   * Fully paid students are removed.
+   */
+
   queueStudents =
     students.filter(
       student => {
@@ -3049,9 +3297,9 @@ function rebuildQueue(){
 
 
         if(
-          getPaymentStatus(
+          isFullyPaid(
             name
-          ) === "paid"
+          )
         ){
 
           return false;
@@ -3158,9 +3406,9 @@ function updateQueueCount(){
   const paid =
     progress.filter(
       student =>
-        getPaymentStatus(
+        isFullyPaid(
           student.name
-        ) === "paid"
+        )
     ).length;
 
 
@@ -3244,10 +3492,18 @@ function createStudentCard(
     );
 
 
-  const paid =
+  const status =
     getPaymentStatus(
       name
-    ) === "paid";
+    );
+
+
+  const paid =
+    status === "paid";
+
+
+  const pending =
+    status === "pending";
 
 
   const active =
@@ -3268,6 +3524,12 @@ function createStudentCard(
     );
 
 
+  const pendingAmount =
+    getPendingAmount(
+      name
+    );
+
+
   const card =
     document.createElement(
       "div"
@@ -3282,13 +3544,40 @@ function createStudentCard(
     "activeStudentCard";
 
 
+  /*
+   * For partial payment the swipe label
+   * says PENDING instead of PAID.
+   */
+
+  const swipeText =
+    pending
+      ? "₹" +
+        pendingAmount.toLocaleString(
+          "en-IN"
+        ) +
+        " PENDING"
+      : "✓ PAID";
+
+
+  /*
+   * Main payment button.
+   *
+   * Partial amount is allowed.
+   */
+
+  const paymentButtonText =
+    pending
+      ? "＋ ADD PAYMENT"
+      : "✓ RECORD PAYMENT";
+
+
   card.innerHTML = `
 
     <div
       class="swipe-label swipe-paid"
       id="swipePaidLabel"
     >
-      ✓ PAID
+      ${swipeText}
     </div>
 
     <div
@@ -3354,7 +3643,9 @@ function createStudentCard(
           class="payment-badge ${
             paid
               ? "paid"
-              : "unpaid"
+              : pending
+                ? "pending"
+                : "unpaid"
           }"
         >
 
@@ -3364,7 +3655,15 @@ function createStudentCard(
                 actualPaidAmount.toLocaleString(
                   "en-IN"
                 )
-              : "₹500 DUE"
+
+              : pending
+                ? "₹" +
+                  pendingAmount.toLocaleString(
+                    "en-IN"
+                  ) +
+                  " PENDING"
+
+                : "₹500 DUE"
           }
 
         </div>
@@ -3420,7 +3719,7 @@ function createStudentCard(
         <div class="info-box">
 
           <div class="info-label">
-            Default Fee
+            Monthly Fee
           </div>
 
           <div class="info-value">
@@ -3445,7 +3744,19 @@ function createStudentCard(
                     "en-IN"
                   ) +
                   " RECEIVED"
-                : "PAYMENT DUE"
+
+                : pending
+                  ? "₹" +
+                    actualPaidAmount.toLocaleString(
+                      "en-IN"
+                    ) +
+                    " RECEIVED • ₹" +
+                    pendingAmount.toLocaleString(
+                      "en-IN"
+                    ) +
+                    " PENDING"
+
+                  : "₹500 PAYMENT DUE"
             }
 
           </div>
@@ -3465,12 +3776,63 @@ function createStudentCard(
           <div class="custom-payment-label">
 
             <span>
-              Payment Recorded
+              Payment Completed
             </span>
 
             <span class="default-fee-label">
-              ₹${actualPaidAmount.toLocaleString("en-IN")}
+              ₹${actualPaidAmount.toLocaleString("en-IN")} RECEIVED
             </span>
+
+          </div>
+
+        </div>
+        `
+        :
+        pending
+        ?
+        `
+        <div class="custom-payment-box pending-box">
+
+          <div class="custom-payment-label">
+
+            <span>
+              Add Payment
+            </span>
+
+            <span class="pending-fee-label">
+              ₹${pendingAmount.toLocaleString("en-IN")} PENDING
+            </span>
+
+          </div>
+
+
+          <div class="custom-payment-row">
+
+            <div class="rupee-prefix">
+              ₹
+            </div>
+
+
+            <input
+              id="customPaymentInput"
+              class="custom-payment-input"
+              type="number"
+              min="1"
+              step="1"
+              value="${pendingAmount}"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="Enter amount"
+            >
+
+
+            <button
+              type="button"
+              id="defaultFeeBtn"
+              class="default-fee-btn"
+            >
+              PAY ₹${pendingAmount}
+            </button>
 
           </div>
 
@@ -3546,11 +3908,15 @@ function createStudentCard(
 
 
         <button
-          class="swipe-action paid"
+          class="swipe-action ${
+            pending
+              ? "pending"
+              : "paid"
+          }"
           id="paidBtn"
           type="button"
         >
-          ✓ MARK PAID
+          ${paymentButtonText}
         </button>
 
 
@@ -3611,7 +3977,7 @@ function createStudentCard(
       >
 
         Swipe left to skip •
-        Swipe right to mark paid
+        Swipe right to record payment
 
       </div>
 
@@ -3663,8 +4029,8 @@ function renderCurrentQueueCard(){
 
         <div class="queue-empty-text">
 
-          No active unpaid students are
-          waiting in the queue.<br>
+          No active unpaid or pending-payment
+          students are waiting in the queue.<br>
 
           Use search above to find any student.
 
@@ -3783,12 +4149,31 @@ function setupCardControls(
           );
 
 
-        if(input){
+        if(!input){
 
-          input.value =
-            MONTHLY_FEE;
+          return;
 
         }
+
+
+        const pending =
+          getPendingAmount(
+            name
+          );
+
+
+        /*
+         * For a pending student,
+         * button fills remaining amount.
+         *
+         * For a new student,
+         * button fills ₹500.
+         */
+
+        input.value =
+          pending > 0
+            ? pending
+            : MONTHLY_FEE;
 
       };
 
@@ -3806,6 +4191,9 @@ function setupCardControls(
             "";
 
           searchSelectedStudent =
+            null;
+
+          currentStudent =
             null;
 
           rebuildQueue();
@@ -3868,7 +4256,8 @@ function setupCardControls(
 
         sendPaymentReminder(
           name,
-          phone
+          phone,
+          card
         );
 
       };
@@ -4193,7 +4582,8 @@ async function swipeOut(
   ){
 
     await markPaidAndNext(
-      student
+      student,
+      card
     );
 
   }else{
@@ -4253,11 +4643,254 @@ function skipStudent(
 
 
 /* =====================================================
-   MARK PAID
+   SAVE PAYMENT
+===================================================== */
+
+async function savePayment(
+  student,
+  amount,
+  afterSuccess
+){
+
+  if(!student){
+
+    return;
+
+  }
+
+
+  const name =
+    student.name;
+
+
+  const receivedBefore =
+    getPaymentAmount(
+      name
+    );
+
+
+  /*
+   * The entered amount is a new payment.
+   *
+   * Example:
+   * Existing received = ₹300
+   * Enter ₹200
+   * New received = ₹500
+   */
+
+  const newReceived =
+    Math.min(
+      MONTHLY_FEE,
+      receivedBefore +
+      amount
+    );
+
+
+  const pendingAmount =
+    Math.max(
+      0,
+      MONTHLY_FEE -
+      newReceived
+    );
+
+
+  const newStatus =
+    pendingAmount === 0
+      ? "paid"
+      : "pending";
+
+
+  const previousState =
+    paymentStates[
+      normalizeName(name)
+    ]
+      ? {
+          ...paymentStates[
+            normalizeName(name)
+          ]
+        }
+      : null;
+
+
+  /*
+   * Optimistic local state.
+   */
+
+  setLocalPaymentStatus(
+    name,
+    newStatus,
+    newReceived
+  );
+
+
+  try{
+
+    await setDoc(
+
+      doc(
+        db,
+        "payments",
+        name,
+        "months",
+        currentMonth
+      ),
+
+      {
+
+        status:
+          newStatus,
+
+        amount:
+          newReceived,
+
+        paidAmount:
+          newReceived,
+
+        pendingAmount:
+          pendingAmount,
+
+        monthlyFee:
+          MONTHLY_FEE,
+
+        month:
+          currentMonth,
+
+        lastPaymentAmount:
+          amount,
+
+        paidAt:
+          newStatus === "paid"
+            ? Date.now()
+            : (
+                paymentStates[
+                  normalizeName(name)
+                ]?.paidAt ||
+                null
+              ),
+
+        updatedAt:
+          Date.now()
+
+      },
+
+      {
+        merge:true
+      }
+
+    );
+
+
+    if(
+      newStatus === "paid"
+    ){
+
+      showToast(
+        `${name}: ₹${newReceived.toLocaleString("en-IN")} PAID`
+      );
+
+    }else{
+
+      showToast(
+        `${name}: ₹${amount.toLocaleString("en-IN")} received • ₹${pendingAmount.toLocaleString("en-IN")} pending`
+      );
+
+    }
+
+
+    lastAction = {
+
+      type:
+        newStatus === "paid"
+          ? "paid"
+          : "pending",
+
+      student,
+
+      previousState,
+
+      paymentAmount:
+        amount,
+
+      received:
+        newReceived,
+
+      pending:
+        pendingAmount
+
+    };
+
+
+    if(
+      typeof afterSuccess ===
+      "function"
+    ){
+
+      afterSuccess(
+        newStatus,
+        newReceived,
+        pendingAmount
+      );
+
+    }
+
+
+  }catch(error){
+
+    console.error(
+      "Payment update error:",
+      error
+    );
+
+
+    /*
+     * Rollback exact previous state.
+     */
+
+    const key =
+      normalizeName(
+        name
+      );
+
+
+    if(previousState){
+
+      paymentStates[key] =
+        previousState;
+
+    }else{
+
+      delete paymentStates[key];
+
+    }
+
+
+    saveCache(
+      PAYMENT_CACHE_KEY,
+      paymentStates
+    );
+
+
+    showToast(
+      "Payment update failed"
+    );
+
+
+    updateUI();
+
+    renderCurrentQueueCard();
+
+  }
+
+}
+
+
+/* =====================================================
+   MARK PAYMENT AND NEXT
 ===================================================== */
 
 async function markPaidAndNext(
-  student
+  student,
+  card=null
 ){
 
   if(!student){
@@ -4272,7 +4905,9 @@ async function markPaidAndNext(
 
 
   const amount =
-    getEnteredPaymentAmount();
+    getEnteredPaymentAmount(
+      card
+    );
 
 
   if(
@@ -4291,155 +4926,90 @@ async function markPaidAndNext(
   }
 
 
-  const previousStatus =
-    getPaymentStatus(
-      name
-    );
+  await savePayment(
+    student,
+    amount,
+    (
+      newStatus,
+      newReceived,
+      pendingAmount
+    ) => {
 
+      /*
+       * Fully paid:
+       * remove from queue.
+       */
 
-  const previousAmount =
-    getPaymentAmount(
-      name
-    );
+      if(
+        newStatus === "paid"
+      ){
 
+        queueStudents =
+          queueStudents.filter(
+            item =>
+              normalizeName(
+                item.name
+              ) !==
+              normalizeName(
+                name
+              )
+          );
 
-  /*
-   * Optimistic update.
-   */
+      }else{
 
-  setLocalPaymentStatus(
-    name,
-    "paid",
-    amount
-  );
+        /*
+         * Underpayment:
+         * keep student pending,
+         * but move to next card.
+         */
 
+        queueStudents =
+          queueStudents.filter(
+            item =>
+              normalizeName(
+                item.name
+              ) !==
+              normalizeName(
+                name
+              )
+          );
 
-  showToast(
-    `${name}: ₹${amount.toLocaleString("en-IN")} PAID`
-  );
-
-
-  try{
-
-    const paymentRef =
-      doc(
-        db,
-        "payments",
-        name,
-        "months",
-        currentMonth
-      );
-
-
-    await setDoc(
-
-      paymentRef,
-
-      {
-
-        status:
-          "paid",
-
-        amount:
-          amount,
-
-        month:
-          currentMonth,
-
-        paidAt:
-          Date.now(),
-
-        updatedAt:
-          Date.now()
-
-      },
-
-      {
-        merge:true
       }
 
-    );
+
+      currentQueueIndex =
+        0;
 
 
-    lastAction = {
-
-      type:"paid",
-
-      student,
-
-      previousStatus,
-
-      previousAmount,
-
-      amount
-
-    };
+      updateUI();
 
 
-    queueStudents =
-      queueStudents.filter(
-        item =>
-          normalizeName(
-            item.name
-          ) !==
+      /*
+       * If this student is still pending,
+       * it will appear again after the
+       * queue rebuild.
+       *
+       * To avoid immediately showing
+       * the same student, temporarily skip.
+       */
+
+      if(
+        newStatus === "pending"
+      ){
+
+        skippedStudents.add(
           normalizeName(
             name
           )
-      );
+        );
+
+      }
 
 
-    currentQueueIndex =
-      0;
-
-
-    updateUI();
-
-    renderCurrentQueueCard();
-
-
-  }catch(error){
-
-    console.error(
-      "Payment update error:",
-      error
-    );
-
-
-    /*
-     * Rollback
-     */
-
-    if(
-      previousStatus === "paid"
-    ){
-
-      setLocalPaymentStatus(
-        name,
-        "paid",
-        previousAmount
-      );
-
-    }else{
-
-      setLocalPaymentStatus(
-        name,
-        "unpaid",
-        0
-      );
+      renderCurrentQueueCard();
 
     }
-
-
-    showToast(
-      "Payment update failed"
-    );
-
-
-    rebuildQueue();
-
-    renderCurrentQueueCard();
-
-  }
+  );
 
 }
 
@@ -4555,14 +5125,20 @@ searchInput.addEventListener(
           .map(
             (student,index) => {
 
-              const paid =
+              const status =
                 getPaymentStatus(
                   student.name
-                ) === "paid";
+                );
 
 
               const amount =
                 getPaymentAmount(
+                  student.name
+                );
+
+
+              const pendingAmount =
+                getPendingAmount(
                   student.name
                 );
 
@@ -4599,18 +5175,30 @@ searchInput.addEventListener(
                     >
 
                       ${
-                        paid
+                        status === "paid"
 
                           ? "✓ Paid ₹" +
                             amount.toLocaleString(
                               "en-IN"
                             )
 
-                          : active
+                          : status === "pending"
 
-                            ? "₹500 Due • Active"
+                            ? "₹" +
+                              amount.toLocaleString(
+                                "en-IN"
+                              ) +
+                              " Received • ₹" +
+                              pendingAmount.toLocaleString(
+                                "en-IN"
+                              ) +
+                              " Pending"
 
-                            : "₹500 Due • Inactive"
+                            : active
+
+                              ? "₹500 Due • Active"
+
+                              : "₹500 Due • Inactive"
 
                       }
 
@@ -4827,6 +5415,15 @@ function setupSearchSwipe(
         "dragging"
       );
 
+
+      try{
+
+        card.setPointerCapture(
+          event.pointerId
+        );
+
+      }catch(e){}
+
     }
   );
 
@@ -4909,17 +5506,45 @@ function setupSearchSwipe(
       );
 
 
+      const status =
+        getPaymentStatus(
+          student.name
+        );
+
+
       if(
         currentX > 90
       ){
 
-        card.style.transform =
-          "translateX(130%) rotate(16deg)";
+        /*
+         * Do not swipe-paid a fully paid
+         * student again.
+         *
+         * For pending/unpaid student,
+         * record payment.
+         */
 
-        markPaidAndReturnToQueue(
-          student,
-          card
-        );
+        if(
+          status !== "paid"
+        ){
+
+          card.style.transform =
+            "translateX(130%) rotate(16deg)";
+
+          card.style.pointerEvents =
+            "none";
+
+          markPaidAndReturnToQueue(
+            student,
+            card
+          );
+
+        }else{
+
+          card.style.transform =
+            "";
+
+        }
 
       }
       else if(
@@ -4930,6 +5555,9 @@ function setupSearchSwipe(
           "";
 
         searchSelectedStudent =
+          null;
+
+        currentStudent =
           null;
 
         rebuildQueue();
@@ -4969,7 +5597,7 @@ function setupSearchSwipe(
 
 
 /* =====================================================
-   MARK SEARCH STUDENT PAID
+   MARK SEARCH STUDENT PAYMENT
 ===================================================== */
 
 async function markPaidAndReturnToQueue(
@@ -4977,164 +5605,106 @@ async function markPaidAndReturnToQueue(
   card=null
 ){
 
+  if(!student){
+
+    return;
+
+  }
+
+
   const name =
     student.name;
 
 
-  /*
-   * If this card has custom input,
-   * read directly from that card.
-   */
-
-  let amount =
-    MONTHLY_FEE;
-
-
-  const input =
-    card?.querySelector(
-      "#customPaymentInput"
+  const amount =
+    getEnteredPaymentAmount(
+      card
     );
 
 
-  if(input){
+  if(
+    !Number.isFinite(
+      amount
+    ) ||
+    amount <= 0
+  ){
 
-    const entered =
-      Number(
-        input.value
-      );
+    showToast(
+      "Enter a valid payment amount"
+    );
+
+    if(card){
+
+      card.style.pointerEvents =
+        "";
+
+    }
+
+    return;
+
+  }
 
 
-    if(
-      Number.isFinite(
-        entered
-      ) &&
-      entered > 0
-    ){
+  await savePayment(
+    student,
+    amount,
+    (
+      newStatus,
+      newReceived,
+      pendingAmount
+    ) => {
 
-      amount =
-        Math.round(
-          entered
+      /*
+       * Search card is closed after
+       * recording payment.
+       */
+
+      searchInput.value =
+        "";
+
+
+      searchSelectedStudent =
+        null;
+
+
+      currentStudent =
+        null;
+
+
+      /*
+       * Pending student should not
+       * immediately appear again.
+       */
+
+      if(
+        newStatus === "pending"
+      ){
+
+        skippedStudents.add(
+          normalizeName(
+            name
+          )
         );
 
-    }
+      }else{
 
-  }
+        skippedStudents.delete(
+          normalizeName(
+            name
+          )
+        );
 
-
-  const previousStatus =
-    getPaymentStatus(
-      name
-    );
-
-
-  const previousAmount =
-    getPaymentAmount(
-      name
-    );
-
-
-  setLocalPaymentStatus(
-    name,
-    "paid",
-    amount
-  );
-
-
-  try{
-
-    await setDoc(
-
-      doc(
-        db,
-        "payments",
-        name,
-        "months",
-        currentMonth
-      ),
-
-      {
-
-        status:
-          "paid",
-
-        amount:
-          amount,
-
-        month:
-          currentMonth,
-
-        paidAt:
-          Date.now(),
-
-        updatedAt:
-          Date.now()
-
-      },
-
-      {
-        merge:true
       }
 
-    );
 
+      rebuildQueue();
 
-    showToast(
-      `${name}: ₹${amount.toLocaleString("en-IN")} PAID`
-    );
+      renderCurrentQueueCard();
 
-
-    searchInput.value =
-      "";
-
-
-    searchSelectedStudent =
-      null;
-
-
-    currentStudent =
-      null;
-
-
-    rebuildQueue();
-
-    renderCurrentQueueCard();
-
-    updateUI();
-
-
-  }catch(error){
-
-    console.error(
-      error
-    );
-
-
-    if(
-      previousStatus === "paid"
-    ){
-
-      setLocalPaymentStatus(
-        name,
-        "paid",
-        previousAmount
-      );
-
-    }else{
-
-      setLocalPaymentStatus(
-        name,
-        "unpaid",
-        0
-      );
+      updateUI();
 
     }
-
-
-    showToast(
-      "Payment update failed"
-    );
-
-  }
+  );
 
 }
 
@@ -5201,6 +5771,15 @@ function setupDeleteHold(
       return;
 
     }
+
+
+    try{
+
+      deleteBtn.setPointerCapture(
+        event.pointerId
+      );
+
+    }catch(e){}
 
 
     /*
@@ -5372,12 +5951,6 @@ function setupDeleteHold(
 
 
   deleteBtn.addEventListener(
-    "pointerleave",
-    cancelHold
-  );
-
-
-  deleteBtn.addEventListener(
     "contextmenu",
     event => {
 
@@ -5423,15 +5996,6 @@ async function deleteStudent(
 
   try{
 
-    /*
-     * Your Add Student code creates:
-     *
-     * students/{studentName}
-     *
-     * Therefore delete uses exactly
-     * the same document ID.
-     */
-
     await deleteDoc(
       doc(
         db,
@@ -5440,10 +6004,6 @@ async function deleteStudent(
       )
     );
 
-
-    /*
-     * Remove local state immediately.
-     */
 
     permanentStudents =
       permanentStudents.filter(
@@ -5464,11 +6024,6 @@ async function deleteStudent(
       )
     );
 
-
-    /*
-     * If search was open,
-     * clear it.
-     */
 
     searchInput.value =
       "";
@@ -5531,9 +6086,9 @@ const paymentTemplates = [
 
   `Hi {NAME},
 
-This is a friendly reminder from BlackTerminal Computer Institute regarding your monthly course fee of ₹{AMOUNT}.
+This is a friendly reminder from BlackTerminal Computer Institute regarding your pending monthly course fee of ₹{AMOUNT}.
 
-Kindly make the payment on or before the 5th of the month to keep your fee record up to date.
+Kindly make the payment of the pending amount on or before the 5th of the month to keep your fee record up to date.
 
 Thank you for your cooperation.
 
@@ -5543,9 +6098,9 @@ Thank you for your cooperation.
 
   `Hello {NAME},
 
-A gentle reminder that your monthly fee of ₹{AMOUNT} is pending.
+A gentle reminder that ₹{AMOUNT} of your monthly course fee is pending.
 
-Please complete the payment on or before the 5th so that your fee record remains updated.
+Please complete the pending payment on or before the 5th so that your fee record remains updated.
 
 If you have already made the payment, please ignore this message.
 
@@ -5558,7 +6113,7 @@ BlackTerminal Computer Institute`,
 
 This is a payment reminder from BlackTerminal Computer Institute.
 
-Your monthly fee of ₹{AMOUNT} is currently pending. Please make the payment before or on the 5th of the month.
+Your pending monthly fee amount is ₹{AMOUNT}. Please make the pending payment before or on the 5th of the month.
 
 Thank you for your timely payment and continued support.
 
@@ -5581,8 +6136,29 @@ function getRandomPaymentTemplate(){
 
 function sendPaymentReminder(
   studentName,
-  phone
+  phone,
+  card=null
 ){
+
+  const pendingAmount =
+    getDueAmountForStudent(
+      studentName,
+      card
+    );
+
+
+  if(
+    pendingAmount <= 0
+  ){
+
+    showToast(
+      "No pending amount"
+    );
+
+    return;
+
+  }
+
 
   const template =
     getRandomPaymentTemplate();
@@ -5596,7 +6172,7 @@ function sendPaymentReminder(
       )
       .replace(
         /\{AMOUNT\}/g,
-        MONTHLY_FEE
+        pendingAmount
       );
 
 
@@ -5616,7 +6192,7 @@ function sendPaymentReminder(
 
 
   showToast(
-    "Payment reminder opened"
+    `WhatsApp reminder: ₹${pendingAmount.toLocaleString("en-IN")} pending`
   );
 
 }
@@ -5945,6 +6521,39 @@ function updateUI(){
     searchSelectedStudent
   ){
 
+    /*
+     * Re-render search card so
+     * pending amount/status updates live.
+     */
+
+    const target =
+      normalizeName(
+        searchSelectedStudent.name
+      );
+
+
+    const freshStudent =
+      getFinalStudentNames()
+        .find(
+          student =>
+            normalizeName(
+              student.name
+            ) === target
+        );
+
+
+    if(freshStudent){
+
+      searchSelectedStudent =
+        freshStudent;
+
+      renderSearchStudent(
+        freshStudent
+      );
+
+    }
+
+
     return;
 
   }
@@ -6007,12 +6616,17 @@ function updateSummary(){
     students.length;
 
 
+  /*
+   * Only FULLY PAID students
+   * count in Paid Ratio.
+   */
+
   const paidStudents =
     students.filter(
       student =>
-        getPaymentStatus(
+        isFullyPaid(
           student.name
-        ) === "paid"
+        )
     );
 
 
@@ -6021,15 +6635,13 @@ function updateSummary(){
 
 
   /*
-   * IMPORTANT:
+   * Actual total received.
    *
-   * Actual payment amount is summed.
-   *
-   * Not paid × ₹500.
+   * Partial payments are included.
    */
 
   const received =
-    paidStudents.reduce(
+    students.reduce(
       (
         totalAmount,
         student
@@ -6081,7 +6693,7 @@ function updateSummary(){
 
 
 /* =====================================================
-   PAID LOG
+   PAYMENT LOG
 ===================================================== */
 
 function updatePaidLog(){
@@ -6096,31 +6708,41 @@ function updatePaidLog(){
     getFinalStudentNames();
 
 
-  const paidStudents =
+  /*
+   * Show students who have either
+   * paid or partially paid.
+   */
+
+  const paymentStudents =
     students.filter(
       student =>
-        getPaymentStatus(
+        getPaymentAmount(
           student.name
-        ) === "paid"
+        ) > 0
     );
 
 
   document.getElementById(
     "paidLogCount"
   ).textContent =
-    paidStudents.length +
-    " paid";
+    paymentStudents.length +
+    " payment" +
+    (
+      paymentStudents.length === 1
+        ? ""
+        : "s"
+    );
 
 
   if(
-    paidStudents.length === 0
+    paymentStudents.length === 0
   ){
 
     body.innerHTML = `
 
       <tr>
 
-        <td colspan="4">
+        <td colspan="5">
 
           <div
             style="
@@ -6130,7 +6752,7 @@ function updatePaidLog(){
               font-size:10px;
             "
           >
-            No paid students yet.
+            No payments yet.
           </div>
 
         </td>
@@ -6145,7 +6767,7 @@ function updatePaidLog(){
 
 
   const latest =
-    paidStudents.slice(
+    paymentStudents.slice(
       0,
       50
     );
@@ -6159,6 +6781,18 @@ function updatePaidLog(){
 
           const amount =
             getPaymentAmount(
+              student.name
+            );
+
+
+          const pending =
+            getPendingAmount(
+              student.name
+            );
+
+
+          const fullyPaid =
+            isFullyPaid(
               student.name
             );
 
@@ -6187,13 +6821,40 @@ function updatePaidLog(){
 
               </td>
 
+              <td class="pending-amount">
+
+                ${
+                  pending > 0
+                    ? "₹" +
+                      pending.toLocaleString(
+                        "en-IN"
+                      )
+                    : "—"
+                }
+
+              </td>
+
               <td>
 
-                <span
-                  class="status-paid"
-                >
-                  PAID
-                </span>
+                ${
+                  fullyPaid
+
+                    ? `
+                      <span
+                        class="status-paid"
+                      >
+                        PAID
+                      </span>
+                      `
+
+                    : `
+                      <span
+                        class="status-pending"
+                      >
+                        PENDING
+                      </span>
+                      `
+                }
 
               </td>
 
@@ -6365,6 +7026,20 @@ function(
     );
 
 
+  const pending =
+    getPendingAmount(
+      studentName
+    );
+
+
+  const status =
+    isFullyPaid(
+      studentName
+    )
+      ? "PAID"
+      : "PARTIAL PAYMENT";
+
+
   const pdf =
     new jsPDF();
 
@@ -6454,7 +7129,7 @@ function(
 
 
   pdf.text(
-    "Amount:",
+    "Monthly Fee:",
     20,
     82
   );
@@ -6462,45 +7137,75 @@ function(
 
   pdf.text(
     "INR " +
-    amount,
+    MONTHLY_FEE,
     70,
     82
   );
 
 
   pdf.text(
-    "Payment Status:",
+    "Amount Received:",
     20,
     94
   );
 
 
   pdf.text(
-    "PAID",
+    "INR " +
+    amount,
     70,
     94
+  );
+
+
+  pdf.text(
+    "Pending Amount:",
+    20,
+    106
+  );
+
+
+  pdf.text(
+    "INR " +
+    pending,
+    70,
+    106
+  );
+
+
+  pdf.text(
+    "Payment Status:",
+    20,
+    118
+  );
+
+
+  pdf.text(
+    status,
+    70,
+    118
   );
 
 
   pdf.text(
     "Payment Date:",
     20,
-    106
+    130
   );
 
 
   pdf.text(
     today,
     70,
-    106
+    130
   );
 
 
   pdf.line(
     20,
-    120,
+    142,
     190,
-    120
+    142
   );
 
 
@@ -6510,16 +7215,18 @@ function(
 
 
   pdf.text(
-    "Thank you for your payment.",
+    pending > 0
+      ? "Thank you. Please clear the pending amount."
+      : "Thank you for your payment.",
     20,
-    135
+    157
   );
 
 
   pdf.text(
     "BlackTerminal Computer Institute",
     20,
-    145
+    167
   );
 
 
