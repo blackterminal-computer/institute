@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -571,9 +572,6 @@ body{
 }
 
 .slider-handle i{
-    position:relative;
-    z-index:5;
-
     color:var(--blue);
 
     font-size:19px;
@@ -1364,6 +1362,21 @@ body{
     animation:taskAppear .35s ease;
 }
 
+.task-item.reopened{
+    border-color:rgba(191,90,242,.32);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(191,90,242,.08),
+            rgba(255,255,255,.025)
+        );
+
+    box-shadow:
+        0 0 18px
+        rgba(191,90,242,.08);
+}
+
 @keyframes taskAppear{
 
     from{
@@ -1443,6 +1456,29 @@ body{
     color:var(--muted);
 
     font-size:9px;
+}
+
+.reopened-label{
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    margin-left:5px;
+
+    padding:3px 6px;
+
+    border-radius:6px;
+
+    color:var(--purple);
+
+    background:rgba(191,90,242,.09);
+
+    border:1px solid rgba(191,90,242,.16);
+
+    font-size:7px;
+    font-weight:850;
 }
 
 .task-right{
@@ -1693,6 +1729,7 @@ input:focus{
 }
 
 </style>
+
 </head>
 
 <body>
@@ -2374,7 +2411,7 @@ input:focus{
 
 
 <p class="footer-text">
-    BLACK TERMINAL • STAFF TERMINAL v3.1
+    BLACK TERMINAL • STAFF TERMINAL v3.2
 </p>
 
 </div>
@@ -2403,7 +2440,7 @@ input:focus{
 const firebaseConfig = {
 
     apiKey:
-        "AIzaSyCEfwfZv2CkgCkpg-uFLRvJJKMBRlXA2w_WpI",
+        "AIzaSyCEfwZv2CkgcJ8Q9vNwRlRlXA2w_WpI",
 
     authDomain:
         "black-terminal-f2c91.firebaseapp.com",
@@ -2415,7 +2452,7 @@ const firebaseConfig = {
         "black-terminal-f2c91",
 
     storageBucket:
-        "black-terminal-f2c91.firebasestorage.app",
+        "black-terminal-f2c91.appspot.com",
 
     messagingSenderId:
         "552489994197",
@@ -2501,6 +2538,14 @@ let tasksListenerStarted =
 
 let staffListenerStarted =
     false;
+
+
+/*
+ * Prevent repeated reopen processing
+ * during the same realtime session.
+ */
+const reopenProcessing =
+    {};
 
 
 /* =========================================================
@@ -4377,7 +4422,275 @@ function getTaskReward(){
 
 
 /* =========================================================
-   TASKS - REALTIME + ADMIN VISIBILITY
+   IMPORTANT:
+   DETECT ADMIN OFF → ON REOPEN
+   ========================================================= */
+
+/*
+ * Admin changes:
+ *
+ * OFF:
+ * showToStaff = false
+ * visibilityUpdatedAt = new timestamp
+ *
+ * ON:
+ * showToStaff = true
+ * visibilityUpdatedAt = new timestamp
+ *
+ * If the task was already completed and:
+ *
+ * visibilityUpdatedAt > completedAt
+ *
+ * it means Admin changed visibility after
+ * the task was completed.
+ *
+ * Therefore Staff should get it again
+ * as a NEW/PENDING task.
+ *
+ * This works even if Staff page was closed
+ * while Admin changed OFF → ON.
+ */
+
+function shouldReopenTask(
+    taskId,
+    task
+){
+
+    if(!task){
+
+        return false;
+
+    }
+
+
+    if(
+        task.showToStaff ===
+        false
+    ){
+
+        return false;
+
+    }
+
+
+    if(
+        task.status !==
+        "Completed"
+    ){
+
+        return false;
+
+    }
+
+
+    const completedAt =
+        Number(
+            task.completedAt ||
+            0
+        );
+
+
+    const visibilityUpdatedAt =
+        Number(
+            task.visibilityUpdatedAt ||
+            0
+        );
+
+
+    if(
+        !completedAt ||
+        !visibilityUpdatedAt
+    ){
+
+        return false;
+
+    }
+
+
+    if(
+        visibilityUpdatedAt <=
+        completedAt
+    ){
+
+        return false;
+
+    }
+
+
+    /*
+     * Prevent repeated transaction calls
+     * while Firebase sends realtime updates.
+     */
+
+    const reopenKey =
+        `${taskId}_${visibilityUpdatedAt}`;
+
+
+    if(
+        reopenProcessing[reopenKey]
+    ){
+
+        return false;
+
+    }
+
+
+    reopenProcessing[reopenKey] =
+        true;
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   REOPEN COMPLETED TASK AS NEW
+   ========================================================= */
+
+function reopenTaskAsNew(
+    taskId,
+    visibilityUpdatedAt
+){
+
+    if(!taskId){
+
+        return;
+
+    }
+
+
+    const taskRef =
+        db.ref(
+            `tasks/${staffId}/${taskId}`
+        );
+
+
+    taskRef.transaction(
+        task=>{
+
+            if(!task){
+
+                return;
+
+            }
+
+
+            /*
+             * Admin may have hidden it again
+             * before this transaction completed.
+             */
+
+            if(
+                task.showToStaff ===
+                false
+            ){
+
+                return task;
+
+            }
+
+
+            if(
+                task.status !==
+                "Completed"
+            ){
+
+                return task;
+
+            }
+
+
+            const completedAt =
+                Number(
+                    task.completedAt ||
+                    0
+                );
+
+
+            const currentVisibilityTime =
+                Number(
+                    task.visibilityUpdatedAt ||
+                    0
+                );
+
+
+            /*
+             * Only reset when this exact
+             * visibility update happened
+             * after completion.
+             */
+
+            if(
+                currentVisibilityTime <=
+                completedAt
+            ){
+
+                return task;
+
+            }
+
+
+            task.status =
+                "Pending";
+
+
+            delete task.completedAt;
+
+            delete task.completedBy;
+
+            delete task.amount;
+
+
+            task.reopenedAt =
+                Date.now();
+
+
+            task.reopenedFor =
+                staffName;
+
+
+            task.reopenedFromVisibilityUpdate =
+                visibilityUpdatedAt;
+
+
+            return task;
+
+        },
+        (
+            error,
+            committed
+        )=>{
+
+            if(error){
+
+                console.error(
+                    "Task reopen error:",
+                    error
+                );
+
+
+                return;
+
+            }
+
+
+            if(committed){
+
+                showToast(
+                    "Assignment reopened as a new task."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   TASKS - REALTIME
    ========================================================= */
 
 function listenTasks(){
@@ -4466,11 +4779,6 @@ function renderTasks(
         );
 
 
-    /*
-     * Reset reward map
-     * every Firebase update.
-     */
-
     taskRewardMap =
         {};
 
@@ -4523,7 +4831,7 @@ function renderTasks(
 
 
     /* =====================================================
-       FILTER TASKS
+       FILTER VISIBLE TASKS
        ===================================================== */
 
     const tasks = [];
@@ -4536,19 +4844,16 @@ function renderTasks(
                 child.val() || {};
 
 
+            const taskId =
+                child.key;
+
+
             /*
              * ADMIN VISIBILITY
              *
-             * showToStaff === false
-             *      → HIDDEN
-             *
-             * showToStaff === true
-             *      → VISIBLE
-             *
-             * undefined
-             *      → VISIBLE
-             *
-             * This keeps old tasks compatible.
+             * false = hidden
+             * true = visible
+             * undefined = visible
              */
 
             if(
@@ -4561,10 +4866,35 @@ function renderTasks(
             }
 
 
+            /*
+             * IMPORTANT REOPEN CHECK
+             *
+             * If Admin has turned the task
+             * OFF and then ON after it was
+             * completed, reset it to Pending.
+             */
+
+            if(
+                shouldReopenTask(
+                    taskId,
+                    task
+                )
+            ){
+
+                reopenTaskAsNew(
+                    taskId,
+                    Number(
+                        task.visibilityUpdatedAt
+                    )
+                );
+
+            }
+
+
             tasks.push({
 
                 id:
-                    child.key,
+                    taskId,
 
                 data:
                     task
@@ -4623,7 +4953,7 @@ function renderTasks(
 
 
     /* =====================================================
-       COUNT VISIBLE TASKS ONLY
+       VISIBLE TASK COUNT
        ===================================================== */
 
     currentTaskCount =
@@ -4670,6 +5000,20 @@ function renderTasks(
                 "Completed";
 
 
+            /*
+             * A task is considered freshly
+             * reopened when it has Pending
+             * status + reopenedAt.
+             */
+
+            const isReopened =
+                !isDone &&
+                Number(
+                    task.reopenedAt ||
+                    0
+                ) > 0;
+
+
             const taskText =
                 escapeHtml(
                     task.task ||
@@ -4707,10 +5051,55 @@ function renderTasks(
             }
 
 
+            let statusText =
+                "";
+
+
+            if(isDone){
+
+                statusText =
+                    "Completed";
+
+            }
+
+            else if(isReopened){
+
+                statusText =
+                    `
+                        New Task
+
+                        <span class="reopened-label">
+
+                            <i class="fas fa-rotate-right"></i>
+
+                            REOPENED
+
+                        </span>
+                    `;
+
+            }
+
+            else{
+
+                statusText =
+                    "New Task";
+
+            }
+
+
             container.innerHTML += `
 
                 <div
-                    class="task-item"
+                    class="
+                        task-item
+                        ${
+                            isReopened
+                            ?
+                            "reopened"
+                            :
+                            ""
+                        }
+                    "
                     data-task-id="${escapeHtml(taskId)}"
                 >
 
@@ -4753,17 +5142,9 @@ function renderTasks(
 
                                 ${dateText}
 
-                                ${
-                                    isDone
-                                    ?
-                                    `
-                                        • Completed
-                                    `
-                                    :
-                                    `
-                                        • New Task
-                                    `
-                                }
+                                •
+
+                                ${statusText}
 
                             </small>
 
@@ -4803,7 +5184,7 @@ function renderTasks(
                                 ?
                                 "disabled"
                                 :
-                                `onclick="completeTask('${taskId}')"`
+                                `onclick="completeTask('${escapeHtml(taskId)}')"`
                             }
                         >
 
@@ -4895,12 +5276,6 @@ function completeTask(
         );
 
 
-    /*
-     * Transaction ensures that
-     * two clicks cannot complete
-     * the same task twice.
-     */
-
     taskRef.transaction(
         task=>{
 
@@ -4914,8 +5289,7 @@ function completeTask(
 
 
             /*
-             * If Admin has switched OFF
-             * the task, it cannot be completed.
+             * Hidden task cannot be completed.
              */
 
             if(
@@ -4999,7 +5373,7 @@ function completeTask(
 
             /*
              * Salary increases only after
-             * task completion succeeds.
+             * successful task completion.
              */
 
             db.ref(
@@ -5649,16 +6023,6 @@ function listenStaffData(){
                 "%";
 
 
-            /*
-             * IMPORTANT:
-             *
-             * Do NOT call .once() for tasks here.
-             *
-             * listenTasks() already keeps a
-             * realtime task listener.
-             */
-
-
             updatePayoutButton();
 
         },
@@ -5977,19 +6341,20 @@ function initSystem(){
         `${daysRemaining} days remaining`;
 
 
-    /*
-     * Start every Firebase listener once.
-     */
-
     listenPresentCount();
 
     listenSalaryActivity();
 
     /*
      * IMPORTANT:
-     * Realtime task listener.
-     * Admin ON/OFF will update Staff
-     * automatically without refresh.
+     *
+     * This listener watches:
+     *
+     * tasks/{staffId}
+     *
+     * Admin changes showToStaff
+     * and Staff gets the change
+     * instantly.
      */
 
     listenTasks();
