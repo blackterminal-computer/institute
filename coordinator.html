@@ -22,6 +22,7 @@
   --green:#059669;
   --red:#dc2626;
   --orange:#ea580c;
+  --blue:#2563eb;
 
   --shadow:0 10px 30px rgba(15,23,42,.07);
 
@@ -831,13 +832,14 @@ textarea{
   margin-top:3px;
 }
 
+
+/* =====================================================
+   STATUS BADGES
+===================================================== */
+
 .badge{
 
   flex:none;
-
-  background:#eef2ff;
-
-  color:#4338ca;
 
   padding:
     6px
@@ -848,7 +850,56 @@ textarea{
   font-size:11px;
 
   font-weight:800;
+
+  white-space:nowrap;
 }
+
+.badge-new{
+
+  background:#eef2ff;
+
+  color:#4338ca;
+}
+
+.badge-contacted{
+
+  background:#eff6ff;
+
+  color:#1d4ed8;
+}
+
+.badge-interested{
+
+  background:#fff7ed;
+
+  color:#c2410c;
+}
+
+.badge-joined{
+
+  background:#ecfdf5;
+
+  color:#047857;
+}
+
+.badge-not-interested{
+
+  background:#fff1f2;
+
+  color:#be123c;
+}
+
+.badge-default{
+
+  background:#f1f5f9;
+
+  color:#475569;
+}
+
+
+/* =====================================================
+   SENT DETAILS
+===================================================== */
 
 .sent-details{
 
@@ -1366,7 +1417,7 @@ textarea{
 
   .badge{
 
-    display:inline-block;
+    display:inline-flex;
 
     margin-top:9px;
   }
@@ -1927,7 +1978,7 @@ textarea{
           </div>
 
           <div class="card-subtitle">
-            Student inquiries submitted by this coordinator.
+            Student inquiries submitted by this coordinator. Telecaller status updates appear here automatically.
           </div>
 
         </div>
@@ -2474,8 +2525,7 @@ function escapeHtml(value){
 
 
 /* =====================================================
-   IMPORTANT:
-   SUPPORT OLD + NEW COURSE FIELD NAMES
+   COURSE HELPERS
 ===================================================== */
 
 function getCourseName(course){
@@ -2551,41 +2601,383 @@ function getOfferPrice(course){
 
 
 /* =====================================================
-   FORMAT DATE
+   DATE HELPERS
 ===================================================== */
 
-function formatDate(item){
+function getDateValue(value){
 
   try{
 
-    if(
-      item.createdAt &&
-      typeof item.createdAt.toDate ===
-      "function"
-    ){
+    if(!value){
 
-      return item.createdAt
-        .toDate()
-        .toLocaleString(
-          "en-IN",
-          {
-            day:"2-digit",
-            month:"short",
-            year:"numeric",
-            hour:"2-digit",
-            minute:"2-digit"
-          }
-        );
+      return null;
 
     }
 
+
+    if(
+      typeof value.toDate ===
+      "function"
+    ){
+
+      return value.toDate();
+
+    }
+
+
+    if(
+      value.seconds !== undefined
+    ){
+
+      return new Date(
+        value.seconds * 1000
+      );
+
+    }
+
+
+    if(
+      value instanceof Date
+    ){
+
+      return value;
+
+    }
+
+
+    const date =
+      new Date(value);
+
+
+    if(
+      isNaN(
+        date.getTime()
+      )
+    ){
+
+      return null;
+
+    }
+
+
+    return date;
+
   }catch(error){
 
-    console.error(error);
+    return null;
 
   }
 
-  return "Recently added";
+}
+
+
+
+function formatDate(item){
+
+  const date =
+
+    getDateValue(
+      item.telecallerUpdatedAt
+    ) ||
+
+    getDateValue(
+      item.updatedAt
+    ) ||
+
+    getDateValue(
+      item.createdAt
+    );
+
+
+  if(!date){
+
+    return "Recently added";
+
+  }
+
+
+  return date.toLocaleString(
+    "en-IN",
+    {
+      day:"2-digit",
+      month:"short",
+      year:"numeric",
+      hour:"2-digit",
+      minute:"2-digit"
+    }
+  );
+
+}
+
+
+
+/* =====================================================
+   TELECALLER STATUS
+===================================================== */
+
+/*
+ * Telecaller may store status in:
+ *
+ * 1. telecallerStatus
+ * 2. status
+ *
+ * This function supports both.
+ */
+
+function getTelecallerStatus(item){
+
+  const telecallerStatus =
+
+    String(
+      item.telecallerStatus ||
+      ""
+    )
+    .trim()
+    .toLowerCase();
+
+
+  const normalStatus =
+
+    String(
+      item.status ||
+      ""
+    )
+    .trim()
+    .toLowerCase();
+
+
+  /*
+   * First priority:
+   * telecallerStatus
+   */
+
+  if(
+    telecallerStatus
+  ){
+
+    return normalizeStatus(
+      telecallerStatus
+    );
+
+  }
+
+
+  /*
+   * Coordinator initially saves:
+   *
+   * Sent to Telecaller
+   *
+   * On Coordinator dashboard
+   * show it as New.
+   */
+
+  if(
+    normalStatus ===
+      "sent to telecaller" ||
+
+    normalStatus ===
+      "sent-to-telecaller" ||
+
+    normalStatus ===
+      "sent_to_telecaller"
+  ){
+
+    return "new";
+
+  }
+
+
+  return normalizeStatus(
+    normalStatus || "new"
+  );
+
+}
+
+
+
+/* =====================================================
+   NORMALIZE STATUS
+===================================================== */
+
+function normalizeStatus(status){
+
+  const value =
+    String(
+      status || ""
+    )
+    .trim()
+    .toLowerCase();
+
+
+  const aliases = {
+
+    "sent to telecaller":
+      "new",
+
+    "sent-to-telecaller":
+      "new",
+
+    "sent_to_telecaller":
+      "new",
+
+    "assigned":
+      "new",
+
+    "follow up":
+      "follow-up",
+
+    "follow_up":
+      "follow-up",
+
+    "not interested":
+      "not-interested",
+
+    "not_interested":
+      "not-interested",
+
+    "demo completed":
+      "demo-completed",
+
+    "demo_completed":
+      "demo-completed"
+
+  };
+
+
+  return aliases[value] ||
+         value ||
+         "new";
+
+}
+
+
+
+/* =====================================================
+   STATUS LABEL
+===================================================== */
+
+function getStatusLabel(status){
+
+  const labels = {
+
+    new:
+      "New",
+
+    pending:
+      "Pending",
+
+    contacted:
+      "Contacted",
+
+    interested:
+      "Interested",
+
+    "follow-up":
+      "Follow-up",
+
+    visited:
+      "Visited",
+
+    "demo-completed":
+      "Demo Completed",
+
+    joined:
+      "Joined",
+
+    converted:
+      "Converted",
+
+    "not-interested":
+      "Not Interested",
+
+    delay:
+      "Delay"
+
+  };
+
+
+  return (
+
+    labels[
+      status
+    ] ||
+
+    String(status || "New")
+
+      .split("-")
+
+      .map(
+        word =>
+          word.charAt(0)
+          .toUpperCase() +
+          word.slice(1)
+      )
+
+      .join(" ")
+
+  );
+
+}
+
+
+
+/* =====================================================
+   STATUS CLASS
+===================================================== */
+
+function getStatusClass(status){
+
+  if(
+    status === "joined" ||
+    status === "converted"
+  ){
+
+    return "badge-joined";
+
+  }
+
+
+  if(
+    status === "interested" ||
+    status === "follow-up" ||
+    status === "visited" ||
+    status === "demo-completed"
+  ){
+
+    return "badge-interested";
+
+  }
+
+
+  if(
+    status === "not-interested"
+  ){
+
+    return "badge-not-interested";
+
+  }
+
+
+  if(
+    status === "contacted"
+  ){
+
+    return "badge-contacted";
+
+  }
+
+
+  if(
+    status === "new" ||
+    status === "pending"
+  ){
+
+    return "badge-new";
+
+  }
+
+
+  return "badge-default";
 
 }
 
@@ -2767,11 +3159,6 @@ async function loadCourses(){
         };
 
 
-        /*
-         * Ignore only records that genuinely
-         * have no course name.
-         */
-
         if(
           normalizedCourse.name
         ){
@@ -2912,7 +3299,7 @@ function loadCourseOptions(){
 
 
 /* =====================================================
-   FIND NEXT STUDENT NUMBER
+   NEXT STUDENT NUMBER
 ===================================================== */
 
 function getNextStudentNumber(
@@ -2996,7 +3383,7 @@ function getNextStudentNumber(
 
 
 /* =====================================================
-   GENERATE AUTOMATIC STUDENT NAME
+   AUTO STUDENT NAME
 ===================================================== */
 
 function generateStudentName(
@@ -3027,7 +3414,7 @@ function generateStudentName(
 
 
 /* =====================================================
-   COURSE SELECT CHANGE
+   COURSE CHANGE
 ===================================================== */
 
 $("courseSelect")
@@ -3062,17 +3449,9 @@ $("courseSelect")
       }
 
 
-      const courseName =
-        option.value;
-
-
-      /*
-       * AUTOMATIC STUDENT NAME
-       */
-
       $("studentName").value =
         generateStudentName(
-          courseName
+          option.value
         );
 
 
@@ -3086,18 +3465,10 @@ $("courseSelect")
         "AUTO";
 
 
-      /*
-       * AUTOMATIC DURATION
-       */
-
       $("duration").value =
         option.dataset.duration ||
         "";
 
-
-      /*
-       * AUTOMATIC PRICES
-       */
 
       $("regularPrice").value =
         option.dataset.regular ||
@@ -3116,31 +3487,6 @@ $("courseSelect")
         option.dataset.regular ||
 
         "";
-
-
-      /*
-       * Scroll to name on mobile
-       * only when course is selected.
-       */
-
-      if(
-        window.innerWidth <= 650
-      ){
-
-        setTimeout(
-          () => {
-
-            $("studentName")
-              .scrollIntoView({
-                behavior:"smooth",
-                block:"center"
-              });
-
-          },
-          100
-        );
-
-      }
 
     }
   );
@@ -3201,7 +3547,6 @@ function renderCourses(){
           <div class="course-item">
 
             <div class="course-main">
-
 
               <div>
 
@@ -3488,7 +3833,6 @@ $("courseForm")
 
         }else{
 
-
           data.createdAt =
             serverTimestamp();
 
@@ -3519,7 +3863,6 @@ $("courseForm")
 
 
         resetCourseForm();
-
 
         await loadCourses();
 
@@ -3698,6 +4041,7 @@ function openDeleteCourse(id){
 
     `
     Are you sure you want to delete
+
     <b>
       ${escapeHtml(
         course.name
@@ -3781,7 +4125,6 @@ $("confirmDeleteCourse")
 
         resetCourseForm();
 
-
         await loadCourses();
 
 
@@ -3840,15 +4183,6 @@ async function loadInquiries(){
     $("sentDataList");
 
 
-  list.innerHTML =
-
-    `
-    <div class="loading">
-      Loading inquiries...
-    </div>
-    `;
-
-
   try{
 
     const snapshot =
@@ -3863,7 +4197,6 @@ async function loadInquiries(){
 
 
     allInquiryData = [];
-
 
     inquiries = [];
 
@@ -3885,12 +4218,8 @@ async function loadInquiries(){
 
 
         /*
-         * ALL records are kept here.
-         *
-         * This is important because
-         * Student 1 / Student 2 numbering
-         * must consider students from
-         * all coordinators.
+         * Keep every record for
+         * automatic Student numbering.
          */
 
         allInquiryData.push(
@@ -3911,8 +4240,8 @@ async function loadInquiries(){
 
 
         /*
-         * Show this coordinator's
-         * inquiries in Sent Data.
+         * Coordinator sees his/her
+         * own inquiries.
          */
 
         if(
@@ -3951,20 +4280,51 @@ async function loadInquiries(){
     );
 
 
+    /*
+     * Latest Telecaller update first.
+     */
+
     inquiries.sort(
       (a,b) => {
 
-        const aTime =
-          a.createdAt?.seconds ||
-          0;
+        const aDate =
+
+          getDateValue(
+            a.telecallerUpdatedAt
+          ) ||
+
+          getDateValue(
+            a.updatedAt
+          ) ||
+
+          getDateValue(
+            a.createdAt
+          ) ||
+
+          new Date(0);
 
 
-        const bTime =
-          b.createdAt?.seconds ||
-          0;
+        const bDate =
+
+          getDateValue(
+            b.telecallerUpdatedAt
+          ) ||
+
+          getDateValue(
+            b.updatedAt
+          ) ||
+
+          getDateValue(
+            b.createdAt
+          ) ||
+
+          new Date(0);
 
 
-        return bTime - aTime;
+        return (
+          bDate.getTime() -
+          aDate.getTime()
+        );
 
       }
     );
@@ -3975,7 +4335,10 @@ async function loadInquiries(){
 
   }catch(error){
 
-    console.error(error);
+    console.error(
+      "Inquiry loading error:",
+      error
+    );
 
 
     list.innerHTML =
@@ -4179,13 +4542,6 @@ $("inquiryForm")
         }
 
 
-        /*
-         * Mode is optional.
-         * If you want it mandatory,
-         * change this to an error.
-         */
-
-
         await addDoc(
 
           collection(
@@ -4223,11 +4579,6 @@ $("inquiryForm")
           .textContent =
           "Auto";
 
-
-        /*
-         * Refresh all inquiry data
-         * so next student gets next number.
-         */
 
         await loadInquiries();
 
@@ -4338,6 +4689,43 @@ function renderSentData(){
       .map(
         item => {
 
+          /*
+           * GET LIVE TELECALLER STATUS
+           */
+
+          const status =
+            getTelecallerStatus(
+              item
+            );
+
+
+          const statusLabel =
+            getStatusLabel(
+              status
+            );
+
+
+          const statusClass =
+            getStatusClass(
+              status
+            );
+
+
+          const finalPrice =
+
+            Number(
+
+              item.finalPrice ||
+
+              item.offerPrice ||
+
+              item.regularPrice ||
+
+              0
+
+            );
+
+
           return `
 
           <div class="sent-item">
@@ -4373,11 +4761,16 @@ function renderSentData(){
               </div>
 
 
-              <span class="badge">
+              <!--
+                LIVE TELECALLER STATUS
+              -->
+
+              <span
+                class="badge ${statusClass}"
+              >
 
                 ${escapeHtml(
-                  item.status ||
-                  "Sent"
+                  statusLabel
                 )}
 
               </span>
@@ -4389,6 +4782,8 @@ function renderSentData(){
 
             <div class="sent-details">
 
+
+              <!-- COURSE -->
 
               <div class="detail-box">
 
@@ -4409,6 +4804,8 @@ function renderSentData(){
 
 
 
+              <!-- DURATION -->
+
               <div class="detail-box">
 
                 <div class="detail-label">
@@ -4427,6 +4824,8 @@ function renderSentData(){
               </div>
 
 
+
+              <!-- MODE -->
 
               <div class="detail-box">
 
@@ -4447,25 +4846,17 @@ function renderSentData(){
 
 
 
+              <!-- FEE -->
+
               <div class="detail-box">
 
                 <div class="detail-label">
-                  Final Price
+                  Fee
                 </div>
 
                 <div class="detail-value">
 
-                  ₹${Number(
-
-                    item.finalPrice ||
-
-                    item.offerPrice ||
-
-                    item.regularPrice ||
-
-                    0
-
-                  )}
+                  ₹${finalPrice}
 
                 </div>
 
@@ -4475,6 +4866,8 @@ function renderSentData(){
             </div>
 
 
+
+            <!-- REMARK -->
 
             ${
               item.remark
@@ -4511,11 +4904,20 @@ function renderSentData(){
 
 
 
-            <div class="sent-bottom">
+            <!--
+              STATUS UPDATE INFORMATION
+            -->
+
+            <div
+              class="sent-bottom"
+            >
 
 
-              <span class="sent-date">
+              <span
+                class="sent-date"
+              >
 
+                Last update:
                 ${formatDate(
                   item
                 )}
@@ -4524,12 +4926,16 @@ function renderSentData(){
 
 
 
-              <div class="sent-actions">
+              <div
+                class="sent-actions"
+              >
 
 
-                <span class="sent-source">
+                <span
+                  class="sent-source"
+                >
 
-                  ✓ Telecaller
+                  ✓ Telecaller Status
 
                 </span>
 
@@ -4954,6 +5360,23 @@ $("logoutBtn")
 await loadCourses();
 
 await loadInquiries();
+
+
+
+/* =====================================================
+   AUTO REFRESH
+   Checks Telecaller status changes
+   every 30 seconds.
+===================================================== */
+
+setInterval(
+  () => {
+
+    loadInquiries();
+
+  },
+  30000
+);
 
 
 </script>
