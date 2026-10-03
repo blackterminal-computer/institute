@@ -289,6 +289,8 @@ button{
     font-weight:800;
 }
 
+/* ================= SALARY ================= */
+
 .salary-card{
     position:relative;
     overflow:hidden;
@@ -682,12 +684,379 @@ button{
     gap:12px;
 }
 
+/* =========================================================
+   LEAD CARD + SWIPE UX
+========================================================= */
+
 .lead-card{
+    position:relative;
     background:#fff;
     border:1px solid var(--border);
     border-radius:17px;
     padding:17px;
+    overflow:hidden;
+
+    touch-action:pan-y;
+    user-select:none;
+    -webkit-user-select:none;
+
+    transition:
+        transform .22s ease,
+        opacity .22s ease,
+        box-shadow .22s ease,
+        border-color .22s ease;
 }
+
+.lead-card.swipe-active{
+    transition:none;
+}
+
+.lead-card.swipe-left-preview{
+    border-color:#fecaca;
+    box-shadow:
+        0 12px 35px rgba(220,38,38,.12);
+}
+
+.lead-card.swipe-right-preview{
+    border-color:#bbf7d0;
+    box-shadow:
+        0 12px 35px rgba(22,163,74,.12);
+}
+
+/* =========================================================
+   SWIPE INDICATION
+========================================================= */
+
+.swipe-guide{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:4;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 14px;
+    opacity:0;
+    transition:opacity .2s ease;
+}
+
+.swipe-guide.show{
+    opacity:1;
+}
+
+.swipe-guide-left,
+.swipe-guide-right{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:8px 10px;
+    border-radius:999px;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.1px;
+    backdrop-filter:blur(8px);
+}
+
+.swipe-guide-left{
+    color:#b91c1c;
+    background:rgba(254,242,242,.93);
+    border:1px solid #fecaca;
+}
+
+.swipe-guide-right{
+    color:#15803d;
+    background:rgba(240,253,244,.93);
+    border:1px solid #bbf7d0;
+}
+
+/*
+    Initial automatic indication:
+    Left/right arrows gently shake.
+*/
+.lead-card.first-guide .swipe-guide{
+    opacity:1;
+}
+
+.lead-card.first-guide
+.swipe-guide-left{
+    animation:guideLeftShake 1.2s ease-in-out infinite;
+}
+
+.lead-card.first-guide
+.swipe-guide-right{
+    animation:guideRightShake 1.2s ease-in-out infinite;
+}
+
+@keyframes guideLeftShake{
+    0%,100%{
+        transform:translateX(0);
+    }
+    25%{
+        transform:translateX(-7px);
+    }
+    50%{
+        transform:translateX(0);
+    }
+    75%{
+        transform:translateX(-4px);
+    }
+}
+
+@keyframes guideRightShake{
+    0%,100%{
+        transform:translateX(0);
+    }
+    25%{
+        transform:translateX(7px);
+    }
+    50%{
+        transform:translateX(0);
+    }
+    75%{
+        transform:translateX(4px);
+    }
+}
+
+/*
+    Small instruction under interested card.
+*/
+.join-hint{
+    margin-top:11px;
+    padding:9px 11px;
+    border-radius:11px;
+    background:#f5f3ff;
+    color:#6d28d9;
+    border:1px dashed #c4b5fd;
+    text-align:center;
+    font-size:10px;
+    font-weight:800;
+}
+
+/* =========================================================
+   PRESS + HOLD EDGE PROGRESS
+========================================================= */
+
+.hold-progress{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:10;
+    border-radius:17px;
+    overflow:hidden;
+    opacity:0;
+    transition:opacity .15s ease;
+}
+
+.hold-progress.active{
+    opacity:1;
+}
+
+.hold-progress:before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:17px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #7c3aed,
+            #2563eb,
+            #22c55e,
+            #f59e0b,
+            #7c3aed
+        );
+
+    background-size:300% 100%;
+
+    clip-path:
+        polygon(
+            0 0,
+            0 0,
+            0 0,
+            0 0
+        );
+
+    animation:
+        edgeGradient 1s linear infinite;
+}
+
+.hold-progress.active:before{
+    animation:
+        holdEdgeRun .82s linear forwards,
+        edgeGradient 1s linear infinite;
+}
+
+@keyframes holdEdgeRun{
+    0%{
+        clip-path:
+            polygon(
+                0 0,
+                0 0,
+                0 0,
+                0 0
+            );
+    }
+
+    25%{
+        clip-path:
+            polygon(
+                0 0,
+                100% 0,
+                0 0,
+                0 0
+            );
+    }
+
+    50%{
+        clip-path:
+            polygon(
+                0 0,
+                100% 0,
+                100% 100%,
+                0 0
+            );
+    }
+
+    75%{
+        clip-path:
+            polygon(
+                0 0,
+                100% 0,
+                100% 100%,
+                0 100%
+            );
+    }
+
+    100%{
+        clip-path:
+            polygon(
+                0 0,
+                100% 0,
+                100% 100%,
+                0 100%
+            );
+    }
+}
+
+@keyframes edgeGradient{
+    to{
+        background-position:300% 0;
+    }
+}
+
+.hold-progress-inner{
+    position:absolute;
+    inset:3px;
+    border-radius:14px;
+    background:rgba(255,255,255,.94);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    flex-direction:column;
+    gap:5px;
+}
+
+.hold-progress-icon{
+    font-size:20px;
+}
+
+.hold-progress-text{
+    font-size:10px;
+    font-weight:800;
+    color:#4c1d95;
+}
+
+.hold-progress-sub{
+    font-size:8px;
+    color:#6b7280;
+}
+
+/* =========================================================
+   JOINED CARD
+========================================================= */
+
+.lead-card.joined-card{
+    border-color:#d8b4fe;
+    background:
+        linear-gradient(
+            135deg,
+            #fff,
+            #faf5ff
+        );
+}
+
+.joined-ribbon{
+    position:absolute;
+    top:0;
+    right:0;
+    padding:5px 9px;
+    border-bottom-left-radius:10px;
+    background:#7c3aed;
+    color:#fff;
+    font-size:8px;
+    font-weight:800;
+}
+
+/* =========================================================
+   BADGES
+========================================================= */
+
+.badge{
+    display:inline-flex;
+    align-items:center;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:800;
+    background:#f1f5f9;
+    color:#475569;
+    white-space:nowrap;
+}
+
+.badge.new,
+.badge.pending{
+    background:#fff7ed;
+    color:#c2410c;
+}
+
+.badge.contacted,
+.badge.interested{
+    background:#eff6ff;
+    color:#1d4ed8;
+}
+
+.badge.converted{
+    background:#ecfdf5;
+    color:#15803d;
+}
+
+.badge.joined{
+    background:#f5f3ff;
+    color:#6d28d9;
+    border:1px solid #ddd6fe;
+}
+
+.badge.not-interested{
+    background:#fef2f2;
+    color:#b91c1c;
+}
+
+.badge.visited{
+    background:#f0fdf4;
+    color:#15803d;
+}
+
+.badge.follow-up,
+.badge.delay{
+    background:#fffbeb;
+    color:#a16207;
+}
+
+/* =========================================================
+   LEAD CONTENT
+========================================================= */
 
 .lead-card-top{
     display:flex;
@@ -722,38 +1091,6 @@ button{
     font-size:11px;
     color:var(--muted);
     margin-top:3px;
-}
-
-.badge{
-    display:inline-flex;
-    align-items:center;
-    padding:5px 9px;
-    border-radius:999px;
-    font-size:10px;
-    font-weight:800;
-    background:#f1f5f9;
-    color:#475569;
-    white-space:nowrap;
-}
-
-.badge.new,.badge.pending{
-    background:#fff7ed;
-    color:#c2410c;
-}
-
-.badge.contacted,.badge.interested{
-    background:#eff6ff;
-    color:#1d4ed8;
-}
-
-.badge.converted{
-    background:#ecfdf5;
-    color:#15803d;
-}
-
-.badge.not-interested{
-    background:#fef2f2;
-    color:#b91c1c;
 }
 
 .lead-meta{
@@ -828,6 +1165,10 @@ button{
     font-size:12px;
     color:var(--muted);
 }
+
+/* =========================================================
+   MODAL
+========================================================= */
 
 .modal{
     display:none;
@@ -924,6 +1265,10 @@ textarea.form-control{
     background:#2563eb;
 }
 
+/* =========================================================
+   TOAST
+========================================================= */
+
 .toast{
     position:fixed;
     right:20px;
@@ -946,9 +1291,182 @@ textarea.form-control{
     opacity:1;
 }
 
-input,select,textarea{
-    transform:none!important;
-    animation:none!important;
+/* =========================================================
+   JOIN CELEBRATION
+========================================================= */
+
+.join-overlay{
+    position:fixed;
+    inset:0;
+    z-index:2000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(15,23,42,.60);
+    backdrop-filter:blur(7px);
+    overflow:hidden;
+}
+
+.join-overlay.show{
+    display:flex;
+}
+
+.join-celebration{
+    width:min(390px,calc(100% - 28px));
+    padding:30px 22px;
+    border-radius:28px;
+    background:#fff;
+    text-align:center;
+    position:relative;
+    z-index:20;
+    box-shadow:
+        0 30px 100px rgba(0,0,0,.30);
+    animation:
+        celebrationIn .45s cubic-bezier(.2,.9,.2,1);
+}
+
+@keyframes celebrationIn{
+    0%{
+        opacity:0;
+        transform:scale(.55) translateY(30px);
+    }
+    70%{
+        transform:scale(1.05);
+    }
+    100%{
+        opacity:1;
+        transform:scale(1);
+    }
+}
+
+.join-icon{
+    width:78px;
+    height:78px;
+    margin:0 auto 13px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    font-size:39px;
+    background:
+        linear-gradient(
+            135deg,
+            #ecfdf5,
+            #f5f3ff
+        );
+    box-shadow:
+        0 15px 35px rgba(124,58,237,.15);
+    animation:
+        joinPop .7s ease infinite alternate;
+}
+
+@keyframes joinPop{
+    from{
+        transform:scale(1);
+    }
+    to{
+        transform:scale(1.08) rotate(2deg);
+    }
+}
+
+.join-celebration h2{
+    font-size:25px;
+    font-weight:800;
+}
+
+.join-name{
+    margin-top:6px;
+    color:var(--muted);
+    font-size:11px;
+}
+
+.earned{
+    margin-top:18px;
+    font-size:42px;
+    font-weight:800;
+    color:#16a34a;
+}
+
+.earned-label{
+    color:#6b7280;
+    font-size:10px;
+}
+
+.join-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+    margin-top:20px;
+}
+
+.join-stat{
+    padding:12px;
+    border-radius:13px;
+    background:#f8fafc;
+}
+
+.join-stat span{
+    display:block;
+    color:#94a3b8;
+    font-size:9px;
+}
+
+.join-stat strong{
+    display:block;
+    margin-top:4px;
+    font-size:13px;
+}
+
+.join-close{
+    width:100%;
+    margin-top:18px;
+    border:0;
+    border-radius:13px;
+    padding:13px;
+    color:#fff;
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+    font-weight:800;
+}
+
+/* =========================================================
+   CONFETTI
+========================================================= */
+
+.confetti-wrap{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:5;
+}
+
+.confetti{
+    position:absolute;
+    top:-25px;
+    width:8px;
+    height:14px;
+    animation:
+        confettiFall linear forwards;
+}
+
+@keyframes confettiFall{
+    0%{
+        transform:
+            translate3d(0,-20px,0)
+            rotate(0);
+        opacity:1;
+    }
+
+    100%{
+        transform:
+            translate3d(var(--x),110vh,0)
+            rotate(var(--r));
+        opacity:0;
+    }
 }
 
 @media(max-width:1150px){
@@ -1050,6 +1568,12 @@ input,select,textarea{
     .filter{
         width:100%;
     }
+
+    .swipe-guide-left,
+    .swipe-guide-right{
+        font-size:8px;
+        padding:7px 8px;
+    }
 }
 
 @media(max-width:430px){
@@ -1080,189 +1604,427 @@ input,select,textarea{
 
     <div class="brand">
         <div class="logo">BT</div>
+
         <div>
-            <div class="brand-title">BlackTerminal</div>
-            <div class="brand-sub">Telecaller Dashboard</div>
+            <div class="brand-title">
+                BlackTerminal
+            </div>
+
+            <div class="brand-sub">
+                Telecaller Dashboard
+            </div>
         </div>
     </div>
 
     <div class="header-right">
 
-        <div id="connection" class="connection connecting">
+        <div id="connection"
+             class="connection connecting">
+
             <span class="connection-dot"></span>
-            <span id="connectionText">Connecting...</span>
+            <span id="connectionText">
+                Connecting...
+            </span>
+
         </div>
 
         <div class="user-chip">
-            <div class="avatar" id="headerAvatar">T</div>
-            <div>
-                <div class="user-name" id="headerName">Telecaller</div>
-                <div class="user-role">Telecaller</div>
+
+            <div class="avatar"
+                 id="headerAvatar">
+                T
             </div>
+
+            <div>
+                <div class="user-name"
+                     id="headerName">
+                    Telecaller
+                </div>
+
+                <div class="user-role">
+                    Telecaller
+                </div>
+            </div>
+
         </div>
 
-        <button class="logout" onclick="logout()">Logout</button>
+        <button class="logout"
+                onclick="logout()">
+            Logout
+        </button>
 
     </div>
+
 </div>
 </header>
 
+
 <main class="main">
 
-<div id="errorBox" class="error-box">
-    <strong id="errorTitle">Firebase connection problem</strong>
+<div id="errorBox"
+     class="error-box">
+
+    <strong id="errorTitle">
+        Firebase connection problem
+    </strong>
+
     <small id="errorMessage"></small>
+
 </div>
 
+
 <section class="hero">
+
     <div class="hero-top">
+
         <div>
-            <h1 id="welcomeText">Welcome, Telecaller 👋</h1>
-            <p>Manage coordinator leads, call students and follow up efficiently.</p>
+
+            <h1 id="welcomeText">
+                Welcome, Telecaller 👋
+            </h1>
+
+            <p>
+                Manage coordinator leads, call students
+                and follow up efficiently.
+            </p>
+
         </div>
-        <div class="hero-date" id="todayDate">Loading...</div>
+
+        <div class="hero-date"
+             id="todayDate">
+            Loading...
+        </div>
+
     </div>
+
 </section>
+
 
 <section class="stats">
 
     <div class="stat">
+
         <div class="stat-top">
-            <div class="stat-label">Today's Leads</div>
-            <div class="stat-icon">📥</div>
+
+            <div class="stat-label">
+                Today's Leads
+            </div>
+
+            <div class="stat-icon">
+                📥
+            </div>
+
         </div>
-        <div class="stat-value" id="todayCount">0</div>
+
+        <div class="stat-value"
+             id="todayCount">
+            0
+        </div>
+
     </div>
 
-    <div class="stat">
-        <div class="stat-top">
-            <div class="stat-label">New / Pending</div>
-            <div class="stat-icon">⏳</div>
-        </div>
-        <div class="stat-value" id="pendingCount">0</div>
-    </div>
 
     <div class="stat">
+
         <div class="stat-top">
-            <div class="stat-label">Contacted</div>
-            <div class="stat-icon">📞</div>
+
+            <div class="stat-label">
+                New / Pending
+            </div>
+
+            <div class="stat-icon">
+                ⏳
+            </div>
+
         </div>
-        <div class="stat-value" id="contactedCount">0</div>
+
+        <div class="stat-value"
+             id="pendingCount">
+            0
+        </div>
+
     </div>
 
+
     <div class="stat">
+
         <div class="stat-top">
-            <div class="stat-label">Converted</div>
-            <div class="stat-icon">🎯</div>
+
+            <div class="stat-label">
+                Contacted
+            </div>
+
+            <div class="stat-icon">
+                📞
+            </div>
+
         </div>
-        <div class="stat-value" id="convertedCount">0</div>
+
+        <div class="stat-value"
+             id="contactedCount">
+            0
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-top">
+
+            <div class="stat-label">
+                Joined
+            </div>
+
+            <div class="stat-icon">
+                🎉
+            </div>
+
+        </div>
+
+        <div class="stat-value"
+             id="joinedCount">
+            0
+        </div>
+
     </div>
 
 </section>
+
 
 <section class="salary-card">
 
     <div class="salary-head">
+
         <div>
-            <div class="salary-title">💰 Salary & Incentive</div>
+
+            <div class="salary-title">
+                💰 Salary & Incentive
+            </div>
+
             <div class="salary-sub">
                 Salary and admission incentives are controlled by Admin.
             </div>
+
         </div>
 
-        <div class="salary-month" id="salaryMonth">Current Month</div>
+        <div class="salary-month"
+             id="salaryMonth">
+            Current Month
+        </div>
+
     </div>
+
 
     <div class="salary-grid">
 
         <div class="salary-item base">
-            <div class="salary-item-label">Base Salary</div>
-            <div class="salary-item-value" id="baseSalaryValue">₹1,000</div>
-            <div class="salary-item-note">Admin controlled</div>
+
+            <div class="salary-item-label">
+                Base Salary
+            </div>
+
+            <div class="salary-item-value"
+                 id="baseSalaryValue">
+                ₹1,000
+            </div>
+
+            <div class="salary-item-note">
+                Admin controlled
+            </div>
+
         </div>
+
 
         <div class="salary-item admission">
-            <div class="salary-item-label">Admissions</div>
-            <div class="salary-item-value" id="salaryAdmissionCount">0</div>
-            <div class="salary-item-note" id="salaryAdmissionNote">Current month</div>
+
+            <div class="salary-item-label">
+                Joined
+            </div>
+
+            <div class="salary-item-value"
+                 id="salaryAdmissionCount">
+                0
+            </div>
+
+            <div class="salary-item-note"
+                 id="salaryAdmissionNote">
+                Current month
+            </div>
+
         </div>
+
 
         <div class="salary-item level">
-            <div class="salary-item-label">Current Level</div>
-            <div class="salary-item-value" id="salaryLevel">Level 1</div>
-            <div class="salary-item-note" id="salaryLevelNote">₹50 / admission</div>
+
+            <div class="salary-item-label">
+                Current Level
+            </div>
+
+            <div class="salary-item-value"
+                 id="salaryLevel">
+                Level 1
+            </div>
+
+            <div class="salary-item-note"
+                 id="salaryLevelNote">
+                ₹50 / join
+            </div>
+
         </div>
+
 
         <div class="salary-item incentive">
-            <div class="salary-item-label">Incentive</div>
-            <div class="salary-item-value" id="salaryIncentive">₹0</div>
-            <div class="salary-item-note" id="salaryIncentiveNote">Admission incentive</div>
+
+            <div class="salary-item-label">
+                Incentive
+            </div>
+
+            <div class="salary-item-value"
+                 id="salaryIncentive">
+                ₹0
+            </div>
+
+            <div class="salary-item-note"
+                 id="salaryIncentiveNote">
+                Joined incentive
+            </div>
+
         </div>
 
+
         <div class="salary-item total">
-            <div class="salary-item-label">Estimated Salary</div>
-            <div class="salary-item-value" id="salaryTotal">₹1,000</div>
-            <div class="salary-item-note">Base + Incentive</div>
+
+            <div class="salary-item-label">
+                Estimated Salary
+            </div>
+
+            <div class="salary-item-value"
+                 id="salaryTotal">
+                ₹1,000
+            </div>
+
+            <div class="salary-item-note">
+                Base + Incentive
+            </div>
+
         </div>
 
     </div>
+
 
     <div class="salary-progress">
 
         <div class="salary-progress-top">
-            <div class="salary-progress-title" id="salaryProgressTitle">
+
+            <div class="salary-progress-title"
+                 id="salaryProgressTitle">
                 Level 1 Progress
             </div>
 
-            <div class="salary-progress-text" id="salaryProgressText">
-                0 / 3 admissions
+            <div class="salary-progress-text"
+                 id="salaryProgressText">
+                0 / 3 joins
             </div>
+
         </div>
 
         <div class="progress-track">
-            <div class="progress-bar" id="salaryProgressBar"></div>
+
+            <div class="progress-bar"
+                 id="salaryProgressBar">
+            </div>
+
         </div>
 
     </div>
+
 
     <div class="salary-foot">
-        <span id="salaryConfigText">Loading Admin incentive settings...</span>
-        <span>Updates automatically</span>
+
+        <span id="salaryConfigText">
+            Loading Admin incentive settings...
+        </span>
+
+        <span>
+            Updates automatically
+        </span>
+
     </div>
 
 </section>
 
+
 <section class="section">
 
     <div class="section-head">
+
         <div>
-            <div class="section-title">Latest Lead</div>
-            <div class="section-sub">Most recently received coordinator lead</div>
+
+            <div class="section-title">
+                Latest Lead
+            </div>
+
+            <div class="section-sub">
+                Most recently received coordinator lead
+            </div>
+
         </div>
 
-        <button class="refresh-btn" onclick="manualRefresh()">↻ Refresh</button>
+        <button class="refresh-btn"
+                onclick="manualRefresh()">
+            ↻ Refresh
+        </button>
+
     </div>
+
 
     <div id="latestLeadContainer">
+
         <div class="empty">
-            <div class="empty-icon">📭</div>
-            <h3>Waiting for leads</h3>
-            <p>Coordinator leads will appear here automatically.</p>
+
+            <div class="empty-icon">
+                📭
+            </div>
+
+            <h3>
+                Waiting for leads
+            </h3>
+
+            <p>
+                Coordinator leads will appear here automatically.
+            </p>
+
         </div>
+
     </div>
 
 </section>
 
+
 <section class="section">
 
     <div class="section-head">
+
         <div>
-            <div class="section-title">Coordinator Leads</div>
-            <div class="section-sub">All leads assigned to Telecaller</div>
+
+            <div class="section-title">
+                Coordinator Leads
+            </div>
+
+            <div class="section-sub">
+                All leads assigned to Telecaller
+            </div>
+
         </div>
 
-        <div id="leadTotal" class="badge">0 Leads</div>
+        <div id="leadTotal"
+             class="badge">
+            0 Leads
+        </div>
+
     </div>
+
 
     <div class="toolbar">
 
@@ -1274,90 +2036,325 @@ input,select,textarea{
             oninput="renderLeads()"
         >
 
-        <select id="statusFilter" class="filter" onchange="renderLeads()">
-            <option value="all">All Status</option>
-            <option value="new">New</option>
-            <option value="pending">Pending</option>
-            <option value="contacted">Contacted</option>
-            <option value="interested">Interested</option>
-            <option value="follow-up">Follow Up</option>
-            <option value="visited">Visited</option>
-            <option value="converted">Converted</option>
-            <option value="not-interested">Not Interested</option>
+
+        <select id="statusFilter"
+                class="filter"
+                onchange="renderLeads()">
+
+            <option value="all">
+                All Status
+            </option>
+
+            <option value="new">
+                New
+            </option>
+
+            <option value="pending">
+                Pending
+            </option>
+
+            <option value="contacted">
+                Contacted
+            </option>
+
+            <option value="interested">
+                Interested
+            </option>
+
+            <option value="follow-up">
+                Follow Up
+            </option>
+
+            <option value="visited">
+                Visited
+            </option>
+
+            <option value="joined">
+                Joined
+            </option>
+
+            <option value="converted">
+                Converted
+            </option>
+
+            <option value="not-interested">
+                Not Interested
+            </option>
+
         </select>
 
     </div>
 
-    <div id="leadList" class="leads">
+
+    <div id="leadList"
+         class="leads">
+
         <div class="empty">
-            <div class="empty-icon">📋</div>
-            <h3>No leads yet</h3>
-            <p>Waiting for coordinator data from Firebase.</p>
+
+            <div class="empty-icon">
+                📋
+            </div>
+
+            <h3>
+                No leads yet
+            </h3>
+
+            <p>
+                Waiting for coordinator data from Firebase.
+            </p>
+
         </div>
+
     </div>
 
 </section>
 
 </main>
 
-<div id="statusModal" class="modal">
+
+<!-- STATUS MODAL -->
+
+<div id="statusModal"
+     class="modal">
 
     <div class="modal-box">
 
         <div class="modal-head">
-            <h3>Update Lead Status</h3>
-            <button class="close" onclick="closeStatusModal()">×</button>
+
+            <h3>
+                Update Lead Status
+            </h3>
+
+            <button class="close"
+                    onclick="closeStatusModal()">
+                ×
+            </button>
+
         </div>
+
 
         <div class="modal-body">
 
-            <div id="statusLeadName" style="font-weight:800;margin-bottom:15px;">
+            <div id="statusLeadName"
+                 style="font-weight:800;margin-bottom:15px;">
                 Student
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Status</label>
 
-                <select id="statusSelect" class="form-control">
-                    <option value="new">New</option>
-                    <option value="pending">Pending</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="interested">Interested</option>
-                    <option value="follow-up">Follow Up</option>
-                    <option value="visited">Visited</option>
-                    <option value="demo-completed">Demo Completed</option>
-                    <option value="converted">Converted</option>
-                    <option value="not-interested">Not Interested</option>
-                    <option value="delay">Delay</option>
+            <div class="form-group">
+
+                <label class="form-label">
+                    Status
+                </label>
+
+                <select id="statusSelect"
+                        class="form-control">
+
+                    <option value="new">
+                        New
+                    </option>
+
+                    <option value="pending">
+                        Pending
+                    </option>
+
+                    <option value="contacted">
+                        Contacted
+                    </option>
+
+                    <option value="interested">
+                        Interested
+                    </option>
+
+                    <option value="follow-up">
+                        Follow Up
+                    </option>
+
+                    <option value="visited">
+                        Visited
+                    </option>
+
+                    <option value="demo-completed">
+                        Demo Completed
+                    </option>
+
+                    <option value="joined">
+                        Joined
+                    </option>
+
+                    <option value="converted">
+                        Converted
+                    </option>
+
+                    <option value="not-interested">
+                        Not Interested
+                    </option>
+
+                    <option value="delay">
+                        Delay
+                    </option>
+
                 </select>
+
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Follow-up Date</label>
-                <input id="followUpDate" class="form-control" type="date">
-            </div>
 
             <div class="form-group">
-                <label class="form-label">Telecaller Remark</label>
+
+                <label class="form-label">
+                    Follow-up Date
+                </label>
+
+                <input id="followUpDate"
+                       class="form-control"
+                       type="date">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label class="form-label">
+                    Telecaller Remark
+                </label>
+
                 <textarea
                     id="telecallerRemark"
                     class="form-control"
                     placeholder="Write call result, student response, follow-up details..."
                 ></textarea>
+
             </div>
 
         </div>
 
+
         <div class="modal-footer">
-            <button class="btn btn-light" onclick="closeStatusModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="saveLeadStatus()">Save Status</button>
+
+            <button class="btn btn-light"
+                    onclick="closeStatusModal()">
+                Cancel
+            </button>
+
+            <button class="btn btn-primary"
+                    onclick="saveLeadStatus()">
+                Save Status
+            </button>
+
         </div>
 
     </div>
 
 </div>
 
-<div id="toast" class="toast">Saved successfully</div>
+
+<!-- JOIN CELEBRATION -->
+
+<div id="joinOverlay"
+     class="join-overlay">
+
+    <div id="confettiWrap"
+         class="confetti-wrap">
+    </div>
+
+
+    <div class="join-celebration">
+
+        <div class="join-icon">
+            🎉
+        </div>
+
+        <h2>
+            Lead Joined!
+        </h2>
+
+        <div id="joinName"
+             class="join-name">
+            Great work!
+        </div>
+
+
+        <div id="earnedAmount"
+             class="earned">
+            +₹0
+        </div>
+
+        <div class="earned-label">
+            Incentive Earned
+        </div>
+
+
+        <div class="join-grid">
+
+            <div class="join-stat">
+
+                <span>
+                    Monthly Joined
+                </span>
+
+                <strong id="joinCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="join-stat">
+
+                <span>
+                    Current Level
+                </span>
+
+                <strong id="joinLevel">
+                    Level 1
+                </strong>
+
+            </div>
+
+
+            <div class="join-stat">
+
+                <span>
+                    Total Incentive
+                </span>
+
+                <strong id="joinTotal">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+            <div class="join-stat">
+
+                <span>
+                    Estimated Salary
+                </span>
+
+                <strong id="joinSalary">
+                    ₹0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <button class="join-close"
+                onclick="closeJoinCelebration()">
+            Continue 🎯
+        </button>
+
+    </div>
+
+</div>
+
+
+<div id="toast"
+     class="toast">
+    Saved successfully
+</div>
+
 
 <script type="module">
 
@@ -1402,7 +2399,11 @@ if(
     loggedIn !== "true" ||
     userRole !== "telecaller"
 ){
-    window.location.replace("login.html");
+
+    window.location.replace(
+        "login.html"
+    );
+
 }
 
 
@@ -1411,73 +2412,122 @@ if(
 ========================================================= */
 
 const firebaseConfig = {
-    apiKey:"AIzaSyBNYjdOgZXnHLZ66-MSsfmzuVZ7Ex4m5Os",
-    authDomain:"black-d0090.firebaseapp.com",
-    projectId:"black-d0090",
-    storageBucket:"black-d0090.firebasestorage.app",
-    messagingSenderId:"262520728205",
-    appId:"1:262520728205:web:c95151d5f88da2831890c4"
+
+    apiKey:
+        "AIzaSyBNYjdOgZXnHLZ66-MSsfmzuVZ7Ex4m5Os",
+
+    authDomain:
+        "black-d0090.firebaseapp.com",
+
+    projectId:
+        "black-d0090",
+
+    storageBucket:
+        "black-d0090.firebasestorage.app",
+
+    messagingSenderId:
+        "262520728205",
+
+    appId:
+        "1:262520728205:web:c95151d5f88da2831890c4"
+
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+
+const app =
+    initializeApp(
+        firebaseConfig
+    );
+
+const auth =
+    getAuth(app);
+
+const db =
+    getFirestore(app);
+
 
 let unsubscribeLeads = null;
+
 let unsubscribeSalary = null;
 
 let allLeads = [];
+
 let selectedLeadId = null;
 
 
 /* =========================================================
-   DEFAULT SALARY
+   SALARY SETTINGS
 ========================================================= */
 
 let salarySettings = {
+
     baseSalary:1000,
+
     visitReward:0,
 
-    layer1Min:0,
-    layer1Max:2,
-    layer1Payment:50,
+    level1Min:0,
+    level1Max:2,
+    level1Payment:50,
 
-    layer2Min:3,
-    layer2Max:5,
-    layer2Payment:75,
+    level2Min:3,
+    level2Max:5,
+    level2Payment:75,
 
-    layer3Min:6,
-    layer3Max:"",
-    layer3Payment:100
+    level3Min:6,
+    level3Max:"",
+    level3Payment:100
+
 };
 
 
 /* =========================================================
-   UI
+   UI INIT
 ========================================================= */
 
-document.getElementById("headerName").textContent =
+document.getElementById(
+    "headerName"
+).textContent =
     telecallerName;
 
-document.getElementById("headerAvatar").textContent =
-    getInitials(telecallerName);
+document.getElementById(
+    "headerAvatar"
+).textContent =
+    getInitials(
+        telecallerName
+    );
 
-document.getElementById("welcomeText").textContent =
+document.getElementById(
+    "welcomeText"
+).textContent =
     `Welcome, ${telecallerName} 👋`;
 
-document.getElementById("todayDate").textContent =
-    new Intl.DateTimeFormat("en-IN",{
-        weekday:"long",
-        day:"2-digit",
-        month:"long",
-        year:"numeric"
-    }).format(new Date());
+document.getElementById(
+    "todayDate"
+).textContent =
+    new Intl.DateTimeFormat(
+        "en-IN",
+        {
+            weekday:"long",
+            day:"2-digit",
+            month:"long",
+            year:"numeric"
+        }
+    ).format(
+        new Date()
+    );
 
-document.getElementById("salaryMonth").textContent =
-    new Intl.DateTimeFormat("en-IN",{
-        month:"long",
-        year:"numeric"
-    }).format(new Date());
+document.getElementById(
+    "salaryMonth"
+).textContent =
+    new Intl.DateTimeFormat(
+        "en-IN",
+        {
+            month:"long",
+            year:"numeric"
+        }
+    ).format(
+        new Date()
+    );
 
 
 /* =========================================================
@@ -1491,15 +2541,23 @@ async function startFirebase(){
 
     try{
 
-        setConnection("connecting","Connecting...");
+        setConnection(
+            "connecting",
+            "Connecting..."
+        );
 
         if(!auth.currentUser){
 
-            await signInAnonymously(auth);
+            await signInAnonymously(
+                auth
+            );
 
         }
 
-        setConnection("online","Firebase Connected");
+        setConnection(
+            "online",
+            "Firebase Connected"
+        );
 
         startRealtimeLeads();
 
@@ -1509,116 +2567,116 @@ async function startFirebase(){
 
         console.error(error);
 
-        setConnection("error","Authentication Failed");
+        setConnection(
+            "error",
+            "Authentication Failed"
+        );
 
-        let message = error.message || "Firebase error.";
+        let message =
+            error.message ||
+            "Firebase error.";
 
-        if(error.code === "auth/operation-not-allowed"){
+        if(
+            error.code ===
+            "auth/operation-not-allowed"
+        ){
+
             message =
                 "Anonymous Authentication disabled. Firebase Console → Authentication → Sign-in method → Anonymous → Enable.";
+
         }
 
         showError(
             "Firebase Authentication Failed",
             message
         );
+
     }
+
 }
 
 
 /* =========================================================
-   ⭐ FIXED SALARY LISTENER
+   SALARY LISTENER
 ========================================================= */
 
 function startSalaryListener(){
 
     if(unsubscribeSalary){
+
         unsubscribeSalary();
+
     }
 
-    unsubscribeSalary = onSnapshot(
+    unsubscribeSalary =
+        onSnapshot(
 
-        doc(
-            db,
-            "paymentSettings",
-            "telecaller"
-        ),
+            doc(
+                db,
+                "paymentSettings",
+                "telecaller"
+            ),
 
-        snapshot => {
+            snapshot => {
 
-            if(snapshot.exists()){
+                if(
+                    snapshot.exists()
+                ){
 
-                const data = snapshot.data();
+                    salarySettings =
+                        normalizeSalarySettings(
+                            snapshot.data()
+                        );
 
-                console.log(
-                    "ADMIN TELECALLER PAYMENT SETTINGS:",
-                    data
+                }else{
+
+                    salarySettings =
+                        normalizeSalarySettings(
+                            {}
+                        );
+
+                }
+
+                updateSalaryDashboard();
+
+            },
+
+            error => {
+
+                console.error(
+                    error
                 );
 
                 salarySettings =
-                    normalizeSalarySettings(data);
+                    normalizeSalarySettings(
+                        {}
+                    );
 
-            }else{
+                updateSalaryDashboard();
 
-                console.warn(
-                    "paymentSettings/telecaller does not exist"
+                showError(
+                    "Payment settings error",
+                    getFirestoreErrorMessage(
+                        error
+                    )
                 );
-
-                salarySettings =
-                    normalizeSalarySettings({});
 
             }
 
-            updateSalaryDashboard();
+        );
 
-        },
-
-        error => {
-
-            console.error(
-                "Payment settings listener error:",
-                error
-            );
-
-            showError(
-                "Unable to read Telecaller Payment Settings",
-                getFirestoreErrorMessage(error)
-            );
-
-            salarySettings =
-                normalizeSalarySettings({});
-
-            updateSalaryDashboard();
-
-        }
-
-    );
 }
 
 
 /* =========================================================
-   ⭐ IMPORTANT PAYMENT FIELD COMPATIBILITY FIX
+   PAYMENT SETTINGS COMPATIBILITY
 ========================================================= */
 
 function normalizeSalarySettings(data){
 
-    data = data || {};
+    data =
+        data || {};
 
-    /*
-     * ADMIN MAY SAVE:
-     *
-     * level1AdmissionIncentive
-     * level2AdmissionIncentive
-     * level3AdmissionIncentive
-     *
-     * OLD TELECALLER CODE EXPECTED:
-     *
-     * layer1Payment
-     * layer2Payment
-     * layer3Payment
-     *
-     * This function supports BOTH.
-     */
 
     const level1 =
         firstExistingNumber(
@@ -1629,6 +2687,7 @@ function normalizeSalarySettings(data){
             50
         );
 
+
     const level2 =
         firstExistingNumber(
             data.level2AdmissionIncentive,
@@ -1638,6 +2697,7 @@ function normalizeSalarySettings(data){
             75
         );
 
+
     const level3 =
         firstExistingNumber(
             data.level3AdmissionIncentive,
@@ -1646,71 +2706,6 @@ function normalizeSalarySettings(data){
             data.level3Payment,
             100
         );
-
-
-    const level1Min =
-        firstExistingNumber(
-            data.level1Min,
-            data.layer1Min,
-            0
-        );
-
-    const level1Max =
-        firstExistingNumber(
-            data.level1Max,
-            data.layer1Max,
-            2
-        );
-
-    const level2Min =
-        firstExistingNumber(
-            data.level2Min,
-            data.layer2Min,
-            3
-        );
-
-    const level2Max =
-        firstExistingNumber(
-            data.level2Max,
-            data.layer2Max,
-            5
-        );
-
-    const level3Min =
-        firstExistingNumber(
-            data.level3Min,
-            data.layer3Min,
-            6
-        );
-
-
-    let level3Max = "";
-
-    if(
-        data.level3Max !== undefined &&
-        data.level3Max !== null &&
-        data.level3Max !== ""
-    ){
-
-        level3Max =
-            numberOrDefault(
-                data.level3Max,
-                ""
-            );
-
-    }else if(
-        data.layer3Max !== undefined &&
-        data.layer3Max !== null &&
-        data.layer3Max !== ""
-    ){
-
-        level3Max =
-            numberOrDefault(
-                data.layer3Max,
-                ""
-            );
-
-    }
 
 
     return {
@@ -1730,44 +2725,67 @@ function normalizeSalarySettings(data){
                 0
             ),
 
-        level1Min,
-        level1Max,
+        level1Min:
+            firstExistingNumber(
+                data.level1Min,
+                data.layer1Min,
+                0
+            ),
+
+        level1Max:
+            firstExistingNumber(
+                data.level1Max,
+                data.layer1Max,
+                2
+            ),
 
         level1Payment:
             level1,
 
-        layer1Payment:
-            level1,
 
-        level2Min,
-        level2Max,
+        level2Min:
+            firstExistingNumber(
+                data.level2Min,
+                data.layer2Min,
+                3
+            ),
+
+        level2Max:
+            firstExistingNumber(
+                data.level2Max,
+                data.layer2Max,
+                5
+            ),
 
         level2Payment:
             level2,
 
-        layer2Payment:
-            level2,
 
-        level3Min,
-        level3Max,
+        level3Min:
+            firstExistingNumber(
+                data.level3Min,
+                data.layer3Min,
+                6
+            ),
+
+        level3Max:
+            data.level3Max ??
+            data.layer3Max ??
+            "",
 
         level3Payment:
-            level3,
-
-        layer3Payment:
             level3
 
     };
+
 }
 
 
-/* =========================================================
-   FIRST VALID NUMBER
-========================================================= */
-
 function firstExistingNumber(...values){
 
-    for(const value of values){
+    for(
+        const value of values
+    ){
 
         if(
             value !== undefined &&
@@ -1778,131 +2796,152 @@ function firstExistingNumber(...values){
             const n =
                 Number(
                     String(value)
-                        .replace(/[₹,\s]/g,"")
+                    .replace(
+                        /[₹,\s]/g,
+                        ""
+                    )
                 );
 
-            if(Number.isFinite(n)){
+            if(
+                Number.isFinite(n)
+            ){
+
                 return n;
+
             }
+
         }
+
     }
 
     return 0;
-}
 
-
-function numberOrDefault(value,fallback){
-
-    if(
-        value === undefined ||
-        value === null ||
-        value === ""
-    ){
-        return fallback;
-    }
-
-    const n =
-        Number(
-            String(value)
-                .replace(/[₹,\s]/g,"")
-        );
-
-    return Number.isFinite(n)
-        ? n
-        : fallback;
 }
 
 
 /* =========================================================
-   LEADS
+   REALTIME LEADS
 ========================================================= */
 
 function startRealtimeLeads(){
 
     if(unsubscribeLeads){
+
         unsubscribeLeads();
+
     }
 
-    unsubscribeLeads = onSnapshot(
+    unsubscribeLeads =
+        onSnapshot(
 
-        collection(
-            db,
-            "studentInquiries"
-        ),
+            collection(
+                db,
+                "studentInquiries"
+            ),
 
-        snapshot => {
+            snapshot => {
 
-            const leads = [];
+                const leads = [];
 
-            snapshot.forEach(item => {
+                snapshot.forEach(
+                    item => {
 
-                const data = item.data();
+                        const data =
+                            item.data();
 
-                if(isTelecallerLead(data)){
+                        if(
+                            isTelecallerLead(
+                                data
+                            )
+                        ){
 
-                    leads.push({
-                        id:item.id,
-                        ...data
-                    });
+                            leads.push({
 
-                }
+                                id:item.id,
 
-            });
+                                ...data
 
-            leads.sort(
-                (a,b) =>
-                    getReceivedDate(b) -
-                    getReceivedDate(a)
-            );
+                            });
 
-            allLeads = leads;
+                        }
 
-            updateDashboard();
-            updateSalaryDashboard();
+                    }
+                );
 
-            hideError();
 
-        },
+                leads.sort(
+                    (a,b) =>
+                        getReceivedDate(b) -
+                        getReceivedDate(a)
+                );
 
-        error => {
 
-            console.error(error);
+                allLeads =
+                    leads;
 
-            setConnection(
-                "error",
-                "Firestore Error"
-            );
 
-            showError(
-                "Unable to load coordinator leads",
-                getFirestoreErrorMessage(error)
-            );
+                updateDashboard();
 
-        }
+                updateSalaryDashboard();
 
-    );
+                hideError();
+
+            },
+
+            error => {
+
+                console.error(
+                    error
+                );
+
+                showError(
+                    "Unable to load coordinator leads",
+                    getFirestoreErrorMessage(
+                        error
+                    )
+                );
+
+            }
+
+        );
+
 }
 
+
+/* =========================================================
+   LEAD FILTER
+========================================================= */
 
 function isTelecallerLead(data){
 
     if(!data){
+
         return false;
+
     }
 
     if(
         data.sentToTelecaller === true ||
         data.sentToTelecaller === "true"
     ){
+
         return true;
+
     }
 
+
     const status =
-        String(data.telecallerStatus || "")
+        String(
+            data.telecallerStatus ||
+            data.status ||
+            ""
+        )
         .toLowerCase()
         .trim();
 
+
     return [
+
         "pending",
         "new",
         "assigned",
@@ -1911,94 +2950,15 @@ function isTelecallerLead(data){
         "follow-up",
         "visited",
         "demo-completed",
+        "joined",
         "converted",
         "not-interested",
         "delay"
-    ].includes(status);
-}
 
-
-/* =========================================================
-   DATE
-========================================================= */
-
-function toDate(value){
-
-    if(!value){
-        return null;
-    }
-
-    if(typeof value.toDate === "function"){
-        return value.toDate();
-    }
-
-    if(value instanceof Date){
-        return value;
-    }
-
-    if(typeof value === "number"){
-        return new Date(value);
-    }
-
-    if(typeof value === "string"){
-
-        const d = new Date(value);
-
-        if(!isNaN(d.getTime())){
-            return d;
-        }
-    }
-
-    return null;
-}
-
-
-function getReceivedDate(lead){
-
-    return (
-        toDate(lead.sentToTelecallerAt) ||
-        toDate(lead.createdAt) ||
-        toDate(lead.updatedAt) ||
-        new Date(0)
+    ].includes(
+        status
     );
-}
 
-
-function getConversionDate(lead){
-
-    return (
-        toDate(lead.convertedAt) ||
-        toDate(lead.admissionDate) ||
-        toDate(lead.conversionDate) ||
-        toDate(lead.updatedAt)
-    );
-}
-
-
-function isToday(date){
-
-    if(!date) return false;
-
-    const now = new Date();
-
-    return (
-        date.getFullYear() === now.getFullYear() &&
-        date.getMonth() === now.getMonth() &&
-        date.getDate() === now.getDate()
-    );
-}
-
-
-function isCurrentMonth(date){
-
-    if(!date) return false;
-
-    const now = new Date();
-
-    return (
-        date.getFullYear() === now.getFullYear() &&
-        date.getMonth() === now.getMonth()
-    );
 }
 
 
@@ -2010,27 +2970,439 @@ function getLeadStatus(lead){
 
     const tele =
         String(
-            lead.telecallerStatus || ""
+            lead.telecallerStatus ||
+            ""
         )
         .toLowerCase()
         .trim();
 
+
     const normal =
         String(
-            lead.status || ""
+            lead.status ||
+            ""
         )
         .toLowerCase()
         .trim();
+
+
+    if(
+        tele === "joined"
+    ){
+
+        return "joined";
+
+    }
+
 
     if(
         tele &&
         tele !== "pending" &&
         tele !== "new"
     ){
+
         return tele;
+
     }
 
-    return normal || tele || "new";
+
+    return (
+        normal ||
+        tele ||
+        "new"
+    );
+
+}
+
+
+/* =========================================================
+   DATE
+========================================================= */
+
+function toDate(value){
+
+    if(!value){
+
+        return null;
+
+    }
+
+    if(
+        typeof value.toDate ===
+        "function"
+    ){
+
+        return value.toDate();
+
+    }
+
+    if(
+        value instanceof Date
+    ){
+
+        return value;
+
+    }
+
+    const d =
+        new Date(value);
+
+    return isNaN(
+        d.getTime()
+    )
+        ? null
+        : d;
+
+}
+
+
+function getReceivedDate(lead){
+
+    return (
+
+        toDate(
+            lead.sentToTelecallerAt
+        ) ||
+
+        toDate(
+            lead.createdAt
+        ) ||
+
+        toDate(
+            lead.updatedAt
+        ) ||
+
+        new Date(0)
+
+    );
+
+}
+
+
+function isToday(date){
+
+    if(!date){
+
+        return false;
+
+    }
+
+    const now =
+        new Date();
+
+    return (
+
+        date.getFullYear() ===
+            now.getFullYear() &&
+
+        date.getMonth() ===
+            now.getMonth() &&
+
+        date.getDate() ===
+            now.getDate()
+
+    );
+
+}
+
+
+function isCurrentMonth(date){
+
+    if(!date){
+
+        return false;
+
+    }
+
+    const now =
+        new Date();
+
+    return (
+
+        date.getFullYear() ===
+            now.getFullYear() &&
+
+        date.getMonth() ===
+            now.getMonth()
+
+    );
+
+}
+
+
+/* =========================================================
+   MONTHLY JOINED
+========================================================= */
+
+function getMyMonthlyJoined(){
+
+    const unique =
+        new Map();
+
+
+    allLeads.forEach(
+        lead => {
+
+            if(
+                getLeadStatus(lead) !==
+                "joined"
+            ){
+
+                return;
+
+            }
+
+
+            if(
+                !belongsToCurrentTelecaller(
+                    lead
+                )
+            ){
+
+                return;
+
+            }
+
+
+            const joinedDate =
+                toDate(
+                    lead.joinedAt
+                ) ||
+                toDate(
+                    lead.updatedAt
+                );
+
+
+            if(
+                !isCurrentMonth(
+                    joinedDate
+                )
+            ){
+
+                return;
+
+            }
+
+
+            const mobile =
+                normalizeIndianMobile(
+                    getMobile(lead)
+                );
+
+
+            const key =
+                mobile ||
+                `id:${lead.id}`;
+
+
+            if(
+                !unique.has(key)
+            ){
+
+                unique.set(
+                    key,
+                    lead
+                );
+
+            }
+
+        }
+    );
+
+
+    return [
+        ...unique.values()
+    ];
+
+}
+
+
+/* =========================================================
+   CURRENT TELECALLER
+========================================================= */
+
+function belongsToCurrentTelecaller(
+    lead
+){
+
+    const myMobile =
+        normalizeIndianMobile(
+            telecallerMobile
+        );
+
+    const leadMobile =
+        normalizeIndianMobile(
+            lead.telecallerMobile
+        );
+
+
+    if(
+        myMobile &&
+        leadMobile
+    ){
+
+        return (
+            myMobile ===
+            leadMobile
+        );
+
+    }
+
+
+    const myName =
+        String(
+            telecallerName ||
+            ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const leadName =
+        String(
+            lead.telecallerName ||
+            ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    /*
+       If current dashboard is already
+       receiving the lead, allow joined
+       attribution even when old lead
+       doesn't have telecallerMobile.
+    */
+
+    if(
+        lead.sentToTelecaller === true &&
+        !lead.telecallerMobile &&
+        !lead.telecallerName
+    ){
+
+        return true;
+
+    }
+
+
+    return (
+        myName &&
+        leadName &&
+        myName === leadName
+    );
+
+}
+
+
+/* =========================================================
+   LEVEL
+========================================================= */
+
+function getSalaryLevel(
+    joinedCount
+){
+
+    joinedCount =
+        Number(
+            joinedCount || 0
+        );
+
+
+    if(
+        joinedCount >=
+        Number(
+            salarySettings.level3Min
+        )
+    ){
+
+        return {
+
+            name:"Level 3",
+
+            level:3,
+
+            rate:
+                Number(
+                    salarySettings.level3Payment
+                )
+
+        };
+
+    }
+
+
+    if(
+        joinedCount >=
+        Number(
+            salarySettings.level2Min
+        )
+    ){
+
+        return {
+
+            name:"Level 2",
+
+            level:2,
+
+            rate:
+                Number(
+                    salarySettings.level2Payment
+                )
+
+        };
+
+    }
+
+
+    return {
+
+        name:"Level 1",
+
+        level:1,
+
+        rate:
+            Number(
+                salarySettings.level1Payment
+            )
+
+    };
+
+}
+
+
+/* =========================================================
+   MONTHLY INCENTIVE
+========================================================= */
+
+function calculateJoinedIncentive(
+    count
+){
+
+    count =
+        Number(
+            count || 0
+        );
+
+
+    let total = 0;
+
+
+    for(
+        let i = 1;
+        i <= count;
+        i++
+    ){
+
+        total +=
+            getSalaryLevel(
+                i
+            ).rate;
+
+    }
+
+
+    return total;
+
 }
 
 
@@ -2042,282 +3414,119 @@ function updateDashboard(){
 
     const today =
         allLeads.filter(
-            x => isToday(getReceivedDate(x))
-        );
+            lead =>
+                isToday(
+                    getReceivedDate(
+                        lead
+                    )
+                )
+        ).length;
+
 
     const pending =
-        allLeads.filter(x =>
-            ["new","pending"]
-            .includes(getLeadStatus(x))
-        );
+        allLeads.filter(
+            lead =>
+                [
+                    "new",
+                    "pending"
+                ].includes(
+                    getLeadStatus(
+                        lead
+                    )
+                )
+        ).length;
+
 
     const contacted =
-        allLeads.filter(x =>
-            [
-                "contacted",
-                "interested",
-                "follow-up",
-                "visited",
-                "demo-completed"
-            ].includes(getLeadStatus(x))
-        );
+        allLeads.filter(
+            lead =>
+                [
+                    "contacted",
+                    "interested",
+                    "follow-up",
+                    "visited",
+                    "demo-completed"
+                ].includes(
+                    getLeadStatus(
+                        lead
+                    )
+                )
+        ).length;
 
-    const converted =
-        allLeads.filter(x =>
-            getLeadStatus(x) === "converted"
-        );
 
-    document.getElementById("todayCount").textContent =
-        today.length;
+    const joined =
+        allLeads.filter(
+            lead =>
+                getLeadStatus(
+                    lead
+                ) === "joined"
+        ).length;
 
-    document.getElementById("pendingCount").textContent =
-        pending.length;
 
-    document.getElementById("contactedCount").textContent =
-        contacted.length;
+    document.getElementById(
+        "todayCount"
+    ).textContent =
+        today;
 
-    document.getElementById("convertedCount").textContent =
-        converted.length;
 
-    document.getElementById("leadTotal").textContent =
+    document.getElementById(
+        "pendingCount"
+    ).textContent =
+        pending;
+
+
+    document.getElementById(
+        "contactedCount"
+    ).textContent =
+        contacted;
+
+
+    document.getElementById(
+        "joinedCount"
+    ).textContent =
+        joined;
+
+
+    document.getElementById(
+        "leadTotal"
+    ).textContent =
         `${allLeads.length} Leads`;
 
+
     renderLatestLead();
+
     renderLeads();
+
 }
 
 
 /* =========================================================
-   ⭐ SALARY ATTRIBUTION
-========================================================= */
-
-function belongsToCurrentTelecaller(lead){
-
-    const currentMobile =
-        normalizeIndianMobile(
-            telecallerMobile
-        );
-
-    const leadMobile =
-        normalizeIndianMobile(
-            lead.telecallerMobile
-        );
-
-    if(
-        currentMobile &&
-        leadMobile
-    ){
-        return currentMobile === leadMobile;
-    }
-
-    const currentName =
-        String(
-            telecallerName || ""
-        )
-        .trim()
-        .toLowerCase();
-
-    const leadName =
-        String(
-            lead.telecallerName || ""
-        )
-        .trim()
-        .toLowerCase();
-
-    return (
-        currentName &&
-        leadName &&
-        currentName === leadName
-    );
-}
-
-
-/* =========================================================
-   MONTHLY ADMISSIONS
-========================================================= */
-
-function getMyMonthlyAdmissions(){
-
-    const converted =
-        allLeads.filter(lead => {
-
-            if(
-                getLeadStatus(lead) !==
-                "converted"
-            ){
-                return false;
-            }
-
-            if(
-                !belongsToCurrentTelecaller(
-                    lead
-                )
-            ){
-                return false;
-            }
-
-            return isCurrentMonth(
-                getConversionDate(lead)
-            );
-
-        });
-
-    const unique = new Map();
-
-    converted.forEach(lead => {
-
-        const mobile =
-            normalizeIndianMobile(
-                getMobile(lead)
-            );
-
-        const key =
-            mobile ||
-            `id:${lead.id}`;
-
-        if(!unique.has(key)){
-            unique.set(key,lead);
-        }
-
-    });
-
-    return [...unique.values()];
-}
-
-
-/* =========================================================
-   LEVEL
-========================================================= */
-
-function getSalaryLevel(admissions){
-
-    if(
-        admissions >=
-        salarySettings.level3Min
-    ){
-
-        return {
-            level:3,
-            name:"Level 3",
-            rate:
-                salarySettings.level3Payment
-        };
-    }
-
-    if(
-        admissions >=
-        salarySettings.level2Min
-    ){
-
-        return {
-            level:2,
-            name:"Level 2",
-            rate:
-                salarySettings.level2Payment
-        };
-    }
-
-    return {
-        level:1,
-        name:"Level 1",
-        rate:
-            salarySettings.level1Payment
-    };
-}
-
-
-/* =========================================================
-   PROGRESS
-========================================================= */
-
-function getSalaryProgress(
-    admissions,
-    level
-){
-
-    let start = 0;
-    let target = 3;
-
-    if(level === 1){
-
-        start =
-            salarySettings.level1Min;
-
-        target =
-            salarySettings.level2Min;
-
-    }else if(level === 2){
-
-        start =
-            salarySettings.level2Min;
-
-        target =
-            salarySettings.level3Min;
-
-    }else{
-
-        start =
-            salarySettings.level3Min;
-
-        target =
-            salarySettings.level3Min + 5;
-
-    }
-
-    const range =
-        Math.max(1,target-start);
-
-    const completed =
-        Math.max(0,admissions-start);
-
-    const percent =
-        Math.min(
-            100,
-            Math.max(
-                0,
-                completed / range * 100
-            )
-        );
-
-    return {
-        target,
-        percent
-    };
-}
-
-
-/* =========================================================
-   ⭐ UPDATED SALARY CALCULATION
+   SALARY
 ========================================================= */
 
 function updateSalaryDashboard(){
 
-    const admissions =
-        getMyMonthlyAdmissions();
+    const joined =
+        getMyMonthlyJoined().length;
 
-    const count =
-        admissions.length;
 
     const level =
-        getSalaryLevel(count);
+        getSalaryLevel(
+            joined
+        );
+
 
     const admissionIncentive =
-        count * level.rate;
+        calculateJoinedIncentive(
+            joined
+        );
 
-    const visits =
-        getMyMonthlyVisits();
-
-    const visitIncentive =
-        visits *
-        salarySettings.visitReward;
-
-    const totalIncentive =
-        admissionIncentive +
-        visitIncentive;
 
     const total =
-        salarySettings.baseSalary +
-        totalIncentive;
+        Number(
+            salarySettings.baseSalary
+        ) +
+        admissionIncentive;
 
 
     document.getElementById(
@@ -2327,175 +3536,154 @@ function updateSalaryDashboard(){
             salarySettings.baseSalary
         );
 
+
     document.getElementById(
         "salaryAdmissionCount"
     ).textContent =
-        count;
+        joined;
+
 
     document.getElementById(
         "salaryAdmissionNote"
     ).textContent =
-        count === 1
-            ? "1 unique admission"
-            : `${count} unique admissions`;
+        `${joined} joined this month`;
+
 
     document.getElementById(
         "salaryLevel"
     ).textContent =
         level.name;
 
+
     document.getElementById(
         "salaryLevelNote"
     ).textContent =
-        `${formatMoney(level.rate)} / admission`;
+        `${formatMoney(level.rate)} / join`;
+
 
     document.getElementById(
         "salaryIncentive"
     ).textContent =
-        formatMoney(totalIncentive);
+        formatMoney(
+            admissionIncentive
+        );
 
-    document.getElementById(
-        "salaryIncentiveNote"
-    ).textContent =
-        visitIncentive > 0
-            ?
-            `${formatMoney(admissionIncentive)} admission + ${formatMoney(visitIncentive)} visit`
-            :
-            "Admission incentive";
 
     document.getElementById(
         "salaryTotal"
     ).textContent =
-        formatMoney(total);
-
-
-    const progress =
-        getSalaryProgress(
-            count,
-            level.level
+        formatMoney(
+            total
         );
+
+
+    document.getElementById(
+        "salaryIncentiveNote"
+    ).textContent =
+        "Joined incentive";
+
+
+    let target =
+        Number(
+            salarySettings.level2Min
+        );
+
+
+    let progress = 0;
+
+
+    if(level.level === 1){
+
+        target =
+            Number(
+                salarySettings.level2Min
+            );
+
+        progress =
+            Math.min(
+                100,
+                joined /
+                Math.max(
+                    1,
+                    target
+                ) *
+                100
+            );
+
+    }else if(
+        level.level === 2
+    ){
+
+        target =
+            Number(
+                salarySettings.level3Min
+            );
+
+        progress =
+            Math.min(
+                100,
+                (
+                    (joined -
+                        Number(
+                            salarySettings.level2Min
+                        )) /
+                    Math.max(
+                        1,
+                        target -
+                        Number(
+                            salarySettings.level2Min
+                        )
+                    )
+                ) *
+                100
+            );
+
+    }else{
+
+        progress = 100;
+
+    }
+
 
     document.getElementById(
         "salaryProgressBar"
     ).style.width =
-        `${progress.percent}%`;
+        `${Math.max(
+            0,
+            progress
+        )}%`;
 
 
-    if(level.level === 3){
-
-        document.getElementById(
-            "salaryProgressTitle"
-        ).textContent =
-            "Level 3 Active";
-
-        document.getElementById(
-            "salaryProgressText"
-        ).textContent =
-            `${count} admissions • ${formatMoney(level.rate)}/admission`;
-
-    }else{
-
-        document.getElementById(
-            "salaryProgressTitle"
-        ).textContent =
-            `Level ${level.level} Progress`;
-
-        document.getElementById(
-            "salaryProgressText"
-        ).textContent =
-            `${count} / ${progress.target} admissions`;
-
-    }
+    document.getElementById(
+        "salaryProgressTitle"
+    ).textContent =
+        `${level.name} Progress`;
 
 
-    /*
-     * ⭐ THIS WILL SHOW ADMIN VALUES
-     */
+    document.getElementById(
+        "salaryProgressText"
+    ).textContent =
+        level.level === 3
+            ? `${joined} joins • Top Level`
+            : `${joined} / ${target} joins`;
+
 
     document.getElementById(
         "salaryConfigText"
     ).textContent =
-        `L1 ${formatMoney(salarySettings.level1Payment)} • ` +
-        `L2 ${formatMoney(salarySettings.level2Payment)} • ` +
-        `L3 ${formatMoney(salarySettings.level3Payment)}`;
+        `L1 ${formatMoney(
+            salarySettings.level1Payment
+        )} • L2 ${formatMoney(
+            salarySettings.level2Payment
+        )} • L3 ${formatMoney(
+            salarySettings.level3Payment
+        )}`;
 
-
-    console.log(
-        "FINAL TELECALLER PAYMENT SETTINGS:",
-        {
-            baseSalary:
-                salarySettings.baseSalary,
-
-            level1:
-                salarySettings.level1Payment,
-
-            level2:
-                salarySettings.level2Payment,
-
-            level3:
-                salarySettings.level3Payment
-        }
-    );
 }
 
 
 /* =========================================================
-   VISITS
-========================================================= */
-
-function getMyMonthlyVisits(){
-
-    if(!salarySettings.visitReward){
-        return 0;
-    }
-
-    const unique = new Set();
-
-    allLeads.forEach(lead => {
-
-        if(
-            getLeadStatus(lead) !==
-            "visited"
-        ){
-            return;
-        }
-
-        if(
-            !belongsToCurrentTelecaller(
-                lead
-            )
-        ){
-            return;
-        }
-
-        const date =
-            toDate(lead.updatedAt) ||
-            toDate(lead.createdAt);
-
-        if(
-            !isCurrentMonth(date)
-        ){
-            return;
-        }
-
-        const mobile =
-            normalizeIndianMobile(
-                getMobile(lead)
-            );
-
-        unique.add(
-            mobile ||
-            `id:${lead.id}`
-        );
-
-    });
-
-    return unique.size;
-}
-
-
-/* =========================================================
-   LATEST
+   LATEST LEAD
 ========================================================= */
 
 function renderLatestLead(){
@@ -2505,772 +3693,1830 @@ function renderLatestLead(){
             "latestLeadContainer"
         );
 
+
     if(!allLeads.length){
 
         container.innerHTML = `
+
             <div class="empty">
-                <div class="empty-icon">📭</div>
-                <h3>Waiting for coordinator leads</h3>
-                <p>When a coordinator sends a lead, it will appear here.</p>
+
+                <div class="empty-icon">
+                    📭
+                </div>
+
+                <h3>
+                    Waiting for coordinator leads
+                </h3>
+
+                <p>
+                    When a coordinator sends a lead,
+                    it will appear here.
+                </p>
+
             </div>
+
         `;
 
         return;
+
     }
 
-    container.innerHTML =
-        createLatestLeadHTML(
-            allLeads[0]
-        );
-}
 
+    const lead =
+        allLeads[0];
 
-function createLatestLeadHTML(lead){
 
     const name =
         lead.studentName ||
         lead.name ||
         "Unknown Student";
 
+
     const mobile =
         getMobile(lead);
+
 
     const course =
         lead.course ||
         lead.courseName ||
-        lead.courseTitle ||
         "Not specified";
 
-    const duration =
-        lead.courseDuration ||
-        lead.duration ||
-        formatDuration(
-            lead.durationValue,
-            lead.durationUnit
-        ) ||
-        "Not specified";
-
-    const price =
-        firstValue(
-            lead.offerPrice,
-            lead.coursePrice,
-            lead.payablePrice,
-            lead.price
-        );
-
-    const coordinator =
-        firstValue(
-            lead.coordinatorName,
-            lead.sentByName,
-            lead.createdByName
-        ) || "Coordinator";
-
-    const remark =
-        lead.remark ||
-        lead.message ||
-        "No remark";
-
-    const received =
-        getReceivedDate(lead);
 
     const status =
-        getLeadStatus(lead);
+        getLeadStatus(
+            lead
+        );
 
-    return `
 
-    <div class="latest">
+    const price =
+        lead.offerPrice ||
+        lead.coursePrice ||
+        lead.payablePrice ||
+        lead.price ||
+        "";
 
-        <div class="latest-head">
 
-            <div>
-                <div class="latest-title">
-                    Latest Coordinator Lead
-                </div>
+    container.innerHTML = `
 
-                <div class="received">
-                    Received ${escapeHtml(
-                        formatDateTime(received)
-                    )}
-                    · ${escapeHtml(
-                        relativeTime(received)
-                    )}
-                </div>
-            </div>
+        <div class="latest">
 
-            <span class="badge ${safeClass(status)}">
-                ${escapeHtml(
-                    formatStatus(status)
-                )}
-            </span>
-
-        </div>
-
-        <div class="latest-body">
-
-            <div class="lead-main">
+            <div class="latest-head">
 
                 <div>
 
-                    <div class="person">
+                    <div class="latest-title">
+                        Latest Coordinator Lead
+                    </div>
 
-                        <div class="person-avatar">
-                            ${escapeHtml(
-                                getInitials(name)
-                            )}
-                        </div>
+                    <div class="received">
+                        ${escapeHtml(
+                            formatDateTime(
+                                getReceivedDate(
+                                    lead
+                                )
+                            )
+                        )}
+                    </div>
 
-                        <div>
-                            <div class="person-name">
-                                ${escapeHtml(name)}
-                            </div>
+                </div>
 
-                            <div class="person-mobile">
+                <span class="badge ${safeClass(status)}">
+                    ${escapeHtml(
+                        formatStatus(status)
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="latest-body">
+
+                <div class="lead-main">
+
+                    <div>
+
+                        <div class="person">
+
+                            <div class="person-avatar">
                                 ${escapeHtml(
-                                    mobile ||
-                                    "Mobile not available"
+                                    getInitials(
+                                        name
+                                    )
                                 )}
                             </div>
+
+                            <div>
+
+                                <div class="person-name">
+                                    ${escapeHtml(name)}
+                                </div>
+
+                                <div class="person-mobile">
+                                    ${escapeHtml(
+                                        mobile ||
+                                        "No mobile"
+                                    )}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="detail-grid">
+
+                            ${detail(
+                                "Course",
+                                course
+                            )}
+
+                            ${detail(
+                                "Fee",
+                                price
+                                    ? formatMoney(price)
+                                    : "Not specified"
+                            )}
+
+                            ${detail(
+                                "Status",
+                                formatStatus(status)
+                            )}
+
+                            ${detail(
+                                "Coordinator",
+                                lead.coordinatorName ||
+                                "Coordinator"
+                            )}
+
                         </div>
 
                     </div>
 
-                    <div class="detail-grid">
 
-                        ${detail("Course",course)}
+                    <div class="action-panel">
 
-                        ${detail("Duration",duration)}
+                        <h3>
+                            Contact Student
+                        </h3>
 
-                        ${detail(
-                            "Offer / Payable",
-                            price
-                                ? formatMoney(price)
-                                : "Not specified"
-                        )}
+                        <p>
+                            Call or send WhatsApp message directly.
+                        </p>
 
-                        ${detail(
-                            "Coordinator",
-                            coordinator
-                        )}
+                        <div class="big-actions">
 
-                        ${detail(
-                            "Received",
-                            formatDateTime(received)
-                        )}
+                            <button
+                                class="action-btn call"
+                                onclick="callLead('${escapeJs(mobile)}')"
+                            >
+                                📞 Call Student
+                            </button>
 
-                        ${detail(
-                            "Status",
-                            formatStatus(status)
-                        )}
+                            <button
+                                class="action-btn whatsapp"
+                                onclick="whatsappLead('${lead.id}')"
+                            >
+                                💬 WhatsApp
+                            </button>
 
-                    </div>
-
-                    <div class="detail" style="margin-top:10px;">
-
-                        <div class="detail-label">
-                            Coordinator Remark
                         </div>
 
-                        <div class="detail-value">
-                            ${escapeHtml(remark)}
+                        <div class="secondary-actions">
+
+                            <button
+                                class="secondary-btn"
+                                onclick="openStatusModal('${lead.id}')"
+                            >
+                                ✏️ Update Status
+                            </button>
+
+                            <button
+                                class="secondary-btn"
+                                onclick="markContacted('${lead.id}')"
+                            >
+                                ✓ Contacted
+                            </button>
+
                         </div>
 
                     </div>
 
-                </div>
-
-                <div class="action-panel">
-
-                    <h3>Contact Student</h3>
-
-                    <p>
-                        Call or send WhatsApp message directly.
-                    </p>
-
-                    <div class="big-actions">
-
-                        <button
-                            class="action-btn call"
-                            onclick="callLead('${escapeJs(mobile)}')"
-                        >
-                            📞 Call Student
-                        </button>
-
-                        <button
-                            class="action-btn whatsapp"
-                            onclick="whatsappLead('${lead.id}')"
-                        >
-                            💬 WhatsApp
-                        </button>
-
-                    </div>
-
-                    <div class="secondary-actions">
-
-                        <button
-                            class="secondary-btn"
-                            onclick="openStatusModal('${lead.id}')"
-                        >
-                            ✏️ Update Status
-                        </button>
-
-                        <button
-                            class="secondary-btn"
-                            onclick="markContacted('${lead.id}')"
-                        >
-                            ✓ Contacted
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="message-box">
-
-                <div class="message-head">
-
-                    <strong>WhatsApp Message</strong>
-
-                    <button
-                        class="secondary-btn"
-                        style="padding:7px 10px;"
-                        onclick="copyMessage('${lead.id}')"
-                    >
-                        Copy
-                    </button>
-
-                </div>
-
-                <select
-                    id="messageTemplate"
-                    class="message-template"
-                    onchange="updateMessagePreview('${lead.id}')"
-                >
-                    <option value="thankyou">
-                        Professional Thank You
-                    </option>
-
-                    <option value="course">
-                        Course Information
-                    </option>
-
-                    <option value="followup">
-                        Follow-up Message
-                    </option>
-                </select>
-
-                <div
-                    id="messagePreview"
-                    class="message-preview"
-                >
-                    ${escapeHtml(
-                        createWhatsAppMessage(
-                            lead,
-                            "thankyou"
-                        )
-                    )}
                 </div>
 
             </div>
 
         </div>
 
-    </div>
     `;
-}
 
-
-function detail(label,value){
-
-    return `
-        <div class="detail">
-            <div class="detail-label">
-                ${escapeHtml(label)}
-            </div>
-            <div class="detail-value">
-                ${escapeHtml(
-                    String(value || "Not available")
-                )}
-            </div>
-        </div>
-    `;
 }
 
 
 /* =========================================================
-   LEAD LIST
+   LEADS
 ========================================================= */
 
-window.renderLeads = function(){
+window.renderLeads =
+function(){
 
     const container =
         document.getElementById(
             "leadList"
         );
 
+
     const search =
         document.getElementById(
             "searchInput"
-        ).value
+        )
+        .value
         .toLowerCase()
         .trim();
+
 
     const filter =
         document.getElementById(
             "statusFilter"
-        ).value;
+        )
+        .value;
+
 
     const filtered =
-        allLeads.filter(lead => {
+        allLeads.filter(
+            lead => {
 
-            const name =
-                String(
-                    lead.studentName ||
-                    lead.name ||
-                    ""
-                ).toLowerCase();
+                const name =
+                    String(
+                        lead.studentName ||
+                        lead.name ||
+                        ""
+                    )
+                    .toLowerCase();
 
-            const mobile =
-                getMobile(lead)
-                .toLowerCase();
 
-            const course =
-                String(
-                    lead.course ||
-                    lead.courseName ||
-                    ""
-                ).toLowerCase();
+                const mobile =
+                    getMobile(
+                        lead
+                    )
+                    .toLowerCase();
 
-            const status =
-                getLeadStatus(lead);
 
-            return (
-                (
-                    !search ||
-                    name.includes(search) ||
-                    mobile.includes(search) ||
-                    course.includes(search)
-                ) &&
-                (
-                    filter === "all" ||
-                    status === filter
-                )
-            );
-        });
+                const course =
+                    String(
+                        lead.course ||
+                        lead.courseName ||
+                        ""
+                    )
+                    .toLowerCase();
+
+
+                const status =
+                    getLeadStatus(
+                        lead
+                    );
+
+
+                return (
+
+                    (
+                        !search ||
+
+                        name.includes(
+                            search
+                        ) ||
+
+                        mobile.includes(
+                            search
+                        ) ||
+
+                        course.includes(
+                            search
+                        )
+                    )
+
+                    &&
+
+                    (
+                        filter === "all" ||
+                        status === filter
+                    )
+
+                );
+
+            }
+        );
+
 
     if(!filtered.length){
 
         container.innerHTML = `
+
             <div class="empty">
-                <div class="empty-icon">🔎</div>
-                <h3>No matching leads</h3>
-                <p>Try another search or status filter.</p>
+
+                <div class="empty-icon">
+                    🔎
+                </div>
+
+                <h3>
+                    No matching leads
+                </h3>
+
+                <p>
+                    Try another search or status filter.
+                </p>
+
             </div>
+
         `;
 
         return;
+
     }
+
 
     container.innerHTML =
         filtered
-        .map(createLeadCardHTML)
+        .map(
+            createLeadCardHTML
+        )
         .join("");
+
+
+    attachSwipeGuides();
+
 };
 
 
-function createLeadCardHTML(lead){
+/* =========================================================
+   LEAD CARD
+========================================================= */
+
+function createLeadCardHTML(
+    lead
+){
 
     const name =
         lead.studentName ||
         lead.name ||
         "Unknown Student";
 
+
     const mobile =
-        getMobile(lead);
+        getMobile(
+            lead
+        );
+
 
     const course =
         lead.course ||
         lead.courseName ||
         "Course not specified";
 
-    const status =
-        getLeadStatus(lead);
 
-    const received =
-        getReceivedDate(lead);
+    const status =
+        getLeadStatus(
+            lead
+        );
+
 
     const price =
-        firstValue(
-            lead.offerPrice,
-            lead.coursePrice,
-            lead.payablePrice,
-            lead.price
-        );
+        lead.offerPrice ||
+        lead.coursePrice ||
+        lead.payablePrice ||
+        lead.price ||
+        "";
+
+
+    const joined =
+        status === "joined";
+
+
+    const interested =
+        status === "interested";
+
 
     return `
 
-    <div class="lead-card">
+        <div
+            class="lead-card ${joined ? "joined-card" : ""}"
+            data-lead-id="${escapeHtml(lead.id)}"
+        >
 
-        <div class="lead-card-top">
+            ${
+                joined
+                ?
+                `<div class="joined-ribbon">
+                    JOINED 🎉
+                </div>`
+                :
+                ""
+            }
 
-            <div class="lead-left">
 
-                <div class="small-avatar">
-                    ${escapeHtml(
-                        getInitials(name)
-                    )}
-                </div>
+            ${
+                !joined
+                ?
+                `
+                <div class="swipe-guide">
 
-                <div>
-
-                    <div class="lead-card-name">
-                        ${escapeHtml(name)}
+                    <div class="swipe-guide-left">
+                        ← Not Interested
                     </div>
 
-                    <div class="lead-card-phone">
-                        ${escapeHtml(
-                            mobile ||
-                            "No mobile number"
-                        )}
+                    <div class="swipe-guide-right">
+                        Interested →
+                    </div>
+
+                </div>
+                `
+                :
+                ""
+            }
+
+
+            <div class="hold-progress">
+
+                <div class="hold-progress-inner">
+
+                    <div class="hold-progress-icon">
+                        ⏳
+                    </div>
+
+                    <div class="hold-progress-text">
+                        Confirming Joined...
+                    </div>
+
+                    <div class="hold-progress-sub">
+                        Release cancelled • Complete hold to join
                     </div>
 
                 </div>
 
             </div>
 
-            <span class="badge ${safeClass(status)}">
-                ${escapeHtml(
-                    formatStatus(status)
-                )}
-            </span>
 
-        </div>
+            <div class="lead-card-top">
 
-        <div class="lead-meta">
+                <div class="lead-left">
 
-            <span class="meta">
-                📚 ${escapeHtml(course)}
-            </span>
+                    <div class="small-avatar">
+                        ${escapeHtml(
+                            getInitials(
+                                name
+                            )
+                        )}
+                    </div>
+
+                    <div>
+
+                        <div class="lead-card-name">
+                            ${escapeHtml(name)}
+                        </div>
+
+                        <div class="lead-card-phone">
+                            ${escapeHtml(
+                                mobile ||
+                                "No mobile number"
+                            )}
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <span class="badge ${safeClass(status)}">
+                    ${escapeHtml(
+                        formatStatus(status)
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="lead-meta">
+
+                <span class="meta">
+                    📚 ${escapeHtml(course)}
+                </span>
+
+                ${
+                    price
+                    ?
+                    `
+                    <span class="meta">
+                        ${formatMoney(price)}
+                    </span>
+                    `
+                    :
+                    ""
+                }
+
+                <span class="meta">
+                    🕒 ${escapeHtml(
+                        formatDateTime(
+                            getReceivedDate(
+                                lead
+                            )
+                        )
+                    )}
+                </span>
+
+            </div>
+
 
             ${
-                price
+                interested
                 ?
-                `<span class="meta">
-                    ₹${escapeHtml(String(price))}
-                </span>`
+                `
+                <div class="join-hint">
+                    👆 Press & Hold this card
+                    → Joined + Incentive
+                </div>
+                `
                 :
                 ""
             }
 
-            <span class="meta">
-                🕒 ${escapeHtml(
-                    formatDateTime(received)
-                )}
-            </span>
+
+            <div class="lead-actions">
+
+                <button
+                    class="mini-btn mini-call"
+                    onclick="callLead('${escapeJs(mobile)}')"
+                >
+                    📞 Call
+                </button>
+
+                <button
+                    class="mini-btn mini-wa"
+                    onclick="whatsappLead('${lead.id}')"
+                >
+                    💬 WhatsApp
+                </button>
+
+                <button
+                    class="mini-btn mini-status"
+                    onclick="openStatusModal('${lead.id}')"
+                >
+                    ✏️ Status
+                </button>
+
+            </div>
 
         </div>
 
-        <div class="lead-actions">
-
-            <button
-                class="mini-btn mini-call"
-                onclick="callLead('${escapeJs(mobile)}')"
-            >
-                📞 Call
-            </button>
-
-            <button
-                class="mini-btn mini-wa"
-                onclick="whatsappLead('${lead.id}')"
-            >
-                💬 WhatsApp
-            </button>
-
-            <button
-                class="mini-btn mini-status"
-                onclick="openStatusModal('${lead.id}')"
-            >
-                ✏️ Status
-            </button>
-
-        </div>
-
-    </div>
     `;
+
 }
 
 
 /* =========================================================
-   CALL
+   ⭐ AUTOMATIC SWIPE INDICATION
 ========================================================= */
 
-window.callLead = function(mobile){
+let swipeGuideShown = false;
 
-    const clean =
-        normalizeIndianMobile(mobile);
+function attachSwipeGuides(){
 
-    if(!clean){
-
-        showToast(
-            "Mobile number is not available"
+    const cards =
+        document.querySelectorAll(
+            ".lead-card"
         );
 
-        return;
+
+    cards.forEach(
+        card => {
+
+            attachGesture(
+                card
+            );
+
+        }
+    );
+
+
+    /*
+       Only one automatic visual hint
+       at a time so dashboard does not
+       become annoying.
+    */
+
+    if(
+        !swipeGuideShown &&
+        cards.length
+    ){
+
+        swipeGuideShown = true;
+
+        const first =
+            cards[0];
+
+
+        if(
+            !first.classList.contains(
+                "joined-card"
+            )
+        ){
+
+            first.classList.add(
+                "first-guide"
+            );
+
+
+            setTimeout(
+                () => {
+
+                    first.classList.remove(
+                        "first-guide"
+                    );
+
+                },
+                4200
+            );
+
+        }
+
     }
 
-    window.location.href =
-        `tel:+91${clean}`;
-};
+}
 
 
 /* =========================================================
-   WHATSAPP
+   SWIPE GESTURE
 ========================================================= */
 
-window.whatsappLead = function(id){
+const gesture = {
+
+    card:null,
+
+    id:null,
+
+    startX:0,
+
+    startY:0,
+
+    currentX:0,
+
+    currentY:0,
+
+    active:false,
+
+    moved:false,
+
+    longPressTimer:null,
+
+    holding:false,
+
+    holdCompleted:false
+
+};
+
+
+function clearLongPress(){
+
+    if(
+        gesture.longPressTimer
+    ){
+
+        clearTimeout(
+            gesture.longPressTimer
+        );
+
+        gesture.longPressTimer =
+            null;
+
+    }
+
+}
+
+
+function resetGesture(){
+
+    clearLongPress();
+
+    if(
+        gesture.card
+    ){
+
+        gesture.card.classList.remove(
+            "swipe-active"
+        );
+
+        gesture.card.classList.remove(
+            "swipe-left-preview"
+        );
+
+        gesture.card.classList.remove(
+            "swipe-right-preview"
+        );
+
+        gesture.card.style.transform =
+            "";
+
+        gesture.card.style.opacity =
+            "";
+
+        const progress =
+            gesture.card.querySelector(
+                ".hold-progress"
+            );
+
+        if(progress){
+
+            progress.classList.remove(
+                "active"
+            );
+
+        }
+
+    }
+
+
+    gesture.card = null;
+
+    gesture.id = null;
+
+    gesture.startX = 0;
+
+    gesture.startY = 0;
+
+    gesture.currentX = 0;
+
+    gesture.currentY = 0;
+
+    gesture.active = false;
+
+    gesture.moved = false;
+
+    gesture.holding = false;
+
+    gesture.holdCompleted = false;
+
+}
+
+
+function isInteractive(
+    target
+){
+
+    return !!(
+        target.closest(
+            "button,a,input,select,textarea"
+        )
+    );
+
+}
+
+
+/* =========================================================
+   ATTACH GESTURE
+========================================================= */
+
+function attachGesture(
+    card
+){
+
+    if(
+        card.dataset.gestureAttached ===
+        "true"
+    ){
+
+        return;
+
+    }
+
+
+    card.dataset.gestureAttached =
+        "true";
+
+
+    const id =
+        card.dataset.leadId;
+
+
+    /* =========================
+       TOUCH START
+    ========================= */
+
+    card.addEventListener(
+        "touchstart",
+        event => {
+
+            if(
+                isInteractive(
+                    event.target
+                )
+            ){
+
+                return;
+
+            }
+
+
+            const lead =
+                allLeads.find(
+                    x =>
+                        x.id === id
+                );
+
+
+            if(!lead){
+
+                return;
+
+            }
+
+
+            const status =
+                getLeadStatus(
+                    lead
+                );
+
+
+            /*
+               Joined lead is locked.
+            */
+
+            if(
+                status === "joined"
+            ){
+
+                return;
+
+            }
+
+
+            const touch =
+                event.touches[0];
+
+
+            gesture.card =
+                card;
+
+            gesture.id =
+                id;
+
+            gesture.startX =
+                touch.clientX;
+
+            gesture.startY =
+                touch.clientY;
+
+            gesture.currentX =
+                touch.clientX;
+
+            gesture.currentY =
+                touch.clientY;
+
+            gesture.active =
+                true;
+
+            gesture.moved =
+                false;
+
+            gesture.holding =
+                false;
+
+            gesture.holdCompleted =
+                false;
+
+
+            /*
+                LONG PRESS ONLY IF
+                STATUS IS INTERESTED.
+            */
+
+            if(
+                status === "interested"
+            ){
+
+                startHoldTimer(
+                    card,
+                    id
+                );
+
+            }
+
+        },
+        {
+            passive:true
+        }
+    );
+
+
+    /* =========================
+       TOUCH MOVE
+    ========================= */
+
+    card.addEventListener(
+        "touchmove",
+        event => {
+
+            if(
+                !gesture.active ||
+                gesture.id !== id
+            ){
+
+                return;
+
+            }
+
+
+            const touch =
+                event.touches[0];
+
+
+            gesture.currentX =
+                touch.clientX;
+
+            gesture.currentY =
+                touch.clientY;
+
+
+            const dx =
+                gesture.currentX -
+                gesture.startX;
+
+
+            const dy =
+                gesture.currentY -
+                gesture.startY;
+
+
+            /*
+                Vertical movement =
+                normal page scroll.
+            */
+
+            if(
+                Math.abs(dy) >
+                Math.abs(dx) &&
+                Math.abs(dy) > 8
+            ){
+
+                clearLongPress();
+
+                gesture.moved =
+                    true;
+
+                return;
+
+            }
+
+
+            /*
+                Horizontal movement =
+                swipe.
+            */
+
+            if(
+                Math.abs(dx) > 8
+            ){
+
+                clearLongPress();
+
+                gesture.moved =
+                    true;
+
+                card.classList.add(
+                    "swipe-active"
+                );
+
+
+                const limited =
+                    Math.max(
+                        -130,
+                        Math.min(
+                            130,
+                            dx
+                        )
+                    );
+
+
+                card.style.transform =
+                    `translateX(${limited}px) rotate(${limited/35}deg)`;
+
+
+                card.style.opacity =
+                    String(
+                        1 -
+                        Math.min(
+                            .35,
+                            Math.abs(
+                                limited
+                            ) / 400
+                        )
+                    );
+
+
+                if(
+                    limited < 0
+                ){
+
+                    card.classList.add(
+                        "swipe-left-preview"
+                    );
+
+                    card.classList.remove(
+                        "swipe-right-preview"
+                    );
+
+                }else{
+
+                    card.classList.add(
+                        "swipe-right-preview"
+                    );
+
+                    card.classList.remove(
+                        "swipe-left-preview"
+                    );
+
+                }
+
+            }
+
+        },
+        {
+            passive:true
+        }
+    );
+
+
+    /* =========================
+       TOUCH END
+    ========================= */
+
+    card.addEventListener(
+        "touchend",
+        async () => {
+
+            if(
+                !gesture.active ||
+                gesture.id !== id
+            ){
+
+                return;
+
+            }
+
+
+            const dx =
+                gesture.currentX -
+                gesture.startX;
+
+
+            const dy =
+                gesture.currentY -
+                gesture.startY;
+
+
+            const completedHold =
+                gesture.holdCompleted;
+
+
+            clearLongPress();
+
+
+            if(
+                completedHold
+            ){
+
+                resetGesture();
+
+                return;
+
+            }
+
+
+            /*
+                If horizontal movement
+                crossed threshold.
+            */
+
+            if(
+                Math.abs(dx) >= 75 &&
+                Math.abs(dx) >
+                Math.abs(dy)
+            ){
+
+                const status =
+                    dx < 0
+                        ? "not-interested"
+                        : "interested";
+
+
+                card.style.transform =
+                    dx < 0
+                        ? "translateX(-120%) rotate(-8deg)"
+                        : "translateX(120%) rotate(8deg)";
+
+
+                card.style.opacity =
+                    "0";
+
+
+                await updateSwipeStatus(
+                    id,
+                    status
+                );
+
+
+            }
+
+
+            resetGesture();
+
+        },
+        {
+            passive:true
+        }
+    );
+
+
+    /* =========================
+       TOUCH CANCEL
+    ========================= */
+
+    card.addEventListener(
+        "touchcancel",
+        () => {
+
+            resetGesture();
+
+        }
+    );
+
+
+    /* =========================
+       MOUSE DOWN
+    ========================= */
+
+    card.addEventListener(
+        "mousedown",
+        event => {
+
+            if(
+                event.button !== 0 ||
+                isInteractive(
+                    event.target
+                )
+            ){
+
+                return;
+
+            }
+
+
+            const lead =
+                allLeads.find(
+                    x =>
+                        x.id === id
+                );
+
+
+            if(!lead){
+
+                return;
+
+            }
+
+
+            if(
+                getLeadStatus(
+                    lead
+                ) !==
+                "interested"
+            ){
+
+                return;
+
+            }
+
+
+            gesture.card =
+                card;
+
+            gesture.id =
+                id;
+
+            gesture.active =
+                true;
+
+            gesture.moved =
+                false;
+
+            gesture.holdCompleted =
+                false;
+
+
+            startHoldTimer(
+                card,
+                id
+            );
+
+        }
+    );
+
+
+    /* =========================
+       MOUSE UP
+    ========================= */
+
+    card.addEventListener(
+        "mouseup",
+        () => {
+
+            if(
+                gesture.id === id
+            ){
+
+                if(
+                    !gesture.holdCompleted
+                ){
+
+                    clearLongPress();
+
+                    const progress =
+                        card.querySelector(
+                            ".hold-progress"
+                        );
+
+                    if(progress){
+
+                        progress.classList.remove(
+                            "active"
+                        );
+
+                    }
+
+                }
+
+                resetGesture();
+
+            }
+
+        }
+    );
+
+
+    card.addEventListener(
+        "mouseleave",
+        () => {
+
+            if(
+                gesture.id === id
+            ){
+
+                clearLongPress();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   PRESS + HOLD
+========================================================= */
+
+function startHoldTimer(
+    card,
+    id
+){
+
+    clearLongPress();
+
+
+    const progress =
+        card.querySelector(
+            ".hold-progress"
+        );
+
+
+    if(progress){
+
+        /*
+            Force animation restart.
+        */
+
+        progress.classList.remove(
+            "active"
+        );
+
+        void progress.offsetWidth;
+
+        progress.classList.add(
+            "active"
+        );
+
+    }
+
+
+    gesture.holding =
+        true;
+
+
+    gesture.longPressTimer =
+        setTimeout(
+            async () => {
+
+                if(
+                    !gesture.active ||
+                    gesture.id !== id ||
+                    gesture.moved
+                ){
+
+                    return;
+
+                }
+
+
+                gesture.holdCompleted =
+                    true;
+
+
+                await markLeadJoined(
+                    id
+                );
+
+
+            },
+            850
+        );
+
+}
+
+
+/* =========================================================
+   SWIPE UPDATE
+========================================================= */
+
+async function updateSwipeStatus(
+    id,
+    status
+){
 
     const lead =
         allLeads.find(
             x => x.id === id
         );
+
 
     if(!lead){
 
-        showToast("Lead not found");
+        return;
+
+    }
+
+
+    if(
+        getLeadStatus(
+            lead
+        ) === "joined"
+    ){
 
         return;
-    }
-
-    const mobile =
-        normalizeIndianMobile(
-            getMobile(lead)
-        );
-
-    if(!mobile){
-
-        showToast(
-            "Mobile number is not available"
-        );
-
-        return;
-    }
-
-    const template =
-        document.getElementById(
-            "messageTemplate"
-        )?.value ||
-        "thankyou";
-
-    const message =
-        createWhatsAppMessage(
-            lead,
-            template
-        );
-
-    window.open(
-        `https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`,
-        "_blank"
-    );
-};
-
-
-/* =========================================================
-   WHATSAPP MESSAGE
-========================================================= */
-
-function createWhatsAppMessage(
-    lead,
-    type
-){
-
-    const name =
-        lead.studentName ||
-        lead.name ||
-        "there";
-
-    const course =
-        lead.course ||
-        lead.courseName ||
-        "your selected course";
-
-    const duration =
-        lead.courseDuration ||
-        lead.duration ||
-        "";
-
-    const price =
-        firstValue(
-            lead.offerPrice,
-            lead.coursePrice,
-            lead.payablePrice
-        );
-
-    if(type === "course"){
-
-        return `Hello ${name},
-
-Thank you for contacting BlackTerminal Computer Institute.
-
-We received your inquiry regarding ${course}.
-
-${duration ? `Course Duration: ${duration}\n` : ""}${price ? `Course Fee: ₹${price}\n` : ""}
-Our team will be happy to guide you regarding the course, fees, admission process and batch details.
-
-Please let us know a convenient time to speak with you.
-
-Regards,
-${telecallerName}
-BlackTerminal Computer Institute`;
 
     }
 
-    if(type === "followup"){
-
-        return `Hello ${name},
-
-Greetings from BlackTerminal Computer Institute.
-
-We are following up regarding your inquiry for ${course}.
-
-Please let us know if you would like to proceed with the admission or need any further information.
-
-Regards,
-${telecallerName}
-BlackTerminal Computer Institute`;
-
-    }
-
-    return `Hello ${name},
-
-Thank you for contacting BlackTerminal Computer Institute.
-
-We have received your inquiry for ${course}.
-
-Our team is here to help you with course details, fees, duration and admission information.
-
-Please let us know a convenient time to talk.
-
-Regards,
-${telecallerName}
-BlackTerminal Computer Institute`;
-}
-
-
-window.updateMessagePreview = function(id){
-
-    const lead =
-        allLeads.find(
-            x => x.id === id
-        );
-
-    if(!lead) return;
-
-    const template =
-        document.getElementById(
-            "messageTemplate"
-        ).value;
-
-    document.getElementById(
-        "messagePreview"
-    ).textContent =
-        createWhatsAppMessage(
-            lead,
-            template
-        );
-};
-
-
-window.copyMessage = async function(id){
-
-    const lead =
-        allLeads.find(
-            x => x.id === id
-        );
-
-    if(!lead) return;
-
-    const template =
-        document.getElementById(
-            "messageTemplate"
-        )?.value ||
-        "thankyou";
-
-    try{
-
-        await navigator.clipboard.writeText(
-            createWhatsAppMessage(
-                lead,
-                template
-            )
-        );
-
-        showToast(
-            "WhatsApp message copied"
-        );
-
-    }catch(e){
-
-        showToast(
-            "Could not copy message"
-        );
-
-    }
-};
-
-
-/* =========================================================
-   CONTACTED
-========================================================= */
-
-window.markContacted = async function(id){
 
     try{
 
         await updateDoc(
+
             doc(
                 db,
                 "studentInquiries",
                 id
             ),
+
             {
-                status:"contacted",
-                telecallerStatus:"contacted",
+
+                status,
+
+                telecallerStatus:
+                    status,
+
                 telecallerName,
+
                 telecallerMobile,
-                updatedAt:serverTimestamp()
+
+                updatedAt:
+                    serverTimestamp()
+
             }
+
         );
 
-        showToast(
-            "Lead marked as contacted"
-        );
+
+        if(
+            status ===
+            "interested"
+        ){
+
+            showToast(
+                "👉 Interested"
+            );
+
+        }else{
+
+            showToast(
+                "👈 Not Interested"
+            );
+
+        }
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            error
+        );
 
         showToast(
             "Unable to update lead"
         );
+
     }
+
+}
+
+
+/* =========================================================
+   ⭐ MARK JOINED
+========================================================= */
+
+async function markLeadJoined(
+    id
+){
+
+    const lead =
+        allLeads.find(
+            x => x.id === id
+        );
+
+
+    if(!lead){
+
+        return;
+
+    }
+
+
+    if(
+        getLeadStatus(
+            lead
+        ) === "joined"
+    ){
+
+        return;
+
+    }
+
+
+    /*
+       Current monthly joined count
+       BEFORE this new join.
+    */
+
+    const previousCount =
+        getMyMonthlyJoined().length;
+
+
+    const newCount =
+        previousCount + 1;
+
+
+    /*
+       Exact earning for this join.
+
+       Example:
+       1st = Level 1
+       2nd = Level 1
+       3rd = Level 2
+       6th = Level 3
+    */
+
+    const earned =
+        getSalaryLevel(
+            newCount
+        ).rate;
+
+
+    try{
+
+        await updateDoc(
+
+            doc(
+                db,
+                "studentInquiries",
+                id
+            ),
+
+            {
+
+                status:"joined",
+
+                telecallerStatus:
+                    "joined",
+
+                admissionStatus:
+                    "joined",
+
+                joinedAt:
+                    serverTimestamp(),
+
+                joinedBy:
+                    telecallerName,
+
+                joinedByMobile:
+                    telecallerMobile,
+
+                telecallerName,
+
+                telecallerMobile,
+
+                updatedAt:
+                    serverTimestamp()
+
+            }
+
+        );
+
+
+        /*
+            Immediate calculation.
+        */
+
+        const totalIncentive =
+            calculateJoinedIncentive(
+                newCount
+            );
+
+
+        const estimatedSalary =
+            Number(
+                salarySettings.baseSalary
+            ) +
+            totalIncentive;
+
+
+        const level =
+            getSalaryLevel(
+                newCount
+            );
+
+
+        showJoinCelebration({
+
+            name:
+                lead.studentName ||
+                lead.name ||
+                "Student",
+
+            earned,
+
+            count:newCount,
+
+            level:
+                level.name,
+
+            total:
+                totalIncentive,
+
+            salary:
+                estimatedSalary
+
+        });
+
+
+        updateSalaryDashboard();
+
+
+    }catch(error){
+
+        console.error(
+            error
+        );
+
+        showToast(
+            "Unable to mark Joined"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   JOIN CELEBRATION
+========================================================= */
+
+function showJoinCelebration(
+    data
+){
+
+    document.getElementById(
+        "joinName"
+    ).textContent =
+        `${data.name} joined successfully 🎉`;
+
+
+    document.getElementById(
+        "earnedAmount"
+    ).textContent =
+        "+" +
+        formatMoney(
+            data.earned
+        );
+
+
+    document.getElementById(
+        "joinCount"
+    ).textContent =
+        data.count;
+
+
+    document.getElementById(
+        "joinLevel"
+    ).textContent =
+        data.level;
+
+
+    document.getElementById(
+        "joinTotal"
+    ).textContent =
+        formatMoney(
+            data.total
+        );
+
+
+    document.getElementById(
+        "joinSalary"
+    ).textContent =
+        formatMoney(
+            data.salary
+        );
+
+
+    createConfetti();
+
+
+    document.getElementById(
+        "joinOverlay"
+    ).classList.add(
+        "show"
+    );
+
+}
+
+
+window.closeJoinCelebration =
+function(){
+
+    document.getElementById(
+        "joinOverlay"
+    ).classList.remove(
+        "show"
+    );
+
+
+    document.getElementById(
+        "confettiWrap"
+    ).innerHTML =
+        "";
+
 };
+
+
+/* =========================================================
+   CONFETTI
+========================================================= */
+
+function createConfetti(){
+
+    const wrap =
+        document.getElementById(
+            "confettiWrap"
+        );
+
+
+    wrap.innerHTML =
+        "";
+
+
+    const colors = [
+
+        "#2563eb",
+        "#16a34a",
+        "#7c3aed",
+        "#f59e0b",
+        "#dc2626",
+        "#ec4899",
+        "#06b6d4"
+
+    ];
+
+
+    for(
+        let i=0;
+        i<120;
+        i++
+    ){
+
+        const item =
+            document.createElement(
+                "span"
+            );
+
+
+        item.className =
+            "confetti";
+
+
+        item.style.left =
+            Math.random()*100 +
+            "%";
+
+
+        item.style.background =
+            colors[
+                Math.floor(
+                    Math.random() *
+                    colors.length
+                )
+            ];
+
+
+        item.style.setProperty(
+            "--x",
+            (
+                Math.random()-0.5
+            ) *
+            280 +
+            "px"
+        );
+
+
+        item.style.setProperty(
+            "--r",
+            (
+                Math.random()-0.5
+            ) *
+            1300 +
+            "deg"
+        );
+
+
+        item.style.animationDuration =
+            (
+                2 +
+                Math.random()*2
+            ) +
+            "s";
+
+
+        item.style.animationDelay =
+            (
+                Math.random()*.5
+            ) +
+            "s";
+
+
+        wrap.appendChild(
+            item
+        );
+
+    }
+
+}
 
 
 /* =========================================================
    STATUS MODAL
 ========================================================= */
 
-window.openStatusModal = function(id){
+window.openStatusModal =
+function(id){
 
     const lead =
         allLeads.find(
             x => x.id === id
         );
 
-    if(!lead) return;
 
-    selectedLeadId = id;
+    if(!lead){
+
+        return;
+
+    }
+
+
+    selectedLeadId =
+        id;
+
 
     document.getElementById(
         "statusLeadName"
@@ -3279,34 +5525,51 @@ window.openStatusModal = function(id){
         lead.name ||
         "Student";
 
+
     document.getElementById(
         "statusSelect"
     ).value =
-        getLeadStatus(lead);
+        getLeadStatus(
+            lead
+        );
+
 
     document.getElementById(
         "followUpDate"
     ).value =
-        lead.followUpDate || "";
+        lead.followUpDate ||
+        "";
+
 
     document.getElementById(
         "telecallerRemark"
     ).value =
-        lead.telecallerRemark || "";
+        lead.telecallerRemark ||
+        "";
+
 
     document.getElementById(
         "statusModal"
-    ).classList.add("show");
+    ).classList.add(
+        "show"
+    );
+
 };
 
 
-window.closeStatusModal = function(){
+window.closeStatusModal =
+function(){
 
-    selectedLeadId = null;
+    selectedLeadId =
+        null;
+
 
     document.getElementById(
         "statusModal"
-    ).classList.remove("show");
+    ).classList.remove(
+        "show"
+    );
+
 };
 
 
@@ -3314,31 +5577,59 @@ window.closeStatusModal = function(){
    SAVE STATUS
 ========================================================= */
 
-window.saveLeadStatus = async function(){
+window.saveLeadStatus =
+async function(){
 
     if(!selectedLeadId){
 
-        showToast(
-            "No lead selected"
-        );
-
         return;
+
     }
+
 
     const status =
         document.getElementById(
             "statusSelect"
         ).value;
 
+
     const followUpDate =
         document.getElementById(
             "followUpDate"
         ).value;
 
+
     const remark =
         document.getElementById(
             "telecallerRemark"
         ).value.trim();
+
+
+    /*
+        If manually selecting Joined,
+        use the same earning engine.
+    */
+
+    if(
+        status === "joined"
+    ){
+
+        const id =
+            selectedLeadId;
+
+
+        closeStatusModal();
+
+
+        await markLeadJoined(
+            id
+        );
+
+
+        return;
+
+    }
+
 
     try{
 
@@ -3363,43 +5654,214 @@ window.saveLeadStatus = async function(){
 
         };
 
-        if(status === "converted"){
+
+        if(
+            status ===
+            "converted"
+        ){
 
             data.convertedAt =
                 serverTimestamp();
 
             data.admissionStatus =
                 "converted";
+
         }
 
+
         await updateDoc(
+
             doc(
                 db,
                 "studentInquiries",
                 selectedLeadId
             ),
+
             data
+
         );
+
 
         closeStatusModal();
 
+
         showToast(
-            status === "converted"
-                ? "Admission converted • Incentive updated"
-                : "Lead status updated"
+            "Lead status updated"
         );
+
 
     }catch(error){
 
         console.error(
-            "Status update error:",
             error
         );
 
         showToast(
             "Unable to save status"
         );
+
     }
+
+};
+
+
+/* =========================================================
+   CALL
+========================================================= */
+
+window.callLead =
+function(mobile){
+
+    const clean =
+        normalizeIndianMobile(
+            mobile
+        );
+
+
+    if(!clean){
+
+        showToast(
+            "Mobile number is not available"
+        );
+
+        return;
+
+    }
+
+
+    window.location.href =
+        `tel:+91${clean}`;
+
+};
+
+
+/* =========================================================
+   WHATSAPP
+========================================================= */
+
+window.whatsappLead =
+function(id){
+
+    const lead =
+        allLeads.find(
+            x => x.id === id
+        );
+
+
+    if(!lead){
+
+        return;
+
+    }
+
+
+    const mobile =
+        normalizeIndianMobile(
+            getMobile(lead)
+        );
+
+
+    if(!mobile){
+
+        showToast(
+            "Mobile number is not available"
+        );
+
+        return;
+
+    }
+
+
+    const name =
+        lead.studentName ||
+        lead.name ||
+        "Student";
+
+
+    const course =
+        lead.course ||
+        lead.courseName ||
+        "your course";
+
+
+    const message =
+        `Hello ${name},
+
+Thank you for contacting BlackTerminal Computer Institute.
+
+We received your enquiry regarding ${course}.
+
+Our team will be happy to help you with course details, fees, batch timing and admission.
+
+Please let us know a convenient time to speak with you.
+
+Regards,
+${telecallerName}
+BlackTerminal Computer Institute`;
+
+
+    window.open(
+        `https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`,
+        "_blank"
+    );
+
+};
+
+
+/* =========================================================
+   CONTACTED
+========================================================= */
+
+window.markContacted =
+async function(id){
+
+    try{
+
+        await updateDoc(
+
+            doc(
+                db,
+                "studentInquiries",
+                id
+            ),
+
+            {
+
+                status:
+                    "contacted",
+
+                telecallerStatus:
+                    "contacted",
+
+                telecallerName,
+
+                telecallerMobile,
+
+                updatedAt:
+                    serverTimestamp()
+
+            }
+
+        );
+
+
+        showToast(
+            "Lead marked as contacted"
+        );
+
+
+    }catch(error){
+
+        console.error(
+            error
+        );
+
+        showToast(
+            "Unable to update lead"
+        );
+
+    }
+
 };
 
 
@@ -3407,14 +5869,17 @@ window.saveLeadStatus = async function(){
    REFRESH
 ========================================================= */
 
-window.manualRefresh = function(){
+window.manualRefresh =
+function(){
 
     updateDashboard();
+
     updateSalaryDashboard();
 
     showToast(
         "Dashboard refreshed"
     );
+
 };
 
 
@@ -3425,95 +5890,102 @@ window.manualRefresh = function(){
 function getMobile(lead){
 
     return String(
+
         lead.mobile ||
+
         lead.phone ||
+
         lead.phoneNumber ||
+
         lead.studentMobile ||
+
         lead.contactNumber ||
+
         ""
+
     ).trim();
+
 }
 
 
-function normalizeIndianMobile(value){
+function normalizeIndianMobile(
+    value
+){
 
     let n =
-        String(value || "")
-        .replace(/\D/g,"");
+        String(
+            value || ""
+        )
+        .replace(
+            /\D/g,
+            ""
+        );
+
 
     if(
         n.startsWith("91") &&
         n.length === 12
     ){
-        n = n.substring(2);
+
+        n =
+            n.substring(
+                2
+            );
+
     }
+
 
     if(
         n.length === 10 &&
         /^[6-9]/.test(n)
     ){
+
         return n;
+
     }
 
+
     return "";
+
 }
 
 
-function formatMoney(value){
-
-    if(
-        value === null ||
-        value === undefined ||
-        value === ""
-    ){
-        return "₹0";
-    }
+function formatMoney(
+    value
+){
 
     const n =
         Number(
-            String(value)
-            .replace(/[₹,\s]/g,"")
+            String(
+                value || 0
+            )
+            .replace(
+                /[₹,\s]/g,
+                ""
+            )
         );
 
-    return Number.isFinite(n)
-        ? "₹" + n.toLocaleString("en-IN")
-        : String(value);
+
+    return (
+        "₹" +
+        n.toLocaleString(
+            "en-IN"
+        )
+    );
+
 }
 
 
-function formatDuration(value,unit){
+function formatDateTime(
+    date
+){
 
-    if(!value) return "";
+    if(!date){
 
-    return `${value} ${unit || ""}`.trim();
-}
+        return "Unknown";
 
-
-function firstValue(...values){
-
-    for(const value of values){
-
-        if(
-            value !== undefined &&
-            value !== null &&
-            String(value).trim() !== ""
-        ){
-            return value;
-        }
     }
 
-    return "";
-}
-
-
-function formatDateTime(date){
-
-    if(
-        !date ||
-        isNaN(date.getTime())
-    ){
-        return "Unknown time";
-    }
 
     return new Intl.DateTimeFormat(
         "en-IN",
@@ -3525,119 +5997,176 @@ function formatDateTime(date){
             minute:"2-digit",
             hour12:true
         }
-    ).format(date);
+    ).format(
+        date
+    );
+
 }
 
 
-function relativeTime(date){
-
-    if(
-        !date ||
-        isNaN(date.getTime())
-    ){
-        return "";
-    }
-
-    const minutes =
-        Math.floor(
-            (Date.now()-date.getTime()) /
-            60000
-        );
-
-    if(minutes < 1){
-        return "just now";
-    }
-
-    if(minutes < 60){
-        return `${minutes} min ago`;
-    }
-
-    const hours =
-        Math.floor(minutes/60);
-
-    if(hours < 24){
-        return `${hours} hr ago`;
-    }
-
-    const days =
-        Math.floor(hours/24);
-
-    return `${days} day${days > 1 ? "s":""} ago`;
-}
-
-
-function formatStatus(status){
+function formatStatus(
+    status
+){
 
     return String(
-        status || "new"
+        status ||
+        "new"
     )
-    .replace(/-/g," ")
+    .replace(
+        /-/g,
+        " "
+    )
     .replace(
         /\b\w/g,
-        x => x.toUpperCase()
+        x =>
+            x.toUpperCase()
     );
+
 }
 
 
-function safeClass(status){
+function safeClass(
+    status
+){
 
     return String(
-        status || "new"
+        status ||
+        "new"
     )
     .toLowerCase()
     .replace(
         /[^a-z0-9-]/g,
         "-"
     );
+
 }
 
 
-function getInitials(name){
+function getInitials(
+    name
+){
 
     const parts =
-        String(name || "T")
+        String(
+            name ||
+            "T"
+        )
         .trim()
-        .split(/\s+/)
-        .filter(Boolean);
+        .split(
+            /\s+/
+        )
+        .filter(
+            Boolean
+        );
 
-    if(!parts.length){
-        return "T";
-    }
 
-    if(parts.length === 1){
+    if(
+        parts.length === 1
+    ){
 
         return parts[0]
-            .substring(0,2)
+            .substring(
+                0,
+                2
+            )
             .toUpperCase();
+
     }
 
+
     return (
+
         parts[0][0] +
-        parts[parts.length-1][0]
+
+        parts[
+            parts.length - 1
+        ][0]
+
     ).toUpperCase();
+
 }
 
 
-function escapeHtml(value){
+function escapeHtml(
+    value
+){
 
-    return String(value ?? "")
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
+    return String(
+        value ?? ""
+    )
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+    .replace(
+        /</g,
+        "&lt;"
+    )
+    .replace(
+        />/g,
+        "&gt;"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+    .replace(
+        /'/g,
+        "&#039;"
+    );
+
 }
 
 
-function escapeJs(value){
+function escapeJs(
+    value
+){
 
-    return String(value ?? "")
-        .replace(/\\/g,"\\\\")
-        .replace(/'/g,"\\'");
+    return String(
+        value ?? ""
+    )
+    .replace(
+        /\\/g,
+        "\\\\"
+    )
+    .replace(
+        /'/g,
+        "\\'"
+    );
+
 }
 
 
-function getFirestoreErrorMessage(error){
+function detail(
+    label,
+    value
+){
+
+    return `
+
+        <div class="detail">
+
+            <div class="detail-label">
+                ${escapeHtml(label)}
+            </div>
+
+            <div class="detail-value">
+                ${escapeHtml(
+                    value ||
+                    "Not available"
+                )}
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+function getFirestoreErrorMessage(
+    error
+){
 
     if(
         error.code ===
@@ -3646,51 +6175,61 @@ function getFirestoreErrorMessage(error){
 
         return (
             "Firestore permission denied. " +
-            "Check Firestore Rules and make sure authenticated users can read paymentSettings and studentInquiries."
+            "Check Firestore Rules."
         );
+
     }
+
 
     return (
         error.message ||
         "Unable to read Firestore."
     );
+
 }
 
 
-/* =========================================================
-   CONNECTION / ERROR
-========================================================= */
-
-function setConnection(state,text){
+function setConnection(
+    state,
+    text
+){
 
     document.getElementById(
         "connection"
     ).className =
         `connection ${state}`;
 
+
     document.getElementById(
         "connectionText"
     ).textContent =
         text;
+
 }
 
 
-function showError(title,message){
+function showError(
+    title,
+    message
+){
 
     document.getElementById(
         "errorBox"
     ).style.display =
         "block";
 
+
     document.getElementById(
         "errorTitle"
     ).textContent =
         title;
 
+
     document.getElementById(
         "errorMessage"
     ).textContent =
         message;
+
 }
 
 
@@ -3700,6 +6239,7 @@ function hideError(){
         "errorBox"
     ).style.display =
         "none";
+
 }
 
 
@@ -3709,27 +6249,43 @@ function hideError(){
 
 let toastTimer;
 
-function showToast(message){
+
+function showToast(
+    message
+){
 
     const toast =
         document.getElementById(
             "toast"
         );
 
+
     toast.textContent =
         message;
 
-    toast.classList.add("show");
 
-    clearTimeout(toastTimer);
+    toast.classList.add(
+        "show"
+    );
+
+
+    clearTimeout(
+        toastTimer
+    );
+
 
     toastTimer =
         setTimeout(
             () => {
-                toast.classList.remove("show");
+
+                toast.classList.remove(
+                    "show"
+                );
+
             },
             2500
         );
+
 }
 
 
@@ -3737,34 +6293,49 @@ function showToast(message){
    LOGOUT
 ========================================================= */
 
-window.logout = function(){
+window.logout =
+function(){
 
     if(unsubscribeLeads){
+
         unsubscribeLeads();
+
     }
+
 
     if(unsubscribeSalary){
+
         unsubscribeSalary();
+
     }
 
-    [
-        "bt_logged_in",
-        "bt_user_role",
-        "bt_user_name",
-        "bt_user_mobile"
-    ].forEach(
-        key =>
-            sessionStorage.removeItem(key)
+
+    sessionStorage.removeItem(
+        "bt_logged_in"
     );
+
+    sessionStorage.removeItem(
+        "bt_user_role"
+    );
+
+    sessionStorage.removeItem(
+        "bt_user_name"
+    );
+
+    sessionStorage.removeItem(
+        "bt_user_mobile"
+    );
+
 
     window.location.replace(
         "login.html"
     );
+
 };
 
 
 /* =========================================================
-   MODAL OUTSIDE CLICK
+   MODAL CLICK OUTSIDE
 ========================================================= */
 
 document.getElementById(
@@ -3777,7 +6348,51 @@ document.getElementById(
             event.target.id ===
             "statusModal"
         ){
+
             closeStatusModal();
+
+        }
+
+    }
+);
+
+
+document.getElementById(
+    "joinOverlay"
+).addEventListener(
+    "click",
+    event => {
+
+        if(
+            event.target.id ===
+            "joinOverlay"
+        ){
+
+            closeJoinCelebration();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   ESC
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if(
+            event.key ===
+            "Escape"
+        ){
+
+            closeStatusModal();
+
+            closeJoinCelebration();
+
         }
 
     }
@@ -3785,12 +6400,15 @@ document.getElementById(
 
 
 console.log(
-    "BlackTerminal Telecaller Dashboard loaded."
+    "BlackTerminal Telecaller Dashboard ready."
 );
 
 console.log(
-    "Payment listener:",
-    "paymentSettings/telecaller"
+    "Swipe: LEFT = Not Interested | RIGHT = Interested"
+);
+
+console.log(
+    "Press & Hold Interested = Joined + Incentive"
 );
 
 </script>
