@@ -1,14 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Coordinator Dashboard | BlackTerminal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --text:#172033;
+  --muted:#718096;
+  --line:#e7ebf2;
+  --primary:#4f46e5;
+  --primary2:#6366f1;
+  --green:#16a34a;
+  --greenBg:#ecfdf3;
+  --red:#dc2626;
+  --redBg:#fef2f2;
+  --orange:#ea580c;
+  --orangeBg:#fff7ed;
+  --blue:#2563eb;
+  --blueBg:#eff6ff;
+  --shadow:0 12px 35px rgba(24,39,75,.07);
+  --radius:18px;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  font-family:Inter,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
+
+button,
+input,
+select,
+textarea{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.topbar{
+  height:70px;
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.brand-logo{
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#111827,#4f46e5);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+}
+
+.brand-text h2{
+  font-size:16px;
+  font-weight:800;
+}
+
+.brand-text span{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  margin-top:2px;
+}
+
+.user-area{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.user-info{
+  text-align:right;
+}
+
+.user-info strong{
+  display:block;
+  font-size:13px;
+}
+
+.user-info span{
+  color:var(--muted);
+  font-size:10px;
+}
+
+.logout-btn{
+  border:1px solid var(--line);
+  background:#fff;
+  color:#475569;
+  padding:9px 13px;
+  border-radius:10px;
+  font-size:11px;
+  font-weight:700;
+}
+
+.logout-btn:hover{
+  background:#f8fafc;
+}
+
+.container{
+  width:min(1250px,100%);
+  margin:auto;
+  padding:28px 20px 50px;
+}
+
+.page-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:20px;
+  margin-bottom:20px;
+}
+
+.page-head h1{
+  font-size:27px;
+  letter-spacing:-.7px;
+}
+
+.page-head p{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.firebase-status{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  background:#fff;
+  border:1px solid var(--line);
+  padding:9px 12px;
+  border-radius:10px;
+  font-size:11px;
+  color:var(--muted);
+}
+
+.status-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#f59e0b;
+}
+
+.status-dot.online{
+  background:#22c55e;
+  box-shadow:0 0 0 4px rgba(34,197,94,.1);
+}
+
+.status-dot.offline{
+  background:#ef4444;
+  box-shadow:0 0 0 4px rgba(239,68,68,.1);
+}
+
+.tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  background:#e9edf5;
+  padding:4px;
+  border-radius:14px;
+  margin-bottom:18px;
+}
+
+.tab-btn{
+  border:0;
+  background:transparent;
+  color:#667085;
+  padding:12px;
+  border-radius:11px;
+  font-size:12px;
+  font-weight:800;
+  transition:.2s;
+}
+
+.tab-btn.active{
+  color:var(--primary);
+  background:#fff;
+  box-shadow:0 3px 10px rgba(0,0,0,.05);
+}
+
+.tab-panel{
+  display:none;
+}
+
+.tab-panel.active{
+  display:block;
+}
+
+.main-grid{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:18px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+
+.card-head{
+  padding:18px 20px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.card-title{
+  font-size:15px;
+  font-weight:800;
+}
+
+.card-subtitle{
+  color:var(--muted);
+  font-size:10px;
+  margin-top:4px;
+}
+
+.card-body{
+  padding:20px;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.field.full{
+  grid-column:1/-1;
+}
+
+.field label{
+  font-size:10px;
+  font-weight:800;
+  color:#596579;
+}
+
+.required{
+  color:#ef4444;
+}
+
+.field input,
+.field select,
+.field textarea{
+  width:100%;
+  border:1px solid #dfe4ec;
+  background:#fff;
+  border-radius:10px;
+  padding:11px 12px;
+  outline:none;
+  color:var(--text);
+  font-size:12px;
+  transition:.18s;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus{
+  border-color:#818cf8;
+  box-shadow:0 0 0 3px rgba(79,70,229,.08);
+}
+
+.field input[readonly]{
+  background:#f8fafc;
+  color:#475569;
+}
+
+.field textarea{
+  resize:vertical;
+  min-height:78px;
+}
+
+.input-wrap{
+  position:relative;
+}
+
+.input-wrap input{
+  padding-right:80px;
+}
+
+.lookup-status{
+  position:absolute;
+  right:9px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:9px;
+  font-weight:700;
+}
+
+.helper{
+  font-size:9px;
+  color:#94a3b8;
+}
+
+.price-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:15px;
+}
+
+.price-box{
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:11px;
+}
+
+.price-box small{
+  display:block;
+  color:#94a3b8;
+  font-size:9px;
+  margin-bottom:5px;
+}
+
+.price-box strong{
+  font-size:14px;
+}
+
+.offer-price strong{
+  color:var(--green);
+}
+
+.payable-price{
+  background:var(--greenBg);
+  border-color:#bbf7d0;
+}
+
+.payable-price strong{
+  color:var(--green);
+}
+
+.action-row{
+  display:flex;
+  gap:9px;
+  margin-top:18px;
+}
+
+.primary-btn{
+  flex:1;
+  border:0;
+  color:#fff;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  padding:12px 16px;
+  border-radius:11px;
+  font-size:12px;
+  font-weight:800;
+  box-shadow:0 7px 18px rgba(79,70,229,.18);
+}
+
+.primary-btn:hover{
+  background:linear-gradient(135deg,#3730a3,var(--primary));
+}
+
+.primary-btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.secondary-btn{
+  border:1px solid var(--line);
+  background:#fff;
+  color:#475569;
+  padding:12px 15px;
+  border-radius:11px;
+  font-size:11px;
+  font-weight:700;
+}
+
+.secondary-btn:hover{
+  background:#f8fafc;
+}
+
+.message{
+  display:none;
+  margin-bottom:15px;
+  padding:12px 14px;
+  border-radius:11px;
+  font-size:11px;
+  line-height:1.6;
+}
+
+.message.show{
+  display:block;
+}
+
+.message.success{
+  color:#166534;
+  background:var(--greenBg);
+  border:1px solid #bbf7d0;
+}
+
+.message.error{
+  color:#991b1b;
+  background:var(--redBg);
+  border:1px solid #fecaca;
+}
+
+.message.info{
+  color:#1d4ed8;
+  background:var(--blueBg);
+  border:1px solid #bfdbfe;
+}
+
+.course-duration-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.course-list{
+  margin-top:0;
+}
+
+.course-list-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.course-count{
+  font-size:10px;
+  color:var(--muted);
+}
+
+.course-item{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:9px;
+  background:#fbfcfe;
+}
+
+.course-item-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.course-name{
+  font-size:12px;
+  font-weight:800;
+}
+
+.course-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:6px;
+}
+
+.meta-pill{
+  background:#f1f5f9;
+  color:#64748b;
+  border-radius:20px;
+  padding:4px 7px;
+  font-size:8px;
+}
+
+.course-actions{
+  display:flex;
+  gap:5px;
+}
+
+.icon-btn{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:8px;
+  padding:6px 8px;
+  font-size:9px;
+  color:#64748b;
+}
+
+.icon-btn.delete:hover{
+  color:var(--red);
+  border-color:#fecaca;
+  background:#fff5f5;
+}
+
+.course-empty{
+  text-align:center;
+  padding:25px 10px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.badge{
+  font-size:8px;
+  font-weight:800;
+  padding:5px 8px;
+  border-radius:20px;
+}
+
+.badge.pending{
+  color:#9a3412;
+  background:var(--orangeBg);
+}
+
+.badge.success{
+  color:#166534;
+  background:var(--greenBg);
+}
+
+.badge.blue{
+  color:#1d4ed8;
+  background:var(--blueBg);
+}
+
+.badge.gray{
+  color:#475569;
+  background:#f1f5f9;
+}
+
+.sent-section{
+  margin-top:18px;
+}
+
+.sent-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 20px;
+  border-bottom:1px solid var(--line);
+}
+
+.refresh-btn{
+  border:1px solid var(--line);
+  background:#fff;
+  padding:7px 10px;
+  border-radius:8px;
+  font-size:9px;
+  font-weight:700;
+  color:#64748b;
+}
+
+.sent-list{
+  padding:14px 18px;
+}
+
+.sent-item{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:13px;
+  margin-bottom:9px;
+  background:#fff;
+}
+
+.sent-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.sent-name{
+  font-size:12px;
+  font-weight:800;
+}
+
+.sent-mobile{
+  color:var(--muted);
+  font-size:9px;
+  margin-top:3px;
+}
+
+.sent-course{
+  font-size:10px;
+  color:#475569;
+  margin-top:7px;
+}
+
+.sent-bottom{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  padding-top:9px;
+  border-top:1px dashed #e5e7eb;
+}
+
+.sent-time{
+  font-size:8px;
+  color:#94a3b8;
+}
+
+.empty-sent{
+  text-align:center;
+  padding:30px 10px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.modal-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.45);
+  z-index:100;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.modal-overlay.show{
+  display:flex;
+}
+
+.modal{
+  width:min(430px,100%);
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 30px 70px rgba(0,0,0,.2);
+}
+
+.modal-head{
+  padding:18px 20px;
+  border-bottom:1px solid var(--line);
+}
+
+.modal-head strong{
+  font-size:14px;
+}
+
+.modal-body{
+  padding:20px;
+}
+
+.modal-body p{
+  font-size:11px;
+  color:#64748b;
+  line-height:1.6;
+}
+
+.modal-actions{
+  display:flex;
+  gap:10px;
+  margin-top:18px;
+}
+
+.modal-actions button{
+  flex:1;
+}
+
+@media(max-width:850px){
+
+  .main-grid{
+    grid-template-columns:1fr;
+  }
+
+  .page-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
+
+@media(max-width:600px){
+
+  .topbar{
+    padding:0 14px;
+  }
+
+  .container{
+    padding:20px 12px 35px;
+  }
+
+  .brand-text{
+    display:none;
+  }
+
+  .user-info{
+    display:none;
+  }
+
+  .page-head h1{
+    font-size:22px;
+  }
+
+  .form-grid{
+    grid-template-columns:1fr;
+  }
+
+  .field.full{
+    grid-column:auto;
+  }
+
+  .price-grid{
+    grid-template-columns:1fr;
+  }
+
+  .tabs{
+    position:sticky;
+    top:70px;
+    z-index:20;
+  }
+
+  .card-body{
+    padding:15px;
+  }
+
+  .card-head{
+    padding:16px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+  <div class="brand">
+
+    <div class="brand-logo">
+      BT
+    </div>
+
+    <div class="brand-text">
+      <h2>BlackTerminal</h2>
+      <span>Coordinator Panel</span>
+    </div>
+
+  </div>
+
+
+  <div class="user-area">
+
+    <div class="user-info">
+      <strong id="coordinatorName">Coordinator</strong>
+      <span id="coordinatorMobile">—</span>
+    </div>
+
+    <button
+      class="logout-btn"
+      id="logoutBtn"
+    >
+      Logout
+    </button>
+
+  </div>
+
+</header>
+
+
+<main class="container">
+
+  <div class="page-head">
+
+    <div>
+      <h1>Coordinator Dashboard</h1>
+
+      <p>
+        Manage inquiries, courses and telecaller leads.
+      </p>
+    </div>
+
+
+    <div class="firebase-status">
+
+      <span
+        class="status-dot"
+        id="firebaseDot"
+      ></span>
+
+      <span id="firebaseStatusText">
+        Connecting Firebase...
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- TABS -->
+
+  <div class="tabs">
+
+    <button
+      class="tab-btn active"
+      data-tab="inquiryTab"
+    >
+      📋 Inquiry
+    </button>
+
+    <button
+      class="tab-btn"
+      data-tab="courseTab"
+    >
+      ➕ Add Course
+    </button>
+
+  </div>
+
+
+  <!-- ======================================================
+       INQUIRY TAB
+  ======================================================= -->
+
+  <section
+    class="tab-panel active"
+    id="inquiryTab"
+  >
+
+    <div class="card">
+
+      <div class="card-head">
+
+        <div>
+
+          <div class="card-title">
+            New Student Inquiry
+          </div>
+
+          <div class="card-subtitle">
+            Save inquiry to Firebase and send it to Telecaller.
+          </div>
+
+        </div>
+
+        <span class="badge blue">
+          Coordinator
+        </span>
+
+      </div>
+
+
+      <div class="card-body">
+
+        <div
+          id="inquiryMessage"
+          class="message"
+        ></div>
+
+
+        <form id="inquiryForm">
+
+          <div class="form-grid">
+
+            <div class="field">
+
+              <label>
+                Student Mobile
+                <span class="required">*</span>
+              </label>
+
+              <div class="input-wrap">
+
+                <input
+                  type="tel"
+                  id="studentMobile"
+                  maxlength="10"
+                  inputmode="numeric"
+                  placeholder="10 digit mobile number"
+                  required
+                >
+
+                <span
+                  class="lookup-status"
+                  id="lookupStatus"
+                ></span>
+
+              </div>
+
+              <div class="helper">
+                Existing lead will be detected automatically.
+              </div>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Student Name
+                <span class="required">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="studentName"
+                placeholder="Enter student name"
+                required
+              >
+
+            </div>
+
+
+            <div class="field full">
+
+              <label>
+                Select Course
+                <span class="required">*</span>
+              </label>
+
+              <select
+                id="courseSelect"
+                required
+              >
+
+                <option value="">
+                  Connecting Firebase...
+                </option>
+
+              </select>
+
+              <div class="helper">
+                Courses are loaded from Firebase courseSettings.
+              </div>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Course Duration
+              </label>
+
+              <input
+                type="text"
+                id="courseDuration"
+                placeholder="Auto-filled"
+                readonly
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Category / Mode
+              </label>
+
+              <input
+                type="text"
+                id="courseMode"
+                placeholder="Auto-filled"
+                readonly
+              >
+
+            </div>
+
+          </div>
+
+
+          <div class="price-grid">
+
+            <div class="price-box">
+
+              <small>
+                Regular Price
+              </small>
+
+              <strong id="regularPriceDisplay">
+                ₹0
+              </strong>
+
+            </div>
+
+
+            <div class="price-box offer-price">
+
+              <small>
+                Offer Price
+              </small>
+
+              <strong id="offerPriceDisplay">
+                No Offer
+              </strong>
+
+            </div>
+
+
+            <div class="price-box payable-price">
+
+              <small>
+                Payable Price
+              </small>
+
+              <strong id="payablePriceDisplay">
+                ₹0
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="field"
+            style="margin-top:15px"
+          >
+
+            <label>
+              Remark
+            </label>
+
+            <textarea
+              id="inquiryRemark"
+              placeholder="Any important note about this student..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="action-row">
+
+            <button
+              type="button"
+              class="secondary-btn"
+              id="clearInquiryBtn"
+            >
+              Clear
+            </button>
+
+
+            <button
+              type="submit"
+              class="primary-btn"
+              id="sendInquiryBtn"
+            >
+              Send Data to Telecaller
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+
+    <!-- SENT DATA -->
+
+    <div class="card sent-section">
+
+      <div class="sent-head">
+
+        <div>
+
+          <div class="card-title">
+            Sent Data
+          </div>
+
+          <div class="card-subtitle">
+            Firebase saved inquiries sent to Telecaller.
+          </div>
+
+        </div>
+
+
+        <button
+          class="refresh-btn"
+          id="refreshSentBtn"
+        >
+          ↻ Refresh
+        </button>
+
+      </div>
+
+
+      <div
+        class="sent-list"
+        id="sentList"
+      >
+
+        <div class="empty-sent">
+          Loading...
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ======================================================
+       COURSE TAB
+  ======================================================= -->
+
+  <section
+    class="tab-panel"
+    id="courseTab"
+  >
+
+    <div class="main-grid">
+
+
+      <!-- ADD COURSE -->
+
+      <div class="card">
+
+        <div class="card-head">
+
+          <div>
+
+            <div
+              class="card-title"
+              id="courseFormTitle"
+            >
+              Add New Course
+            </div>
+
+            <div class="card-subtitle">
+              Course will be saved directly to Firebase.
+            </div>
+
+          </div>
+
+
+          <span class="badge success">
+            Firebase
+          </span>
+
+        </div>
+
+
+        <div class="card-body">
+
+          <div
+            id="courseMessage"
+            class="message"
+          ></div>
+
+
+          <form id="courseForm">
+
+            <div class="form-grid">
+
+              <div class="field full">
+
+                <label>
+                  Course Name
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  type="text"
+                  id="courseName"
+                  placeholder="Example: PGDCA"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field full">
+
+                <label>
+                  Duration
+                  <span class="required">*</span>
+                </label>
+
+                <div class="course-duration-row">
+
+                  <input
+                    type="number"
+                    id="durationValue"
+                    min="1"
+                    placeholder="12"
+                    required
+                  >
+
+                  <select
+                    id="durationUnit"
+                    required
+                  >
+
+                    <option value="Months">
+                      Months
+                    </option>
+
+                    <option value="Weeks">
+                      Weeks
+                    </option>
+
+                    <option value="Days">
+                      Days
+                    </option>
+
+                  </select>
+
+                </div>
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Regular Price
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  type="number"
+                  id="regularPrice"
+                  min="0"
+                  placeholder="6000"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Offer Price
+                </label>
+
+                <input
+                  type="number"
+                  id="offerPrice"
+                  min="0"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Category
+                </label>
+
+                <input
+                  type="text"
+                  id="courseCategory"
+                  placeholder="Computer / Technical"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Mode
+                </label>
+
+                <select id="courseModeInput">
+
+                  <option value="Offline">
+                    Offline
+                  </option>
+
+                  <option value="Online">
+                    Online
+                  </option>
+
+                  <option value="Online + Offline">
+                    Online + Offline
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field full">
+
+                <label>
+                  Short Description
+                </label>
+
+                <textarea
+                  id="courseDescription"
+                  placeholder="Example: Complete computer course with practical training..."
+                ></textarea>
+
+              </div>
+
+            </div>
+
+
+            <div class="action-row">
+
+              <button
+                type="button"
+                class="secondary-btn"
+                id="cancelEditBtn"
+                style="display:none"
+              >
+                Cancel Edit
+              </button>
+
+
+              <button
+                type="button"
+                class="secondary-btn"
+                id="clearCourseBtn"
+              >
+                Clear
+              </button>
+
+
+              <button
+                type="submit"
+                class="primary-btn"
+                id="saveCourseBtn"
+              >
+                Save Course
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+
+
+      <!-- SAVED COURSES -->
+
+      <div class="card">
+
+        <div class="card-head">
+
+          <div>
+
+            <div class="card-title">
+              Saved Courses
+            </div>
+
+            <div class="card-subtitle">
+              Courses available in Inquiry dropdown.
+            </div>
+
+          </div>
+
+
+          <span
+            class="course-count"
+            id="courseCount"
+          >
+            0 courses
+          </span>
+
+        </div>
+
+
+        <div class="card-body">
+
+          <div
+            class="course-list"
+            id="courseList"
+          >
+
+            <div class="course-empty">
+              Loading courses...
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+
+<!-- DELETE MODAL -->
+
+<div
+  class="modal-overlay"
+  id="deleteModal"
+>
+
+  <div class="modal">
+
+    <div class="modal-head">
+      <strong>
+        Delete Course?
+      </strong>
+    </div>
+
+    <div class="modal-body">
+
+      <p>
+        This course will be permanently removed from Firebase
+        and will disappear from the inquiry dropdown.
+      </p>
+
+
+      <div class="modal-actions">
+
+        <button
+          class="secondary-btn"
+          id="cancelDeleteBtn"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          class="primary-btn"
+          id="confirmDeleteBtn"
+          style="background:#dc2626"
+        >
+          Delete Course
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
 <script type="module">
+
+/* =========================================================
+   FIREBASE IMPORTS
+========================================================= */
 
 import {
   initializeApp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 
+
 import {
   getAuth,
-  signInAnonymously,
-  onAuthStateChanged
+  signInAnonymously
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
 
 import {
   getFirestore,
@@ -22,79 +1501,306 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 
-/* =========================================
-   YOUR FIREBASE PROJECT
-========================================= */
+/* =========================================================
+   FIREBASE CONFIG
+========================================================= */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBNYjdOgZXnHLZ66-MSsfmzuVZ7Ex4mOs",
-  authDomain: "black-d0090.firebaseapp.com",
-  projectId: "black-d0090",
-  storageBucket: "black-d0090.firebasestorage.app",
-  messagingSenderId: "262520728205",
-  appId: "1:262520728205:web:c95151d5f88da2831890c4"
+
+  apiKey:
+    "AIzaSyBNYjdOgZXnHLZ66-MSsfmzuVZ7Ex4mOs",
+
+  authDomain:
+    "black-d0090.firebaseapp.com",
+
+  projectId:
+    "black-d0090",
+
+  storageBucket:
+    "black-d0090.firebasestorage.app",
+
+  messagingSenderId:
+    "262520728205",
+
+  appId:
+    "1:262520728205:web:c95151d5f88da2831890c4"
+
 };
 
 
-/* =========================================
+/* =========================================================
+   LOGIN GUARD
+========================================================= */
+
+const loggedIn =
+  sessionStorage.getItem("bt_logged_in");
+
+const userRole =
+  sessionStorage.getItem("bt_user_role");
+
+
+if(
+  loggedIn !== "true" ||
+  userRole !== "coordinator"
+){
+
+  window.location.replace(
+    "login.html"
+  );
+
+}
+
+
+/* =========================================================
+   USER
+========================================================= */
+
+const coordinatorName =
+  sessionStorage.getItem(
+    "bt_user_name"
+  ) || "Coordinator";
+
+
+const coordinatorMobile =
+  sessionStorage.getItem(
+    "bt_user_mobile"
+  ) || "";
+
+
+document.getElementById(
+  "coordinatorName"
+).textContent =
+  coordinatorName;
+
+
+document.getElementById(
+  "coordinatorMobile"
+).textContent =
+  coordinatorMobile || "Coordinator";
+
+
+/* =========================================================
    FIREBASE VARIABLES
-========================================= */
+========================================================= */
 
 let app = null;
 let auth = null;
 let db = null;
 let firebaseUser = null;
-
 let firebaseReady = false;
 
+let courses = [];
+let inquiries = [];
 
-/* =========================================
+let editingCourseId = null;
+let deleteCourseId = null;
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const firebaseDot =
+  document.getElementById(
+    "firebaseDot"
+  );
+
+
+const firebaseStatusText =
+  document.getElementById(
+    "firebaseStatusText"
+  );
+
+
+const courseSelect =
+  document.getElementById(
+    "courseSelect"
+  );
+
+
+const courseDuration =
+  document.getElementById(
+    "courseDuration"
+  );
+
+
+const courseMode =
+  document.getElementById(
+    "courseMode"
+  );
+
+
+const regularPriceDisplay =
+  document.getElementById(
+    "regularPriceDisplay"
+  );
+
+
+const offerPriceDisplay =
+  document.getElementById(
+    "offerPriceDisplay"
+  );
+
+
+const payablePriceDisplay =
+  document.getElementById(
+    "payablePriceDisplay"
+  );
+
+
+const inquiryForm =
+  document.getElementById(
+    "inquiryForm"
+  );
+
+
+const courseForm =
+  document.getElementById(
+    "courseForm"
+  );
+
+
+const sendInquiryBtn =
+  document.getElementById(
+    "sendInquiryBtn"
+  );
+
+
+const saveCourseBtn =
+  document.getElementById(
+    "saveCourseBtn"
+  );
+
+
+const sentList =
+  document.getElementById(
+    "sentList"
+  );
+
+
+const courseList =
+  document.getElementById(
+    "courseList"
+  );
+
+
+const courseCount =
+  document.getElementById(
+    "courseCount"
+  );
+
+
+/* =========================================================
    FIREBASE STATUS
-========================================= */
+========================================================= */
 
-function setFirebaseStatus(type, message){
+function setFirebaseStatus(
+  type,
+  message
+){
 
-  const dot =
-    document.getElementById("firebaseDot");
+  firebaseStatusText.textContent =
+    message;
 
-  const text =
-    document.getElementById("firebaseStatusText");
+  firebaseDot.className =
+    "status-dot";
 
-  if(!dot || !text) return;
-
-  dot.className = "status-dot";
 
   if(type === "online"){
-    dot.classList.add("online");
+    firebaseDot.classList.add(
+      "online"
+    );
   }
+
 
   if(type === "offline"){
-    dot.classList.add("offline");
+    firebaseDot.classList.add(
+      "offline"
+    );
   }
 
-  text.textContent = message;
 }
 
 
-/* =========================================
-   FIREBASE ERROR HANDLER
-========================================= */
+/* =========================================================
+   MESSAGE
+========================================================= */
 
-function getFirebaseError(error){
+function showMessage(
+  elementId,
+  message,
+  type = "success"
+){
+
+  const element =
+    document.getElementById(
+      elementId
+    );
+
+
+  element.className =
+    "message show " + type;
+
+
+  element.innerHTML =
+    message;
+
+
+  clearTimeout(
+    element._timer
+  );
+
+
+  element._timer =
+    setTimeout(
+      () => {
+
+        element.classList.remove(
+          "show"
+        );
+
+      },
+      7000
+    );
+
+}
+
+
+/* =========================================================
+   FIREBASE ERROR
+========================================================= */
+
+function firebaseErrorMessage(
+  error
+){
 
   console.error(
     "========== FIREBASE ERROR =========="
   );
 
-  console.error("Code:", error?.code);
-  console.error("Message:", error?.message);
-  console.error("Full error:", error);
+  console.error(
+    "Code:",
+    error?.code
+  );
+
+  console.error(
+    "Message:",
+    error?.message
+  );
+
+  console.error(
+    "Full Error:",
+    error
+  );
+
 
   const code =
     error?.code || "unknown";
 
+
   const message =
-    error?.message || "Unknown Firebase error";
+    error?.message ||
+    "Unknown Firebase error.";
 
 
   if(
@@ -103,9 +1809,9 @@ function getFirebaseError(error){
   ){
 
     return `
-      <b>Anonymous Login Disabled</b><br>
+      <b>Anonymous Authentication is disabled.</b><br>
       Firebase Console → Authentication →
-      Sign-in method → Anonymous → Enable
+      Sign-in method → Anonymous → Enable.
     `;
 
   }
@@ -117,10 +1823,9 @@ function getFirebaseError(error){
   ){
 
     return `
-      <b>Preview Domain Not Authorized</b><br>
-      Firebase Console → Authentication →
-      Settings → Authorized domains →
-      Add your current preview/domain.
+      <b>Unauthorized domain.</b><br>
+      Add this website domain under
+      Firebase Authentication → Settings → Authorized domains.
     `;
 
   }
@@ -132,37 +1837,34 @@ function getFirebaseError(error){
   ){
 
     return `
-      <b>Network Error</b><br>
-      Check your internet connection and reload the page.
+      <b>Network error.</b><br>
+      Please check your internet connection.
     `;
 
   }
 
 
   if(
-    code ===
-    "permission-denied" ||
-    code ===
-    "firestore/permission-denied"
+    code === "permission-denied" ||
+    code === "firestore/permission-denied"
   ){
 
     return `
-      <b>Firestore Permission Denied</b><br>
-      Firebase Authentication is working,
-      but Firestore Rules are blocking this operation.
+      <b>Firestore Permission Denied.</b><br>
+      Check Firestore Rules and make sure
+      request.auth != null is allowed.
     `;
 
   }
 
 
   if(
-    code ===
-    "unauthenticated"
+    code === "unauthenticated"
   ){
 
     return `
-      <b>User Not Authenticated</b><br>
-      Firebase Anonymous Authentication did not complete.
+      <b>Firebase Authentication failed.</b><br>
+      Anonymous authentication did not complete.
     `;
 
   }
@@ -177,9 +1879,9 @@ function getFirebaseError(error){
 }
 
 
-/* =========================================
+/* =========================================================
    INITIALIZE FIREBASE
-========================================= */
+========================================================= */
 
 async function initFirebase(){
 
@@ -191,36 +1893,42 @@ async function initFirebase(){
     );
 
 
-    /* Create Firebase App */
+    /*
+      Initialize Firebase App
+    */
 
     app =
-      initializeApp(firebaseConfig);
+      initializeApp(
+        firebaseConfig
+      );
 
 
-    console.log(
-      "Firebase App initialized:",
-      app.options.projectId
-    );
-
-
-    /* Create Auth */
+    /*
+      Authentication
+    */
 
     auth =
       getAuth(app);
 
 
-    /* Create Firestore */
+    /*
+      Firestore
+      IMPORTANT:
+      This uses the DEFAULT Firestore database.
+    */
 
     db =
       getFirestore(app);
 
 
     /*
-      Anonymous Authentication
+      Anonymous Firebase Login
     */
 
     const credential =
-      await signInAnonymously(auth);
+      await signInAnonymously(
+        auth
+      );
 
 
     firebaseUser =
@@ -236,82 +1944,11 @@ async function initFirebase(){
     }
 
 
-    console.log(
-      "Firebase Auth UID:",
-      firebaseUser.uid
-    );
-
-
-    console.log(
-      "Firebase Auth Provider: anonymous"
-    );
-
-
-    /*
-      Wait for Auth state confirmation
-    */
-
-    await new Promise(
-      (resolve, reject) => {
-
-        let completed = false;
-
-        const unsubscribe =
-          onAuthStateChanged(
-            auth,
-            (user) => {
-
-              if(user){
-
-                firebaseUser = user;
-
-                if(!completed){
-
-                  completed = true;
-
-                  unsubscribe();
-
-                  resolve();
-
-                }
-
-              }
-
-            },
-            (error) => {
-
-              if(!completed){
-
-                completed = true;
-
-                unsubscribe();
-
-                reject(error);
-
-              }
-
-            }
-          );
-
-      }
-    );
-
-
     firebaseReady = true;
 
 
-    setFirebaseStatus(
-      "online",
+    console.log(
       "Firebase Connected"
-    );
-
-
-    console.log(
-      "================================="
-    );
-
-    console.log(
-      "Firebase READY"
     );
 
     console.log(
@@ -320,17 +1957,19 @@ async function initFirebase(){
     );
 
     console.log(
-      "UID:",
+      "Anonymous UID:",
       firebaseUser.uid
     );
 
-    console.log(
-      "================================="
+
+    setFirebaseStatus(
+      "online",
+      "Firebase Connected"
     );
 
 
     /*
-      Now load Firebase data
+      Load Firebase data
     */
 
     await loadAllData();
@@ -340,8 +1979,9 @@ async function initFirebase(){
 
     firebaseReady = false;
 
+
     console.error(
-      "Firebase initialization failed:",
+      "FIREBASE INITIALIZATION ERROR:",
       error
     );
 
@@ -354,7 +1994,7 @@ async function initFirebase(){
 
     showMessage(
       "inquiryMessage",
-      getFirebaseError(error),
+      firebaseErrorMessage(error),
       "error"
     );
 
@@ -363,25 +2003,24 @@ async function initFirebase(){
 }
 
 
-/* =========================================
-   FIREBASE READY CHECK
-========================================= */
+/* =========================================================
+   READY CHECK
+========================================================= */
 
-function firebaseIsReady(){
+function checkFirebase(){
 
   if(
     !firebaseReady ||
-    !db ||
-    !auth ||
-    !firebaseUser
+    !firebaseUser ||
+    !db
   ){
 
     showMessage(
       "inquiryMessage",
       `
         <b>Firebase is not ready.</b><br>
-        Please wait for "Firebase Connected"
-        before saving data.
+        Please wait until the top-right status says
+        "Firebase Connected".
       `,
       "error"
     );
@@ -395,200 +2034,2226 @@ function firebaseIsReady(){
 }
 
 
-/* =========================================
-   LOAD DATA
-========================================= */
+/* =========================================================
+   LOAD ALL
+========================================================= */
 
 async function loadAllData(){
 
-  if(!firebaseIsReady()) return;
-
-  try{
-
-    await Promise.all([
-      loadCourses(),
-      loadInquiries()
-    ]);
-
-  }catch(error){
-
-    console.error(
-      "Firebase data loading error:",
-      error
-    );
-
-  }
+  await Promise.all([
+    loadCourses(),
+    loadInquiries()
+  ]);
 
 }
 
 
-/* =========================================
-   SAVE COURSE
-========================================= */
+/* =========================================================
+   LOAD COURSES
+========================================================= */
 
-async function saveCourseToFirebase(courseData){
+async function loadCourses(){
 
-  if(!firebaseIsReady()){
-
-    throw new Error(
-      "Firebase authentication is not ready."
-    );
-
-  }
+  if(!checkFirebase()) return;
 
 
-  console.log(
-    "Saving course to:",
-    "courseSettings"
-  );
+  try{
 
-  console.log(
-    "Course data:",
-    courseData
-  );
+    const snapshot =
+      await getDocs(
+        collection(
+          db,
+          "courseSettings"
+        )
+      );
 
 
-  const documentReference =
-    await addDoc(
-      collection(
-        db,
-        "courseSettings"
-      ),
-      {
-        ...courseData,
-        createdAt:
-          serverTimestamp(),
-        updatedAt:
-          serverTimestamp()
+    courses = [];
+
+
+    snapshot.forEach(
+      item => {
+
+        courses.push({
+          id:item.id,
+          ...item.data()
+        });
+
       }
     );
 
 
-  console.log(
-    "COURSE SAVED:",
-    documentReference.id
-  );
+    courses.sort(
+      (a,b) => {
+
+        const aName =
+          String(
+            a.courseName ||
+            a.name ||
+            a.title ||
+            ""
+          ).toLowerCase();
 
 
-  return documentReference.id;
-
-}
-
-
-/* =========================================
-   SAVE INQUIRY
-========================================= */
-
-async function saveInquiryToFirebase(inquiryData){
-
-  if(!firebaseIsReady()){
-
-    throw new Error(
-      "Firebase authentication is not ready."
-    );
-
-  }
+        const bName =
+          String(
+            b.courseName ||
+            b.name ||
+            b.title ||
+            ""
+          ).toLowerCase();
 
 
-  console.log(
-    "Saving inquiry to:",
-    "studentInquiries"
-  );
+        return aName.localeCompare(
+          bName
+        );
 
-  console.log(
-    "Inquiry data:",
-    inquiryData
-  );
-
-
-  const documentReference =
-    await addDoc(
-      collection(
-        db,
-        "studentInquiries"
-      ),
-      inquiryData
+      }
     );
 
 
-  console.log(
-    "INQUIRY SAVED:",
-    documentReference.id
-  );
+    renderCourseList();
 
-
-  return documentReference.id;
-
-}
-
-
-/* =========================================
-   TEST FIREBASE WRITE
-========================================= */
-
-async function testFirebaseConnection(){
-
-  if(!firebaseIsReady()){
-    return false;
-  }
-
-
-  try{
-
-    const testReference =
-      await addDoc(
-        collection(
-          db,
-          "firebaseTest"
-        ),
-        {
-          type:"coordinator_connection_test",
-          project:
-            firebaseConfig.projectId,
-          uid:
-            firebaseUser.uid,
-          createdAt:
-            serverTimestamp()
-        }
-      );
-
-
-    console.log(
-      "Firebase WRITE TEST SUCCESS:",
-      testReference.id
-    );
-
-
-    return true;
+    rebuildCourseDropdown();
 
 
   }catch(error){
 
     console.error(
-      "Firebase WRITE TEST FAILED:",
+      "COURSE LOAD ERROR:",
+      error
+    );
+
+
+    showMessage(
+      "courseMessage",
+      firebaseErrorMessage(error),
+      "error"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   NORMALIZE COURSE
+========================================================= */
+
+function normalizeCourse(
+  course
+){
+
+  const name =
+    course.courseName ||
+    course.name ||
+    course.title ||
+    "";
+
+
+  let duration = "";
+
+
+  if(course.duration){
+
+    duration =
+      String(
+        course.duration
+      );
+
+  }else if(
+    course.durationValue &&
+    course.durationUnit
+  ){
+
+    duration =
+      `${course.durationValue} ${course.durationUnit}`;
+
+  }
+
+
+  const regularPrice =
+    Number(
+      course.regularPrice ??
+      course.price ??
+      course.coursePrice ??
+      course.fee ??
+      0
+    );
+
+
+  const offerPrice =
+    Number(
+      course.offerPrice ??
+      0
+    );
+
+
+  const payablePrice =
+    offerPrice > 0
+      ? offerPrice
+      : regularPrice;
+
+
+  const category =
+    course.category ||
+    course.courseCategory ||
+    "";
+
+
+  const mode =
+    course.mode ||
+    course.courseMode ||
+    "";
+
+
+  return {
+
+    ...course,
+
+    name,
+
+    duration,
+
+    regularPrice,
+
+    offerPrice,
+
+    payablePrice,
+
+    category,
+
+    mode
+
+  };
+
+}
+
+
+/* =========================================================
+   REBUILD DROPDOWN
+========================================================= */
+
+function rebuildCourseDropdown(){
+
+  const oldValue =
+    courseSelect.value;
+
+
+  courseSelect.innerHTML = `
+    <option value="">
+      Select Course
+    </option>
+  `;
+
+
+  if(!courses.length){
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value = "";
+
+    option.disabled = true;
+
+    option.textContent =
+      "No course added yet";
+
+    courseSelect.appendChild(
+      option
+    );
+
+    return;
+
+  }
+
+
+  courses.forEach(
+    rawCourse => {
+
+      const course =
+        normalizeCourse(
+          rawCourse
+        );
+
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        course.id;
+
+
+      option.textContent =
+        course.name;
+
+
+      courseSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  if(
+    oldValue &&
+    courses.some(
+      c => c.id === oldValue
+    )
+  ){
+
+    courseSelect.value =
+      oldValue;
+
+  }
+
+}
+
+
+/* =========================================================
+   COURSE SELECT
+========================================================= */
+
+courseSelect.addEventListener(
+  "change",
+  handleCourseChange
+);
+
+
+function handleCourseChange(){
+
+  const selectedId =
+    courseSelect.value;
+
+
+  const rawCourse =
+    courses.find(
+      c =>
+        c.id === selectedId
+    );
+
+
+  if(!rawCourse){
+
+    courseDuration.value =
+      "";
+
+    courseMode.value =
+      "";
+
+    regularPriceDisplay.textContent =
+      "₹0";
+
+    offerPriceDisplay.textContent =
+      "No Offer";
+
+    payablePriceDisplay.textContent =
+      "₹0";
+
+    return;
+
+  }
+
+
+  const course =
+    normalizeCourse(
+      rawCourse
+    );
+
+
+  courseDuration.value =
+    course.duration ||
+    "—";
+
+
+  courseMode.value =
+    [
+      course.category,
+      course.mode
+    ]
+    .filter(Boolean)
+    .join(" • ") ||
+    "—";
+
+
+  regularPriceDisplay.textContent =
+    "₹" +
+    formatNumber(
+      course.regularPrice
+    );
+
+
+  if(course.offerPrice > 0){
+
+    offerPriceDisplay.textContent =
+      "₹" +
+      formatNumber(
+        course.offerPrice
+      );
+
+  }else{
+
+    offerPriceDisplay.textContent =
+      "No Offer";
+
+  }
+
+
+  payablePriceDisplay.textContent =
+    "₹" +
+    formatNumber(
+      course.payablePrice
+    );
+
+}
+
+
+/* =========================================================
+   SAVE COURSE
+========================================================= */
+
+courseForm.addEventListener(
+  "submit",
+  saveCourse
+);
+
+
+async function saveCourse(
+  event
+){
+
+  event.preventDefault();
+
+
+  if(!checkFirebase()) return;
+
+
+  const name =
+    document.getElementById(
+      "courseName"
+    ).value.trim();
+
+
+  const durationValue =
+    Number(
+      document.getElementById(
+        "durationValue"
+      ).value
+    );
+
+
+  const durationUnit =
+    document.getElementById(
+      "durationUnit"
+    ).value;
+
+
+  const regularPrice =
+    Number(
+      document.getElementById(
+        "regularPrice"
+      ).value
+    );
+
+
+  const offerInput =
+    document.getElementById(
+      "offerPrice"
+    ).value;
+
+
+  const offerPrice =
+    offerInput === ""
+      ? 0
+      : Number(offerInput);
+
+
+  const category =
+    document.getElementById(
+      "courseCategory"
+    ).value.trim();
+
+
+  const mode =
+    document.getElementById(
+      "courseModeInput"
+    ).value;
+
+
+  const description =
+    document.getElementById(
+      "courseDescription"
+    ).value.trim();
+
+
+  if(!name){
+
+    showMessage(
+      "courseMessage",
+      "Please enter course name.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if(
+    !durationValue ||
+    durationValue < 1
+  ){
+
+    showMessage(
+      "courseMessage",
+      "Please enter valid duration.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if(
+    Number.isNaN(
+      regularPrice
+    ) ||
+    regularPrice < 0
+  ){
+
+    showMessage(
+      "courseMessage",
+      "Please enter valid regular price.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if(
+    offerPrice < 0
+  ){
+
+    showMessage(
+      "courseMessage",
+      "Offer price cannot be negative.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if(
+    offerPrice > 0 &&
+    offerPrice > regularPrice
+  ){
+
+    showMessage(
+      "courseMessage",
+      "Offer price should not be greater than regular price.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const duration =
+    `${durationValue} ${durationUnit}`;
+
+
+  const payablePrice =
+    offerPrice > 0
+      ? offerPrice
+      : regularPrice;
+
+
+  const courseData = {
+
+    courseName:name,
+
+    durationValue:
+      durationValue,
+
+    durationUnit:
+      durationUnit,
+
+    duration:
+      duration,
+
+    regularPrice:
+      regularPrice,
+
+    offerPrice:
+      offerPrice,
+
+    payablePrice:
+      payablePrice,
+
+    /*
+      Compatibility fields
+    */
+
+    price:
+      payablePrice,
+
+    coursePrice:
+      payablePrice,
+
+    category:
+      category,
+
+    courseCategory:
+      category,
+
+    mode:
+      mode,
+
+    courseMode:
+      mode,
+
+    description:
+      description,
+
+    active:
+      true,
+
+    updatedAt:
+      serverTimestamp()
+
+  };
+
+
+  const oldText =
+    saveCourseBtn.textContent;
+
+
+  saveCourseBtn.disabled =
+    true;
+
+
+  saveCourseBtn.textContent =
+    editingCourseId
+      ? "Updating..."
+      : "Saving to Firebase...";
+
+
+  try{
+
+    if(editingCourseId){
+
+      await updateDoc(
+        doc(
+          db,
+          "courseSettings",
+          editingCourseId
+        ),
+        courseData
+      );
+
+
+      showMessage(
+        "courseMessage",
+        `
+          ✓ <b>Course Updated Successfully!</b><br>
+          ${escapeHtml(name)}
+          has been updated in Firebase.
+        `,
+        "success"
+      );
+
+
+    }else{
+
+      courseData.createdAt =
+        serverTimestamp();
+
+
+      const savedDoc =
+        await addDoc(
+          collection(
+            db,
+            "courseSettings"
+          ),
+          courseData
+        );
+
+
+      console.log(
+        "COURSE SAVED:",
+        savedDoc.id
+      );
+
+
+      showMessage(
+        "courseMessage",
+        `
+          ✓ <b>Course Saved Successfully!</b><br>
+          ${escapeHtml(name)}
+          has been saved to Firebase.
+        `,
+        "success"
+      );
+
+    }
+
+
+    resetCourseForm();
+
+
+    await loadCourses();
+
+
+  }catch(error){
+
+    console.error(
+      "COURSE SAVE ERROR:",
+      error
+    );
+
+
+    showMessage(
+      "courseMessage",
+      `
+        <b>✕ Course was NOT saved.</b><br>
+        ${firebaseErrorMessage(error)}
+      `,
+      "error"
+    );
+
+
+  }finally{
+
+    saveCourseBtn.disabled =
+      false;
+
+
+    saveCourseBtn.textContent =
+      editingCourseId
+        ? "Update Course"
+        : "Save Course";
+
+  }
+
+}
+
+
+/* =========================================================
+   COURSE LIST
+========================================================= */
+
+function renderCourseList(){
+
+  courseCount.textContent =
+    `${courses.length} course${courses.length === 1 ? "" : "s"}`;
+
+
+  if(!courses.length){
+
+    courseList.innerHTML = `
+      <div class="course-empty">
+        No courses added yet.<br>
+        Add your first course.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  courseList.innerHTML = "";
+
+
+  courses.forEach(
+    rawCourse => {
+
+      const course =
+        normalizeCourse(
+          rawCourse
+        );
+
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "course-item";
+
+
+      const offerText =
+        course.offerPrice > 0
+          ? `Offer ₹${formatNumber(course.offerPrice)}`
+          : "No Offer";
+
+
+      item.innerHTML = `
+
+        <div class="course-item-top">
+
+          <div>
+
+            <div class="course-name">
+              ${escapeHtml(course.name)}
+            </div>
+
+            <div class="course-meta">
+
+              <span class="meta-pill">
+                ${escapeHtml(course.duration || "Duration not set")}
+              </span>
+
+              <span class="meta-pill">
+                Regular ₹${formatNumber(course.regularPrice)}
+              </span>
+
+              <span class="meta-pill">
+                ${escapeHtml(offerText)}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="course-actions">
+
+            <button
+              class="icon-btn"
+              data-edit="${course.id}"
+            >
+              Edit
+            </button>
+
+            <button
+              class="icon-btn delete"
+              data-delete="${course.id}"
+            >
+              Delete
+            </button>
+
+          </div>
+
+        </div>
+
+      `;
+
+
+      courseList.appendChild(
+        item
+      );
+
+    }
+  );
+
+
+  courseList
+    .querySelectorAll(
+      "[data-edit]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () =>
+            editCourse(
+              button.dataset.edit
+            )
+        );
+
+      }
+    );
+
+
+  courseList
+    .querySelectorAll(
+      "[data-delete]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () =>
+            openDeleteModal(
+              button.dataset.delete
+            )
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   EDIT COURSE
+========================================================= */
+
+function editCourse(id){
+
+  const rawCourse =
+    courses.find(
+      c => c.id === id
+    );
+
+
+  if(!rawCourse) return;
+
+
+  const course =
+    normalizeCourse(
+      rawCourse
+    );
+
+
+  editingCourseId =
+    id;
+
+
+  document.getElementById(
+    "courseName"
+  ).value =
+    course.name || "";
+
+
+  document.getElementById(
+    "durationValue"
+  ).value =
+    course.durationValue ||
+    extractDurationNumber(
+      course.duration
+    );
+
+
+  document.getElementById(
+    "durationUnit"
+  ).value =
+    course.durationUnit ||
+    extractDurationUnit(
+      course.duration
+    );
+
+
+  document.getElementById(
+    "regularPrice"
+  ).value =
+    course.regularPrice || 0;
+
+
+  document.getElementById(
+    "offerPrice"
+  ).value =
+    course.offerPrice || "";
+
+
+  document.getElementById(
+    "courseCategory"
+  ).value =
+    course.category || "";
+
+
+  document.getElementById(
+    "courseModeInput"
+  ).value =
+    course.mode || "Offline";
+
+
+  document.getElementById(
+    "courseDescription"
+  ).value =
+    course.description || "";
+
+
+  document.getElementById(
+    "courseFormTitle"
+  ).textContent =
+    "Edit Course";
+
+
+  saveCourseBtn.textContent =
+    "Update Course";
+
+
+  document.getElementById(
+    "cancelEditBtn"
+  ).style.display =
+    "block";
+
+
+  document.querySelector(
+    '[data-tab="courseTab"]'
+  ).click();
+
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+
+}
+
+
+/* =========================================================
+   RESET COURSE FORM
+========================================================= */
+
+function resetCourseForm(){
+
+  editingCourseId =
+    null;
+
+
+  courseForm.reset();
+
+
+  document.getElementById(
+    "durationUnit"
+  ).value =
+    "Months";
+
+
+  document.getElementById(
+    "courseModeInput"
+  ).value =
+    "Offline";
+
+
+  document.getElementById(
+    "courseFormTitle"
+  ).textContent =
+    "Add New Course";
+
+
+  saveCourseBtn.textContent =
+    "Save Course";
+
+
+  document.getElementById(
+    "cancelEditBtn"
+  ).style.display =
+    "none";
+
+}
+
+
+/* =========================================================
+   COURSE CLEAR
+========================================================= */
+
+document.getElementById(
+  "clearCourseBtn"
+).addEventListener(
+  "click",
+  resetCourseForm
+);
+
+
+document.getElementById(
+  "cancelEditBtn"
+).addEventListener(
+  "click",
+  resetCourseForm
+);
+
+
+/* =========================================================
+   DELETE MODAL
+========================================================= */
+
+function openDeleteModal(id){
+
+  deleteCourseId =
+    id;
+
+
+  document.getElementById(
+    "deleteModal"
+  ).classList.add(
+    "show"
+  );
+
+}
+
+
+function closeDeleteModal(){
+
+  deleteCourseId =
+    null;
+
+
+  document.getElementById(
+    "deleteModal"
+  ).classList.remove(
+    "show"
+  );
+
+}
+
+
+document.getElementById(
+  "cancelDeleteBtn"
+).addEventListener(
+  "click",
+  closeDeleteModal
+);
+
+
+document.getElementById(
+  "confirmDeleteBtn"
+).addEventListener(
+  "click",
+  async () => {
+
+    if(
+      !deleteCourseId ||
+      !checkFirebase()
+    ){
+
+      closeDeleteModal();
+
+      return;
+
+    }
+
+
+    const id =
+      deleteCourseId;
+
+
+    const rawCourse =
+      courses.find(
+        c => c.id === id
+      );
+
+
+    const course =
+      rawCourse
+        ? normalizeCourse(
+            rawCourse
+          )
+        : null;
+
+
+    const button =
+      document.getElementById(
+        "confirmDeleteBtn"
+      );
+
+
+    button.disabled =
+      true;
+
+
+    button.textContent =
+      "Deleting...";
+
+
+    try{
+
+      await deleteDoc(
+        doc(
+          db,
+          "courseSettings",
+          id
+        )
+      );
+
+
+      showMessage(
+        "courseMessage",
+        `
+          ✓ <b>Course Deleted Successfully!</b><br>
+          ${escapeHtml(
+            course?.name || ""
+          )}
+          removed from Firebase.
+        `,
+        "success"
+      );
+
+
+      closeDeleteModal();
+
+
+      await loadCourses();
+
+
+    }catch(error){
+
+      console.error(
+        "COURSE DELETE ERROR:",
+        error
+      );
+
+
+      showMessage(
+        "courseMessage",
+        `
+          <b>✕ Course was NOT deleted.</b><br>
+          ${firebaseErrorMessage(error)}
+        `,
+        "error"
+      );
+
+    }finally{
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Delete Course";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   LOAD INQUIRIES
+========================================================= */
+
+async function loadInquiries(){
+
+  if(!checkFirebase()) return;
+
+
+  try{
+
+    const snapshot =
+      await getDocs(
+        collection(
+          db,
+          "studentInquiries"
+        )
+      );
+
+
+    inquiries = [];
+
+
+    snapshot.forEach(
+      item => {
+
+        inquiries.push({
+          id:item.id,
+          ...item.data()
+        });
+
+      }
+    );
+
+
+    inquiries.sort(
+      (a,b) =>
+        getTime(
+          b.createdAt
+        ) -
+        getTime(
+          a.createdAt
+        )
+    );
+
+
+    renderSentData();
+
+
+  }catch(error){
+
+    console.error(
+      "INQUIRY LOAD ERROR:",
+      error
+    );
+
+
+    sentList.innerHTML = `
+      <div class="empty-sent">
+        Could not load sent data.
+      </div>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   SEND INQUIRY
+========================================================= */
+
+inquiryForm.addEventListener(
+  "submit",
+  sendInquiry
+);
+
+
+async function sendInquiry(
+  event
+){
+
+  event.preventDefault();
+
+
+  if(!checkFirebase()) return;
+
+
+  const mobile =
+    document.getElementById(
+      "studentMobile"
+    ).value.trim();
+
+
+  const studentName =
+    document.getElementById(
+      "studentName"
+    ).value.trim();
+
+
+  const courseId =
+    courseSelect.value;
+
+
+  const remark =
+    document.getElementById(
+      "inquiryRemark"
+    ).value.trim();
+
+
+  if(
+    !/^[6-9]\d{9}$/.test(
+      mobile
+    )
+  ){
+
+    showMessage(
+      "inquiryMessage",
+      "Please enter a valid 10 digit Indian mobile number.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if(!studentName){
+
+    showMessage(
+      "inquiryMessage",
+      "Please enter student name.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if(!courseId){
+
+    showMessage(
+      "inquiryMessage",
+      "Please select a course.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const rawCourse =
+    courses.find(
+      c => c.id === courseId
+    );
+
+
+  if(!rawCourse){
+
+    showMessage(
+      "inquiryMessage",
+      "Selected course was not found. Please refresh the page.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const course =
+    normalizeCourse(
+      rawCourse
+    );
+
+
+  const inquiryData = {
+
+    studentName:
+      studentName,
+
+    mobile:
+      mobile,
+
+    course:
+      course.name,
+
+    courseId:
+      courseId,
+
+    coursePrice:
+      course.payablePrice,
+
+    regularPrice:
+      course.regularPrice,
+
+    offerPrice:
+      course.offerPrice,
+
+    courseDuration:
+      course.duration,
+
+    durationValue:
+      course.durationValue || "",
+
+    durationUnit:
+      course.durationUnit || "",
+
+    courseCategory:
+      course.category || "",
+
+    courseMode:
+      course.mode || "",
+
+    remark:
+      remark,
+
+    source:
+      "Coordinator",
+
+    coordinatorName:
+      coordinatorName,
+
+    coordinatorMobile:
+      coordinatorMobile,
+
+    status:
+      "new",
+
+    telecallerStatus:
+      "pending",
+
+    telecallerRemark:
+      "",
+
+    telecallerName:
+      "",
+
+    telecallerMobile:
+      "",
+
+    followUpDate:
+      "",
+
+    demoClassDate:
+      "",
+
+    demoClassAmount:
+      0,
+
+    sentToTelecaller:
+      true,
+
+    sentToTelecallerAt:
+      new Date().toISOString(),
+
+    createdAt:
+      serverTimestamp(),
+
+    updatedAt:
+      serverTimestamp()
+
+  };
+
+
+  const oldText =
+    sendInquiryBtn.textContent;
+
+
+  sendInquiryBtn.disabled =
+    true;
+
+
+  sendInquiryBtn.textContent =
+    "Saving to Firebase...";
+
+
+  try{
+
+    /*
+      ACTUAL FIREBASE WRITE
+    */
+
+    const savedDoc =
+      await addDoc(
+        collection(
+          db,
+          "studentInquiries"
+        ),
+        inquiryData
+      );
+
+
+    console.log(
+      "INQUIRY SAVED SUCCESSFULLY"
+    );
+
+    console.log(
+      "Firebase Document ID:",
+      savedDoc.id
+    );
+
+
+    /*
+      SUCCESS ONLY AFTER FIREBASE SAVES
+    */
+
+    showMessage(
+      "inquiryMessage",
+      `
+        ✓ <b>Saved Successfully!</b><br>
+        ${escapeHtml(studentName)}
+        has been saved to Firebase and sent to Telecaller.
+        <br>
+        <span style="font-size:9px">
+          Firebase ID: ${escapeHtml(savedDoc.id)}
+        </span>
+      `,
+      "success"
+    );
+
+
+    inquiryForm.reset();
+
+
+    resetInquiryDisplay();
+
+
+    await loadInquiries();
+
+
+  }catch(error){
+
+    console.error(
+      "INQUIRY SAVE ERROR:",
       error
     );
 
 
     showMessage(
       "inquiryMessage",
-      getFirebaseError(error),
+      `
+        <b>✕ Data was NOT saved.</b><br>
+        ${firebaseErrorMessage(error)}
+      `,
       "error"
     );
 
 
-    return false;
+  }finally{
+
+    sendInquiryBtn.disabled =
+      false;
+
+
+    sendInquiryBtn.textContent =
+      oldText;
 
   }
 
 }
 
 
-/* =========================================
-   START
-========================================= */
+/* =========================================================
+   RESET INQUIRY DISPLAY
+========================================================= */
+
+function resetInquiryDisplay(){
+
+  courseDuration.value =
+    "";
+
+  courseMode.value =
+    "";
+
+  regularPriceDisplay.textContent =
+    "₹0";
+
+  offerPriceDisplay.textContent =
+    "No Offer";
+
+  payablePriceDisplay.textContent =
+    "₹0";
+
+  document.getElementById(
+    "lookupStatus"
+  ).textContent =
+    "";
+
+}
+
+
+/* =========================================================
+   CLEAR INQUIRY
+========================================================= */
+
+document.getElementById(
+  "clearInquiryBtn"
+).addEventListener(
+  "click",
+  () => {
+
+    inquiryForm.reset();
+
+    resetInquiryDisplay();
+
+  }
+);
+
+
+/* =========================================================
+   MOBILE LOOKUP
+========================================================= */
+
+document.getElementById(
+  "studentMobile"
+).addEventListener(
+  "input",
+  function(){
+
+    const mobile =
+      this.value
+        .replace(/\D/g,"")
+        .slice(0,10);
+
+
+    this.value =
+      mobile;
+
+
+    const status =
+      document.getElementById(
+        "lookupStatus"
+      );
+
+
+    if(
+      mobile.length < 10
+    ){
+
+      status.textContent =
+        "";
+
+      return;
+
+    }
+
+
+    const existing =
+      inquiries.find(
+        item =>
+          normalizeMobile(
+            item.mobile
+          ) === mobile
+      );
+
+
+    if(existing){
+
+      status.textContent =
+        "Existing";
+
+      status.style.color =
+        "#2563eb";
+
+
+      const nameInput =
+        document.getElementById(
+          "studentName"
+        );
+
+
+      if(!nameInput.value){
+
+        nameInput.value =
+          existing.studentName ||
+          "";
+
+      }
+
+
+    }else{
+
+      status.textContent =
+        "New Lead";
+
+      status.style.color =
+        "#16a34a";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   SENT DATA
+========================================================= */
+
+function renderSentData(){
+
+  let data =
+    inquiries.filter(
+      item =>
+        normalizeMobile(
+          item.coordinatorMobile
+        ) ===
+        normalizeMobile(
+          coordinatorMobile
+        )
+    );
+
+
+  if(!coordinatorMobile){
+
+    data =
+      inquiries.filter(
+        item =>
+          item.source ===
+          "Coordinator"
+      );
+
+  }
+
+
+  if(!data.length){
+
+    sentList.innerHTML = `
+      <div class="empty-sent">
+        No sent inquiry yet.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  sentList.innerHTML =
+    "";
+
+
+  data.forEach(
+    item => {
+
+      const div =
+        document.createElement(
+          "div"
+        );
+
+
+      div.className =
+        "sent-item";
+
+
+      const status =
+        item.telecallerStatus ||
+        item.status ||
+        "pending";
+
+
+      const badgeClass =
+        getStatusClass(
+          status
+        );
+
+
+      const statusText =
+        formatStatus(
+          status
+        );
+
+
+      div.innerHTML = `
+
+        <div class="sent-top">
+
+          <div>
+
+            <div class="sent-name">
+              ${escapeHtml(
+                item.studentName ||
+                "Unknown Student"
+              )}
+            </div>
+
+            <div class="sent-mobile">
+              ${escapeHtml(
+                item.mobile ||
+                "No mobile"
+              )}
+            </div>
+
+            <div class="sent-course">
+              ${escapeHtml(
+                item.course ||
+                "Course not specified"
+              )}
+
+              ${
+                item.courseDuration
+                  ? " • " +
+                    escapeHtml(
+                      item.courseDuration
+                    )
+                  : ""
+              }
+
+            </div>
+
+          </div>
+
+
+          <span
+            class="badge ${badgeClass}"
+          >
+            ${escapeHtml(
+              statusText
+            )}
+          </span>
+
+        </div>
+
+
+        <div class="sent-bottom">
+
+          <span class="sent-time">
+            ${formatDate(
+              item.createdAt ||
+              item.sentToTelecallerAt
+            )}
+          </span>
+
+          <span
+            style="
+              font-size:8px;
+              color:#94a3b8
+            "
+          >
+            ${
+              item.sentToTelecaller
+                ? "✓ Sent to Telecaller"
+                : "Saved"
+            }
+          </span>
+
+        </div>
+
+      `;
+
+
+      sentList.appendChild(
+        div
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+document.getElementById(
+  "refreshSentBtn"
+).addEventListener(
+  "click",
+  async function(){
+
+    this.disabled =
+      true;
+
+    this.textContent =
+      "Loading...";
+
+
+    await loadInquiries();
+
+
+    this.disabled =
+      false;
+
+    this.textContent =
+      "↻ Refresh";
+
+  }
+);
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+document.querySelectorAll(
+  ".tab-btn"
+).forEach(
+  button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        document.querySelectorAll(
+          ".tab-btn"
+        ).forEach(
+          btn =>
+            btn.classList.remove(
+              "active"
+            )
+        );
+
+
+        document.querySelectorAll(
+          ".tab-panel"
+        ).forEach(
+          panel =>
+            panel.classList.remove(
+              "active"
+            )
+        );
+
+
+        button.classList.add(
+          "active"
+        );
+
+
+        document.getElementById(
+          button.dataset.tab
+        ).classList.add(
+          "active"
+        );
+
+      }
+    );
+
+  }
+);
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+document.getElementById(
+  "logoutBtn"
+).addEventListener(
+  "click",
+  () => {
+
+    sessionStorage.removeItem(
+      "bt_logged_in"
+    );
+
+    sessionStorage.removeItem(
+      "bt_user_role"
+    );
+
+    sessionStorage.removeItem(
+      "bt_user_name"
+    );
+
+    sessionStorage.removeItem(
+      "bt_user_mobile"
+    );
+
+
+    window.location.replace(
+      "login.html"
+    );
+
+  }
+);
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function formatNumber(
+  value
+){
+
+  return Number(
+    value || 0
+  ).toLocaleString(
+    "en-IN"
+  );
+
+}
+
+
+function normalizeMobile(
+  value
+){
+
+  return String(
+    value || ""
+  )
+  .replace(/\D/g,"")
+  .slice(-10);
+
+}
+
+
+function escapeHtml(
+  value
+){
+
+  return String(
+    value ?? ""
+  )
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;");
+
+}
+
+
+function getTime(
+  value
+){
+
+  if(!value){
+    return 0;
+  }
+
+
+  if(
+    typeof value === "object" &&
+    typeof value.toMillis === "function"
+  ){
+
+    return value.toMillis();
+
+  }
+
+
+  if(
+    typeof value === "object" &&
+    value.seconds
+  ){
+
+    return value.seconds * 1000;
+
+  }
+
+
+  const time =
+    new Date(
+      value
+    ).getTime();
+
+
+  return Number.isNaN(time)
+    ? 0
+    : time;
+
+}
+
+
+function formatDate(
+  value
+){
+
+  const time =
+    getTime(value);
+
+
+  if(!time){
+    return "Just now";
+  }
+
+
+  return new Date(
+    time
+  ).toLocaleString(
+    "en-IN",
+    {
+      day:"2-digit",
+      month:"short",
+      year:"numeric",
+      hour:"2-digit",
+      minute:"2-digit"
+    }
+  );
+
+}
+
+
+function formatStatus(
+  status
+){
+
+  return String(
+    status || ""
+  )
+  .replace(/[-_]/g," ")
+  .replace(
+    /\b\w/g,
+    letter =>
+      letter.toUpperCase()
+  );
+
+}
+
+
+function getStatusClass(
+  status
+){
+
+  const value =
+    String(
+      status || ""
+    ).toLowerCase();
+
+
+  if(
+    value.includes("convert") ||
+    value.includes("success") ||
+    value.includes("admitted")
+  ){
+
+    return "success";
+
+  }
+
+
+  if(
+    value.includes("follow") ||
+    value.includes("demo")
+  ){
+
+    return "blue";
+
+  }
+
+
+  if(
+    value.includes("pending") ||
+    value.includes("new")
+  ){
+
+    return "pending";
+
+  }
+
+
+  return "gray";
+
+}
+
+
+function extractDurationNumber(
+  duration
+){
+
+  if(!duration){
+    return "";
+  }
+
+
+  const match =
+    String(
+      duration
+    ).match(
+      /\d+/
+    );
+
+
+  return match
+    ? match[0]
+    : "";
+
+}
+
+
+function extractDurationUnit(
+  duration
+){
+
+  if(!duration){
+    return "Months";
+  }
+
+
+  const value =
+    String(
+      duration
+    ).toLowerCase();
+
+
+  if(
+    value.includes("week")
+  ){
+
+    return "Weeks";
+
+  }
+
+
+  if(
+    value.includes("day")
+  ){
+
+    return "Days";
+
+  }
+
+
+  return "Months";
+
+}
+
+
+/* =========================================================
+   START APPLICATION
+========================================================= */
 
 initFirebase();
 
-
 </script>
+
+</body>
+</html>
