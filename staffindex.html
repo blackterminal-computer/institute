@@ -4126,4 +4126,3935 @@ function applyPunchControlUI(){
 
     const track =
         document.getElementById(
-            
+            "sl-track"
+        );
+
+
+    const handle =
+        document.getElementById(
+            "sl-handle"
+        );
+
+
+    const text =
+        document.getElementById(
+            "sl-text"
+        );
+
+
+    const icon =
+        document.getElementById(
+            "sl-icon"
+        );
+
+
+    const message =
+        document.getElementById(
+            "punch-control-message"
+        );
+
+
+    const messageText =
+        document.getElementById(
+            "punch-control-text"
+        );
+
+
+    if(
+        !track ||
+        !handle ||
+        !text ||
+        !icon ||
+        !message
+    ){
+
+        updateTaskLockUI();
+
+        return;
+
+    }
+
+
+    /*
+     * ADMIN DISABLED
+     */
+
+    if(
+        punchEnabled === false
+    ){
+
+        track.classList.add(
+            "disabled"
+        );
+
+
+        handle.classList.add(
+            "disabled"
+        );
+
+
+        handle.style.pointerEvents =
+            "none";
+
+
+        handle.style.transform =
+            "translateX(0px)";
+
+
+        track.classList.remove(
+            "success-state"
+        );
+
+
+        handle.style.background =
+            "";
+
+
+        handle.style.borderColor =
+            "";
+
+
+        icon.className =
+            "fas fa-lock";
+
+
+        icon.style.color =
+            "var(--red)";
+
+
+        text.innerText =
+            "PUNCH IN DISABLED BY ADMIN";
+
+
+        text.style.color =
+            "var(--red)";
+
+
+        text.style.opacity =
+            "1";
+
+
+        messageText.innerText =
+            "Admin has temporarily disabled your punch-in access.";
+
+
+        message.classList.add(
+            "show"
+        );
+
+
+        updateTaskLockUI();
+
+
+        return;
+
+    }
+
+
+    /*
+     * ADMIN ENABLED
+     */
+
+    track.classList.remove(
+        "disabled"
+    );
+
+
+    handle.classList.remove(
+        "disabled"
+    );
+
+
+    message.classList.remove(
+        "show"
+    );
+
+
+    if(
+        isAttendanceMarkedToday
+    ){
+
+        const maxScroll =
+            track.clientWidth -
+            handle.clientWidth -
+            10;
+
+
+        track.classList.add(
+            "success-state"
+        );
+
+
+        handle.style.background =
+            "var(--green)";
+
+
+        handle.style.borderColor =
+            "transparent";
+
+
+        handle.style.transform =
+            `translateX(${Math.max(
+                maxScroll,
+                0
+            )}px)`;
+
+
+        handle.style.pointerEvents =
+            "none";
+
+
+        text.innerText =
+            "PUNCHED PRESENT";
+
+
+        text.style.color =
+            "var(--green)";
+
+
+        text.style.opacity =
+            "1";
+
+
+        icon.className =
+            "fas fa-check-circle";
+
+
+        icon.style.color =
+            "#fff";
+
+    }
+
+    else{
+
+        track.classList.remove(
+            "success-state"
+        );
+
+
+        handle.style.background =
+            "";
+
+
+        handle.style.borderColor =
+            "";
+
+
+        handle.style.pointerEvents =
+            "auto";
+
+
+        handle.style.transform =
+            "translateX(0px)";
+
+
+        text.innerText =
+            "SLIDE TO PUNCH IN";
+
+
+        text.style.color =
+            "#A8A8AE";
+
+
+        text.style.opacity =
+            "1";
+
+
+        icon.className =
+            "fas fa-fingerprint";
+
+
+        icon.style.color =
+            "var(--blue)";
+
+    }
+
+
+    updateTaskLockUI();
+
+}
+
+
+/* =========================================================
+   STAFF DATA REALTIME
+========================================================= */
+
+function listenStaffData(){
+
+    if(
+        staffListenerStarted
+    ){
+
+        return;
+
+    }
+
+
+    staffListenerStarted =
+        true;
+
+
+    db.ref(
+        `staff/${staffId}`
+    )
+    .on(
+        "value",
+        snapshot=>{
+
+            if(
+                !snapshot.exists()
+            ){
+
+                alert(
+                    "Staff profile not found."
+                );
+
+
+                return;
+
+            }
+
+
+            const value =
+                snapshot.val() || {};
+
+
+            /*
+             * ADMIN PUNCH CONTROL
+             */
+
+            punchEnabled =
+                value.punchEnabled !== false;
+
+
+            /*
+             * DAILY WAGE
+             */
+
+            currentDailyWage =
+                Number(
+                    value.perDayWage || 0
+                );
+
+
+            if(
+                !isFinite(
+                    currentDailyWage
+                )
+                ||
+                currentDailyWage < 0
+            ){
+
+                currentDailyWage =
+                    0;
+
+            }
+
+
+            /*
+             * SALARY
+             */
+
+            currentSalaryBalance =
+                Number(
+                    value.salary || 0
+                );
+
+
+            if(
+                !isFinite(
+                    currentSalaryBalance
+                )
+                ||
+                currentSalaryBalance < 0
+            ){
+
+                currentSalaryBalance =
+                    0;
+
+            }
+
+
+            document.getElementById(
+                "daily-rate"
+            ).innerText =
+                `₹${formatMoney(
+                    currentDailyWage
+                )}`;
+
+
+            document.getElementById(
+                "total-earning"
+            ).innerText =
+                `₹${formatMoney(
+                    currentSalaryBalance
+                )}`;
+
+
+            document.getElementById(
+                "activity-current-balance"
+            ).innerText =
+                `₹${formatMoney(
+                    currentSalaryBalance
+                )}`;
+
+
+            document.getElementById(
+                "streak-val"
+            ).innerText =
+                Number(
+                    value.streak || 0
+                );
+
+
+            /*
+             * SALARY PROGRESS
+             */
+
+            const target =
+                currentDailyWage * 25;
+
+
+            const percent =
+                target > 0
+                ?
+                Math.min(
+                    (
+                        currentSalaryBalance /
+                        target
+                    ) * 100,
+                    100
+                )
+                :
+                0;
+
+
+            document.getElementById(
+                "salary-progress"
+            ).style.width =
+                percent + "%";
+
+
+            /*
+             * PUNCH CONTROL
+             *
+             * This immediately locks/unlocks
+             * the punch slider AND tasks.
+             */
+
+            applyPunchControlUI();
+
+
+            updatePayoutButton();
+
+        },
+        error=>{
+
+            console.error(
+                "Staff data error:",
+                error
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SLIDER
+========================================================= */
+
+function initSlider(){
+
+    const handle =
+        document.getElementById(
+            "sl-handle"
+        );
+
+
+    const track =
+        document.getElementById(
+            "sl-track"
+        );
+
+
+    const text =
+        document.getElementById(
+            "sl-text"
+        );
+
+
+    let dragging =
+        false;
+
+
+    let startX =
+        0;
+
+
+    let maxScroll =
+        0;
+
+
+    function updateMax(){
+
+        maxScroll =
+            track.clientWidth -
+            handle.clientWidth -
+            10;
+
+
+        if(
+            maxScroll < 0
+        ){
+
+            maxScroll =
+                0;
+
+        }
+
+    }
+
+
+    updateMax();
+
+
+    window.addEventListener(
+        "resize",
+        updateMax
+    );
+
+
+    function getX(e){
+
+        if(
+            e.type === "touchstart" ||
+            e.type === "touchmove"
+        ){
+
+            return e.touches[0].clientX;
+
+        }
+
+
+        return e.clientX;
+
+    }
+
+
+    function startDrag(e){
+
+        if(
+            punchEnabled === false
+        ){
+
+            showToast(
+                "Punch-in is disabled by Admin."
+            );
+
+
+            return;
+
+        }
+
+
+        if(
+            isAttendanceMarkedToday
+        ){
+
+            return;
+
+        }
+
+
+        updateMax();
+
+
+        dragging =
+            true;
+
+
+        startX =
+            getX(e);
+
+
+        handle.style.transition =
+            "none";
+
+    }
+
+
+    function moveDrag(e){
+
+        if(!dragging){
+
+            return;
+
+        }
+
+
+        if(
+            punchEnabled === false
+        ){
+
+            dragging =
+                false;
+
+
+            resetSliderUI();
+
+
+            updateTaskLockUI();
+
+
+            return;
+
+        }
+
+
+        e.preventDefault();
+
+
+        let delta =
+            getX(e) -
+            startX;
+
+
+        if(
+            delta < 0
+        ){
+
+            delta =
+                0;
+
+        }
+
+
+        if(
+            delta > maxScroll
+        ){
+
+            delta =
+                maxScroll;
+
+        }
+
+
+        handle.style.transform =
+            `translateX(${delta}px)`;
+
+
+        const ratio =
+            maxScroll === 0
+            ?
+            0
+            :
+            delta/maxScroll;
+
+
+        text.style.opacity =
+            1-ratio;
+
+    }
+
+
+    function endDrag(){
+
+        if(!dragging){
+
+            return;
+
+        }
+
+
+        dragging =
+            false;
+
+
+        if(
+            punchEnabled === false
+        ){
+
+            resetSliderUI();
+
+
+            showToast(
+                "Punch-in was disabled by Admin."
+            );
+
+
+            return;
+
+        }
+
+
+        const matrix =
+            new DOMMatrix(
+                getComputedStyle(
+                    handle
+                ).transform
+            );
+
+
+        const finalX =
+            matrix.m41;
+
+
+        if(
+            finalX >=
+            maxScroll*.90
+        ){
+
+            handle.style.transition =
+                "all .2s ease";
+
+
+            handle.style.transform =
+                `translateX(${maxScroll}px)`;
+
+
+            text.innerText =
+                "LOCATING GPS...";
+
+
+            text.style.opacity =
+                "1";
+
+
+            document.getElementById(
+                "sl-icon"
+            ).className =
+                "fas fa-spinner fa-spin";
+
+
+            handle.style.pointerEvents =
+                "none";
+
+
+            markAttendance();
+
+        }
+        else{
+
+            handle.style.transition =
+                "all .3s cubic-bezier(.16,1,.3,1)";
+
+
+            handle.style.transform =
+                "translateX(0px)";
+
+
+            text.style.opacity =
+                "1";
+
+        }
+
+    }
+
+
+    handle.addEventListener(
+        "mousedown",
+        startDrag
+    );
+
+
+    window.addEventListener(
+        "mousemove",
+        moveDrag
+    );
+
+
+    window.addEventListener(
+        "mouseup",
+        endDrag
+    );
+
+
+    handle.addEventListener(
+        "touchstart",
+        startDrag,
+        {
+            passive:false
+        }
+    );
+
+
+    window.addEventListener(
+        "touchmove",
+        moveDrag,
+        {
+            passive:false
+        }
+    );
+
+
+    window.addEventListener(
+        "touchend",
+        endDrag
+    );
+
+}
+
+
+/* =========================================================
+   DISTANCE
+========================================================= */
+
+function calculateDistance(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+){
+
+    const R =
+        6371e3;
+
+
+    const p1 =
+        lat1*Math.PI/180;
+
+
+    const p2 =
+        lat2*Math.PI/180;
+
+
+    const dp =
+        (lat2-lat1)*
+        Math.PI/180;
+
+
+    const dl =
+        (lon2-lon1)*
+        Math.PI/180;
+
+
+    const a =
+        Math.sin(dp/2)*
+        Math.sin(dp/2)
+        +
+        Math.cos(p1)*
+        Math.cos(p2)*
+        Math.sin(dl/2)*
+        Math.sin(dl/2);
+
+
+    return R*
+        (
+            2*
+            Math.atan2(
+                Math.sqrt(a),
+                Math.sqrt(1-a)
+            )
+        );
+
+}
+
+
+/* =========================================================
+   PUNCH IN
+========================================================= */
+
+function markAttendance(){
+
+    /*
+     * FIRST SECURITY CHECK
+     */
+
+    db.ref(
+        `staff/${staffId}/punchEnabled`
+    )
+    .once(
+        "value"
+    )
+    .then(
+        punchSnap=>{
+
+            const allowed =
+                punchSnap.exists()
+                ?
+                punchSnap.val() !== false
+                :
+                true;
+
+
+            if(
+                !allowed
+            ){
+
+                punchEnabled =
+                    false;
+
+
+                applyPunchControlUI();
+
+
+                resetSliderUI();
+
+
+                throw new Error(
+                    "Punch-in has been disabled by Admin."
+                );
+
+            }
+
+
+            return continuePunchWithGPS();
+
+        }
+    )
+    .catch(
+        error=>{
+
+            console.error(
+                "Punch control:",
+                error
+            );
+
+
+            if(
+                error.message ===
+                "Punch-in has been disabled by Admin."
+            ){
+
+                showToast(
+                    "Punch-in is disabled by Admin."
+                );
+
+            }
+            else{
+
+                alert(
+                    error.message
+                );
+
+            }
+
+
+            resetSliderUI();
+
+
+            updateTaskLockUI();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   CONTINUE PUNCH WITH GPS
+========================================================= */
+
+function continuePunchWithGPS(){
+
+    if(
+        !navigator.geolocation
+    ){
+
+        alert(
+            "GPS is not supported on this device."
+        );
+
+
+        resetSliderUI();
+
+
+        return;
+
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        position=>{
+
+            /*
+             * SECOND SECURITY CHECK
+             */
+
+            db.ref(
+                `staff/${staffId}/punchEnabled`
+            )
+            .once(
+                "value"
+            )
+            .then(
+                punchSnap=>{
+
+                    const allowed =
+                        punchSnap.exists()
+                        ?
+                        punchSnap.val() !== false
+                        :
+                        true;
+
+
+                    if(
+                        !allowed
+                    ){
+
+                        punchEnabled =
+                            false;
+
+
+                        applyPunchControlUI();
+
+
+                        resetSliderUI();
+
+
+                        throw new Error(
+                            "Punch-in was disabled by Admin."
+                        );
+
+                    }
+
+
+                    const distance =
+                        calculateDistance(
+                            position.coords.latitude,
+                            position.coords.longitude,
+                            21.9403651,
+                            86.7376570
+                        );
+
+
+                    if(
+                        distance > 100
+                    ){
+
+                        alert(
+                            `You are ${Math.round(distance)} meters away from the center. Attendance requires you to be within 100 meters.`
+                        );
+
+
+                        resetSliderUI();
+
+
+                        return;
+
+                    }
+
+
+                    const today =
+                        getLocalDate();
+
+
+                    const now =
+                        new Date();
+
+
+                    const punchTime =
+                        formatTime(now);
+
+
+                    const attendanceData = {
+
+                        time:
+                            punchTime,
+
+                        punchInTime:
+                            punchTime,
+
+                        timestamp:
+                            Date.now(),
+
+                        status:
+                            "Present",
+
+                        name:
+                            staffName,
+
+                        date:
+                            today,
+
+                        month:
+                            getMonthKey()
+
+                    };
+
+
+                    return db.ref(
+                        `attendance/${staffId}/${today}`
+                    )
+                    .set(
+                        attendanceData
+                    )
+                    .then(()=>{
+
+                        return db.ref(
+                            `staff/${staffId}`
+                        ).transaction(
+                            staff=>{
+
+                                if(staff){
+
+                                    const lastPunch =
+                                        staff.lastPunchDate;
+
+
+                                    if(
+                                        lastPunch !==
+                                        today
+                                    ){
+
+                                        staff.streak =
+                                            Number(
+                                                staff.streak ||
+                                                0
+                                            )
+                                            +
+                                            1;
+
+
+                                        staff.lastPunchDate =
+                                            today;
+
+                                    }
+
+                                }
+
+
+                                return staff;
+
+                            }
+                        );
+
+                    })
+                    .then(()=>{
+
+                        isAttendanceMarkedToday =
+                            true;
+
+
+                        applyPunchControlUI();
+
+
+                        updateTaskLockUI();
+
+
+                        showToast(
+                            `Punch-in recorded at ${punchTime}`
+                        );
+
+
+                        setTimeout(
+                            ()=>{
+
+                                location.reload();
+
+                            },
+                            900
+                        );
+
+                    });
+
+                }
+            )
+            .catch(
+                error=>{
+
+                    console.error(
+                        "Punch save:",
+                        error
+                    );
+
+
+                    if(
+                        error.message ===
+                        "Punch-in was disabled by Admin."
+                    ){
+
+                        showToast(
+                            "Punch-in was disabled by Admin."
+                        );
+
+                    }
+                    else{
+
+                        alert(
+                            error.message
+                        );
+
+                    }
+
+
+                    resetSliderUI();
+
+
+                    updateTaskLockUI();
+
+                }
+            );
+
+        },
+
+        error=>{
+
+            let message =
+                "Unable to get GPS location.";
+
+
+            if(
+                error.code ===
+                error.PERMISSION_DENIED
+            ){
+
+                message =
+                    "GPS permission denied. Please allow location access.";
+
+            }
+
+
+            if(
+                error.code ===
+                error.POSITION_UNAVAILABLE
+            ){
+
+                message =
+                    "GPS location unavailable.";
+
+            }
+
+
+            alert(
+                message
+            );
+
+
+            resetSliderUI();
+
+        },
+
+        {
+            enableHighAccuracy:true,
+            timeout:15000,
+            maximumAge:0
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   RESET SLIDER
+========================================================= */
+
+function resetSliderUI(){
+
+    const handle =
+        document.getElementById(
+            "sl-handle"
+        );
+
+
+    const text =
+        document.getElementById(
+            "sl-text"
+        );
+
+
+    const icon =
+        document.getElementById(
+            "sl-icon"
+        );
+
+
+    handle.style.transition =
+        "all .3s cubic-bezier(.16,1,.3,1)";
+
+
+    handle.style.transform =
+        "translateX(0px)";
+
+
+    if(
+        punchEnabled === false
+    ){
+
+        handle.style.pointerEvents =
+            "none";
+
+
+        text.innerText =
+            "PUNCH IN DISABLED BY ADMIN";
+
+
+        text.style.color =
+            "var(--red)";
+
+
+        icon.className =
+            "fas fa-lock";
+
+
+        icon.style.color =
+            "var(--red)";
+
+
+        updateTaskLockUI();
+
+
+        return;
+
+    }
+
+
+    if(
+        isAttendanceMarkedToday
+    ){
+
+        applyPunchControlUI();
+
+        updateTaskLockUI();
+
+        return;
+
+    }
+
+
+    handle.style.pointerEvents =
+        "auto";
+
+
+    text.innerText =
+        "SLIDE TO PUNCH IN";
+
+
+    text.style.opacity =
+        "1";
+
+
+    icon.className =
+        "fas fa-fingerprint";
+
+
+    icon.style.color =
+        "var(--blue)";
+
+
+    updateTaskLockUI();
+
+}
+
+
+/* =========================================================
+   TODAY ATTENDANCE
+========================================================= */
+
+function loadTodayAttendance(){
+
+    const today =
+        getLocalDate();
+
+
+    db.ref(
+        `attendance/${staffId}/${today}`
+    )
+    .once(
+        "value",
+        snap=>{
+
+            if(
+                !snap.exists()
+            ){
+
+                isAttendanceMarkedToday =
+                    false;
+
+
+                applyPunchControlUI();
+
+
+                updateTaskLockUI();
+
+
+                return;
+
+            }
+
+
+            isAttendanceMarkedToday =
+                true;
+
+
+            applyPunchControlUI();
+
+
+            updateTaskLockUI();
+
+        },
+        error=>{
+
+            console.error(
+                "Attendance check:",
+                error
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+function toggleHistory(){
+
+    const body =
+        document.getElementById(
+            "history-body"
+        );
+
+
+    const arrow =
+        document.getElementById(
+            "history-arrow"
+        );
+
+
+    body.classList.toggle(
+        "open"
+    );
+
+
+    arrow.classList.toggle(
+        "open"
+    );
+
+
+    if(
+        body.classList.contains(
+            "open"
+        )
+        &&
+        !historyLoaded
+    ){
+
+        loadPunchHistory();
+
+    }
+
+}
+
+
+function loadPunchHistory(){
+
+    historyLoaded =
+        true;
+
+
+    const table =
+        document.getElementById(
+            "history-table-body"
+        );
+
+
+    const now =
+        new Date();
+
+
+    const year =
+        now.getFullYear();
+
+
+    const month =
+        now.getMonth();
+
+
+    const currentDay =
+        now.getDate();
+
+
+    db.ref(
+        `attendance/${staffId}`
+    )
+    .once(
+        "value",
+        snapshot=>{
+
+            const data =
+                snapshot.val() ||
+                {};
+
+
+            renderPunchHistory(
+                data,
+                year,
+                month,
+                currentDay
+            );
+
+        },
+        error=>{
+
+            console.error(
+                error
+            );
+
+
+            table.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="4"
+                        class="empty-history"
+                    >
+
+                        Unable to load history.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+
+    );
+
+}
+
+
+function renderPunchHistory(
+    records,
+    year,
+    month,
+    currentDay
+){
+
+    const table =
+        document.getElementById(
+            "history-table-body"
+        );
+
+
+    const today =
+        getLocalDate();
+
+
+    let presentCount =
+        0;
+
+
+    let missedCount =
+        0;
+
+
+    let html =
+        "";
+
+
+    for(
+        let day=1;
+        day<=currentDay;
+        day++
+    ){
+
+        const date =
+            formatLocalDate(
+                new Date(
+                    year,
+                    month,
+                    day
+                )
+            );
+
+
+        const record =
+            records[date];
+
+
+        const isPresent =
+            !!record;
+
+
+        if(isPresent){
+
+            presentCount++;
+
+        }
+        else{
+
+            missedCount++;
+
+        }
+
+
+        const punchTime =
+            record
+            ?
+            (
+                record.punchInTime ||
+                record.time ||
+                "--"
+            )
+            :
+            "--";
+
+
+        html += `
+
+            <tr>
+
+                <td class="history-date">
+
+                    ${formatDateOnly(date)}
+
+                </td>
+
+                <td class="history-day">
+
+                    ${getDayName(date)}
+
+                </td>
+
+                <td class="history-time">
+
+                    ${
+                        punchTime === "--"
+                        ?
+                        "--"
+                        :
+                        `
+                            <i class="far fa-clock"></i>
+
+                            ${escapeHtml(
+                                punchTime
+                            )}
+                        `
+                    }
+
+                </td>
+
+                <td>
+
+                    ${
+                        isPresent
+                        ?
+                        `
+                            <span class="present-pill">
+
+                                <i class="fas fa-check"></i>
+
+                                PRESENT
+
+                            </span>
+                        `
+                        :
+                        `
+                            <span
+                                style="
+                                    color:#666;
+                                    font-size:8px;
+                                    font-weight:800
+                                "
+                            >
+
+                                ${
+                                    date === today
+                                    ?
+                                    "NOT YET"
+                                    :
+                                    "MISSED"
+                                }
+
+                            </span>
+                        `
+                    }
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+
+    table.innerHTML =
+        html;
+
+
+    document.getElementById(
+        "history-present"
+    ).innerText =
+        presentCount;
+
+
+    document.getElementById(
+        "history-total"
+    ).innerText =
+        currentDay;
+
+
+    document.getElementById(
+        "history-missed"
+    ).innerText =
+        missedCount;
+
+}
+
+
+function formatDateOnly(
+    dateString
+){
+
+    const d =
+        new Date(
+            dateString+
+            "T00:00:00"
+        );
+
+
+    return d.toLocaleDateString(
+        "en-IN",
+        {
+            day:"2-digit",
+            month:"short"
+        }
+    );
+
+}
+
+
+function getDayName(
+    dateString
+){
+
+    const d =
+        new Date(
+            dateString+
+            "T00:00:00"
+        );
+
+
+    return d.toLocaleDateString(
+        "en-IN",
+        {
+            weekday:"short"
+        }
+    );
+
+}
+
+
+/* =========================================================
+   TASK VISIBILITY / REOPEN LOGIC
+========================================================= */
+
+function shouldReopenTask(
+    taskId,
+    task
+){
+
+    if(!task){
+
+        return false;
+
+    }
+
+
+    if(
+        task.showToStaff ===
+        false
+    ){
+
+        return false;
+
+    }
+
+
+    if(
+        task.status !==
+        "Completed"
+    ){
+
+        return false;
+
+    }
+
+
+    const completedAt =
+        Number(
+            task.completedAt ||
+            0
+        );
+
+
+    const visibilityUpdatedAt =
+        Number(
+            task.visibilityUpdatedAt ||
+            0
+        );
+
+
+    if(
+        !completedAt ||
+        !visibilityUpdatedAt
+    ){
+
+        return false;
+
+    }
+
+
+    if(
+        visibilityUpdatedAt <=
+        completedAt
+    ){
+
+        return false;
+
+    }
+
+
+    const reopenKey =
+        `${taskId}_${visibilityUpdatedAt}`;
+
+
+    if(
+        reopenProcessing[reopenKey]
+    ){
+
+        return false;
+
+    }
+
+
+    reopenProcessing[reopenKey] =
+        true;
+
+
+    return true;
+
+}
+
+
+function reopenTaskAsNew(
+    taskId,
+    visibilityUpdatedAt
+){
+
+    if(!taskId){
+
+        return;
+
+    }
+
+
+    const taskRef =
+        db.ref(
+            `tasks/${staffId}/${taskId}`
+        );
+
+
+    taskRef.transaction(
+        task=>{
+
+            if(!task){
+
+                return;
+
+            }
+
+
+            if(
+                task.showToStaff ===
+                false
+            ){
+
+                return task;
+
+            }
+
+
+            if(
+                task.status !==
+                "Completed"
+            ){
+
+                return task;
+
+            }
+
+
+            const completedAt =
+                Number(
+                    task.completedAt ||
+                    0
+                );
+
+
+            const currentVisibilityTime =
+                Number(
+                    task.visibilityUpdatedAt ||
+                    0
+                );
+
+
+            if(
+                currentVisibilityTime <=
+                completedAt
+            ){
+
+                return task;
+
+            }
+
+
+            /*
+             * Preserve evidence that this task
+             * was already paid before reopening.
+             */
+
+            if(
+                task.walletCredited === true ||
+                Number(task.amount || 0) > 0
+            ){
+
+                task.wasEverCredited =
+                    true;
+
+            }
+
+
+            task.status =
+                "Pending";
+
+
+            delete task.completedAt;
+
+            delete task.completedBy;
+
+
+            task.reopenedAt =
+                Date.now();
+
+
+            task.reopenedFor =
+                staffName;
+
+
+            task.reopenedFromVisibilityUpdate =
+                visibilityUpdatedAt;
+
+
+            return task;
+
+        },
+        (
+            error,
+            committed
+        )=>{
+
+            if(error){
+
+                console.error(
+                    "Task reopen error:",
+                    error
+                );
+
+
+                return;
+
+            }
+
+
+            if(committed){
+
+                showToast(
+                    "Assignment reopened."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   GET ADMIN TASK REWARD
+========================================================= */
+
+function getAdminTaskReward(
+    task
+){
+
+    if(!task){
+
+        return 0;
+
+    }
+
+
+    let reward =
+        Number(
+            task.rewardPerTask
+        );
+
+
+    if(
+        isFinite(reward) &&
+        reward > 0
+    ){
+
+        return reward;
+
+    }
+
+
+    reward =
+        Number(
+            task.walletReward
+        );
+
+
+    if(
+        isFinite(reward) &&
+        reward > 0
+    ){
+
+        return reward;
+
+    }
+
+
+    /*
+     * Historical completed amount
+     */
+
+    reward =
+        Number(
+            task.amount
+        );
+
+
+    if(
+        isFinite(reward) &&
+        reward > 0
+    ){
+
+        return reward;
+
+    }
+
+
+    /*
+     * Compatibility calculation
+     */
+
+    const wage =
+        Number(
+            task.dailyWage || 0
+        );
+
+
+    const total =
+        Number(
+            task.totalPriorityTasks || 0
+        );
+
+
+    if(
+        wage > 0 &&
+        total > 0
+    ){
+
+        return Number(
+            (
+                wage /
+                total
+            ).toFixed(2)
+        );
+
+    }
+
+
+    return 0;
+
+}
+
+
+/* =========================================================
+   TASKS REALTIME
+========================================================= */
+
+function listenTasks(){
+
+    if(
+        tasksListenerStarted
+    ){
+
+        return;
+
+    }
+
+
+    tasksListenerStarted =
+        true;
+
+
+    db.ref(
+        `tasks/${staffId}`
+    )
+    .on(
+        "value",
+        snapshot=>{
+
+            renderTasks(
+                snapshot
+            );
+
+        },
+        error=>{
+
+            console.error(
+                "Tasks load error:",
+                error
+            );
+
+
+            document.getElementById(
+                "task-list"
+            ).innerHTML = `
+
+                <div
+                    style="
+                        text-align:center;
+                        padding:20px 10px;
+                        color:#FF453A;
+                        font-size:11px
+                    "
+                >
+
+                    <i
+                        class="
+                            fas
+                            fa-triangle-exclamation
+                        "
+                        style="
+                            display:block;
+                            margin-bottom:8px;
+                            font-size:20px
+                        "
+                    ></i>
+
+                    Unable to load tasks.
+
+                </div>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   RENDER TASKS
+========================================================= */
+
+function renderTasks(
+    snapshot
+){
+
+    const container =
+        document.getElementById(
+            "task-list"
+        );
+
+
+    taskRewardMap =
+        {};
+
+
+    if(
+        !snapshot.exists()
+    ){
+
+        currentTaskCount =
+            0;
+
+
+        container.innerHTML = `
+
+            <div
+                style="
+                    text-align:center;
+                    padding:15px;
+                    color:#666;
+                    font-size:11px
+                "
+            >
+
+                <i
+                    class="
+                        fas
+                        fa-check-double
+                    "
+                    style="
+                        display:block;
+                        margin-bottom:7px;
+                        font-size:20px
+                    "
+                ></i>
+
+                No active tasks
+
+            </div>
+
+        `;
+
+
+        updateTaskLockUI();
+
+
+        return;
+
+    }
+
+
+    const tasks = [];
+
+
+    snapshot.forEach(
+        child=>{
+
+            const task =
+                child.val() || {};
+
+
+            const taskId =
+                child.key;
+
+
+            if(
+                task.showToStaff ===
+                false
+            ){
+
+                return;
+
+            }
+
+
+            if(
+                task.status ===
+                "Cancelled"
+            ){
+
+                return;
+
+            }
+
+
+            if(
+                shouldReopenTask(
+                    taskId,
+                    task
+                )
+            ){
+
+                reopenTaskAsNew(
+                    taskId,
+                    Number(
+                        task.visibilityUpdatedAt
+                    )
+                );
+
+            }
+
+
+            tasks.push({
+
+                id:
+                    taskId,
+
+                data:
+                    task
+
+            });
+
+        }
+    );
+
+
+    if(
+        tasks.length === 0
+    ){
+
+        currentTaskCount =
+            0;
+
+
+        container.innerHTML = `
+
+            <div
+                style="
+                    text-align:center;
+                    padding:22px 10px;
+                    color:#666;
+                    font-size:11px
+                "
+            >
+
+                <i
+                    class="
+                        fas
+                        fa-eye-slash
+                    "
+                    style="
+                        display:block;
+                        margin-bottom:8px;
+                        font-size:21px
+                    "
+                ></i>
+
+                No visible assignments
+
+            </div>
+
+        `;
+
+
+        updateTaskLockUI();
+
+
+        return;
+
+    }
+
+
+    /*
+     * Count priority tasks only.
+     *
+     * Admin reward distribution is based
+     * on priority assignments.
+     */
+
+    const priorityCount =
+        tasks.filter(
+            item=>
+                item.data.priority === true
+        ).length;
+
+
+    currentTaskCount =
+        priorityCount ||
+        tasks.length;
+
+
+    container.innerHTML =
+        "";
+
+
+    tasks.forEach(
+        item=>{
+
+            const taskId =
+                item.id;
+
+
+            const task =
+                item.data;
+
+
+            const isDone =
+                task.status ===
+                "Completed";
+
+
+            const isPriority =
+                task.priority === true;
+
+
+            const adminReward =
+                getAdminTaskReward(
+                    task
+                );
+
+
+            taskRewardMap[
+                taskId
+            ] =
+                adminReward;
+
+
+            const isCredited =
+                task.walletCredited ===
+                true ||
+                task.wasEverCredited ===
+                true;
+
+
+            const isReopened =
+                !isDone &&
+                Number(
+                    task.reopenedAt ||
+                    0
+                ) > 0;
+
+
+            const taskText =
+                escapeHtml(
+                    task.task ||
+                    "Untitled Task"
+                );
+
+
+            let dateText =
+                "--";
+
+
+            if(
+                task.date
+            ){
+
+                const taskDate =
+                    new Date(
+                        task.date
+                    );
+
+
+                if(
+                    !isNaN(
+                        taskDate.getTime()
+                    )
+                ){
+
+                    dateText =
+                        taskDate.toLocaleDateString(
+                            "en-IN"
+                        );
+
+                }
+
+            }
+
+
+            let statusText =
+                "";
+
+
+            if(isDone){
+
+                statusText =
+                    "Completed";
+
+            }
+
+            else if(isReopened){
+
+                statusText =
+                    `
+                        New Task
+
+                        <span class="reopened-label">
+
+                            <i class="fas fa-rotate-right"></i>
+
+                            REOPENED
+
+                        </span>
+                    `;
+
+            }
+
+            else{
+
+                statusText =
+                    "New Task";
+
+            }
+
+
+            const priorityHtml =
+                isPriority
+                ?
+                `
+
+                    <span class="priority-label">
+
+                        <i class="fas fa-bolt"></i>
+
+                        PRIORITY
+
+                    </span>
+
+                `
+                :
+                "";
+
+
+            const taskClass =
+                isPriority
+                ?
+                "priority"
+                :
+                "normal";
+
+
+            const dotClass =
+                isDone
+                ?
+                "completed"
+                :
+                (
+                    isPriority
+                    ?
+                    ""
+                    :
+                    "normal"
+                );
+
+
+            let rewardInfoHtml =
+                "";
+
+
+            if(isPriority){
+
+                const dailyWage =
+                    Number(
+                        task.dailyWage ||
+                        currentDailyWage ||
+                        0
+                    );
+
+
+                const totalPriorityTasks =
+                    Number(
+                        task.totalPriorityTasks ||
+                        priorityCount ||
+                        1
+                    );
+
+
+                rewardInfoHtml = `
+
+                    <div
+                        class="task-reward-info"
+                    >
+
+                        <span
+                            class="task-wage-pill"
+                        >
+
+                            <i class="fas fa-coins"></i>
+
+                            Daily ₹${formatMoney(
+                                dailyWage
+                            )}
+
+                        </span>
+
+
+                        <span
+                            class="task-wage-pill"
+                        >
+
+                            <i class="fas fa-list-ol"></i>
+
+                            ${totalPriorityTasks}
+                            Tasks
+
+                        </span>
+
+
+                        <span
+                            class="task-per-task-pill"
+                        >
+
+                            <i class="fas fa-divide"></i>
+
+                            ₹${formatMoney(
+                                adminReward
+                            )}
+                            / Task
+
+                        </span>
+
+
+                        ${
+                            isCredited
+                            ?
+
+                            `
+                                <span
+                                    class="
+                                        task-wallet-pill
+                                        credited
+                                    "
+                                >
+
+                                    <i
+                                        class="
+                                            fas
+                                            fa-wallet
+                                        "
+                                    ></i>
+
+                                    CREDITED
+
+                                </span>
+                            `
+
+                            :
+
+                            `
+                                <span
+                                    class="
+                                        task-wallet-pill
+                                    "
+                                >
+
+                                    <i
+                                        class="
+                                            fas
+                                            fa-clock
+                                        "
+                                    ></i>
+
+                                    ON COMPLETION
+
+                                </span>
+                            `
+                        }
+
+                    </div>
+
+                `;
+
+            }
+
+
+            container.innerHTML += `
+
+                <div
+                    class="
+                        task-item
+                        ${taskClass}
+                        ${
+                            isReopened
+                            ?
+                            "reopened"
+                            :
+                            ""
+                        }
+                    "
+                    data-task-id="${escapeHtml(
+                        taskId
+                    )}"
+                >
+
+                    <div class="task-left">
+
+                        <div
+                            class="
+                                task-dot
+                                ${dotClass}
+                            "
+                        ></div>
+
+
+                        <div class="task-info">
+
+                            <p
+                                class="
+                                    ${
+                                        isDone
+                                        ?
+                                        "done-text"
+                                        :
+                                        ""
+                                    }
+                                "
+                            >
+
+                                ${taskText}
+
+                                ${priorityHtml}
+
+                            </p>
+
+
+                            <small>
+
+                                ${dateText}
+
+                                •
+
+                                ${statusText}
+
+                            </small>
+
+
+                            ${rewardInfoHtml}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="task-right">
+
+                        <div
+                            class="
+                                task-amount
+                                ${
+                                    isPriority
+                                    ?
+                                    ""
+                                    :
+                                    "normal"
+                                }
+                            "
+                            title="
+                                ${
+                                    isPriority
+                                    ?
+                                    "Admin calculated reward per task"
+                                    :
+                                    "No priority reward"
+                                }
+                            "
+                        >
+
+                            ${
+                                isPriority
+                                ?
+                                `₹${formatMoney(
+                                    adminReward
+                                )}`
+                                :
+                                "—"
+                            }
+
+                        </div>
+
+
+                        <button
+                            class="
+                                task-action-btn
+                                ${
+                                    isDone
+                                    ?
+                                    "completed"
+                                    :
+                                    ""
+                                }
+                            "
+
+                            ${
+                                isDone
+                                ?
+                                "disabled"
+                                :
+                                `onclick="completeTask('${escapeHtml(
+                                    taskId
+                                )}')"`
+                            }
+                        >
+
+                            ${
+                                isDone
+                                ?
+                                `
+                                    <i
+                                        class="
+                                            fas
+                                            fa-check
+                                        "
+                                    ></i>
+
+                                    DONE
+                                `
+                                :
+                                `
+                                    MARK DONE
+                                `
+                            }
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    updateTaskLockUI();
+
+}
+
+
+/* =========================================================
+   COMPLETE TASK
+========================================================= */
+
+function completeTask(
+    taskId
+){
+
+    if(
+        !taskId
+    ){
+
+        return;
+
+    }
+
+
+    /*
+     * UI SECURITY CHECK
+     */
+
+    if(
+        punchEnabled !== true ||
+        isAttendanceMarkedToday !== true
+    ){
+
+        updateTaskLockUI();
+
+
+        showToast(
+            "Punch-in required before completing tasks."
+        );
+
+
+        return;
+
+    }
+
+
+    if(
+        !confirm(
+            "Have you really completed this task?"
+        )
+    ){
+
+        return;
+
+    }
+
+
+    const taskRef =
+        db.ref(
+            `tasks/${staffId}/${taskId}`
+        );
+
+
+    /*
+     * FRESH FIREBASE SECURITY CHECK
+     *
+     * This prevents bypassing the blurred UI
+     * through manually calling completeTask().
+     */
+
+    Promise.all([
+
+        db.ref(
+            `staff/${staffId}/punchEnabled`
+        ).once("value"),
+
+        db.ref(
+            `attendance/${staffId}/${getLocalDate()}`
+        ).once("value")
+
+    ])
+    .then(
+        results=>{
+
+            const punchSnap =
+                results[0];
+
+
+            const attendanceSnap =
+                results[1];
+
+
+            const allowed =
+                punchSnap.exists()
+                ?
+                punchSnap.val() !== false
+                :
+                true;
+
+
+            if(
+                !allowed
+            ){
+
+                punchEnabled =
+                    false;
+
+
+                applyPunchControlUI();
+
+
+                throw new Error(
+                    "Admin has disabled punch-in. Task is locked."
+                );
+
+            }
+
+
+            if(
+                !attendanceSnap.exists()
+            ){
+
+                isAttendanceMarkedToday =
+                    false;
+
+
+                updateTaskLockUI();
+
+
+                throw new Error(
+                    "Please punch in before completing a task."
+                );
+
+            }
+
+
+            /*
+             * READ CURRENT TASK
+             */
+
+            return taskRef.once(
+                "value"
+            );
+
+        }
+    )
+    .then(
+        snapshot=>{
+
+            if(
+                !snapshot.exists()
+            ){
+
+                throw new Error(
+                    "Task not found."
+                );
+
+            }
+
+
+            const task =
+                snapshot.val() || {};
+
+
+            if(
+                task.showToStaff ===
+                false
+            ){
+
+                throw new Error(
+                    "This task is hidden by Admin."
+                );
+
+            }
+
+
+            if(
+                task.status ===
+                "Completed"
+            ){
+
+                throw new Error(
+                    "This task is already completed."
+                );
+
+            }
+
+
+            const reward =
+                getAdminTaskReward(
+                    task
+                );
+
+
+            if(
+                task.priority === true &&
+                reward <= 0
+            ){
+
+                throw new Error(
+                    "Task reward could not be calculated."
+                );
+
+            }
+
+
+            const finalReward =
+                task.priority === true
+                ?
+                reward
+                :
+                0;
+
+
+            /*
+             * UNIQUE CREDIT ID
+             *
+             * Prevents reopened already-paid tasks
+             * from paying again.
+             */
+
+            const creditId =
+                `credit_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .slice(2,8)}`;
+
+
+            return taskRef.transaction(
+                currentTask=>{
+
+                    if(
+                        !currentTask
+                    ){
+
+                        return;
+
+                    }
+
+
+                    if(
+                        currentTask.showToStaff ===
+                        false
+                    ){
+
+                        return currentTask;
+
+                    }
+
+
+                    if(
+                        currentTask.status ===
+                        "Completed"
+                    ){
+
+                        return currentTask;
+
+                    }
+
+
+                    const previouslyCredited =
+                        currentTask.walletCredited === true ||
+                        currentTask.wasEverCredited === true;
+
+
+                    currentTask.status =
+                        "Completed";
+
+
+                    currentTask.completedAt =
+                        Date.now();
+
+
+                    currentTask.completedBy =
+                        staffName;
+
+
+                    currentTask.amount =
+                        finalReward;
+
+
+                    if(
+                        currentTask.priority ===
+                        true
+                    ){
+
+                        currentTask.walletReward =
+                            finalReward;
+
+
+                        currentTask.rewardPerTask =
+                            finalReward;
+
+
+                        /*
+                         * Only first actual payment
+                         * gets a new credit ID.
+                         */
+
+                        if(
+                            !previouslyCredited
+                        ){
+
+                            currentTask.walletCredited =
+                                true;
+
+
+                            currentTask.walletCreditedAt =
+                                Date.now();
+
+
+                            currentTask.walletCreditedBy =
+                                staffName;
+
+
+                            currentTask.walletCreditId =
+                                creditId;
+
+                        }
+
+                    }
+
+
+                    return currentTask;
+
+                }
+            )
+            .then(
+                result=>{
+
+                    if(
+                        !result ||
+                        !result.committed
+                    ){
+
+                        throw new Error(
+                            "Task could not be completed."
+                        );
+
+                    }
+
+
+                    return {
+
+                        result:
+                            result,
+
+                        creditId:
+                            creditId
+
+                    };
+
+                }
+            );
+
+        }
+    )
+    .then(
+        data=>{
+
+            const task =
+                data.result.snapshot.val() ||
+                {};
+
+
+            const creditId =
+                data.creditId;
+
+
+            const reward =
+                task.priority === true
+                ?
+                Number(
+                    task.rewardPerTask ||
+                    task.walletReward ||
+                    task.amount ||
+                    0
+                )
+                :
+                0;
+
+
+            /*
+             * Normal task
+             */
+
+            if(
+                reward <= 0
+            ){
+
+                showToast(
+                    "Task completed."
+                );
+
+
+                return;
+
+            }
+
+
+            /*
+             * ONLY credit salary if THIS completion
+             * created the walletCreditId.
+             */
+
+            if(
+                task.walletCreditId !==
+                creditId
+            ){
+
+                showToast(
+                    "Task completed. Previous credit already exists."
+                );
+
+
+                return;
+
+            }
+
+
+            /*
+             * ADD TO SALARY
+             */
+
+            return db.ref(
+                `staff/${staffId}`
+            )
+            .transaction(
+                staff=>{
+
+                    if(!staff){
+
+                        return staff;
+
+                    }
+
+
+                    staff.salary =
+                        Number(
+                            staff.salary ||
+                            0
+                        )
+                        +
+                        reward;
+
+
+                    return staff;
+
+                }
+            )
+            .then(
+                salaryResult=>{
+
+                    if(
+                        !salaryResult ||
+                        !salaryResult.committed
+                    ){
+
+                        throw new Error(
+                            "Salary transaction was not committed."
+                        );
+
+                    }
+
+
+                    showToast(
+                        `Task completed • ₹${formatMoney(
+                            reward
+                        )} earned`
+                    );
+
+                }
+            );
+
+        }
+    )
+    .catch(
+        error=>{
+
+            console.error(
+                "Task completion:",
+                error
+            );
+
+
+            alert(
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   LEADS
+========================================================= */
+
+function submitLead(){
+
+    const name =
+        document.getElementById(
+            "l-name"
+        ).value.trim();
+
+
+    const phone =
+        document.getElementById(
+            "l-phone"
+        ).value.trim();
+
+
+    const course =
+        document.getElementById(
+            "l-course"
+        ).value.trim();
+
+
+    if(!name){
+
+        alert(
+            "Please enter full name."
+        );
+
+
+        return;
+
+    }
+
+
+    if(
+        phone.replace(
+            /\D/g,
+            ""
+        ).length < 10
+    ){
+
+        alert(
+            "Please enter a valid WhatsApp number."
+        );
+
+
+        return;
+
+    }
+
+
+    db.ref(
+        "leads"
+    )
+    .push({
+
+        name:
+            name,
+
+        phone:
+            phone,
+
+        course:
+            course,
+
+        staff:
+            staffName,
+
+        staffId:
+            staffId,
+
+        timestamp:
+            Date.now()
+
+    })
+    .then(()=>{
+
+        document.getElementById(
+            "l-name"
+        ).value =
+            "";
+
+
+        document.getElementById(
+            "l-phone"
+        ).value =
+            "";
+
+
+        document.getElementById(
+            "l-course"
+        ).value =
+            "";
+
+
+        showToast(
+            "Lead submitted successfully."
+        );
+
+    })
+    .catch(
+        error=>{
+
+            alert(
+                "Lead submission failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   PAYOUT
+========================================================= */
+
+function requestSalary(){
+
+    if(
+        currentSalaryBalance <= 0
+    ){
+
+        alert(
+            "Cannot request payout for ₹0 balance."
+        );
+
+
+        return;
+
+    }
+
+
+    const now =
+        new Date();
+
+
+    const lastDay =
+        new Date(
+            now.getFullYear(),
+            now.getMonth()+1,
+            0
+        ).getDate();
+
+
+    const daysRemaining =
+        lastDay -
+        now.getDate();
+
+
+    const isEmergency =
+        daysRemaining > 0;
+
+
+    let finalAmount =
+        currentSalaryBalance;
+
+
+    if(isEmergency){
+
+        const maxAllowed =
+            Math.floor(
+                currentSalaryBalance*.5
+            );
+
+
+        const input =
+            prompt(
+                `Monthly cycle is not complete yet.\n\nMaximum emergency advance: ₹${maxAllowed}\n\nEnter amount:`
+            );
+
+
+        if(input === null){
+
+            return;
+
+        }
+
+
+        const amount =
+            parseInt(
+                input.replace(
+                    /[^0-9]/g,
+                    ""
+                )
+            );
+
+
+        if(
+            isNaN(amount) ||
+            amount <= 0
+        ){
+
+            alert(
+                "Please enter a valid amount."
+            );
+
+
+            return;
+
+        }
+
+
+        if(
+            amount >
+            maxAllowed
+        ){
+
+            alert(
+                `Maximum allowed amount is ₹${maxAllowed}.`
+            );
+
+
+            return;
+
+        }
+
+
+        finalAmount =
+            amount;
+
+    }
+
+    else{
+
+        if(
+            !confirm(
+                `Would you like to request the full payout of ₹${formatMoney(
+                    currentSalaryBalance
+                )}?`
+            )
+        ){
+
+            return;
+
+        }
+
+    }
+
+
+    db.ref(
+        `salaryRequests/${staffId}`
+    )
+    .set({
+
+        name:
+            staffName,
+
+        amount:
+            `₹${finalAmount}`,
+
+        numericAmount:
+            finalAmount,
+
+        status:
+            "Pending",
+
+        requestType:
+            isEmergency
+            ?
+            "Emergency Advance"
+            :
+            "Regular Payout",
+
+        requestedAt:
+            new Date().toISOString()
+
+    })
+    .then(()=>{
+
+        const btn =
+            document.getElementById(
+                "payout-btn"
+            );
+
+
+        btn.innerText =
+            "REQUEST PENDING...";
+
+
+        btn.style.background =
+            "#555";
+
+
+        btn.disabled =
+            true;
+
+
+        showToast(
+            isEmergency
+            ?
+            "Emergency advance request sent."
+            :
+            "Salary request sent successfully."
+        );
+
+    })
+    .catch(
+        error=>{
+
+            alert(
+                "Salary request failed: "+
+                error.message
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   PAYOUT BUTTON
+========================================================= */
+
+function updatePayoutButton(){
+
+    const btn =
+        document.getElementById(
+            "payout-btn"
+        );
+
+
+    const now =
+        new Date();
+
+
+    const lastDay =
+        new Date(
+            now.getFullYear(),
+            now.getMonth()+1,
+            0
+        ).getDate();
+
+
+    const daysRemaining =
+        lastDay -
+        now.getDate();
+
+
+    if(
+        currentSalaryBalance <= 0
+    ){
+
+        btn.style.display =
+            "none";
+
+
+        return;
+
+    }
+
+
+    db.ref(
+        `salaryRequests/${staffId}`
+    )
+    .once(
+        "value",
+        requestSnap=>{
+
+            if(
+                requestSnap.exists()
+                &&
+                requestSnap.val().status ===
+                "Pending"
+            ){
+
+                btn.style.display =
+                    "block";
+
+
+                btn.innerText =
+                    "REQUEST PENDING...";
+
+
+                btn.style.background =
+                    "#555";
+
+
+                btn.disabled =
+                    true;
+
+
+                return;
+
+            }
+
+
+            if(
+                daysRemaining <= 0
+            ){
+
+                btn.style.display =
+                    "block";
+
+
+                btn.disabled =
+                    false;
+
+
+                btn.innerText =
+                    "REQUEST PAYOUT";
+
+
+                btn.style.background =
+                    "var(--green)";
+
+
+                return;
+
+            }
+
+
+            if(
+                now.getDate() >= 20
+            ){
+
+                btn.style.display =
+                    "block";
+
+
+                btn.disabled =
+                    false;
+
+
+                btn.innerText =
+                    "REQUEST EMERGENCY ADVANCE";
+
+
+                btn.style.background =
+                    "var(--orange)";
+
+
+                return;
+
+            }
+
+
+            btn.style.display =
+                "none";
+
+        },
+        error=>{
+
+            console.error(
+                "Payout request check:",
+                error
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   STRICT DAYS
+========================================================= */
+
+function listenStrictDays(){
+
+    const card =
+        document.getElementById(
+            "strict-card"
+        );
+
+
+    const list =
+        document.getElementById(
+            "strict-days-list"
+        );
+
+
+    db.ref(
+        "strictDays"
+    )
+    .on(
+        "value",
+        snap=>{
+
+            if(
+                !snap.exists()
+            ){
+
+                card.style.display =
+                    "none";
+
+
+                return;
+
+            }
+
+
+            list.innerHTML =
+                "";
+
+
+            let count =
+                0;
+
+
+            const today =
+                getLocalDate();
+
+
+            snap.forEach(
+                child=>{
+
+                    const dateValue =
+                        child.val();
+
+
+                    if(
+                        dateValue >=
+                        today
+                    ){
+
+                        count++;
+
+
+                        const isToday =
+                            dateValue ===
+                            today;
+
+
+                        const d =
+                            new Date(
+                                dateValue+
+                                "T00:00:00"
+                            );
+
+
+                        list.innerHTML += `
+
+                            <div
+                                class="
+                                    strict-date-card
+                                    ${
+                                        isToday
+                                        ?
+                                        "today"
+                                        :
+                                        ""
+                                    }
+                                "
+                            >
+
+                                <span class="mon">
+
+                                    ${
+                                        isToday
+                                        ?
+                                        "NOW"
+                                        :
+                                        d.toLocaleDateString(
+                                            "en-IN",
+                                            {
+                                                month:"short"
+                                            }
+                                        )
+                                    }
+
+                                </span>
+
+                                <span class="day">
+
+                                    ${d.getDate()}
+
+                                </span>
+
+                            </div>
+
+                        `;
+
+                    }
+
+                }
+            );
+
+
+            card.style.display =
+                count > 0
+                ?
+                "block"
+                :
+                "none";
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+function initSystem(){
+
+    const now =
+        new Date();
+
+
+    const lastDay =
+        new Date(
+            now.getFullYear(),
+            now.getMonth()+1,
+            0
+        ).getDate();
+
+
+    const daysRemaining =
+        lastDay -
+        now.getDate();
+
+
+    document.getElementById(
+        "cycle-days"
+    ).innerText =
+        `${daysRemaining} days remaining`;
+
+
+    /*
+     * Initially keep tasks locked.
+     * They unlock only after today's
+     * attendance is verified.
+     */
+
+    updateTaskLockUI();
+
+
+    listenPresentCount();
+
+    listenSalaryActivity();
+
+    listenTasks();
+
+    listenStaffData();
+
+    listenStrictDays();
+
+    loadTodayAttendance();
+
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    ()=>{
+
+        initSlider();
+
+        initSystem();
+
+    }
+);
+
+</script>
+
+</body>
+
+</html>
