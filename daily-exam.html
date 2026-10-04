@@ -104,6 +104,39 @@ text-overflow:ellipsis;
 white-space:nowrap;
 }
 
+/* =========================
+   PAYMENT STATUS PILL
+========================= */
+
+.payment-pill{
+font-size:9px;
+font-weight:800;
+padding:8px 10px;
+border-radius:12px;
+display:flex;
+align-items:center;
+gap:5px;
+border:1px solid var(--border);
+white-space:nowrap;
+}
+
+.payment-pill.checking{
+color:var(--yellow);
+background:rgba(245,158,11,.07);
+}
+
+.payment-pill.paid{
+color:#6ee7b7;
+background:rgba(16,185,129,.09);
+border-color:rgba(16,185,129,.2);
+}
+
+.payment-pill.unpaid{
+color:#fb7185;
+background:rgba(244,63,94,.09);
+border-color:rgba(244,63,94,.2);
+}
+
 .screen{
 width:100%;
 max-width:650px;
@@ -136,6 +169,12 @@ font-size:38px;
 color:#67e8f9;
 background:rgba(6,182,212,.08);
 border:1px solid rgba(6,182,212,.2);
+}
+
+.hero-icon.locked{
+color:#fb7185;
+background:rgba(244,63,94,.08);
+border-color:rgba(244,63,94,.2);
 }
 
 .hero h1{
@@ -209,6 +248,65 @@ font-weight:800;
 cursor:pointer;
 font-size:13px;
 box-shadow:0 15px 35px rgba(99,102,241,.18);
+}
+
+.start-btn:disabled{
+opacity:.35;
+cursor:not-allowed;
+box-shadow:none;
+}
+
+.start-btn.locked{
+background:linear-gradient(135deg,#334155,#1e293b);
+color:#94a3b8;
+box-shadow:none;
+}
+
+.payment-box{
+margin:18px 0;
+padding:14px;
+border-radius:15px;
+background:rgba(255,255,255,.025);
+border:1px solid var(--border);
+display:flex;
+align-items:center;
+gap:12px;
+text-align:left;
+}
+
+.payment-box-icon{
+width:40px;
+height:40px;
+border-radius:12px;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-shrink:0;
+background:rgba(245,158,11,.08);
+color:var(--yellow);
+font-size:19px;
+}
+
+.payment-box-icon.paid{
+background:rgba(16,185,129,.08);
+color:var(--green);
+}
+
+.payment-box-icon.unpaid{
+background:rgba(244,63,94,.08);
+color:var(--red);
+}
+
+.payment-box-title{
+font-size:11px;
+font-weight:800;
+}
+
+.payment-box-text{
+font-size:9px;
+color:#64748b;
+margin-top:4px;
+line-height:1.5;
 }
 
 .info-row{
@@ -287,7 +385,6 @@ font-size:10px;
 color:#67e8f9;
 font-family:'Fira Code';
 margin-bottom:8px;
-text-transform:uppercase;
 }
 
 .question{
@@ -522,6 +619,11 @@ font-size:13px;
 grid-template-columns:repeat(3,1fr);
 }
 
+.payment-pill{
+font-size:8px;
+padding:7px 8px;
+}
+
 }
 
 </style>
@@ -539,9 +641,23 @@ BT_TERMINAL
 </div>
 
 <div
+style="display:flex;align-items:center;gap:7px;">
+
+<div
+id="paymentPill"
+class="payment-pill checking">
+
+<i class="ri-loader-4-line"></i>
+CHECKING
+
+</div>
+
+<div
 class="user-pill"
 id="user-name">
 Student
+</div>
+
 </div>
 
 </div>
@@ -558,19 +674,61 @@ Student
 id="startScreen"
 class="card hero">
 
-<div class="hero-icon">
+<div
+id="heroIcon"
+class="hero-icon">
+
 <i class="ri-cpu-line"></i>
+
 </div>
 
-<h1>
+<h1 id="heroTitle">
 Terminal Exam
 </h1>
 
-<p>
+<p id="heroDescription">
 Test your computer knowledge across programming,
 web development, databases, networking,
 security, hardware and cloud computing.
 </p>
+
+
+<!-- PAYMENT STATUS -->
+
+<div
+id="paymentBox"
+class="payment-box">
+
+<div
+id="paymentBoxIcon"
+class="payment-box-icon">
+
+<i class="ri-loader-4-line"></i>
+
+</div>
+
+<div>
+
+<div
+id="paymentBoxTitle"
+class="payment-box-title">
+
+Checking Monthly Fee...
+
+</div>
+
+<div
+id="paymentBoxText"
+class="payment-box-text">
+
+Please wait while your current month's payment
+status is verified.
+
+</div>
+
+</div>
+
+</div>
 
 
 <div class="config">
@@ -644,12 +802,13 @@ Hard
 
 
 <button
+id="startBtn"
 class="start-btn"
-onclick="startExam()">
+onclick="startExam()"
+disabled>
 
-START EXAM
-
-<i class="ri-arrow-right-line"></i>
+<i class="ri-loader-4-line"></i>
+CHECKING PAYMENT...
 
 </button>
 
@@ -902,6 +1061,8 @@ from
 import {
 getFirestore,
 doc,
+getDoc,
+onSnapshot,
 updateDoc,
 increment,
 collection,
@@ -914,7 +1075,7 @@ from
 const firebaseConfig={
 
 apiKey:
-"AIzaSyCEfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+"AIzaSyCEYfwfZv2CkpgJ8Q9vNwRlRlXA2w_WpI",
 
 authDomain:
 "black-terminal-f2c91.firebaseapp.com",
@@ -946,16 +1107,111 @@ getFirestore(app);
 ========================================================= */
 
 const student=
+(
 localStorage.getItem("studentName")
-||"Root_User";
+||"Root_User"
+).trim();
+
 
 document.getElementById("user-name").textContent=
 student;
 
 
 /* =========================================================
+   PAYMENT STATE
+========================================================= */
+
+let paymentPaid=false;
+
+let paymentChecking=true;
+
+let paymentData=null;
+
+let paymentUnsubscribe=null;
+
+
+/* =========================================================
+   CURRENT MONTH
+   MUST MATCH FEES PAGE
+========================================================= */
+
+function getCurrentMonth(){
+
+return new Date().toLocaleString(
+"default",
+{
+month:"long",
+year:"numeric"
+}
+);
+
+}
+
+
+/* =========================================================
+   PAYMENT ELEMENTS
+========================================================= */
+
+const paymentPill=
+document.getElementById(
+"paymentPill"
+);
+
+const paymentBox=
+document.getElementById(
+"paymentBox"
+);
+
+const paymentBoxIcon=
+document.getElementById(
+"paymentBoxIcon"
+);
+
+const paymentBoxTitle=
+document.getElementById(
+"paymentBoxTitle"
+);
+
+const paymentBoxText=
+document.getElementById(
+"paymentBoxText"
+);
+
+const startBtn=
+document.getElementById(
+"startBtn"
+);
+
+const heroIcon=
+document.getElementById(
+"heroIcon"
+);
+
+const heroTitle=
+document.getElementById(
+"heroTitle"
+);
+
+const heroDescription=
+document.getElementById(
+"heroDescription"
+);
+
+
+/* =========================================================
+   DAILY LOCK
+========================================================= */
+
+const today=
+new Date().toDateString();
+
+const dailyKey=
+"daily_done_"+student;
+
+
+/* =========================================================
    QUESTION DATA
-   102 TOPICS × 10 FORMATS = 1020+ MCQs
+   102 TOPICS × 10 FORMATS = 1020 QUESTIONS
 ========================================================= */
 
 const facts=[
@@ -1067,7 +1323,7 @@ const facts=[
 
 
 /* =========================================================
-   BUILD 1020+ QUESTIONS
+   BUILD QUESTION BANK
 ========================================================= */
 
 const categories=
@@ -1231,34 +1487,10 @@ level:"Hard"
 });
 
 
-/*
-102 facts × 10 = 1020 questions
-*/
-
 console.log(
 "Question bank:",
 questionBank.length
 );
-
-
-/* =========================================================
-   DAILY LOCK
-========================================================= */
-
-const today=
-new Date().toDateString();
-
-const dailyKey=
-"daily_done_"+student;
-
-if(
-localStorage.getItem(dailyKey)
-===today
-){
-
-showAlreadyCompleted();
-
-}
 
 
 /* =========================================================
@@ -1286,6 +1518,288 @@ let timerInterval=null;
 let timeRemaining=40*60;
 
 let startTime=0;
+
+
+/* =========================================================
+   PAYMENT UI
+========================================================= */
+
+function updatePaymentUI(){
+
+const month=
+getCurrentMonth();
+
+
+if(paymentChecking){
+
+paymentPill.className=
+"payment-pill checking";
+
+paymentPill.innerHTML=
+`
+<i class="ri-loader-4-line"></i>
+CHECKING
+`;
+
+
+paymentBoxIcon.className=
+"payment-box-icon";
+
+paymentBoxIcon.innerHTML=
+'<i class="ri-loader-4-line"></i>';
+
+
+paymentBoxTitle.textContent=
+"Checking Monthly Fee...";
+
+
+paymentBoxText.textContent=
+`Checking payment for ${month}. Please wait.`;
+
+
+startBtn.disabled=true;
+
+startBtn.className=
+"start-btn";
+
+startBtn.innerHTML=
+`
+<i class="ri-loader-4-line"></i>
+CHECKING PAYMENT...
+`;
+
+return;
+
+}
+
+
+if(paymentPaid){
+
+paymentPill.className=
+"payment-pill paid";
+
+paymentPill.innerHTML=
+`
+<i class="ri-checkbox-circle-fill"></i>
+PAID
+`;
+
+
+paymentBoxIcon.className=
+"payment-box-icon paid";
+
+paymentBoxIcon.innerHTML=
+'<i class="ri-checkbox-circle-fill"></i>';
+
+
+paymentBoxTitle.textContent=
+"Monthly Fee Paid";
+
+
+paymentBoxText.textContent=
+`${month} fee is paid. Your Terminal Exam is unlocked.`;
+
+
+startBtn.disabled=false;
+
+startBtn.className=
+"start-btn";
+
+startBtn.innerHTML=
+`
+START EXAM
+<i class="ri-arrow-right-line"></i>
+`;
+
+return;
+
+}
+
+
+/* UNPAID */
+
+paymentPill.className=
+"payment-pill unpaid";
+
+paymentPill.innerHTML=
+`
+<i class="ri-lock-2-fill"></i>
+UNPAID
+`;
+
+
+paymentBoxIcon.className=
+"payment-box-icon unpaid";
+
+paymentBoxIcon.innerHTML=
+'<i class="ri-lock-2-fill"></i>';
+
+
+paymentBoxTitle.textContent=
+"Exam Locked";
+
+
+paymentBoxText.textContent=
+`${month} monthly fee is pending. Please pay the fee to unlock the Daily Exam.`;
+
+
+startBtn.disabled=true;
+
+startBtn.className=
+"start-btn locked";
+
+startBtn.innerHTML=
+`
+<i class="ri-lock-2-line"></i>
+PAYMENT REQUIRED
+`;
+
+}
+
+
+/* =========================================================
+   PAYMENT REALTIME LISTENER
+========================================================= */
+
+function listenPaymentStatus(){
+
+if(!student ||
+student==="Root_User"){
+
+paymentChecking=false;
+paymentPaid=false;
+
+updatePaymentUI();
+
+return;
+
+}
+
+
+const currentMonth=
+getCurrentMonth();
+
+
+const paymentRef=
+doc(
+db,
+"payments",
+student,
+"months",
+currentMonth
+);
+
+
+/*
+   Realtime listener.
+
+   Staff marks:
+   payments/student/months/October 2026
+   status = "paid"
+
+   Then this page automatically unlocks.
+*/
+
+paymentUnsubscribe=
+onSnapshot(
+paymentRef,
+
+(snapshot)=>{
+
+paymentChecking=false;
+
+if(snapshot.exists()){
+
+const data=
+snapshot.data();
+
+paymentData=data;
+
+paymentPaid=
+data.status==="paid";
+
+}
+else{
+
+paymentData=null;
+
+paymentPaid=false;
+
+}
+
+updatePaymentUI();
+
+},
+
+(error)=>{
+
+console.error(
+"Payment listener error:",
+error
+);
+
+paymentChecking=false;
+
+paymentPaid=false;
+
+paymentData=null;
+
+updatePaymentUI();
+
+}
+
+);
+
+}
+
+
+/* =========================================================
+   DIRECT PAYMENT VERIFICATION
+   This runs immediately before starting exam.
+========================================================= */
+
+async function verifyPaymentBeforeExam(){
+
+if(!student ||
+student==="Root_User"){
+
+return false;
+
+}
+
+
+const currentMonth=
+getCurrentMonth();
+
+
+const paymentRef=
+doc(
+db,
+"payments",
+student,
+"months",
+currentMonth
+);
+
+
+const snap=
+await getDoc(paymentRef);
+
+
+if(!snap.exists()){
+
+return false;
+
+}
+
+
+const data=
+snap.data();
+
+
+return data.status==="paid";
+
+}
 
 
 /* =========================================================
@@ -1378,7 +1892,91 @@ btn.dataset.level;
    START EXAM
 ========================================================= */
 
-window.startExam=function(){
+window.startExam=async function(){
+
+/*
+   NEVER trust only the UI state.
+   Check Firebase again.
+*/
+
+if(paymentChecking){
+
+return;
+
+}
+
+
+if(!paymentPaid){
+
+showPaymentLocked();
+
+return;
+
+}
+
+
+/*
+   Direct Firestore verification.
+*/
+
+startBtn.disabled=true;
+
+startBtn.innerHTML=
+`
+<i class="ri-loader-4-line"></i>
+VERIFYING PAYMENT...
+`;
+
+
+try{
+
+const verified=
+await verifyPaymentBeforeExam();
+
+
+if(!verified){
+
+paymentPaid=false;
+
+updatePaymentUI();
+
+showPaymentLocked();
+
+return;
+
+}
+
+
+}catch(error){
+
+console.error(
+"Payment verification error:",
+error
+);
+
+startBtn.disabled=false;
+
+showPaymentLocked(
+"Unable to verify payment. Please check your internet connection."
+);
+
+return;
+
+}
+
+
+/*
+   Daily exam lock.
+*/
+
+if(localStorage.getItem(dailyKey)===today){
+
+showAlreadyCompleted();
+
+return;
+
+}
+
 
 let pool=
 questionBank;
@@ -1409,8 +2007,8 @@ shuffle(pool);
 
 
 /*
-Don't allow more questions
-than available.
+   Don't allow more questions
+   than available.
 */
 
 questions=
@@ -1429,10 +2027,16 @@ alert(
 "No questions available for this selection."
 );
 
+updatePaymentUI();
+
 return;
 
 }
 
+
+/*
+   Start exam.
+*/
 
 document
 .getElementById("startScreen")
@@ -1451,7 +2055,9 @@ timeRemaining=
 40*60;
 
 index=0;
+
 score=0;
+
 wrong=0;
 
 showQuestion();
@@ -1459,6 +2065,36 @@ showQuestion();
 startTimer();
 
 };
+
+
+/* =========================================================
+   PAYMENT LOCK MESSAGE
+========================================================= */
+
+function showPaymentLocked(
+customMessage=""
+){
+
+heroIcon.className=
+"hero-icon locked";
+
+heroIcon.innerHTML=
+'<i class="ri-lock-2-line"></i>';
+
+heroTitle.textContent=
+"Daily Exam Locked";
+
+
+heroDescription.textContent=
+customMessage ||
+"Your current month's fee is not paid. Please complete your monthly payment to unlock the Terminal Exam.";
+
+
+paymentBox.classList.add(
+"payment-box"
+);
+
+}
 
 
 /* =========================================================
@@ -2168,6 +2804,39 @@ return String(value??"")
 
 }
 
+
+/* =========================================================
+   INITIALIZE PAYMENT CHECK
+========================================================= */
+
+listenPaymentStatus();
+
+
+/* =========================================================
+   CHECK DAILY COMPLETION
+   Only display daily lock if payment is already paid.
+========================================================= */
+
+if(
+localStorage.getItem(dailyKey)===today
+){
+
+/*
+   Payment listener is realtime.
+   We wait briefly for Firebase payment status.
+*/
+
+setTimeout(()=>{
+
+if(paymentPaid){
+
+showAlreadyCompleted();
+
+}
+
+},800);
+
+}
 
 </script>
 
