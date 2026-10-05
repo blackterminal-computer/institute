@@ -1163,7 +1163,8 @@ body::after{
     <!-- REQUEST -->
 
     <div id="requestCard"
-         class="request-card">
+         class="request-card"
+         style="display:none;">
 
         <div id="requestCardIcon"
              class="request-card-icon">
@@ -1944,10 +1945,121 @@ if(navigator.onLine){
 
 
 /* =====================================================
+   PROFILE DATA
+   DAYS + STREAK
+===================================================== */
+
+function calculateProfileAttendance(
+    existingData,
+    today
+){
+
+    const oldDays =
+        Number(
+            existingData?.days || 0
+        );
+
+    const days =
+        oldDays + 1;
+
+
+    let streak = 1;
+
+    const lastDate =
+        existingData?.lastAttendanceDate || "";
+
+
+    if(lastDate){
+
+        const previous =
+            new Date(
+                lastDate + "T00:00:00"
+            );
+
+        const current =
+            new Date(
+                today + "T00:00:00"
+            );
+
+        const difference =
+            Math.round(
+                (
+                    current - previous
+                ) /
+                (
+                    1000 *
+                    60 *
+                    60 *
+                    24
+                )
+            );
+
+
+        if(difference === 1){
+
+            streak =
+                Number(
+                    existingData?.streak || 0
+                ) + 1;
+
+        }
+        else if(difference === 0){
+
+            streak =
+                Number(
+                    existingData?.streak || 1
+                );
+
+        }
+        else{
+
+            streak = 1;
+
+        }
+
+    }
+
+
+    return {
+        days,
+        streak,
+        lastAttendanceDate:today
+    };
+
+}
+
+
+/* =====================================================
    REQUEST CARD
 ===================================================== */
 
 function updateRequestCard(){
+
+    /*
+       IMPORTANT:
+
+       Request Attendance is available ONLY when
+       current month's fee is PAID and today's
+       attendance is not already marked.
+    */
+
+    if(
+        attendanceAlreadyMarked ||
+        paymentChecking ||
+        !paymentPaid
+    ){
+
+        requestCard.style.display =
+            "none";
+
+        return;
+
+    }
+
+
+    requestCard.style.display =
+        "flex";
+
 
     requestCard.className =
         "request-card";
@@ -1999,19 +2111,10 @@ function updateRequestCard(){
                 true;
 
         }
-        else if(paymentPaid){
-
-            requestCardSub.textContent =
-                "Approved and payment is paid. Attendance will be marked automatically.";
-
-            requestCardBtn.textContent =
-                "APPROVED";
-
-        }
         else{
 
             requestCardSub.textContent =
-                "Approved. Attendance will be marked automatically after payment is paid.";
+                "Approved. Attendance will be marked automatically.";
 
             requestCardBtn.textContent =
                 "APPROVED";
@@ -2051,9 +2154,7 @@ function updateRequestCard(){
             "Attendance Request";
 
         requestCardSub.textContent =
-            paymentPaid
-                ? "If you are unable to mark attendance, send a request to admin."
-                : "You can send a request. Admin will review your payment status.";
+            "If you are unable to mark attendance, send a request to admin.";
 
         requestCardBtn.textContent =
             "REQUEST";
@@ -2069,6 +2170,32 @@ function updateRequestCard(){
 
 window.openRequestModal =
 function(){
+
+    if(!paymentPaid){
+
+        showModal(
+            "warning",
+            "Payment Required",
+            "Attendance request is available only after the current month's fee is paid."
+        );
+
+        return;
+
+    }
+
+
+    if(attendanceAlreadyMarked){
+
+        showModal(
+            "success",
+            "Attendance Already Marked",
+            "Today's attendance has already been recorded."
+        );
+
+        return;
+
+    }
+
 
     if(requestStatus === "pending"){
 
@@ -2177,6 +2304,21 @@ async function(){
         return;
 
 
+    if(!paymentPaid){
+
+        closeRequestModal();
+
+        showModal(
+            "warning",
+            "Payment Required",
+            "Please pay the current month's fee before sending an attendance request."
+        );
+
+        return;
+
+    }
+
+
     if(!selectedReason){
 
         showToast(
@@ -2213,10 +2355,6 @@ async function(){
 
     try{
 
-        let latestPaymentStatus =
-            "unpaid";
-
-
         const paymentRef =
             doc(
                 db,
@@ -2232,12 +2370,25 @@ async function(){
 
 
         if(
-            paymentSnap.exists() &&
-            paymentSnap.data().status === "paid"
+            !paymentSnap.exists() ||
+            paymentSnap.data().status !== "paid"
         ){
 
-            latestPaymentStatus =
-                "paid";
+            paymentPaid = false;
+
+            updatePaymentUI();
+            updateAttendanceUI();
+            updateRequestCard();
+
+            closeRequestModal();
+
+            showModal(
+                "warning",
+                "Payment Required",
+                "Your current month's fee is not marked as paid."
+            );
+
+            return;
 
         }
 
@@ -2262,7 +2413,6 @@ async function(){
             closeRequestModal();
 
             updateAttendanceUI();
-
             updateRequestCard();
 
             showModal(
@@ -2313,7 +2463,7 @@ async function(){
                     selectedReason,
 
                 paymentStatus:
-                    latestPaymentStatus,
+                    "paid",
 
                 paymentMonth:
                     getCurrentMonth(),
@@ -2356,7 +2506,7 @@ async function(){
                 selectedReason,
 
             paymentStatus:
-                latestPaymentStatus,
+                "paid",
 
             attendanceMarked:
                 false
@@ -2367,7 +2517,6 @@ async function(){
         closeRequestModal();
 
         updateRequestCard();
-
         updateAttendanceUI();
 
 
@@ -2377,9 +2526,7 @@ async function(){
             "Request Submitted";
 
         requestInfoText.textContent =
-            latestPaymentStatus === "paid"
-                ? "Payment is PAID. Your request has been sent to admin for approval."
-                : "Payment is not marked as PAID. After admin approval, attendance will be marked automatically once payment is paid.";
+            "Payment is PAID. Your attendance request has been sent to admin for approval.";
 
 
         showModal(
@@ -2420,8 +2567,8 @@ async function(){
 
 
 /* =====================================================
-   AUTO APPROVAL ATTENDANCE
-   ADMIN APPROVE + PAYMENT PAID
+   AUTO APPROVAL
+   APPROVED REQUEST + PAID
 ===================================================== */
 
 async function processApprovedRequest(){
@@ -2465,7 +2612,7 @@ async function processApprovedRequest(){
         attendanceBtn.disabled = true;
 
         attendanceBtn.className =
-            "attendance-btn";
+            "attendance-btn mark-btn";
 
         attendanceBtn.innerHTML =
             '<span class="loader"></span> APPROVING ATTENDANCE';
@@ -2502,13 +2649,13 @@ async function processApprovedRequest(){
             );
 
 
-        /*
-           TRANSACTION
+        const studentRef =
+            doc(
+                db,
+                "students",
+                normalizeName(studentName)
+            );
 
-           This prevents duplicate attendance
-           if payment listener and request listener
-           trigger at the same time.
-        */
 
         const result =
             await runTransaction(
@@ -2524,6 +2671,12 @@ async function processApprovedRequest(){
                     const requestSnap =
                         await transaction.get(
                             requestRef
+                        );
+
+
+                    const studentSnap =
+                        await transaction.get(
+                            studentRef
                         );
 
 
@@ -2571,6 +2724,19 @@ async function processApprovedRequest(){
                     }
 
 
+                    const existingStudentData =
+                        studentSnap.exists()
+                            ? studentSnap.data()
+                            : {};
+
+
+                    const profileData =
+                        calculateProfileAttendance(
+                            existingStudentData,
+                            today
+                        );
+
+
                     transaction.set(
                         attendanceRef,
                         {
@@ -2607,6 +2773,29 @@ async function processApprovedRequest(){
 
 
                     transaction.set(
+                        studentRef,
+                        {
+
+                            studentName:
+                                normalizeName(studentName),
+
+                            days:
+                                profileData.days,
+
+                            streak:
+                                profileData.streak,
+
+                            lastAttendanceDate:
+                                profileData.lastAttendanceDate
+
+                        },
+                        {
+                            merge:true
+                        }
+                    );
+
+
+                    transaction.set(
                         requestRef,
                         {
 
@@ -2630,24 +2819,19 @@ async function processApprovedRequest(){
 
 
                     return {
-                        created:true
+                        created:true,
+                        days:profileData.days
                     };
 
                 }
             );
 
 
-        /*
-           ATTENDANCE WAS CREATED NOW
-        */
-
         if(result.created){
 
-            await updateStudentStreak(
-                normalizeName(studentName)
-            );
+            attendanceAlreadyMarked =
+                true;
 
-            attendanceAlreadyMarked = true;
 
             currentRequestData = {
                 ...(currentRequestData || {}),
@@ -2662,7 +2846,6 @@ async function processApprovedRequest(){
 
 
             updateAttendanceUI();
-
             updateRequestCard();
 
 
@@ -2686,21 +2869,17 @@ async function processApprovedRequest(){
                 "Attendance Approved & Marked";
 
             requestInfoText.textContent =
-                "Admin approved your request and payment is paid. Attendance has been marked automatically.";
+                `Attendance marked automatically. Profile days updated to ${result.days}.`;
 
 
             showModal(
                 "success",
                 "Attendance Approved",
-                "Admin approved your request and your current payment is paid. Today's attendance has been marked automatically."
+                "Admin approved your request. Attendance has been marked and your profile days have been updated."
             );
 
         }
         else{
-
-            /*
-               Already marked by another process.
-            */
 
             const finalAttendance =
                 await getDoc(
@@ -2714,7 +2893,6 @@ async function processApprovedRequest(){
                     true;
 
                 updateAttendanceUI();
-
                 updateRequestCard();
 
             }
@@ -2833,13 +3011,6 @@ function listenAttendanceRequest(){
 
                 updateAttendanceUI();
 
-
-                /*
-                   ADMIN APPROVED
-
-                   If payment is already paid,
-                   mark attendance automatically.
-                */
 
                 if(
                     requestStatus === "approved" &&
@@ -3030,14 +3201,6 @@ function listenPaymentStatus(){
 
                 updateRequestCard();
 
-
-                /*
-                   IMPORTANT
-
-                   If admin already approved the request
-                   and payment changes to PAID,
-                   attendance is automatically marked.
-                */
 
                 if(
                     paymentPaid &&
@@ -3357,8 +3520,6 @@ function updateAttendanceUI(){
 
     /*
        APPROVED REQUEST + PAID
-
-       Auto process should handle this.
     */
 
     if(
@@ -3388,6 +3549,10 @@ function updateAttendanceUI(){
     }
 
 
+    /*
+       UNPAID = LOCKED
+    */
+
     if(!paymentPaid){
 
         attendanceBtn.disabled = true;
@@ -3407,22 +3572,7 @@ function updateAttendanceUI(){
         attendanceIcon.innerHTML =
             '<i class="ri-lock-line"></i>';
 
-
-        /*
-           APPROVED BUT UNPAID
-        */
-
-        if(requestStatus === "approved"){
-
-            requestInfo.classList.add("show");
-
-            requestInfoTitle.textContent =
-                "Request Approved";
-
-            requestInfoText.textContent =
-                "Admin approved your request. Pay the current month's fee and attendance will be marked automatically.";
-
-        }
+        requestInfo.classList.remove("show");
 
         return;
 
@@ -3430,8 +3580,8 @@ function updateAttendanceUI(){
 
 
     /*
-       PAYMENT PAID
-       NORMAL DIRECT ATTENDANCE
+       PAID = DIRECT ATTENDANCE AVAILABLE
+       REQUEST CARD IS ALSO SHOWN BY updateRequestCard()
     */
 
     attendanceBtn.disabled = false;
@@ -3464,18 +3614,6 @@ function updateAttendanceUI(){
 
     }
 
-    else if(requestStatus === "approved"){
-
-        requestInfo.classList.add("show");
-
-        requestInfoTitle.textContent =
-            "Request Approved";
-
-        requestInfoText.textContent =
-            "Admin approved your request. Attendance will be marked automatically.";
-
-    }
-
     else if(requestStatus === "rejected"){
 
         requestInfo.classList.add("show");
@@ -3504,11 +3642,6 @@ function updateAttendanceUI(){
 window.attendanceAction =
 async function(){
 
-    /*
-       MAIN BUTTON NEVER SENDS REQUEST.
-       It only marks attendance directly.
-    */
-
     await markAttendance();
 
 };
@@ -3516,6 +3649,7 @@ async function(){
 
 /* =====================================================
    MARK ATTENDANCE
+   ALSO UPDATES PROFILE DAYS
 ===================================================== */
 
 async function markAttendance(){
@@ -3582,6 +3716,7 @@ async function markAttendance(){
             updatePaymentUI();
 
             updateAttendanceUI();
+            updateRequestCard();
 
             showModal(
                 "warning",
@@ -3626,6 +3761,13 @@ async function markAttendance(){
                 '<i class="ri-map-pin-off-line"></i>';
 
 
+            /*
+               Request remains available because fee is paid.
+            */
+
+            updateRequestCard();
+
+
             showModal(
                 "warning",
                 "Unable to Mark Attendance",
@@ -3649,13 +3791,132 @@ async function markAttendance(){
             );
 
 
-        const existing =
-            await getDoc(
-                attendanceRef
+        const studentRef =
+            doc(
+                db,
+                "students",
+                normalizeName(studentName)
             );
 
 
-        if(existing.exists()){
+        attendanceBtn.innerHTML =
+            '<span class="loader"></span> MARKING ATTENDANCE';
+
+
+        /*
+           TRANSACTION
+
+           Attendance + Profile Days are updated
+           together and duplicate attendance is prevented.
+        */
+
+        const result =
+            await runTransaction(
+                db,
+                async transaction=>{
+
+                    const attendanceSnap =
+                        await transaction.get(
+                            attendanceRef
+                        );
+
+
+                    if(attendanceSnap.exists()){
+
+                        return {
+                            created:false
+                        };
+
+                    }
+
+
+                    const studentSnap =
+                        await transaction.get(
+                            studentRef
+                        );
+
+
+                    const existingStudentData =
+                        studentSnap.exists()
+                            ? studentSnap.data()
+                            : {};
+
+
+                    const profileData =
+                        calculateProfileAttendance(
+                            existingStudentData,
+                            today
+                        );
+
+
+                    transaction.set(
+                        attendanceRef,
+                        {
+
+                            studentName:
+                                normalizeName(studentName),
+
+                            userName:
+                                normalizeName(studentName),
+
+                            date:
+                                today,
+
+                            timestamp:
+                                serverTimestamp(),
+
+                            paymentMonth:
+                                getCurrentMonth(),
+
+                            paymentStatus:
+                                "paid",
+
+                            requestStatus:
+                                "direct",
+
+                            attendanceSource:
+                                "student-direct",
+
+                            approvedByAdmin:
+                                false
+
+                        }
+                    );
+
+
+                    transaction.set(
+                        studentRef,
+                        {
+
+                            studentName:
+                                normalizeName(studentName),
+
+                            days:
+                                profileData.days,
+
+                            streak:
+                                profileData.streak,
+
+                            lastAttendanceDate:
+                                profileData.lastAttendanceDate
+
+                        },
+                        {
+                            merge:true
+                        }
+                    );
+
+
+                    return {
+                        created:true,
+                        days:profileData.days
+                    };
+
+                }
+            );
+
+
+        if(!result.created){
 
             attendanceAlreadyMarked =
                 true;
@@ -3672,54 +3933,6 @@ async function markAttendance(){
             return;
 
         }
-
-
-        attendanceBtn.innerHTML =
-            '<span class="loader"></span> MARKING ATTENDANCE';
-
-
-        const currentMonth =
-            getCurrentMonth();
-
-
-        await setDoc(
-            attendanceRef,
-            {
-
-                studentName:
-                    normalizeName(studentName),
-
-                userName:
-                    normalizeName(studentName),
-
-                date:
-                    today,
-
-                timestamp:
-                    serverTimestamp(),
-
-                paymentMonth:
-                    currentMonth,
-
-                paymentStatus:
-                    "paid",
-
-                requestStatus:
-                    "direct",
-
-                attendanceSource:
-                    "student-direct",
-
-                approvedByAdmin:
-                    false
-
-            }
-        );
-
-
-        await updateStudentStreak(
-            normalizeName(studentName)
-        );
 
 
         attendanceAlreadyMarked =
@@ -3766,7 +3979,7 @@ async function markAttendance(){
         showModal(
             "success",
             "Attendance Marked",
-            "Your attendance has been recorded successfully."
+            `Your attendance has been recorded successfully. Profile days updated to ${result.days}.`
         );
 
     }
@@ -3795,6 +4008,9 @@ async function markAttendance(){
 
         attendanceIcon.innerHTML =
             '<i class="ri-error-warning-line"></i>';
+
+
+        updateRequestCard();
 
 
         showModal(
@@ -3984,137 +4200,6 @@ function getFreshLocation(){
 
 
 /* =====================================================
-   STREAK
-===================================================== */
-
-async function updateStudentStreak(name){
-
-    try{
-
-        const studentRef =
-            doc(
-                db,
-                "students",
-                name
-            );
-
-
-        const snap =
-            await getDoc(
-                studentRef
-            );
-
-
-        const today =
-            getTodayKey();
-
-
-        let streak =
-            1;
-
-
-        if(snap.exists()){
-
-            const data =
-                snap.data();
-
-
-            const lastDate =
-                data.lastAttendanceDate;
-
-
-            if(lastDate){
-
-                const previous =
-                    new Date(
-                        lastDate +
-                        "T00:00:00"
-                    );
-
-
-                const current =
-                    new Date(
-                        today +
-                        "T00:00:00"
-                    );
-
-
-                const difference =
-                    Math.round(
-                        (
-                            current -
-                            previous
-                        ) /
-                        (
-                            1000 *
-                            60 *
-                            60 *
-                            24
-                        )
-                    );
-
-
-                if(difference === 1){
-
-                    streak =
-                        Number(
-                            data.streak || 0
-                        ) + 1;
-
-                }
-                else if(difference === 0){
-
-                    streak =
-                        Number(
-                            data.streak || 1
-                        );
-
-                }
-                else{
-
-                    streak =
-                        1;
-
-                }
-
-            }
-
-        }
-
-
-        await setDoc(
-            studentRef,
-            {
-
-                studentName:
-                    name,
-
-                streak:
-                    streak,
-
-                lastAttendanceDate:
-                    today
-
-            },
-            {
-                merge:true
-            }
-        );
-
-    }
-    catch(error){
-
-        console.error(
-            "Streak error:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =====================================================
    INIT
 ===================================================== */
 
@@ -4163,7 +4248,9 @@ async function init(){
             '<i class="ri-user-line"></i> LOGIN REQUIRED';
 
 
-        updateRequestCard();
+        requestCard.style.display =
+            "none";
+
 
         return;
 
