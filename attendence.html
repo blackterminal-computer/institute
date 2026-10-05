@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 
 <meta name="viewport"
@@ -533,6 +534,7 @@ body::after{
 
 .request-card.approved{
     border-color:rgba(33,230,163,.20);
+    background:rgba(33,230,163,.045);
 }
 
 .request-card.approved .request-card-icon{
@@ -1158,7 +1160,7 @@ body::after{
     </button>
 
 
-    <!-- ALWAYS AVAILABLE REQUEST -->
+    <!-- REQUEST -->
 
     <div id="requestCard"
          class="request-card">
@@ -1274,7 +1276,7 @@ body::after{
 
         <div class="policy-text">
 
-            Attendance can be marked only after the current month's
+            Attendance can be marked directly after the current month's
             fee has been paid.
 
         </div>
@@ -1287,8 +1289,20 @@ body::after{
 
         <div class="policy-text">
 
-            You must be within the institute location
-            to mark attendance.
+            Direct attendance requires you to be within the institute location.
+
+        </div>
+
+    </div>
+
+    <div class="policy-row">
+
+        <i class="ri-git-merge-fill policy-icon"></i>
+
+        <div class="policy-text">
+
+            If a request is approved by the administrator and payment is paid,
+            attendance will be marked automatically.
 
         </div>
 
@@ -1526,7 +1540,8 @@ import {
     where,
     orderBy,
     limit,
-    getDocs
+    getDocs,
+    runTransaction
 }
 from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -1591,7 +1606,6 @@ let paymentPaid = false;
 let paymentChecking = true;
 
 let locationVerified = false;
-let locationChecking = false;
 
 let attendanceAlreadyMarked = false;
 
@@ -1606,6 +1620,8 @@ let requestUnsubscribe = null;
 
 let selectedReason = "";
 let requestSubmitting = false;
+
+let autoApprovalProcessing = false;
 
 
 /* =====================================================
@@ -1929,7 +1945,6 @@ if(navigator.onLine){
 
 /* =====================================================
    REQUEST CARD
-   ALWAYS VISIBLE
 ===================================================== */
 
 function updateRequestCard(){
@@ -1969,11 +1984,39 @@ function updateRequestCard(){
         requestCardTitle.textContent =
             "Request Approved";
 
-        requestCardSub.textContent =
-            "Admin approved your attendance request.";
+        if(
+            currentRequestData &&
+            currentRequestData.attendanceMarked === true
+        ){
 
-        requestCardBtn.textContent =
-            "REQUEST";
+            requestCardSub.textContent =
+                "Approved request completed. Attendance is marked.";
+
+            requestCardBtn.textContent =
+                "MARKED";
+
+            requestCardBtn.disabled =
+                true;
+
+        }
+        else if(paymentPaid){
+
+            requestCardSub.textContent =
+                "Approved and payment is paid. Attendance will be marked automatically.";
+
+            requestCardBtn.textContent =
+                "APPROVED";
+
+        }
+        else{
+
+            requestCardSub.textContent =
+                "Approved. Attendance will be marked automatically after payment is paid.";
+
+            requestCardBtn.textContent =
+                "APPROVED";
+
+        }
 
     }
 
@@ -2033,6 +2076,23 @@ function(){
             "warning",
             "Request Pending",
             "Your attendance request is already waiting for admin approval."
+        );
+
+        return;
+
+    }
+
+
+    if(
+        requestStatus === "approved" &&
+        currentRequestData &&
+        currentRequestData.attendanceMarked === true
+    ){
+
+        showModal(
+            "success",
+            "Attendance Already Marked",
+            "Your approved attendance has already been recorded."
         );
 
         return;
@@ -2107,7 +2167,7 @@ function(element){
 
 
 /* =====================================================
-   SUBMIT ATTENDANCE REQUEST
+   SUBMIT REQUEST
 ===================================================== */
 
 window.submitAttendanceRequest =
@@ -2153,15 +2213,6 @@ async function(){
 
     try{
 
-        /*
-           IMPORTANT:
-
-           Payment is NOT blocking request.
-
-           We only READ current payment status
-           and send it to admin.
-        */
-
         let latestPaymentStatus =
             "unpaid";
 
@@ -2191,10 +2242,6 @@ async function(){
         }
 
 
-        /*
-           Final duplicate check
-        */
-
         const attendanceRef =
             doc(
                 db,
@@ -2204,9 +2251,7 @@ async function(){
 
 
         const attendanceSnap =
-            await getDoc(
-                attendanceRef
-            );
+            await getDoc(attendanceRef);
 
 
         if(attendanceSnap.exists()){
@@ -2311,36 +2356,36 @@ async function(){
                 selectedReason,
 
             paymentStatus:
-                latestPaymentStatus
+                latestPaymentStatus,
+
+            attendanceMarked:
+                false
 
         };
 
 
         closeRequestModal();
 
-
         updateRequestCard();
+
+        updateAttendanceUI();
 
 
         requestInfo.classList.add("show");
 
-
         requestInfoTitle.textContent =
             "Request Submitted";
 
-
         requestInfoText.textContent =
             latestPaymentStatus === "paid"
-                ? "Payment is PAID. Your request has been sent to admin for review."
-                : "Payment is not marked as PAID. Admin will review your request and may reject it.";
+                ? "Payment is PAID. Your request has been sent to admin for approval."
+                : "Payment is not marked as PAID. After admin approval, attendance will be marked automatically once payment is paid.";
 
 
         showModal(
             "success",
             "Request Sent",
-            latestPaymentStatus === "paid"
-                ? "Your attendance request has been sent to the administrator."
-                : "Your request has been sent. Since payment is not marked as paid, admin will review it."
+            "Your attendance request has been sent to the administrator."
         );
 
     }
@@ -2375,6 +2420,349 @@ async function(){
 
 
 /* =====================================================
+   AUTO APPROVAL ATTENDANCE
+   ADMIN APPROVE + PAYMENT PAID
+===================================================== */
+
+async function processApprovedRequest(){
+
+    if(autoApprovalProcessing)
+        return;
+
+
+    if(!studentName)
+        return;
+
+
+    if(requestStatus !== "approved")
+        return;
+
+
+    if(!paymentPaid)
+        return;
+
+
+    if(
+        currentRequestData &&
+        currentRequestData.attendanceMarked === true
+    ){
+
+        attendanceAlreadyMarked = true;
+
+        updateAttendanceUI();
+        updateRequestCard();
+
+        return;
+
+    }
+
+
+    autoApprovalProcessing = true;
+
+
+    try{
+
+        attendanceBtn.disabled = true;
+
+        attendanceBtn.className =
+            "attendance-btn";
+
+        attendanceBtn.innerHTML =
+            '<span class="loader"></span> APPROVING ATTENDANCE';
+
+
+        attendanceStatus.textContent =
+            "Approved";
+
+        attendanceSmall.textContent =
+            "Admin approved • Payment paid";
+
+
+        attendanceIcon.innerHTML =
+            '<i class="ri-shield-check-line"></i>';
+
+
+        const today =
+            getTodayKey();
+
+
+        const attendanceRef =
+            doc(
+                db,
+                "attendance",
+                `${normalizeName(studentName)}_${today}`
+            );
+
+
+        const requestRef =
+            doc(
+                db,
+                "attendanceRequests",
+                getRequestId()
+            );
+
+
+        /*
+           TRANSACTION
+
+           This prevents duplicate attendance
+           if payment listener and request listener
+           trigger at the same time.
+        */
+
+        const result =
+            await runTransaction(
+                db,
+                async transaction=>{
+
+                    const attendanceSnap =
+                        await transaction.get(
+                            attendanceRef
+                        );
+
+
+                    const requestSnap =
+                        await transaction.get(
+                            requestRef
+                        );
+
+
+                    if(attendanceSnap.exists()){
+
+                        if(
+                            requestSnap.exists() &&
+                            requestSnap.data().attendanceMarked !== true
+                        ){
+
+                            transaction.set(
+                                requestRef,
+                                {
+                                    attendanceMarked:true,
+                                    attendanceMarkedAt:serverTimestamp()
+                                },
+                                {
+                                    merge:true
+                                }
+                            );
+
+                        }
+
+                        return {
+                            created:false
+                        };
+
+                    }
+
+
+                    const requestData =
+                        requestSnap.exists()
+                            ? requestSnap.data()
+                            : {};
+
+
+                    if(
+                        requestData.status !== "approved"
+                    ){
+
+                        return {
+                            created:false
+                        };
+
+                    }
+
+
+                    transaction.set(
+                        attendanceRef,
+                        {
+
+                            studentName:
+                                normalizeName(studentName),
+
+                            userName:
+                                normalizeName(studentName),
+
+                            date:
+                                today,
+
+                            timestamp:
+                                serverTimestamp(),
+
+                            paymentMonth:
+                                getCurrentMonth(),
+
+                            paymentStatus:
+                                "paid",
+
+                            requestStatus:
+                                "approved",
+
+                            attendanceSource:
+                                "admin-approved-request",
+
+                            approvedByAdmin:
+                                true
+
+                        }
+                    );
+
+
+                    transaction.set(
+                        requestRef,
+                        {
+
+                            attendanceMarked:
+                                true,
+
+                            attendanceMarkedAt:
+                                serverTimestamp(),
+
+                            attendanceSource:
+                                "admin-approved-request",
+
+                            paymentStatus:
+                                "paid"
+
+                        },
+                        {
+                            merge:true
+                        }
+                    );
+
+
+                    return {
+                        created:true
+                    };
+
+                }
+            );
+
+
+        /*
+           ATTENDANCE WAS CREATED NOW
+        */
+
+        if(result.created){
+
+            await updateStudentStreak(
+                normalizeName(studentName)
+            );
+
+            attendanceAlreadyMarked = true;
+
+            currentRequestData = {
+                ...(currentRequestData || {}),
+                status:"approved",
+                attendanceMarked:true,
+                paymentStatus:"paid"
+            };
+
+
+            requestStatus =
+                "approved";
+
+
+            updateAttendanceUI();
+
+            updateRequestCard();
+
+
+            lastDateEl.textContent =
+                today;
+
+            lastTimeEl.textContent =
+                new Date().toLocaleTimeString(
+                    "en-IN",
+                    {
+                        hour:"2-digit",
+                        minute:"2-digit",
+                        hour12:true
+                    }
+                );
+
+
+            requestInfo.classList.add("show");
+
+            requestInfoTitle.textContent =
+                "Attendance Approved & Marked";
+
+            requestInfoText.textContent =
+                "Admin approved your request and payment is paid. Attendance has been marked automatically.";
+
+
+            showModal(
+                "success",
+                "Attendance Approved",
+                "Admin approved your request and your current payment is paid. Today's attendance has been marked automatically."
+            );
+
+        }
+        else{
+
+            /*
+               Already marked by another process.
+            */
+
+            const finalAttendance =
+                await getDoc(
+                    attendanceRef
+                );
+
+
+            if(finalAttendance.exists()){
+
+                attendanceAlreadyMarked =
+                    true;
+
+                updateAttendanceUI();
+
+                updateRequestCard();
+
+            }
+            else{
+
+                updateAttendanceUI();
+
+            }
+
+        }
+
+    }
+    catch(error){
+
+        console.error(
+            "Auto approval attendance error:",
+            error
+        );
+
+
+        attendanceBtn.disabled =
+            false;
+
+        updateAttendanceUI();
+
+        requestInfo.classList.add("show");
+
+        requestInfoTitle.textContent =
+            "Approved Request";
+
+        requestInfoText.textContent =
+            "Request is approved and payment is paid, but attendance could not be recorded automatically. Please refresh and try again.";
+
+    }
+    finally{
+
+        autoApprovalProcessing =
+            false;
+
+        updateAttendanceUI();
+        updateRequestCard();
+
+    }
+
+}
+
+
+/* =====================================================
    REQUEST LISTENER
 ===================================================== */
 
@@ -2383,6 +2771,7 @@ function listenAttendanceRequest(){
     if(!studentName){
 
         requestChecking = false;
+
         requestStatus = "none";
 
         updateRequestCard();
@@ -2433,13 +2822,33 @@ function listenAttendanceRequest(){
                 else{
 
                     currentRequestData = null;
-                    requestStatus = "none";
+
+                    requestStatus =
+                        "none";
 
                 }
 
 
                 updateRequestCard();
+
                 updateAttendanceUI();
+
+
+                /*
+                   ADMIN APPROVED
+
+                   If payment is already paid,
+                   mark attendance automatically.
+                */
+
+                if(
+                    requestStatus === "approved" &&
+                    paymentPaid
+                ){
+
+                    processApprovedRequest();
+
+                }
 
             },
 
@@ -2452,7 +2861,9 @@ function listenAttendanceRequest(){
                 );
 
                 requestChecking = false;
-                requestStatus = "none";
+
+                requestStatus =
+                    "none";
 
                 updateRequestCard();
 
@@ -2501,7 +2912,7 @@ function updatePaymentUI(){
             "payment-badge paid";
 
         paymentMessageEl.textContent =
-            "Your monthly fee is paid. You can mark attendance.";
+            "Your monthly fee is paid.";
 
         if(
             currentPaymentData &&
@@ -2533,7 +2944,7 @@ function updatePaymentUI(){
             "payment-badge pending";
 
         paymentMessageEl.textContent =
-            "Monthly fee is pending. Attendance marking is locked.";
+            "Monthly fee is pending. Direct attendance marking is locked.";
 
         paymentAmountEl.style.display =
             "none";
@@ -2573,6 +2984,13 @@ function listenPaymentStatus(){
         );
 
 
+    if(paymentUnsubscribe){
+
+        paymentUnsubscribe();
+
+    }
+
+
     paymentUnsubscribe =
         onSnapshot(
 
@@ -2597,15 +3015,38 @@ function listenPaymentStatus(){
                 }
                 else{
 
-                    currentPaymentData = null;
-                    paymentPaid = false;
+                    currentPaymentData =
+                        null;
+
+                    paymentPaid =
+                        false;
 
                 }
 
 
                 updatePaymentUI();
+
                 updateAttendanceUI();
+
                 updateRequestCard();
+
+
+                /*
+                   IMPORTANT
+
+                   If admin already approved the request
+                   and payment changes to PAID,
+                   attendance is automatically marked.
+                */
+
+                if(
+                    paymentPaid &&
+                    requestStatus === "approved"
+                ){
+
+                    processApprovedRequest();
+
+                }
 
             },
 
@@ -2617,9 +3058,14 @@ function listenPaymentStatus(){
                     error
                 );
 
-                paymentChecking = false;
-                paymentPaid = false;
-                currentPaymentData = null;
+                paymentChecking =
+                    false;
+
+                paymentPaid =
+                    false;
+
+                currentPaymentData =
+                    null;
 
 
                 paymentBadgeEl.textContent =
@@ -2704,7 +3150,8 @@ async function checkTodayAttendance(){
 
         if(snap.exists()){
 
-            attendanceAlreadyMarked = true;
+            attendanceAlreadyMarked =
+                true;
 
             updateAttendanceUI();
             updateRequestCard();
@@ -2908,6 +3355,39 @@ function updateAttendanceUI(){
     }
 
 
+    /*
+       APPROVED REQUEST + PAID
+
+       Auto process should handle this.
+    */
+
+    if(
+        requestStatus === "approved" &&
+        paymentPaid
+    ){
+
+        attendanceBtn.disabled = true;
+
+        attendanceBtn.className =
+            "attendance-btn mark-btn";
+
+        attendanceBtn.innerHTML =
+            '<span class="loader"></span> APPROVED • MARKING';
+
+        attendanceStatus.textContent =
+            "Approved";
+
+        attendanceSmall.textContent =
+            "Admin approved • Payment paid";
+
+        attendanceIcon.innerHTML =
+            '<i class="ri-shield-check-line"></i>';
+
+        return;
+
+    }
+
+
     if(!paymentPaid){
 
         attendanceBtn.disabled = true;
@@ -2927,9 +3407,22 @@ function updateAttendanceUI(){
         attendanceIcon.innerHTML =
             '<i class="ri-lock-line"></i>';
 
+
         /*
-           REQUEST CARD STILL REMAINS BELOW.
+           APPROVED BUT UNPAID
         */
+
+        if(requestStatus === "approved"){
+
+            requestInfo.classList.add("show");
+
+            requestInfoTitle.textContent =
+                "Request Approved";
+
+            requestInfoText.textContent =
+                "Admin approved your request. Pay the current month's fee and attendance will be marked automatically.";
+
+        }
 
         return;
 
@@ -2938,8 +3431,7 @@ function updateAttendanceUI(){
 
     /*
        PAYMENT PAID
-
-       MAIN BUTTON = MARK ATTENDANCE
+       NORMAL DIRECT ATTENDANCE
     */
 
     attendanceBtn.disabled = false;
@@ -2968,9 +3460,10 @@ function updateAttendanceUI(){
             "Request Pending";
 
         requestInfoText.textContent =
-            "Your request is already waiting for admin approval.";
+            "Your request is waiting for admin approval.";
 
     }
+
     else if(requestStatus === "approved"){
 
         requestInfo.classList.add("show");
@@ -2979,9 +3472,10 @@ function updateAttendanceUI(){
             "Request Approved";
 
         requestInfoText.textContent =
-            "Admin approved your request. You can still try Mark Attendance.";
+            "Admin approved your request. Attendance will be marked automatically.";
 
     }
+
     else if(requestStatus === "rejected"){
 
         requestInfo.classList.add("show");
@@ -2993,6 +3487,7 @@ function updateAttendanceUI(){
             "Your previous request was rejected. You can submit another request.";
 
     }
+
     else{
 
         requestInfo.classList.remove("show");
@@ -3011,7 +3506,7 @@ async function(){
 
     /*
        MAIN BUTTON NEVER SENDS REQUEST.
-       It only marks attendance.
+       It only marks attendance directly.
     */
 
     await markAttendance();
@@ -3075,19 +3570,17 @@ async function markAttendance(){
 
     try{
 
-        /*
-           FRESH PAYMENT
-        */
-
         const validPayment =
             await verifyPaymentBeforeAttendance();
 
 
         if(!validPayment){
 
-            paymentPaid = false;
+            paymentPaid =
+                false;
 
             updatePaymentUI();
+
             updateAttendanceUI();
 
             showModal(
@@ -3144,10 +3637,6 @@ async function markAttendance(){
         }
 
 
-        /*
-           FINAL DUPLICATE CHECK
-        */
-
         const today =
             getTodayKey();
 
@@ -3168,7 +3657,8 @@ async function markAttendance(){
 
         if(existing.exists()){
 
-            attendanceAlreadyMarked = true;
+            attendanceAlreadyMarked =
+                true;
 
             updateAttendanceUI();
             updateRequestCard();
@@ -3183,10 +3673,6 @@ async function markAttendance(){
 
         }
 
-
-        /*
-           WRITE
-        */
 
         attendanceBtn.innerHTML =
             '<span class="loader"></span> MARKING ATTENDANCE';
@@ -3219,28 +3705,29 @@ async function markAttendance(){
                     "paid",
 
                 requestStatus:
-                    "direct"
+                    "direct",
+
+                attendanceSource:
+                    "student-direct",
+
+                approvedByAdmin:
+                    false
 
             }
         );
 
-
-        /*
-           STREAK
-        */
 
         await updateStudentStreak(
             normalizeName(studentName)
         );
 
 
-        /*
-           SUCCESS
-        */
+        attendanceAlreadyMarked =
+            true;
 
-        attendanceAlreadyMarked = true;
 
-        attendanceBtn.disabled = true;
+        attendanceBtn.disabled =
+            true;
 
         attendanceBtn.className =
             "attendance-btn";
@@ -3260,6 +3747,7 @@ async function markAttendance(){
         requestInfo.classList.remove("show");
 
         updateRequestCard();
+
 
         lastDateEl.textContent =
             today;
@@ -3290,14 +3778,8 @@ async function markAttendance(){
         );
 
 
-        /*
-           IMPORTANT:
-
-           Failure does NOT remove request option.
-           Request option is already permanently below.
-        */
-
-        attendanceBtn.disabled = false;
+        attendanceBtn.disabled =
+            false;
 
         attendanceBtn.className =
             "attendance-btn failed-btn";
@@ -3394,7 +3876,8 @@ function getFreshLocation(){
                         ALLOWED_RANGE
                     ){
 
-                        locationVerified = true;
+                        locationVerified =
+                            true;
 
                         gpsIcon.className =
                             "gps-icon success";
@@ -3413,7 +3896,8 @@ function getFreshLocation(){
                     }
                     else{
 
-                        locationVerified = false;
+                        locationVerified =
+                            false;
 
                         gpsIcon.className =
                             "gps-icon error";
@@ -3441,7 +3925,8 @@ function getFreshLocation(){
                         error
                     );
 
-                    locationVerified = false;
+                    locationVerified =
+                        false;
 
                     gpsIcon.className =
                         "gps-icon error";
@@ -3524,7 +4009,8 @@ async function updateStudentStreak(name){
             getTodayKey();
 
 
-        let streak = 1;
+        let streak =
+            1;
 
 
         if(snap.exists()){
@@ -3586,7 +4072,8 @@ async function updateStudentStreak(name){
                 }
                 else{
 
-                    streak = 1;
+                    streak =
+                        1;
 
                 }
 
@@ -3648,8 +4135,11 @@ async function init(){
 
     if(!studentName){
 
-        paymentChecking = false;
-        paymentPaid = false;
+        paymentChecking =
+            false;
+
+        paymentPaid =
+            false;
 
 
         paymentBadgeEl.textContent =
@@ -3663,7 +4153,8 @@ async function init(){
             "Student name was not found. Please login again.";
 
 
-        attendanceBtn.disabled = true;
+        attendanceBtn.disabled =
+            true;
 
         attendanceBtn.className =
             "attendance-btn payment-required";
