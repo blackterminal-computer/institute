@@ -1,0 +1,4033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta name="theme-color" content="#0b1020">
+
+<title>BT | Question Bank</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- SheetJS -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+    --bg:#f4f6fa;
+    --surface:#ffffff;
+    --surface2:#f8fafc;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:#e5e9f1;
+    --dark:#0b1020;
+    --dark2:#111827;
+    --blue:#2563eb;
+    --blue2:#1d4ed8;
+    --green:#16a34a;
+    --red:#dc2626;
+    --orange:#ea580c;
+    --amber:#d97706;
+    --purple:#7c3aed;
+    --shadow:0 12px 35px rgba(15,23,42,.08);
+    --radius:20px;
+}
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+}
+
+button,
+input,
+select,
+textarea{
+    font:inherit;
+}
+
+button{
+    cursor:pointer;
+}
+
+.hidden{
+    display:none!important;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar{
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    width:250px;
+    background:linear-gradient(180deg,#0b1020,#10172b);
+    color:white;
+    padding:22px 15px;
+    z-index:100;
+    overflow-y:auto;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:4px 9px 25px;
+}
+
+.brandLogo{
+    width:42px;
+    height:42px;
+    border-radius:13px;
+    background:linear-gradient(135deg,#2563eb,#7c3aed);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:900;
+    font-size:18px;
+    box-shadow:0 10px 25px rgba(37,99,235,.3);
+}
+
+.brandText strong{
+    display:block;
+    font-size:15px;
+}
+
+.brandText span{
+    color:#94a3b8;
+    font-size:11px;
+}
+
+.navTitle{
+    color:#64748b;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:1px;
+    margin:18px 10px 8px;
+    text-transform:uppercase;
+}
+
+.navItem{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    width:100%;
+    padding:12px 13px;
+    border-radius:13px;
+    color:#aeb9ca;
+    text-decoration:none;
+    margin-bottom:4px;
+    font-size:13px;
+    font-weight:700;
+    transition:.2s;
+}
+
+.navItem:hover,
+.navItem.active{
+    color:white;
+    background:rgba(255,255,255,.09);
+}
+
+.navItem.active{
+    box-shadow:inset 3px 0 #3b82f6;
+}
+
+.navIcon{
+    width:22px;
+    text-align:center;
+    font-size:17px;
+}
+
+/* =========================
+   MAIN
+========================= */
+
+.main{
+    margin-left:250px;
+    min-height:100vh;
+    padding:26px 28px 50px;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    margin-bottom:24px;
+}
+
+.pageTitle h1{
+    font-size:27px;
+    letter-spacing:-.5px;
+}
+
+.pageTitle p{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:5px;
+}
+
+.topActions{
+    display:flex;
+    gap:9px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn{
+    border:0;
+    border-radius:13px;
+    padding:11px 15px;
+    font-weight:800;
+    font-size:13px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    transition:.2s;
+}
+
+.btn:active{
+    transform:scale(.97);
+}
+
+.btnPrimary{
+    background:var(--blue);
+    color:white;
+    box-shadow:0 8px 20px rgba(37,99,235,.2);
+}
+
+.btnPrimary:hover{
+    background:var(--blue2);
+}
+
+.btnDark{
+    background:var(--dark);
+    color:white;
+}
+
+.btnLight{
+    background:white;
+    color:var(--ink);
+    border:1px solid var(--line);
+}
+
+.btnGreen{
+    background:#ecfdf3;
+    color:#15803d;
+}
+
+.btnRed{
+    background:#fef2f2;
+    color:#b91c1c;
+}
+
+.btnOrange{
+    background:#fff7ed;
+    color:#c2410c;
+}
+
+.btnPurple{
+    background:#f5f3ff;
+    color:#6d28d9;
+}
+
+/* =========================
+   STATS
+========================= */
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:20px;
+}
+
+.statCard{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:18px;
+    box-shadow:var(--shadow);
+}
+
+.statTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.statIcon{
+    width:40px;
+    height:40px;
+    border-radius:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:19px;
+}
+
+.statIcon.blue{
+    background:#eff6ff;
+}
+
+.statIcon.green{
+    background:#ecfdf5;
+}
+
+.statIcon.orange{
+    background:#fff7ed;
+}
+
+.statIcon.purple{
+    background:#f5f3ff;
+}
+
+.statValue{
+    font-size:26px;
+    font-weight:900;
+    margin-top:12px;
+}
+
+.statLabel{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:3px;
+    font-weight:600;
+}
+
+/* =========================
+   IMPORT HERO
+========================= */
+
+.importCard{
+    background:
+        radial-gradient(circle at 90% 10%,rgba(59,130,246,.22),transparent 30%),
+        linear-gradient(135deg,#0b1020,#16213d);
+    color:white;
+    border-radius:22px;
+    padding:22px;
+    margin-bottom:20px;
+    box-shadow:0 18px 40px rgba(11,16,32,.18);
+    overflow:hidden;
+}
+
+.importContent{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+}
+
+.importLeft{
+    max-width:680px;
+}
+
+.importBadge{
+    display:inline-flex;
+    padding:5px 9px;
+    border-radius:20px;
+    background:rgba(255,255,255,.09);
+    color:#93c5fd;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.6px;
+    text-transform:uppercase;
+}
+
+.importCard h2{
+    margin-top:10px;
+    font-size:22px;
+}
+
+.importCard p{
+    color:#aab7cc;
+    font-size:13px;
+    line-height:1.6;
+    margin-top:7px;
+}
+
+.importButtons{
+    display:flex;
+    gap:8px;
+    margin-top:15px;
+    flex-wrap:wrap;
+}
+
+.importCard .btnLight{
+    background:white;
+}
+
+.uploadBox{
+    width:180px;
+    min-width:180px;
+    height:135px;
+    border:1px dashed rgba(255,255,255,.28);
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:8px;
+    color:#cbd5e1;
+    text-align:center;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.uploadBox:hover{
+    background:rgba(255,255,255,.05);
+    border-color:#60a5fa;
+}
+
+.uploadIcon{
+    font-size:30px;
+}
+
+.uploadBox strong{
+    font-size:12px;
+}
+
+.uploadBox span{
+    font-size:10px;
+    color:#94a3b8;
+}
+
+/* =========================
+   TOOLBAR
+========================= */
+
+.toolbar{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:13px;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin-bottom:16px;
+    box-shadow:var(--shadow);
+}
+
+.searchBox{
+    position:relative;
+    flex:1;
+}
+
+.searchBox span{
+    position:absolute;
+    left:13px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#94a3b8;
+}
+
+.searchBox input{
+    width:100%;
+    border:1px solid var(--line);
+    background:#f8fafc;
+    border-radius:12px;
+    padding:11px 12px 11px 38px;
+    outline:none;
+    font-size:13px;
+}
+
+.searchBox input:focus{
+    border-color:#93c5fd;
+    background:white;
+}
+
+.filterSelect{
+    min-width:135px;
+    border:1px solid var(--line);
+    background:#f8fafc;
+    border-radius:12px;
+    padding:11px 12px;
+    outline:none;
+    font-size:12px;
+    color:var(--ink);
+}
+
+.selectionBar{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:#eff6ff;
+    border:1px solid #bfdbfe;
+    border-radius:15px;
+    padding:10px 13px;
+    margin-bottom:14px;
+}
+
+.selectionBar.show{
+    display:flex;
+}
+
+.selectionInfo{
+    font-size:12px;
+    font-weight:800;
+    color:#1d4ed8;
+}
+
+.selectionActions{
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.tableCard{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+}
+
+.tableHead{
+    padding:15px 17px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.tableHead strong{
+    font-size:14px;
+}
+
+.tableHead span{
+    color:var(--muted);
+    font-size:11px;
+}
+
+.tableWrap{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:900px;
+}
+
+th{
+    text-align:left;
+    background:#f8fafc;
+    color:#64748b;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    padding:11px 12px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+}
+
+td{
+    padding:12px;
+    border-bottom:1px solid #eef1f5;
+    font-size:12px;
+    vertical-align:middle;
+}
+
+tr:last-child td{
+    border-bottom:0;
+}
+
+tr:hover td{
+    background:#fbfdff;
+}
+
+.questionCell{
+    max-width:350px;
+}
+
+.questionText{
+    font-weight:800;
+    line-height:1.45;
+}
+
+.questionMeta{
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+    margin-top:6px;
+}
+
+.tag{
+    display:inline-flex;
+    align-items:center;
+    padding:4px 7px;
+    border-radius:7px;
+    font-size:9px;
+    font-weight:800;
+    background:#f1f5f9;
+    color:#475569;
+}
+
+.tag.blue{
+    background:#eff6ff;
+    color:#1d4ed8;
+}
+
+.tag.green{
+    background:#ecfdf5;
+    color:#15803d;
+}
+
+.tag.orange{
+    background:#fff7ed;
+    color:#c2410c;
+}
+
+.tag.red{
+    background:#fef2f2;
+    color:#b91c1c;
+}
+
+.optionMini{
+    font-size:10px;
+    line-height:1.5;
+    color:#64748b;
+}
+
+.correctMini{
+    color:#15803d;
+    font-weight:800;
+}
+
+.actions{
+    display:flex;
+    gap:5px;
+}
+
+.iconBtn{
+    width:32px;
+    height:32px;
+    border:1px solid var(--line);
+    background:white;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:14px;
+}
+
+.iconBtn:hover{
+    background:#f8fafc;
+}
+
+.empty{
+    text-align:center;
+    padding:60px 20px;
+}
+
+.emptyIcon{
+    font-size:40px;
+    margin-bottom:10px;
+}
+
+.empty h3{
+    font-size:16px;
+}
+
+.empty p{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:5px;
+}
+
+/* =========================
+   OVERLAY / MODAL
+========================= */
+
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(2,6,23,.58);
+    backdrop-filter:blur(5px);
+    z-index:500;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+}
+
+.overlay.show{
+    display:flex;
+}
+
+.modal{
+    width:min(760px,100%);
+    max-height:92vh;
+    background:white;
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.25);
+    display:flex;
+    flex-direction:column;
+}
+
+.modalHead{
+    padding:17px 19px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+}
+
+.modalHead h3{
+    font-size:17px;
+}
+
+.modalHead p{
+    color:var(--muted);
+    font-size:10px;
+    margin-top:3px;
+}
+
+.closeBtn{
+    width:36px;
+    height:36px;
+    border:0;
+    border-radius:11px;
+    background:#f1f5f9;
+    font-size:18px;
+}
+
+.modalBody{
+    padding:19px;
+    overflow-y:auto;
+}
+
+.modalFoot{
+    padding:13px 19px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.formGrid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:13px;
+}
+
+.field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.field.full{
+    grid-column:1/-1;
+}
+
+.field label{
+    font-size:11px;
+    font-weight:800;
+    color:#334155;
+}
+
+.field input,
+.field select,
+.field textarea{
+    width:100%;
+    border:1px solid var(--line);
+    background:#f8fafc;
+    border-radius:11px;
+    padding:11px 12px;
+    outline:none;
+    color:var(--ink);
+    font-size:12px;
+}
+
+.field textarea{
+    min-height:85px;
+    resize:vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus{
+    border-color:#93c5fd;
+    background:white;
+    box-shadow:0 0 0 3px rgba(37,99,235,.06);
+}
+
+.optionsBox{
+    border:1px solid var(--line);
+    border-radius:15px;
+    padding:13px;
+    background:#fafcff;
+}
+
+.optionsTitle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+}
+
+.optionsTitle strong{
+    font-size:12px;
+}
+
+.optionRow{
+    display:grid;
+    grid-template-columns:34px 1fr;
+    gap:8px;
+    margin-bottom:8px;
+}
+
+.optionLetter{
+    width:34px;
+    height:38px;
+    border-radius:9px;
+    background:#eff6ff;
+    color:#1d4ed8;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:900;
+    font-size:12px;
+}
+
+.optionRow input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:9px 10px;
+    background:white;
+    outline:none;
+    font-size:12px;
+}
+
+.correctGrid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:7px;
+}
+
+.correctChoice{
+    position:relative;
+}
+
+.correctChoice input{
+    position:absolute;
+    opacity:0;
+}
+
+.correctChoice label{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:38px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.correctChoice input:checked + label{
+    background:#ecfdf5;
+    color:#15803d;
+    border-color:#86efac;
+}
+
+.sectionTitle{
+    font-size:12px;
+    font-weight:900;
+    margin:18px 0 10px;
+}
+
+/* =========================
+   IMPORT PREVIEW
+========================= */
+
+.previewInfo{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:9px;
+    margin-bottom:13px;
+}
+
+.previewStat{
+    background:#f8fafc;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px;
+}
+
+.previewStat strong{
+    display:block;
+    font-size:17px;
+}
+
+.previewStat span{
+    color:var(--muted);
+    font-size:9px;
+}
+
+.previewTable{
+    max-height:420px;
+    overflow:auto;
+    border:1px solid var(--line);
+    border-radius:13px;
+}
+
+.previewTable table{
+    min-width:850px;
+}
+
+.validRow{
+    background:#f0fdf4;
+}
+
+.invalidRow{
+    background:#fff7ed;
+}
+
+.errorText{
+    color:#c2410c;
+    font-size:9px;
+    font-weight:700;
+}
+
+.importProgress{
+    margin-top:13px;
+    display:none;
+}
+
+.importProgress.show{
+    display:block;
+}
+
+.progressTrack{
+    height:9px;
+    background:#e2e8f0;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progressBar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#2563eb,#7c3aed);
+    transition:.2s;
+}
+
+.progressText{
+    font-size:10px;
+    color:var(--muted);
+    margin-top:6px;
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toastWrap{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    z-index:1000;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.toast{
+    min-width:260px;
+    max-width:360px;
+    padding:13px 15px;
+    border-radius:13px;
+    background:#0f172a;
+    color:white;
+    box-shadow:0 15px 35px rgba(0,0,0,.2);
+    font-size:12px;
+    font-weight:700;
+    animation:toastIn .25s ease;
+}
+
+.toast.success{
+    background:#15803d;
+}
+
+.toast.error{
+    background:#b91c1c;
+}
+
+.toast.warning{
+    background:#b45309;
+}
+
+@keyframes toastIn{
+    from{
+        transform:translateY(12px);
+        opacity:0;
+    }
+    to{
+        transform:translateY(0);
+        opacity:1;
+    }
+}
+
+/* =========================
+   MOBILE HEADER
+========================= */
+
+.mobileHeader{
+    display:none;
+}
+
+.bottomNav{
+    display:none;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:1000px){
+
+    .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+}
+
+@media(max-width:760px){
+
+    body{
+        padding-bottom:76px;
+    }
+
+    .sidebar{
+        display:none;
+    }
+
+    .main{
+        margin-left:0;
+        padding:0 13px 30px;
+    }
+
+    .mobileHeader{
+        display:flex;
+        position:sticky;
+        top:0;
+        z-index:90;
+        margin:0 -13px;
+        padding:14px 15px;
+        background:rgba(244,246,250,.93);
+        backdrop-filter:blur(12px);
+        align-items:center;
+        justify-content:space-between;
+        border-bottom:1px solid rgba(226,232,240,.8);
+    }
+
+    .mobileBrand{
+        display:flex;
+        align-items:center;
+        gap:9px;
+    }
+
+    .mobileLogo{
+        width:37px;
+        height:37px;
+        border-radius:11px;
+        background:linear-gradient(135deg,#2563eb,#7c3aed);
+        color:white;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:14px;
+        font-weight:900;
+    }
+
+    .mobileBrand strong{
+        font-size:13px;
+    }
+
+    .mobileBrand span{
+        display:block;
+        color:var(--muted);
+        font-size:9px;
+        margin-top:1px;
+    }
+
+    .mobileHeader button{
+        width:38px;
+        height:38px;
+        border:1px solid var(--line);
+        background:white;
+        border-radius:11px;
+    }
+
+    .topbar{
+        padding-top:19px;
+        margin-bottom:17px;
+        align-items:flex-start;
+    }
+
+    .pageTitle h1{
+        font-size:23px;
+    }
+
+    .pageTitle p{
+        font-size:11px;
+    }
+
+    .topActions{
+        display:none;
+    }
+
+    .stats{
+        gap:9px;
+        margin-bottom:13px;
+    }
+
+    .statCard{
+        padding:13px;
+        border-radius:16px;
+    }
+
+    .statIcon{
+        width:34px;
+        height:34px;
+        border-radius:10px;
+        font-size:15px;
+    }
+
+    .statValue{
+        font-size:21px;
+        margin-top:9px;
+    }
+
+    .statLabel{
+        font-size:10px;
+    }
+
+    .importCard{
+        border-radius:18px;
+        padding:17px;
+    }
+
+    .importContent{
+        display:block;
+    }
+
+    .importCard h2{
+        font-size:18px;
+    }
+
+    .importCard p{
+        font-size:11px;
+    }
+
+    .uploadBox{
+        width:100%;
+        height:85px;
+        min-width:0;
+        margin-top:13px;
+        flex-direction:row;
+    }
+
+    .uploadIcon{
+        font-size:23px;
+    }
+
+    .toolbar{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        padding:9px;
+        border-radius:16px;
+    }
+
+    .searchBox{
+        grid-column:1/-1;
+    }
+
+    .filterSelect{
+        width:100%;
+        min-width:0;
+    }
+
+    .toolbar .btn{
+        width:100%;
+    }
+
+    .selectionBar{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .selectionActions{
+        width:100%;
+    }
+
+    .selectionActions .btn{
+        flex:1;
+    }
+
+    .tableCard{
+        border-radius:17px;
+    }
+
+    .tableHead{
+        padding:13px;
+    }
+
+    .tableWrap{
+        display:none;
+    }
+
+    .mobileQuestions{
+        display:block;
+    }
+
+    .questionCard{
+        padding:14px;
+        border-bottom:1px solid var(--line);
+    }
+
+    .questionCard:last-child{
+        border-bottom:0;
+    }
+
+    .questionTop{
+        display:flex;
+        gap:9px;
+        align-items:flex-start;
+    }
+
+    .questionCheck{
+        margin-top:2px;
+    }
+
+    .questionCardText{
+        flex:1;
+        font-size:12px;
+        font-weight:800;
+        line-height:1.5;
+    }
+
+    .questionActions{
+        display:flex;
+        gap:6px;
+        margin-top:11px;
+        padding-left:29px;
+    }
+
+    .questionActions .btn{
+        flex:1;
+        padding:9px 8px;
+        font-size:10px;
+    }
+
+    .mobileQuestionMeta{
+        display:flex;
+        flex-wrap:wrap;
+        gap:5px;
+        margin:8px 0 0 29px;
+    }
+
+    .modal{
+        width:100%;
+        max-height:94vh;
+        border-radius:22px 22px 0 0;
+        align-self:flex-end;
+    }
+
+    .overlay{
+        align-items:flex-end;
+        padding:0;
+    }
+
+    .modalBody{
+        padding:16px;
+    }
+
+    .formGrid{
+        grid-template-columns:1fr;
+    }
+
+    .field.full{
+        grid-column:auto;
+    }
+
+    .correctGrid{
+        grid-template-columns:repeat(4,1fr);
+    }
+
+    .modalFoot{
+        padding:12px 15px calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .modalFoot .btn{
+        flex:1;
+    }
+
+    .previewInfo{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .toastWrap{
+        left:13px;
+        right:13px;
+        bottom:84px;
+    }
+
+    .toast{
+        min-width:0;
+        width:100%;
+    }
+
+    .bottomNav{
+        display:flex;
+        position:fixed;
+        bottom:0;
+        left:0;
+        right:0;
+        height:68px;
+        background:rgba(255,255,255,.95);
+        backdrop-filter:blur(15px);
+        border-top:1px solid var(--line);
+        z-index:200;
+        padding-bottom:env(safe-area-inset-bottom);
+    }
+
+    .bottomNav a{
+        flex:1;
+        text-decoration:none;
+        color:#94a3b8;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:3px;
+        font-size:9px;
+        font-weight:800;
+    }
+
+    .bottomNav a.active{
+        color:var(--blue);
+    }
+
+    .bottomNav i{
+        font-style:normal;
+        font-size:18px;
+    }
+}
+
+@media(min-width:761px){
+    .mobileQuestions{
+        display:none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- =========================
+     DESKTOP SIDEBAR
+========================= -->
+
+<aside class="sidebar">
+
+    <div class="brand">
+        <div class="brandLogo">BT</div>
+
+        <div class="brandText">
+            <strong>BlackTerminal</strong>
+            <span>Exam Management</span>
+        </div>
+    </div>
+
+    <div class="navTitle">Main</div>
+
+    <a class="navItem" href="admin-exam.html">
+        <span class="navIcon">📊</span>
+        Dashboard
+    </a>
+
+    <a class="navItem" href="admin-exam.html">
+        <span class="navIcon">📝</span>
+        Exams
+    </a>
+
+    <a class="navItem active" href="#">
+        <span class="navIcon">📚</span>
+        Question Bank
+    </a>
+
+    <a class="navItem" href="admin-exam.html">
+        <span class="navIcon">🎯</span>
+        Assignments
+    </a>
+
+    <a class="navItem" href="admin-exam.html">
+        <span class="navIcon">🏆</span>
+        Results
+    </a>
+
+    <div class="navTitle">System</div>
+
+    <a class="navItem" href="#">
+        <span class="navIcon">⚙️</span>
+        Settings
+    </a>
+
+</aside>
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<main class="main">
+
+    <!-- Mobile Header -->
+
+    <div class="mobileHeader">
+
+        <div class="mobileBrand">
+            <div class="mobileLogo">BT</div>
+
+            <div>
+                <strong>Question Bank</strong>
+                <span>BlackTerminal Exam</span>
+            </div>
+        </div>
+
+        <button onclick="openManualModal()">＋</button>
+
+    </div>
+
+    <!-- Topbar -->
+
+    <div class="topbar">
+
+        <div class="pageTitle">
+            <h1>Question Bank</h1>
+            <p>Create, import and manage your exam questions.</p>
+        </div>
+
+        <div class="topActions">
+
+            <button class="btn btnLight"
+                    onclick="downloadTemplate()">
+                📥 Excel Template
+            </button>
+
+            <button class="btn btnPrimary"
+                    onclick="openManualModal()">
+                ＋ Add Question
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- Stats -->
+
+    <section class="stats">
+
+        <div class="statCard">
+            <div class="statTop">
+                <div class="statIcon blue">📚</div>
+            </div>
+
+            <div class="statValue" id="totalCount">0</div>
+            <div class="statLabel">Total Questions</div>
+        </div>
+
+        <div class="statCard">
+            <div class="statTop">
+                <div class="statIcon green">✓</div>
+            </div>
+
+            <div class="statValue" id="easyCount">0</div>
+            <div class="statLabel">Easy</div>
+        </div>
+
+        <div class="statCard">
+            <div class="statTop">
+                <div class="statIcon orange">⚡</div>
+            </div>
+
+            <div class="statValue" id="mediumCount">0</div>
+            <div class="statLabel">Medium</div>
+        </div>
+
+        <div class="statCard">
+            <div class="statTop">
+                <div class="statIcon purple">🔥</div>
+            </div>
+
+            <div class="statValue" id="hardCount">0</div>
+            <div class="statLabel">Hard</div>
+        </div>
+
+    </section>
+
+    <!-- IMPORT -->
+
+    <section class="importCard">
+
+        <div class="importContent">
+
+            <div class="importLeft">
+
+                <span class="importBadge">
+                    ⚡ BULK IMPORT
+                </span>
+
+                <h2>Add Hundreds of Questions in Seconds</h2>
+
+                <p>
+                    Prepare questions in Excel and upload them here.
+                    Preview everything before saving to Firebase.
+                    No need to add questions one by one.
+                </p>
+
+                <div class="importButtons">
+
+                    <button class="btn btnLight"
+                            onclick="downloadTemplate()">
+                        📥 Download Template
+                    </button>
+
+                    <button class="btn btnPrimary"
+                            onclick="document.getElementById('excelFile').click()">
+                        📤 Upload Excel
+                    </button>
+
+                </div>
+
+            </div>
+
+            <label class="uploadBox"
+                   for="excelFile">
+
+                <div class="uploadIcon">📊</div>
+
+                <strong>Drop / Select Excel</strong>
+
+                <span>.xlsx / .xls / .csv</span>
+
+            </label>
+
+        </div>
+
+        <input
+            type="file"
+            id="excelFile"
+            accept=".xlsx,.xls,.csv"
+            class="hidden"
+        >
+
+    </section>
+
+    <!-- TOOLBAR -->
+
+    <div class="toolbar">
+
+        <div class="searchBox">
+
+            <span>🔎</span>
+
+            <input
+                id="searchInput"
+                type="search"
+                placeholder="Search question, subject, topic..."
+                autocomplete="off"
+            >
+
+        </div>
+
+        <select id="subjectFilter"
+                class="filterSelect">
+
+            <option value="all">All Subjects</option>
+
+        </select>
+
+        <select id="difficultyFilter"
+                class="filterSelect">
+
+            <option value="all">All Difficulty</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+
+        </select>
+
+        <button class="btn btnLight"
+                onclick="reloadQuestions()">
+            ↻ Refresh
+        </button>
+
+    </div>
+
+    <!-- SELECTION BAR -->
+
+    <div class="selectionBar"
+         id="selectionBar">
+
+        <div class="selectionInfo">
+
+            <span id="selectedCount">0</span>
+            questions selected
+
+        </div>
+
+        <div class="selectionActions">
+
+            <button class="btn btnPrimary"
+                    onclick="useSelectedForExam()">
+                🎯 Add to Exam
+            </button>
+
+            <button class="btn btnRed"
+                    onclick="deleteSelected()">
+                🗑 Delete
+            </button>
+
+            <button class="btn btnLight"
+                    onclick="clearSelection()">
+                Clear
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- TABLE -->
+
+    <section class="tableCard">
+
+        <div class="tableHead">
+
+            <div>
+                <strong>All Questions</strong>
+                <span id="visibleCount">0 questions</span>
+            </div>
+
+            <button class="btn btnLight"
+                    onclick="selectAllVisible()">
+                ☑ Select All
+            </button>
+
+        </div>
+
+        <!-- Desktop -->
+
+        <div class="tableWrap">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th style="width:40px">
+                            <input
+                                type="checkbox"
+                                id="masterCheck"
+                                onchange="toggleAllVisible(this.checked)"
+                            >
+                        </th>
+
+                        <th>Question</th>
+                        <th>Options</th>
+                        <th>Subject</th>
+                        <th>Difficulty</th>
+                        <th>Marks</th>
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="questionTableBody"></tbody>
+
+            </table>
+
+        </div>
+
+        <!-- Mobile -->
+
+        <div class="mobileQuestions"
+             id="mobileQuestions"></div>
+
+    </section>
+
+</main>
+
+<!-- =========================
+     BOTTOM NAV
+========================= -->
+
+<nav class="bottomNav">
+
+    <a href="admin-exam.html">
+        <i>📊</i>
+        Dashboard
+    </a>
+
+    <a href="admin-exam.html">
+        <i>📝</i>
+        Exams
+    </a>
+
+    <a href="#" class="active">
+        <i>📚</i>
+        Questions
+    </a>
+
+    <a href="admin-exam.html">
+        <i>🏆</i>
+        Results
+    </a>
+
+</nav>
+
+<!-- =========================
+     MANUAL QUESTION MODAL
+========================= -->
+
+<div class="overlay"
+     id="manualOverlay">
+
+    <div class="modal">
+
+        <div class="modalHead">
+
+            <div>
+                <h3 id="manualTitle">Add Question</h3>
+                <p>Create one question manually.</p>
+            </div>
+
+            <button class="closeBtn"
+                    onclick="closeManualModal()">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modalBody">
+
+            <input type="hidden"
+                   id="editQuestionId">
+
+            <div class="formGrid">
+
+                <div class="field full">
+
+                    <label>Question *</label>
+
+                    <textarea
+                        id="qText"
+                        placeholder="Enter your question..."
+                    ></textarea>
+
+                </div>
+
+                <div class="field">
+
+                    <label>Subject</label>
+
+                    <input
+                        id="qSubject"
+                        placeholder="e.g. Computer"
+                    >
+
+                </div>
+
+                <div class="field">
+
+                    <label>Topic</label>
+
+                    <input
+                        id="qTopic"
+                        placeholder="e.g. Basics"
+                    >
+
+                </div>
+
+                <div class="field">
+
+                    <label>Difficulty</label>
+
+                    <select id="qDifficulty">
+                        <option value="Easy">Easy</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+
+                </div>
+
+                <div class="field">
+
+                    <label>Marks</label>
+
+                    <input
+                        id="qMarks"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value="1"
+                    >
+
+                </div>
+
+                <div class="field">
+
+                    <label>Negative Mark</label>
+
+                    <input
+                        id="qNegative"
+                        type="number"
+                        min="0"
+                        step="0.25"
+                        value="0"
+                    >
+
+                </div>
+
+            </div>
+
+            <div class="sectionTitle">
+                Options
+            </div>
+
+            <div class="optionsBox">
+
+                <div class="optionRow">
+                    <div class="optionLetter">A</div>
+                    <input id="optionA"
+                           placeholder="Option A">
+                </div>
+
+                <div class="optionRow">
+                    <div class="optionLetter">B</div>
+                    <input id="optionB"
+                           placeholder="Option B">
+                </div>
+
+                <div class="optionRow">
+                    <div class="optionLetter">C</div>
+                    <input id="optionC"
+                           placeholder="Option C">
+                </div>
+
+                <div class="optionRow">
+                    <div class="optionLetter">D</div>
+                    <input id="optionD"
+                           placeholder="Option D">
+                </div>
+
+            </div>
+
+            <div class="sectionTitle">
+                Correct Answer
+            </div>
+
+            <div class="correctGrid">
+
+                <div class="correctChoice">
+                    <input type="radio"
+                           name="correct"
+                           id="correctA"
+                           value="0">
+                    <label for="correctA">A</label>
+                </div>
+
+                <div class="correctChoice">
+                    <input type="radio"
+                           name="correct"
+                           id="correctB"
+                           value="1">
+                    <label for="correctB">B</label>
+                </div>
+
+                <div class="correctChoice">
+                    <input type="radio"
+                           name="correct"
+                           id="correctC"
+                           value="2">
+                    <label for="correctC">C</label>
+                </div>
+
+                <div class="correctChoice">
+                    <input type="radio"
+                           name="correct"
+                           id="correctD"
+                           value="3">
+                    <label for="correctD">D</label>
+                </div>
+
+            </div>
+
+            <div class="sectionTitle">
+                Explanation
+            </div>
+
+            <div class="field">
+
+                <textarea
+                    id="qExplanation"
+                    placeholder="Optional explanation shown after the exam..."
+                ></textarea>
+
+            </div>
+
+        </div>
+
+        <div class="modalFoot">
+
+            <button class="btn btnLight"
+                    onclick="closeManualModal()">
+                Cancel
+            </button>
+
+            <button class="btn btnPrimary"
+                    onclick="saveManualQuestion()">
+                💾 Save Question
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     IMPORT PREVIEW MODAL
+========================= -->
+
+<div class="overlay"
+     id="importOverlay">
+
+    <div class="modal">
+
+        <div class="modalHead">
+
+            <div>
+                <h3>Excel Import Preview</h3>
+                <p>Check questions before importing.</p>
+            </div>
+
+            <button class="closeBtn"
+                    onclick="closeImportModal()">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modalBody">
+
+            <div class="previewInfo">
+
+                <div class="previewStat">
+                    <strong id="previewTotal">0</strong>
+                    <span>Total Rows</span>
+                </div>
+
+                <div class="previewStat">
+                    <strong id="previewValid">0</strong>
+                    <span>Valid</span>
+                </div>
+
+                <div class="previewStat">
+                    <strong id="previewInvalid">0</strong>
+                    <span>Errors</span>
+                </div>
+
+            </div>
+
+            <div class="previewTable">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>#</th>
+                            <th>Question</th>
+                            <th>Correct</th>
+                            <th>Subject</th>
+                            <th>Difficulty</th>
+                            <th>Status</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="previewBody"></tbody>
+
+                </table>
+
+            </div>
+
+            <div class="importProgress"
+                 id="importProgress">
+
+                <div class="progressTrack">
+
+                    <div class="progressBar"
+                         id="progressBar"></div>
+
+                </div>
+
+                <div class="progressText"
+                     id="progressText">
+                    Preparing...
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="modalFoot">
+
+            <button class="btn btnLight"
+                    onclick="closeImportModal()">
+                Cancel
+            </button>
+
+            <button class="btn btnPrimary"
+                    id="importButton"
+                    onclick="importExcelQuestions()">
+                🚀 Import Valid Questions
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     TOAST
+========================= -->
+
+<div class="toastWrap"
+     id="toastWrap"></div>
+
+<script>
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCEYfwfZv2Ckpg-UFLRvJkMBRlXA2w_WpI",
+    authDomain: "black-terminal-f2c91.firebaseapp.com",
+    projectId: "black-terminal-f2c91",
+    storageBucket: "black-terminal-f2c91.appspot.com",
+    messagingSenderId: "552489994197",
+    appId: "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+if(!firebase.apps.length){
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.firestore();
+
+const QUESTION_COLLECTION = "questionBank";
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let questions = [];
+let filteredQuestions = [];
+let selectedIds = new Set();
+let excelRows = [];
+let importRows = [];
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function esc(value){
+
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+function normalize(value){
+
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g," ");
+
+}
+
+function clean(value){
+
+    return String(value ?? "").trim();
+
+}
+
+function showToast(message,type=""){
+
+    const wrap = document.getElementById("toastWrap");
+
+    const div = document.createElement("div");
+
+    div.className = "toast " + type;
+
+    div.textContent = message;
+
+    wrap.appendChild(div);
+
+    setTimeout(()=>{
+        div.remove();
+    },3500);
+
+}
+
+function formatNumber(value){
+
+    const num = Number(value);
+
+    if(Number.isInteger(num)) return String(num);
+
+    return num.toFixed(2);
+
+}
+
+/* =========================================================
+   LOAD QUESTIONS
+========================================================= */
+
+async function loadQuestions(){
+
+    try{
+
+        showLoadingState();
+
+        const snap = await db
+            .collection(QUESTION_COLLECTION)
+            .get();
+
+        questions = [];
+
+        snap.forEach(doc=>{
+
+            const data = doc.data();
+
+            questions.push({
+                id:doc.id,
+                ...data
+            });
+
+        });
+
+        questions.sort((a,b)=>{
+
+            const aTime = a.createdAt?.toMillis
+                ? a.createdAt.toMillis()
+                : 0;
+
+            const bTime = b.createdAt?.toMillis
+                ? b.createdAt.toMillis()
+                : 0;
+
+            return bTime-aTime;
+
+        });
+
+        selectedIds.clear();
+
+        updateSubjectFilter();
+
+        applyFilters();
+
+        updateStats();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Questions load nahi ho paye. Firebase rules/collection check karein.",
+            "error"
+        );
+
+        questions=[];
+
+        applyFilters();
+
+    }
+
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+function showLoadingState(){
+
+    document.getElementById("questionTableBody").innerHTML = `
+        <tr>
+            <td colspan="7" style="text-align:center;padding:50px">
+                ⏳ Loading questions...
+            </td>
+        </tr>
+    `;
+
+    document.getElementById("mobileQuestions").innerHTML = `
+        <div class="empty">
+            <div class="emptyIcon">⏳</div>
+            <h3>Loading Questions</h3>
+            <p>Please wait...</p>
+        </div>
+    `;
+
+}
+
+/* =========================================================
+   STATS
+========================================================= */
+
+function updateStats(){
+
+    const total = questions.length;
+
+    const easy = questions.filter(q =>
+        normalize(q.difficulty)==="easy"
+    ).length;
+
+    const medium = questions.filter(q =>
+        normalize(q.difficulty)==="medium"
+    ).length;
+
+    const hard = questions.filter(q =>
+        normalize(q.difficulty)==="hard"
+    ).length;
+
+    document.getElementById("totalCount").textContent = total;
+    document.getElementById("easyCount").textContent = easy;
+    document.getElementById("mediumCount").textContent = medium;
+    document.getElementById("hardCount").textContent = hard;
+
+}
+
+/* =========================================================
+   SUBJECT FILTER
+========================================================= */
+
+function updateSubjectFilter(){
+
+    const select = document.getElementById("subjectFilter");
+
+    const current = select.value;
+
+    const subjects = [
+        ...new Set(
+            questions
+                .map(q=>clean(q.subject))
+                .filter(Boolean)
+        )
+    ].sort((a,b)=>a.localeCompare(b));
+
+    select.innerHTML = `
+        <option value="all">All Subjects</option>
+    `;
+
+    subjects.forEach(subject=>{
+
+        const option = document.createElement("option");
+
+        option.value = subject;
+        option.textContent = subject;
+
+        select.appendChild(option);
+
+    });
+
+    if(
+        subjects.includes(current)
+    ){
+        select.value=current;
+    }
+
+}
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+function applyFilters(){
+
+    const search = normalize(
+        document.getElementById("searchInput").value
+    );
+
+    const subject =
+        document.getElementById("subjectFilter").value;
+
+    const difficulty =
+        document.getElementById("difficultyFilter").value;
+
+    filteredQuestions = questions.filter(q=>{
+
+        const haystack = normalize(
+            [
+                q.question,
+                q.subject,
+                q.topic,
+                q.explanation,
+                ...(Array.isArray(q.options)?q.options:[])
+            ].join(" ")
+        );
+
+        const searchOK =
+            !search || haystack.includes(search);
+
+        const subjectOK =
+            subject==="all" ||
+            clean(q.subject)===subject;
+
+        const difficultyOK =
+            difficulty==="all" ||
+            clean(q.difficulty)===difficulty;
+
+        return searchOK && subjectOK && difficultyOK;
+
+    });
+
+    renderQuestions();
+
+}
+
+/* =========================================================
+   RENDER
+========================================================= */
+
+function renderQuestions(){
+
+    const body =
+        document.getElementById("questionTableBody");
+
+    const mobile =
+        document.getElementById("mobileQuestions");
+
+    document.getElementById("visibleCount").textContent =
+        `${filteredQuestions.length} questions`;
+
+    if(!filteredQuestions.length){
+
+        body.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty">
+                        <div class="emptyIcon">📚</div>
+                        <h3>No Questions Found</h3>
+                        <p>Add manually or import questions from Excel.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        mobile.innerHTML = `
+            <div class="empty">
+                <div class="emptyIcon">📚</div>
+                <h3>No Questions Found</h3>
+                <p>Add manually or import questions from Excel.</p>
+            </div>
+        `;
+
+        return;
+
+    }
+
+    body.innerHTML = filteredQuestions.map(q=>{
+
+        const options =
+            Array.isArray(q.options)
+                ? q.options
+                : [];
+
+        const correct =
+            Number.isInteger(Number(q.correctIndex))
+                ? Number(q.correctIndex)
+                : 0;
+
+        const difficulty =
+            clean(q.difficulty) || "Medium";
+
+        const diffClass =
+            difficulty==="Easy"
+                ? "green"
+                : difficulty==="Hard"
+                    ? "red"
+                    : "orange";
+
+        return `
+
+            <tr>
+
+                <td>
+
+                    <input
+                        type="checkbox"
+                        ${selectedIds.has(q.id)?"checked":""}
+                        onchange="toggleQuestion('${q.id}',this.checked)"
+                    >
+
+                </td>
+
+                <td class="questionCell">
+
+                    <div class="questionText">
+                        ${esc(q.question)}
+                    </div>
+
+                    <div class="questionMeta">
+
+                        ${
+                            q.topic
+                            ? `<span class="tag">${esc(q.topic)}</span>`
+                            : ""
+                        }
+
+                        ${
+                            q.negativeMark
+                            ? `<span class="tag red">−${esc(q.negativeMark)}</span>`
+                            : ""
+                        }
+
+                    </div>
+
+                </td>
+
+                <td>
+
+                    <div class="optionMini">
+
+                        A. ${esc(options[0] || "")}<br>
+                        B. ${esc(options[1] || "")}<br>
+                        C. ${esc(options[2] || "")}<br>
+                        D. ${esc(options[3] || "")}
+
+                        <div class="correctMini">
+                            ✓ Correct: ${String.fromCharCode(65+correct)}
+                        </div>
+
+                    </div>
+
+                </td>
+
+                <td>
+
+                    <span class="tag blue">
+                        ${esc(q.subject || "General")}
+                    </span>
+
+                </td>
+
+                <td>
+
+                    <span class="tag ${diffClass}">
+                        ${esc(difficulty)}
+                    </span>
+
+                </td>
+
+                <td>
+                    ${formatNumber(q.marks ?? 1)}
+                </td>
+
+                <td>
+
+                    <div class="actions">
+
+                        <button
+                            class="iconBtn"
+                            onclick="editQuestion('${q.id}')">
+                            ✏️
+                        </button>
+
+                        <button
+                            class="iconBtn"
+                            onclick="deleteQuestion('${q.id}')">
+                            🗑️
+                        </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }).join("");
+
+    mobile.innerHTML = filteredQuestions.map(q=>{
+
+        const options =
+            Array.isArray(q.options)
+                ? q.options
+                : [];
+
+        const correct =
+            Number.isInteger(Number(q.correctIndex))
+                ? Number(q.correctIndex)
+                : 0;
+
+        const difficulty =
+            clean(q.difficulty) || "Medium";
+
+        const diffClass =
+            difficulty==="Easy"
+                ? "green"
+                : difficulty==="Hard"
+                    ? "red"
+                    : "orange";
+
+        return `
+
+            <div class="questionCard">
+
+                <div class="questionTop">
+
+                    <input
+                        class="questionCheck"
+                        type="checkbox"
+                        ${selectedIds.has(q.id)?"checked":""}
+                        onchange="toggleQuestion('${q.id}',this.checked)"
+                    >
+
+                    <div class="questionCardText">
+                        ${esc(q.question)}
+                    </div>
+
+                </div>
+
+                <div class="mobileQuestionMeta">
+
+                    <span class="tag blue">
+                        ${esc(q.subject || "General")}
+                    </span>
+
+                    <span class="tag ${diffClass}">
+                        ${esc(difficulty)}
+                    </span>
+
+                    <span class="tag">
+                        ${formatNumber(q.marks ?? 1)} Mark
+                    </span>
+
+                    <span class="tag green">
+                        Correct: ${String.fromCharCode(65+correct)}
+                    </span>
+
+                </div>
+
+                <div class="questionActions">
+
+                    <button
+                        class="btn btnLight"
+                        onclick="editQuestion('${q.id}')">
+                        ✏️ Edit
+                    </button>
+
+                    <button
+                        class="btn btnRed"
+                        onclick="deleteQuestion('${q.id}')">
+                        🗑 Delete
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+    }).join("");
+
+    updateSelectionUI();
+
+}
+
+/* =========================================================
+   SELECTION
+========================================================= */
+
+function toggleQuestion(id,checked){
+
+    if(checked){
+
+        selectedIds.add(id);
+
+    }else{
+
+        selectedIds.delete(id);
+
+    }
+
+    updateSelectionUI();
+
+}
+
+function selectAllVisible(){
+
+    filteredQuestions.forEach(q=>{
+        selectedIds.add(q.id);
+    });
+
+    renderQuestions();
+
+}
+
+function toggleAllVisible(checked){
+
+    if(checked){
+
+        filteredQuestions.forEach(q=>{
+            selectedIds.add(q.id);
+        });
+
+    }else{
+
+        filteredQuestions.forEach(q=>{
+            selectedIds.delete(q.id);
+        });
+
+    }
+
+    renderQuestions();
+
+}
+
+function clearSelection(){
+
+    selectedIds.clear();
+
+    renderQuestions();
+
+}
+
+function updateSelectionUI(){
+
+    const bar =
+        document.getElementById("selectionBar");
+
+    const count =
+        document.getElementById("selectedCount");
+
+    count.textContent=selectedIds.size;
+
+    if(selectedIds.size){
+
+        bar.classList.add("show");
+
+    }else{
+
+        bar.classList.remove("show");
+
+    }
+
+    const master =
+        document.getElementById("masterCheck");
+
+    if(master){
+
+        const allSelected =
+            filteredQuestions.length>0 &&
+            filteredQuestions.every(q =>
+                selectedIds.has(q.id)
+            );
+
+        master.checked=allSelected;
+
+    }
+
+}
+
+/* =========================================================
+   MANUAL MODAL
+========================================================= */
+
+function openManualModal(question=null){
+
+    document.getElementById("manualOverlay")
+        .classList.add("show");
+
+    document.getElementById("manualTitle")
+        .textContent =
+        question
+        ? "Edit Question"
+        : "Add Question";
+
+    document.getElementById("editQuestionId")
+        .value =
+        question
+        ? question.id
+        : "";
+
+    document.getElementById("qText").value =
+        question?.question || "";
+
+    document.getElementById("qSubject").value =
+        question?.subject || "";
+
+    document.getElementById("qTopic").value =
+        question?.topic || "";
+
+    document.getElementById("qDifficulty").value =
+        question?.difficulty || "Medium";
+
+    document.getElementById("qMarks").value =
+        question?.marks ?? 1;
+
+    document.getElementById("qNegative").value =
+        question?.negativeMark ?? 0;
+
+    const opts =
+        Array.isArray(question?.options)
+            ? question.options
+            : ["","","",""];
+
+    document.getElementById("optionA").value =
+        opts[0] || "";
+
+    document.getElementById("optionB").value =
+        opts[1] || "";
+
+    document.getElementById("optionC").value =
+        opts[2] || "";
+
+    document.getElementById("optionD").value =
+        opts[3] || "";
+
+    document.querySelectorAll(
+        'input[name="correct"]'
+    ).forEach(r=>{
+        r.checked =
+            Number(r.value) ===
+            Number(question?.correctIndex ?? 0);
+    });
+
+    document.getElementById("qExplanation").value =
+        question?.explanation || "";
+
+}
+
+function closeManualModal(){
+
+    document.getElementById("manualOverlay")
+        .classList.remove("show");
+
+}
+
+/* =========================================================
+   SAVE MANUAL QUESTION
+========================================================= */
+
+async function saveManualQuestion(){
+
+    const id =
+        clean(document.getElementById("editQuestionId").value);
+
+    const question =
+        clean(document.getElementById("qText").value);
+
+    const subject =
+        clean(document.getElementById("qSubject").value);
+
+    const topic =
+        clean(document.getElementById("qTopic").value);
+
+    const difficulty =
+        document.getElementById("qDifficulty").value;
+
+    const marks =
+        Number(document.getElementById("qMarks").value || 1);
+
+    const negativeMark =
+        Number(document.getElementById("qNegative").value || 0);
+
+    const options = [
+
+        clean(document.getElementById("optionA").value),
+        clean(document.getElementById("optionB").value),
+        clean(document.getElementById("optionC").value),
+        clean(document.getElementById("optionD").value)
+
+    ];
+
+    const correctRadio =
+        document.querySelector(
+            'input[name="correct"]:checked'
+        );
+
+    const correctIndex =
+        correctRadio
+        ? Number(correctRadio.value)
+        : 0;
+
+    const explanation =
+        clean(document.getElementById("qExplanation").value);
+
+    if(!question){
+
+        showToast(
+            "Question enter karein.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    if(options.some(x=>!x)){
+
+        showToast(
+            "All 4 options required hain.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    const payload = {
+
+        question,
+        options,
+
+        correctIndex,
+
+        correctAnswer:
+            options[correctIndex],
+
+        marks,
+        negativeMark,
+
+        subject:
+            subject || "General",
+
+        topic:
+            topic || "General",
+
+        difficulty,
+
+        explanation,
+
+        updatedAt:
+            firebase.firestore.FieldValue.serverTimestamp()
+
+    };
+
+    try{
+
+        if(id){
+
+            await db
+                .collection(QUESTION_COLLECTION)
+                .doc(id)
+                .update(payload);
+
+            showToast(
+                "Question updated successfully.",
+                "success"
+            );
+
+        }else{
+
+            payload.createdAt =
+                firebase.firestore.FieldValue.serverTimestamp();
+
+            await db
+                .collection(QUESTION_COLLECTION)
+                .add(payload);
+
+            showToast(
+                "Question added successfully.",
+                "success"
+            );
+
+        }
+
+        closeManualModal();
+
+        await loadQuestions();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Save failed. Firebase permission check karein.",
+            "error"
+        );
+
+    }
+
+}
+
+/* =========================================================
+   EDIT
+========================================================= */
+
+function editQuestion(id){
+
+    const question =
+        questions.find(q=>q.id===id);
+
+    if(question){
+
+        openManualModal(question);
+
+    }
+
+}
+
+/* =========================================================
+   DELETE SINGLE
+========================================================= */
+
+async function deleteQuestion(id){
+
+    const question =
+        questions.find(q=>q.id===id);
+
+    if(!question) return;
+
+    const ok =
+        confirm(
+            "Delete this question?\n\n" +
+            question.question
+        );
+
+    if(!ok) return;
+
+    try{
+
+        await db
+            .collection(QUESTION_COLLECTION)
+            .doc(id)
+            .delete();
+
+        selectedIds.delete(id);
+
+        showToast(
+            "Question deleted.",
+            "success"
+        );
+
+        await loadQuestions();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Delete failed.",
+            "error"
+        );
+
+    }
+
+}
+
+/* =========================================================
+   DELETE SELECTED
+========================================================= */
+
+async function deleteSelected(){
+
+    if(!selectedIds.size){
+
+        showToast(
+            "No questions selected.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    const ok =
+        confirm(
+            `Delete ${selectedIds.size} selected questions?`
+        );
+
+    if(!ok) return;
+
+    try{
+
+        const ids = [...selectedIds];
+
+        for(let i=0;i<ids.length;i+=400){
+
+            const chunk =
+                ids.slice(i,i+400);
+
+            const batch =
+                db.batch();
+
+            chunk.forEach(id=>{
+
+                batch.delete(
+                    db.collection(
+                        QUESTION_COLLECTION
+                    ).doc(id)
+                );
+
+            });
+
+            await batch.commit();
+
+        }
+
+        selectedIds.clear();
+
+        showToast(
+            "Selected questions deleted.",
+            "success"
+        );
+
+        await loadQuestions();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Bulk delete failed.",
+            "error"
+        );
+
+    }
+
+}
+
+/* =========================================================
+   EXCEL TEMPLATE
+========================================================= */
+
+function downloadTemplate(){
+
+    const headers = [
+
+        "Question",
+        "Option A",
+        "Option B",
+        "Option C",
+        "Option D",
+        "Correct",
+        "Marks",
+        "Negative Mark",
+        "Subject",
+        "Topic",
+        "Difficulty",
+        "Explanation"
+
+    ];
+
+    const sampleRows = [
+
+        [
+            "CPU ka full form kya hai?",
+            "Central Processing Unit",
+            "Central Program Unit",
+            "Computer Processing Unit",
+            "Control Processing Unit",
+            "A",
+            1,
+            0,
+            "Computer",
+            "Basics",
+            "Easy",
+            "CPU stands for Central Processing Unit."
+        ],
+
+        [
+            "HTML ka full form kya hai?",
+            "Hyper Text Markup Language",
+            "High Text Machine Language",
+            "Hyperlink Text Markup Language",
+            "Home Tool Markup Language",
+            "A",
+            1,
+            0,
+            "Web",
+            "HTML",
+            "Easy",
+            "HTML stands for Hyper Text Markup Language."
+        ],
+
+        [
+            "JavaScript ka primary use kya hai?",
+            "Web interactivity",
+            "Image editing",
+            "Operating system",
+            "Antivirus",
+            "A",
+            1,
+            0.25,
+            "Web",
+            "JavaScript",
+            "Medium",
+            "JavaScript is widely used for web interactivity."
+        ]
+
+    ];
+
+    const ws =
+        XLSX.utils.aoa_to_sheet([
+            headers,
+            ...sampleRows
+        ]);
+
+    ws["!cols"] = [
+        {wch:40},
+        {wch:28},
+        {wch:28},
+        {wch:28},
+        {wch:28},
+        {wch:10},
+        {wch:10},
+        {wch:15},
+        {wch:18},
+        {wch:18},
+        {wch:14},
+        {wch:40}
+    ];
+
+    const wb =
+        XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        "Questions"
+    );
+
+    XLSX.writeFile(
+        wb,
+        "BlackTerminal_Question_Bank_Template.xlsx"
+    );
+
+    showToast(
+        "Excel template downloaded.",
+        "success"
+    );
+
+}
+
+/* =========================================================
+   EXCEL UPLOAD
+========================================================= */
+
+document
+.getElementById("excelFile")
+.addEventListener("change",handleExcelFile);
+
+async function handleExcelFile(event){
+
+    const file =
+        event.target.files[0];
+
+    if(!file) return;
+
+    try{
+
+        if(
+            typeof XLSX === "undefined"
+        ){
+
+            throw new Error(
+                "Excel library not loaded."
+            );
+
+        }
+
+        showToast(
+            "Reading Excel file...",
+            ""
+        );
+
+        const buffer =
+            await file.arrayBuffer();
+
+        const workbook =
+            XLSX.read(buffer,{
+                type:"array"
+            });
+
+        const sheetName =
+            workbook.SheetNames[0];
+
+        const sheet =
+            workbook.Sheets[sheetName];
+
+        const rows =
+            XLSX.utils.sheet_to_json(
+                sheet,
+                {
+                    defval:"",
+                    raw:false
+                }
+            );
+
+        if(!rows.length){
+
+            showToast(
+                "Excel file empty hai.",
+                "warning"
+            );
+
+            return;
+
+        }
+
+        excelRows = rows;
+
+        prepareImportRows();
+
+        openImportModal();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Excel read nahi ho paya.",
+            "error"
+        );
+
+    }finally{
+
+        event.target.value="";
+
+    }
+
+}
+
+/* =========================================================
+   COLUMN GETTER
+========================================================= */
+
+function getColumn(row,names){
+
+    const keys =
+        Object.keys(row);
+
+    for(const name of names){
+
+        const target =
+            normalize(name);
+
+        const key =
+            keys.find(k =>
+                normalize(k)===target
+            );
+
+        if(key!==undefined){
+
+            return row[key];
+
+        }
+
+    }
+
+    return "";
+
+}
+
+/* =========================================================
+   PREPARE IMPORT
+========================================================= */
+
+function prepareImportRows(){
+
+    importRows = [];
+
+    const existingQuestions =
+        new Set(
+            questions.map(q =>
+                normalize(q.question)
+            )
+        );
+
+    const batchQuestions =
+        new Set();
+
+    excelRows.forEach((row,index)=>{
+
+        const question =
+            clean(
+                getColumn(row,[
+                    "Question",
+                    "question",
+                    "Question Text",
+                    "questionText"
+                ])
+            );
+
+        const options = [
+
+            clean(
+                getColumn(row,[
+                    "Option A",
+                    "A",
+                    "OptionA",
+                    "optionA"
+                ])
+            ),
+
+            clean(
+                getColumn(row,[
+                    "Option B",
+                    "B",
+                    "OptionB",
+                    "optionB"
+                ])
+            ),
+
+            clean(
+                getColumn(row,[
+                    "Option C",
+                    "C",
+                    "OptionC",
+                    "optionC"
+                ])
+            ),
+
+            clean(
+                getColumn(row,[
+                    "Option D",
+                    "D",
+                    "OptionD",
+                    "optionD"
+                ])
+            )
+
+        ];
+
+        let correctRaw =
+            clean(
+                getColumn(row,[
+                    "Correct",
+                    "Correct Answer",
+                    "Answer",
+                    "correctIndex"
+                ])
+            ).toUpperCase();
+
+        let correctIndex = -1;
+
+        if(
+            ["A","B","C","D"].includes(correctRaw)
+        ){
+
+            correctIndex =
+                ["A","B","C","D"].indexOf(
+                    correctRaw
+                );
+
+        }else if(
+            ["0","1","2","3"].includes(correctRaw)
+        ){
+
+            correctIndex =
+                Number(correctRaw);
+
+        }else{
+
+            const match =
+                options.findIndex(
+                    x =>
+                    normalize(x) ===
+                    normalize(correctRaw)
+                );
+
+            if(match>=0){
+                correctIndex=match;
+            }
+
+        }
+
+        const marksRaw =
+            clean(
+                getColumn(row,[
+                    "Marks",
+                    "Mark",
+                    "marks"
+                ])
+            );
+
+        const negativeRaw =
+            clean(
+                getColumn(row,[
+                    "Negative Mark",
+                    "Negative",
+                    "negativeMark"
+                ])
+            );
+
+        const subject =
+            clean(
+                getColumn(row,[
+                    "Subject",
+                    "subject"
+                ])
+            ) || "General";
+
+        const topic =
+            clean(
+                getColumn(row,[
+                    "Topic",
+                    "topic"
+                ])
+            ) || "General";
+
+        let difficulty =
+            clean(
+                getColumn(row,[
+                    "Difficulty",
+                    "Level",
+                    "difficulty"
+                ])
+            );
+
+        if(!["Easy","Medium","Hard"].includes(difficulty)){
+
+            difficulty =
+                difficulty.toLowerCase()==="easy"
+                ? "Easy"
+                : difficulty.toLowerCase()==="hard"
+                    ? "Hard"
+                    : "Medium";
+
+        }
+
+        const explanation =
+            clean(
+                getColumn(row,[
+                    "Explanation",
+                    "explanation"
+                ])
+            );
+
+        const errors=[];
+
+        if(!question){
+
+            errors.push("Question missing");
+
+        }
+
+        if(options.some(x=>!x)){
+
+            errors.push("4 options required");
+
+        }
+
+        if(correctIndex<0 || correctIndex>3){
+
+            errors.push("Correct answer invalid");
+
+        }
+
+        const duplicateKey =
+            normalize(question);
+
+        if(
+            duplicateKey &&
+            existingQuestions.has(duplicateKey)
+        ){
+
+            errors.push(
+                "Already exists in Question Bank"
+            );
+
+        }
+
+        if(
+            duplicateKey &&
+            batchQuestions.has(duplicateKey)
+        ){
+
+            errors.push(
+                "Duplicate in this Excel"
+            );
+
+        }
+
+        if(duplicateKey){
+
+            batchQuestions.add(duplicateKey);
+
+        }
+
+        let marks =
+            Number(marksRaw);
+
+        if(!Number.isFinite(marks) || marks<=0){
+
+            marks=1;
+
+        }
+
+        let negativeMark =
+            Number(negativeRaw);
+
+        if(
+            !Number.isFinite(negativeMark) ||
+            negativeMark<0
+        ){
+
+            negativeMark=0;
+
+        }
+
+        importRows.push({
+
+            row:index+2,
+
+            question,
+            options,
+
+            correctIndex,
+
+            correctAnswer:
+                correctIndex>=0
+                ? options[correctIndex]
+                : "",
+
+            marks,
+            negativeMark,
+
+            subject,
+            topic,
+            difficulty,
+            explanation,
+
+            errors
+
+        });
+
+    });
+
+    renderImportPreview();
+
+}
+
+/* =========================================================
+   IMPORT PREVIEW
+========================================================= */
+
+function renderImportPreview(){
+
+    const body =
+        document.getElementById("previewBody");
+
+    const valid =
+        importRows.filter(
+            r=>r.errors.length===0
+        ).length;
+
+    const invalid =
+        importRows.length-valid;
+
+    document.getElementById(
+        "previewTotal"
+    ).textContent=importRows.length;
+
+    document.getElementById(
+        "previewValid"
+    ).textContent=valid;
+
+    document.getElementById(
+        "previewInvalid"
+    ).textContent=invalid;
+
+    body.innerHTML =
+        importRows.map(row=>{
+
+            const ok =
+                row.errors.length===0;
+
+            return `
+
+                <tr class="${ok?'validRow':'invalidRow'}">
+
+                    <td>
+                        ${row.row}
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${esc(
+                                row.question ||
+                                "—"
+                            )}
+                        </strong>
+
+                        ${
+                            row.errors.length
+                            ? `
+                                <div class="errorText">
+                                    ${esc(
+                                        row.errors.join(
+                                            " • "
+                                        )
+                                    )}
+                                </div>
+                              `
+                            : ""
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            row.correctIndex>=0
+                            ? String.fromCharCode(
+                                65+row.correctIndex
+                              )
+                            : "—"
+                        }
+                    </td>
+
+                    <td>
+                        ${esc(row.subject)}
+                    </td>
+
+                    <td>
+                        ${esc(row.difficulty)}
+                    </td>
+
+                    <td>
+
+                        ${
+                            ok
+                            ? `
+                                <span class="tag green">
+                                    ✓ Valid
+                                </span>
+                              `
+                            : `
+                                <span class="tag orange">
+                                    ⚠ Error
+                                </span>
+                              `
+                        }
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }).join("");
+
+    const validCount=valid;
+
+    const button =
+        document.getElementById("importButton");
+
+    button.disabled =
+        validCount===0;
+
+    button.textContent =
+        validCount
+        ? `🚀 Import ${validCount} Questions`
+        : "No Valid Questions";
+
+}
+
+/* =========================================================
+   IMPORT MODAL
+========================================================= */
+
+function openImportModal(){
+
+    document
+        .getElementById("importOverlay")
+        .classList.add("show");
+
+}
+
+function closeImportModal(){
+
+    document
+        .getElementById("importOverlay")
+        .classList.remove("show");
+
+}
+
+/* =========================================================
+   BULK FIREBASE IMPORT
+========================================================= */
+
+async function importExcelQuestions(){
+
+    const validRows =
+        importRows.filter(
+            r=>r.errors.length===0
+        );
+
+    if(!validRows.length){
+
+        showToast(
+            "No valid questions available.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    const button =
+        document.getElementById("importButton");
+
+    button.disabled=true;
+
+    document
+        .getElementById("importProgress")
+        .classList.add("show");
+
+    const progressBar =
+        document.getElementById("progressBar");
+
+    const progressText =
+        document.getElementById("progressText");
+
+    try{
+
+        /*
+          Firestore batch supports up to 500 writes.
+          We use smaller chunks for a smoother import.
+        */
+
+        const CHUNK_SIZE=400;
+
+        let imported=0;
+
+        for(
+            let start=0;
+            start<validRows.length;
+            start+=CHUNK_SIZE
+        ){
+
+            const chunk =
+                validRows.slice(
+                    start,
+                    start+CHUNK_SIZE
+                );
+
+            const batch =
+                db.batch();
+
+            chunk.forEach(row=>{
+
+                const ref =
+                    db.collection(
+                        QUESTION_COLLECTION
+                    ).doc();
+
+                batch.set(ref,{
+
+                    question:
+                        row.question,
+
+                    options:
+                        row.options,
+
+                    correctIndex:
+                        row.correctIndex,
+
+                    correctAnswer:
+                        row.correctAnswer,
+
+                    marks:
+                        row.marks,
+
+                    negativeMark:
+                        row.negativeMark,
+
+                    subject:
+                        row.subject,
+
+                    topic:
+                        row.topic,
+
+                    difficulty:
+                        row.difficulty,
+
+                    explanation:
+                        row.explanation,
+
+                    source:
+                        "excel",
+
+                    createdAt:
+                        firebase.firestore
+                        .FieldValue
+                        .serverTimestamp(),
+
+                    updatedAt:
+                        firebase.firestore
+                        .FieldValue
+                        .serverTimestamp()
+
+                });
+
+            });
+
+            await batch.commit();
+
+            imported += chunk.length;
+
+            const percent =
+                Math.round(
+                    (imported / validRows.length) * 100
+                );
+
+            progressBar.style.width =
+                percent+"%";
+
+            progressText.textContent =
+                `Imported ${imported} of ${validRows.length} questions (${percent}%)`;
+
+        }
+
+        showToast(
+            `${imported} questions imported successfully!`,
+            "success"
+        );
+
+        closeImportModal();
+
+        await loadQuestions();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Import failed. Firebase rules/connection check karein.",
+            "error"
+        );
+
+        button.disabled=false;
+
+    }
+
+}
+
+/* =========================================================
+   ADD SELECTED TO EXAM
+========================================================= */
+
+function useSelectedForExam(){
+
+    if(!selectedIds.size){
+
+        showToast(
+            "Pehle questions select karein.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+    /*
+      Store selected IDs temporarily.
+      admin-exam.html can read this value
+      and load questions from questionBank.
+    */
+
+    const selectedQuestions =
+        questions.filter(q =>
+            selectedIds.has(q.id)
+        );
+
+    try{
+
+        sessionStorage.setItem(
+            "BT_SELECTED_QUESTIONS",
+            JSON.stringify(
+                selectedQuestions.map(q=>({
+                    id:q.id,
+                    question:q.question,
+                    options:q.options,
+                    correctIndex:q.correctIndex,
+                    correctAnswer:q.correctAnswer,
+                    marks:q.marks,
+                    negativeMark:q.negativeMark,
+                    subject:q.subject,
+                    topic:q.topic,
+                    difficulty:q.difficulty,
+                    explanation:q.explanation
+                }))
+            )
+        );
+
+    }catch(error){
+
+        console.error(error);
+
+    }
+
+    showToast(
+        `${selectedIds.size} questions selected. Opening Exam Manager...`,
+        "success"
+    );
+
+    setTimeout(()=>{
+
+        window.location.href =
+            "admin-exam.html?fromQuestionBank=1";
+
+    },700);
+
+}
+
+/* =========================================================
+   RELOAD
+========================================================= */
+
+function reloadQuestions(){
+
+    loadQuestions();
+
+}
+
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
+
+document
+.getElementById("searchInput")
+.addEventListener(
+    "input",
+    applyFilters
+);
+
+document
+.getElementById("subjectFilter")
+.addEventListener(
+    "change",
+    applyFilters
+);
+
+document
+.getElementById("difficultyFilter")
+.addEventListener(
+    "change",
+    applyFilters
+);
+
+/* =========================================================
+   CLOSE MODAL ON BACKDROP
+========================================================= */
+
+document
+.getElementById("manualOverlay")
+.addEventListener(
+    "click",
+    function(e){
+
+        if(e.target===this){
+
+            closeManualModal();
+
+        }
+
+    }
+);
+
+document
+.getElementById("importOverlay")
+.addEventListener(
+    "click",
+    function(e){
+
+        if(e.target===this){
+
+            closeImportModal();
+
+        }
+
+    }
+);
+
+/* =========================================================
+   KEYBOARD ESC
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function(e){
+
+        if(e.key==="Escape"){
+
+            closeManualModal();
+            closeImportModal();
+
+        }
+
+    }
+);
+
+/* =========================================================
+   START
+========================================================= */
+
+loadQuestions();
+
+</script>
+
+</body>
+</html>
