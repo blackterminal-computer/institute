@@ -9506,6 +9506,21 @@ try{
    🔔 REAL-TIME NOTIFICATION SYSTEM
 ===================================================== */
 
+
+       
+              
+        
+
+        
+
+
+    
+
+/* =========================================================
+   🔔 BLACKTERMINAL PREMIUM NOTIFICATION SYSTEM
+   Firebase + Realtime + Sound + Vibration
+========================================================= */
+
 const notificationBtn =
     $("notificationBtn");
 
@@ -9524,6 +9539,20 @@ const notificationList =
 const notificationSubtitle =
     $("notificationSubtitle");
 
+const notificationMarkAll =
+    $("notificationMarkAll");
+
+const notificationFilters =
+    document.querySelectorAll(
+        ".notification-filter"
+    );
+
+const notificationAllCount =
+    $("notificationAllCount");
+
+const notificationUnreadCount =
+    $("notificationUnreadCount");
+
 
 let notificationItems = [];
 
@@ -9532,19 +9561,23 @@ let notificationUnsubs = [];
 let notificationStudentIds =
     new Set();
 
+let notificationCurrentFilter =
+    "all";
 
-/* =====================================================
-   READ NOTIFICATIONS
-===================================================== */
+let notificationAudioContext =
+    null;
+
+
+/* =========================================================
+   READ STORAGE
+========================================================= */
 
 const NOTIFICATION_READ_KEY =
-    "BT_NOTIFICATION_READ_V1_" +
+    "BT_NOTIFICATION_READ_V2_" +
     encodeURIComponent(student);
-
 
 let notificationReadIds =
     new Set();
-
 
 try{
 
@@ -9577,15 +9610,11 @@ function saveNotificationReads(){
     try{
 
         localStorage.setItem(
-
             NOTIFICATION_READ_KEY,
 
-            JSON.stringify(
-                [
-                    ...notificationReadIds
-                ]
-            )
-
+            JSON.stringify([
+                ...notificationReadIds
+            ])
         );
 
     }catch(error){}
@@ -9593,28 +9622,19 @@ function saveNotificationReads(){
 }
 
 
-/* =====================================================
-   NORMALIZE
-===================================================== */
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function notificationNorm(value){
 
-    return String(
-        value ?? ""
-    )
-    .trim()
-    .toLowerCase()
-    .replace(
-        /\s+/g,
-        " "
-    );
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g," ");
 
 }
 
-
-/* =====================================================
-   ICON
-===================================================== */
 
 function notificationIcon(type){
 
@@ -9635,107 +9655,242 @@ function notificationIcon(type){
         success:
             "ri-checkbox-circle-fill",
 
+        offer:
+            "ri-gift-fill",
+
         info:
             "ri-information-fill"
 
     };
 
-
     return (
-
         icons[
             String(
                 type || "info"
             ).toLowerCase()
         ]
-
         ||
-
         "ri-notification-3-fill"
-
     );
 
 }
 
 
-/* =====================================================
-   TIME
-===================================================== */
+function notificationClass(type){
+
+    const value =
+        String(
+            type || "info"
+        ).toLowerCase();
+
+    if(
+        [
+            "announcement",
+            "exam",
+            "result",
+            "warning",
+            "success",
+            "offer",
+            "info"
+        ].includes(value)
+    ){
+
+        return value;
+
+    }
+
+    return "info";
+
+}
+
 
 function notificationTime(value){
 
     const time =
         getTimeValue(value);
 
-
     if(!time)
         return "Just now";
-
 
     const diff =
         Math.max(
             0,
-            Date.now()-time
+            Date.now() - time
         );
-
 
     const minutes =
         Math.floor(
-            diff/60000
+            diff / 60000
         );
-
 
     const hours =
         Math.floor(
-            minutes/60
+            minutes / 60
         );
-
 
     const days =
         Math.floor(
-            hours/24
+            hours / 24
         );
 
 
     if(minutes < 1)
         return "Just now";
 
-
     if(minutes < 60)
         return (
             minutes +
-            "m ago"
+            (
+                minutes === 1
+                ? " minute ago"
+                : " minutes ago"
+            )
         );
-
 
     if(hours < 24)
         return (
             hours +
-            "h ago"
+            (
+                hours === 1
+                ? " hour ago"
+                : " hours ago"
+            )
         );
-
 
     if(days === 1)
         return "Yesterday";
 
 
-    return new Date(
-        time
-    ).toLocaleDateString(
-        "en-IN",
-        {
-            day:"2-digit",
-            month:"short",
-            year:"numeric"
-        }
-    );
+    return new Date(time)
+        .toLocaleDateString(
+            "en-IN",
+            {
+                day:"2-digit",
+                month:"short",
+                year:"numeric"
+            }
+        );
 
 }
 
 
-/* =====================================================
-   CHECK TARGET
-===================================================== */
+/* =========================================================
+   🔊 SOUND + HAPTIC
+========================================================= */
+
+function playNotificationSound(){
+
+    try{
+
+        if(!notificationAudioContext){
+
+            notificationAudioContext =
+                new (
+                    window.AudioContext ||
+                    window.webkitAudioContext
+                )();
+
+        }
+
+        const ctx =
+            notificationAudioContext;
+
+
+        if(
+            ctx.state === "suspended"
+        ){
+
+            ctx.resume();
+
+        }
+
+
+        const oscillator =
+            ctx.createOscillator();
+
+        const gain =
+            ctx.createGain();
+
+
+        oscillator.type =
+            "sine";
+
+
+        oscillator.frequency.setValueAtTime(
+            740,
+            ctx.currentTime
+        );
+
+        oscillator.frequency.setValueAtTime(
+            980,
+            ctx.currentTime + .09
+        );
+
+
+        gain.gain.setValueAtTime(
+            .0001,
+            ctx.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            .12,
+            ctx.currentTime + .02
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            .0001,
+            ctx.currentTime + .42
+        );
+
+
+        oscillator.connect(gain);
+
+        gain.connect(
+            ctx.destination
+        );
+
+
+        oscillator.start();
+
+        oscillator.stop(
+            ctx.currentTime + .42
+        );
+
+
+    }catch(error){
+
+        console.log(
+            "Notification sound:",
+            error
+        );
+
+    }
+
+
+    /* VIBRATION */
+
+    try{
+
+        if(
+            "vibrate" in navigator
+        ){
+
+            navigator.vibrate([
+                70,
+                50,
+                100
+            ]);
+
+        }
+
+    }catch(error){}
+
+}
+
+
+/* =========================================================
+   TARGET CHECK
+========================================================= */
 
 function notificationVisible(data){
 
@@ -9745,7 +9900,7 @@ function notificationVisible(data){
         ).toLowerCase();
 
 
-    /* Everyone */
+    /* EVERYONE */
 
     if(
         targetType === "all"
@@ -9756,7 +9911,7 @@ function notificationVisible(data){
     }
 
 
-    /* Individual */
+    /* ONLY INDIVIDUAL */
 
     if(
         targetType !== "individual"
@@ -9798,11 +9953,91 @@ function notificationVisible(data){
 }
 
 
-/* =====================================================
-   BADGE
-===================================================== */
+/* =========================================================
+   FILTER
+========================================================= */
 
-function updateNotificationBadge(){
+function notificationMatchesFilter(item){
+
+    const unread =
+        !notificationReadIds.has(
+            item.id
+        );
+
+
+    if(
+        notificationCurrentFilter ===
+        "unread"
+    ){
+
+        return unread;
+
+    }
+
+
+    if(
+        notificationCurrentFilter ===
+        "important"
+    ){
+
+        return (
+            item.important === true
+            ||
+            item.isImportant === true
+            ||
+            String(
+                item.priority || ""
+            ).toLowerCase()
+            === "important"
+            ||
+            String(
+                item.type || ""
+            ).toLowerCase()
+            === "warning"
+        );
+
+    }
+
+
+    if(
+        notificationCurrentFilter ===
+        "offer"
+    ){
+
+        return (
+            String(
+                item.type || ""
+            ).toLowerCase()
+            === "offer"
+            ||
+            String(
+                item.category || ""
+            ).toLowerCase()
+            === "offer"
+            ||
+            String(
+                item.category || ""
+            ).toLowerCase()
+            === "offers"
+        );
+
+    }
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   COUNTS
+========================================================= */
+
+function updateNotificationCounts(){
+
+    const total =
+        notificationItems.length;
+
 
     const unread =
         notificationItems.filter(
@@ -9813,6 +10048,18 @@ function updateNotificationBadge(){
         ).length;
 
 
+    notificationAllCount.textContent =
+        total > 99
+        ? "99+"
+        : String(total);
+
+
+    notificationUnreadCount.textContent =
+        unread > 99
+        ? "99+"
+        : String(unread);
+
+
     notificationBadge.textContent =
         unread > 99
         ? "99+"
@@ -9820,7 +10067,7 @@ function updateNotificationBadge(){
 
 
     notificationBadge.style.display =
-        unread
+        unread > 0
         ? "flex"
         : "none";
 
@@ -9832,25 +10079,22 @@ function updateNotificationBadge(){
 
 
     notificationSubtitle.textContent =
-
-        unread
-
+        unread > 0
         ?
-
         `${unread} unread notification${
-            unread === 1 ? "" : "s"
+            unread === 1
+            ? ""
+            : "s"
         }`
-
         :
-
         "You're all caught up";
 
 }
 
 
-/* =====================================================
+/* =========================================================
    RENDER
-===================================================== */
+========================================================= */
 
 function renderNotifications(){
 
@@ -9866,34 +10110,30 @@ function renderNotifications(){
     );
 
 
-    notificationItems =
-        notificationItems.slice(
-            0,
-            100
+    updateNotificationCounts();
+
+
+    const filtered =
+        notificationItems.filter(
+            notificationMatchesFilter
         );
 
 
-    updateNotificationBadge();
-
-
-    if(
-        !notificationItems.length
-    ){
+    if(!filtered.length){
 
         notificationList.innerHTML = `
 
             <div class="notification-empty">
 
-                <i
-                    class="ri-notification-off-line"
-                    style="
-                        display:block;
-                        font-size:32px;
-                        margin-bottom:10px;
-                    "
-                ></i>
+                <i class="ri-notification-off-line"></i>
 
-                No notifications yet.
+                ${
+                    notificationItems.length
+                    ?
+                    "No notifications in this filter."
+                    :
+                    "No notifications yet."
+                }
 
             </div>
 
@@ -9905,144 +10145,177 @@ function renderNotifications(){
 
 
     notificationList.innerHTML =
+        filtered
+        .map(item=>{
 
-        notificationItems.map(
-            item => {
-
-                const rawType =
-                    String(
-                        item.type ||
-                        "info"
-                    ).toLowerCase();
+            const type =
+                notificationClass(
+                    item.type
+                );
 
 
-                const type =
-                    [
-                        "announcement",
-                        "exam",
-                        "result",
-                        "warning",
-                        "success",
-                        "info"
-                    ].includes(
-                        rawType
-                    )
-                    ?
-                    rawType
-                    :
-                    "info";
+            const unread =
+                !notificationReadIds.has(
+                    item.id
+                );
 
 
-                const unread =
-                    !notificationReadIds.has(
-                        item.id
-                    );
+            const icon =
+                notificationIcon(
+                    type
+                );
 
 
-                return `
+            return `
+
+                <div
+                    class="
+                        notification-card
+                        ${
+                            unread
+                            ? "unread"
+                            : ""
+                        }
+                        type-${type}
+                    "
+                    data-id="${escapeHtml(item.id)}"
+                >
+
+                    ${
+                        unread
+                        ?
+                        `
+                        <span
+                            class="
+                                notification-unread-dot
+                            "
+                        ></span>
+                        `
+                        :
+                        ""
+                    }
+
 
                     <div
-                        class="
-                            notification-card
-                            ${unread ? "unread" : ""}
-                            type-${type}
-                        "
-                        data-id="${escapeHtml(item.id)}"
+                        class="notification-icon"
                     >
 
-                        <div class="notification-icon">
+                        <i
+                            class="${icon}"
+                        ></i>
+
+                    </div>
+
+
+                    <div
+                        class="notification-content"
+                    >
+
+                        <div
+                            class="
+                                notification-title-row
+                            "
+                        >
+
+                            <div
+                                class="notification-title"
+                            >
+                                ${
+                                    escapeHtml(
+                                        item.title ||
+                                        "Notification"
+                                    )
+                                }
+                            </div>
 
                             <i
-                                class="${notificationIcon(type)}"
+                                class="
+                                    ri-more-2-fill
+                                    notification-more
+                                "
                             ></i>
 
                         </div>
 
 
-                        <div class="notification-content">
+                        <div
+                            class="notification-message"
+                        >
 
-                            <div class="notification-title">
-
-                                ${escapeHtml(
-                                    item.title ||
-                                    "Notification"
-                                )}
-
-                            </div>
-
-
-                            <div class="notification-message">
-
-                                ${escapeHtml(
+                            ${
+                                escapeHtml(
                                     item.message ||
                                     ""
-                                )}
+                                )
+                            }
 
-                            </div>
+                        </div>
 
 
-                            <div class="notification-meta">
+                        <div
+                            class="notification-meta"
+                        >
 
-                                <span>
+                            <i
+                                class="ri-time-line"
+                            ></i>
 
-                                    ${escapeHtml(
-                                        item.senderName ||
-                                        "BlackTerminal Admin"
-                                    )}
+                            <span>
 
-                                </span>
+                                ${
+                                    notificationTime(
+                                        item.createdAt
+                                    )
+                                }
 
+                            </span>
+
+
+                            ${
+                                unread
+                                ?
+                                `
+                                <span>•</span>
 
                                 <span
                                     class="
-                                        ${
-                                            unread
-                                            ?
-                                            "notification-new"
-                                            :
-                                            ""
-                                        }
+                                        notification-new-label
                                     "
                                 >
-
-                                    ${
-                                        unread
-                                        ?
-                                        "NEW • "
-                                        :
-                                        ""
-                                    }
-
-                                    ${notificationTime(
-                                        item.createdAt
-                                    )}
-
+                                    NEW
                                 </span>
-
-                            </div>
+                                `
+                                :
+                                ""
+                            }
 
                         </div>
 
                     </div>
 
-                `;
+                </div>
 
-            }
-        ).join("");
+            `;
+
+        })
+        .join("");
 
 }
 
 
-/* =====================================================
-   ADD / UPDATE
-===================================================== */
+/* =========================================================
+   UPSERT
+========================================================= */
 
 function upsertNotification(snap){
 
     const data =
         snap.data() || {};
 
-    if(!notificationVisible(data)){
+
+    if(
+        !notificationVisible(data)
+    ){
 
         notificationItems =
             notificationItems.filter(
@@ -10053,24 +10326,32 @@ function upsertNotification(snap){
         renderNotifications();
 
         return;
+
     }
 
-    const item = {
-        id:snap.id,
-        ...data
-    };
 
-    const alreadyExists =
+    const exists =
         notificationItems.some(
             item =>
                 item.id === snap.id
         );
+
+
+    const item = {
+
+        id:snap.id,
+
+        ...data
+
+    };
+
 
     const index =
         notificationItems.findIndex(
             item =>
                 item.id === snap.id
         );
+
 
     if(index >= 0){
 
@@ -10079,35 +10360,49 @@ function upsertNotification(snap){
 
     }else{
 
-        notificationItems.push(item);
-
-    }
-
-    renderNotifications();
-
-    /* 🔊 SOUND ONLY FOR NEW NOTIFICATION */
-
-    if(!alreadyExists){
-
-        playNotificationSound();
-
-        showToast(
-            "🔔 " +
-            (item.title || "New Notification"),
-            "info"
+        notificationItems.push(
+            item
         );
 
     }
+
+
+    renderNotifications();
+
+
+    /* 🔊 ONLY NEW NOTIFICATION */
+
+    if(!exists){
+
+        playNotificationSound();
+
+
+        if(
+            typeof showToast ===
+            "function"
+        ){
+
+            showToast(
+                "🔔 " +
+                (
+                    item.title ||
+                    "New Notification"
+                ),
+                "info"
+            );
+
+        }
+
+    }
+
 }
 
 
-/* =====================================================
+/* =========================================================
    REMOVE
-===================================================== */
+========================================================= */
 
-function removeNotification(
-    id
-){
+function removeNotification(id){
 
     notificationItems =
         notificationItems.filter(
@@ -10115,53 +10410,48 @@ function removeNotification(
                 item.id !== id
         );
 
-
     renderNotifications();
 
 }
 
 
-/* =====================================================
-   SNAPSHOT
-===================================================== */
+/* =========================================================
+   FIREBASE LISTENER
+========================================================= */
 
-function attachNotificationQuery(
-    q
-){
+function attachNotificationQuery(q){
 
     return onSnapshot(
 
         q,
 
-        snapshot => {
+        snapshot=>{
 
             snapshot.docChanges()
-            .forEach(
-                change => {
+            .forEach(change=>{
 
-                    if(
-                        change.type ===
-                        "removed"
-                    ){
+                if(
+                    change.type ===
+                    "removed"
+                ){
 
-                        removeNotification(
-                            change.doc.id
-                        );
+                    removeNotification(
+                        change.doc.id
+                    );
 
-                    }else{
+                }else{
 
-                        upsertNotification(
-                            change.doc
-                        );
-
-                    }
+                    upsertNotification(
+                        change.doc
+                    );
 
                 }
-            );
+
+            });
 
         },
 
-        error => {
+        error=>{
 
             console.log(
                 "Notification listener:",
@@ -10175,9 +10465,9 @@ function attachNotificationQuery(
 }
 
 
-/* =====================================================
-   FIND STUDENT FIRESTORE IDS
-===================================================== */
+/* =========================================================
+   RESOLVE STUDENT IDS
+========================================================= */
 
 async function resolveNotificationStudentIds(){
 
@@ -10226,52 +10516,52 @@ async function resolveNotificationStudentIds(){
                 );
 
 
-            snapshot.forEach(
-                snap => {
+            snapshot.forEach(snap=>{
 
-                    const data =
-                        snap.data() || {};
-
-
-                    const possibleNames = [
-
-                        snap.id,
-
-                        data.name,
-
-                        data.studentName,
-
-                        data.student_name,
-
-                        data.userName,
-
-                        data.fullName,
-
-                        data.student,
-
-                        data.displayName
-
-                    ];
+                const data =
+                    snap.data() || {};
 
 
-                    if(
-                        possibleNames.some(
-                            value =>
-                                notificationNorm(
-                                    value
-                                ) ===
-                                target
-                        )
-                    ){
+                const possibleNames = [
 
-                        ids.add(
-                            snap.id
-                        );
+                    snap.id,
 
-                    }
+                    data.name,
+
+                    data.studentName,
+
+                    data.student_name,
+
+                    data.userName,
+
+                    data.fullName,
+
+                    data.student,
+
+                    data.displayName
+
+                ];
+
+
+                if(
+                    possibleNames.some(
+                        value =>
+                            notificationNorm(
+                                value
+                            )
+                            ===
+                            target
+                    )
+                ){
+
+                    ids.add(
+                        snap.id
+                    );
 
                 }
-            );
+
+            });
+
 
         }catch(error){
 
@@ -10290,110 +10580,20 @@ async function resolveNotificationStudentIds(){
 
 }
 
-/* =====================================================
-   🔊 NOTIFICATION SOUND + HAPTIC
-===================================================== */
 
-let notificationAudioContext = null;
-
-function playNotificationSound(){
-
-    try{
-
-        if(!notificationAudioContext){
-            notificationAudioContext =
-                new (
-                    window.AudioContext ||
-                    window.webkitAudioContext
-                )();
-        }
-
-        const ctx =
-            notificationAudioContext;
-
-        if(ctx.state === "suspended"){
-            ctx.resume();
-        }
-
-        const oscillator =
-            ctx.createOscillator();
-
-        const gain =
-            ctx.createGain();
-
-        oscillator.type = "sine";
-
-        oscillator.frequency.setValueAtTime(
-            880,
-            ctx.currentTime
-        );
-
-        oscillator.frequency.setValueAtTime(
-            1174,
-            ctx.currentTime + 0.10
-        );
-
-        gain.gain.setValueAtTime(
-            0.0001,
-            ctx.currentTime
-        );
-
-        gain.gain.exponentialRampToValueAtTime(
-            0.16,
-            ctx.currentTime + 0.02
-        );
-
-        gain.gain.exponentialRampToValueAtTime(
-            0.0001,
-            ctx.currentTime + 0.45
-        );
-
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-
-        oscillator.start();
-
-        oscillator.stop(
-            ctx.currentTime + 0.45
-        );
-
-    }catch(error){
-
-        console.log(
-            "Notification sound:",
-            error
-        );
-
-    }
-
-    /* 📳 HAPTIC */
-
-    try{
-
-        if(
-            "vibrate" in navigator
-        ){
-            navigator.vibrate([
-                80,
-                60,
-                120
-            ]);
-        }
-
-    }catch(error){}
-
-}
-/* =====================================================
-   START LISTENERS
-===================================================== */
+/* =========================================================
+   START LISTENING
+========================================================= */
 
 async function listenForNotifications(){
 
     notificationUnsubs.forEach(
-        unsubscribe => {
+        unsubscribe=>{
 
             try{
+
                 unsubscribe();
+
             }catch(error){}
 
         }
@@ -10409,12 +10609,13 @@ async function listenForNotifications(){
 
 
     notificationStudentIds =
-        await resolveNotificationStudentIds();
+        await
+        resolveNotificationStudentIds();
 
 
-    /* ================================================
+    /* -----------------------------------------
        EVERYONE
-    ================================================= */
+    ----------------------------------------- */
 
     notificationUnsubs.push(
 
@@ -10442,45 +10643,44 @@ async function listenForNotifications(){
     );
 
 
-    /* ================================================
-       INDIVIDUAL BY FIRESTORE ID
-    ================================================= */
+    /* -----------------------------------------
+       INDIVIDUAL BY ID
+    ----------------------------------------- */
 
-    notificationStudentIds.forEach(
-        id => {
+    notificationStudentIds
+    .forEach(id=>{
 
-            notificationUnsubs.push(
+        notificationUnsubs.push(
 
-                attachNotificationQuery(
+            attachNotificationQuery(
 
-                    query(
+                query(
 
-                        collection(
-                            db,
-                            "notifications"
-                        ),
+                    collection(
+                        db,
+                        "notifications"
+                    ),
 
-                        where(
-                            "targetStudentId",
-                            "==",
-                            id
-                        ),
+                    where(
+                        "targetStudentId",
+                        "==",
+                        id
+                    ),
 
-                        limit(100)
-
-                    )
+                    limit(100)
 
                 )
 
-            );
+            )
 
-        }
-    );
+        );
+
+    });
 
 
-    /* ================================================
-       INDIVIDUAL BY STUDENT NAME
-    ================================================= */
+    /* -----------------------------------------
+       INDIVIDUAL BY NAME
+    ----------------------------------------- */
 
     notificationUnsubs.push(
 
@@ -10510,16 +10710,15 @@ async function listenForNotifications(){
 }
 
 
-/* =====================================================
-   OPEN
-===================================================== */
+/* =========================================================
+   OPEN / CLOSE
+========================================================= */
 
-notificationBtn.onclick =
-()=>{
+notificationBtn.onclick = ()=>{
 
-    notificationOverlay.classList.add(
-        "show"
-    );
+    notificationOverlay
+        .classList
+        .add("show");
 
 
     document.body.style.overflow =
@@ -10531,15 +10730,11 @@ notificationBtn.onclick =
 };
 
 
-/* =====================================================
-   CLOSE
-===================================================== */
-
 function closeNotifications(){
 
-    notificationOverlay.classList.remove(
-        "show"
-    );
+    notificationOverlay
+        .classList
+        .remove("show");
 
 
     document.body.style.overflow =
@@ -10549,51 +10744,111 @@ function closeNotifications(){
 
 
 notificationClose.onclick =
-closeNotifications;
+    closeNotifications;
 
 
 notificationOverlay.onclick =
-event => {
+    event=>{
 
-    if(
-        event.target ===
-        notificationOverlay
-    ){
+        if(
+            event.target ===
+            notificationOverlay
+        ){
 
-        closeNotifications();
+            closeNotifications();
 
-    }
+        }
 
-};
+    };
 
 
-/* =====================================================
-   MARK READ
-===================================================== */
+/* =========================================================
+   FILTER BUTTONS
+========================================================= */
 
-notificationList.onclick =
-event => {
+notificationFilters
+.forEach(button=>{
 
-    const card =
-        event.target.closest(
-            ".notification-card"
+    button.onclick = ()=>{
+
+        notificationFilters
+        .forEach(
+            item =>
+                item.classList.remove(
+                    "active"
+                )
         );
 
 
-    if(!card)
-        return;
+        button.classList.add(
+            "active"
+        );
 
 
-    const id =
-        card.dataset.id;
+        notificationCurrentFilter =
+            button.dataset.filter ||
+            "all";
 
 
-    if(!id)
-        return;
+        renderNotifications();
+
+    };
+
+});
 
 
-    notificationReadIds.add(
-        id
+/* =========================================================
+   CLICK NOTIFICATION = READ
+========================================================= */
+
+notificationList.onclick =
+    event=>{
+
+        const card =
+            event.target.closest(
+                ".notification-card"
+            );
+
+
+        if(!card)
+            return;
+
+
+        const id =
+            card.dataset.id;
+
+
+        if(!id)
+            return;
+
+
+        notificationReadIds.add(
+            id
+        );
+
+
+        saveNotificationReads();
+
+
+        renderNotifications();
+
+    };
+
+
+/* =========================================================
+   MARK ALL AS READ
+========================================================= */
+
+notificationMarkAll.onclick = ()=>{
+
+    notificationItems.forEach(
+        item => {
+
+            notificationReadIds.add(
+                item.id
+            );
+
+        }
     );
 
 
@@ -10602,20 +10857,32 @@ event => {
 
     renderNotifications();
 
+
+    if(
+        typeof showToast ===
+        "function"
+    ){
+
+        showToast(
+            "✓ All notifications marked as read",
+            "success"
+        );
+
+    }
+
 };
 
 
-/* =====================================================
-   ESC
-===================================================== */
+/* =========================================================
+   ESC KEY
+========================================================= */
 
 document.addEventListener(
     "keydown",
-    event => {
+    event=>{
 
         if(
-            event.key ===
-            "Escape"
+            event.key === "Escape"
         ){
 
             closeNotifications();
@@ -10626,9 +10893,9 @@ document.addEventListener(
 );
 
 
-/* =====================================================
-   START
-===================================================== */
+/* =========================================================
+   INITIALIZE
+========================================================= */
 
 listenForNotifications();
 </script>
