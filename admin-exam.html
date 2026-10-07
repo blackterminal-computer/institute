@@ -1,0 +1,3450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>BT | Exam Management</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    -webkit-tap-highlight-color:transparent;
+}
+
+:root{
+    --bg:#f5f7fb;
+    --card:#fff;
+    --text:#111827;
+    --muted:#6b7280;
+    --border:#e5e7eb;
+    --primary:#111827;
+    --green:#16a34a;
+    --red:#dc2626;
+    --orange:#d97706;
+    --blue:#2563eb;
+    --shadow:0 10px 30px rgba(15,23,42,.07);
+}
+
+body{
+    font-family:Inter,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+}
+
+button,input,textarea,select{
+    font-family:inherit;
+}
+
+button{
+    cursor:pointer;
+}
+
+.app{
+    width:100%;
+    max-width:850px;
+    margin:auto;
+    min-height:100vh;
+}
+
+/* HEADER */
+
+.header{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    padding:17px 16px;
+    position:sticky;
+    top:0;
+    z-index:100;
+}
+
+.header-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:11px;
+}
+
+.logo{
+    width:43px;
+    height:43px;
+    border-radius:13px;
+    background:#111827;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size:14px;
+}
+
+.brand-title{
+    font-size:16px;
+    font-weight:800;
+}
+
+.brand-sub{
+    color:var(--muted);
+    font-size:10px;
+    margin-top:3px;
+}
+
+.admin-pill{
+    background:#f3f4f6;
+    color:#374151;
+    padding:8px 11px;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:800;
+}
+
+/* CONTENT */
+
+.content{
+    padding:20px 15px 40px;
+}
+
+.page-heading{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.page-title{
+    font-size:24px;
+    font-weight:800;
+    letter-spacing:-.7px;
+}
+
+.page-subtitle{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:5px;
+    line-height:1.5;
+}
+
+.create-main-btn{
+    border:0;
+    background:#111827;
+    color:#fff;
+    border-radius:12px;
+    padding:11px 13px;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+/* STATS */
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:9px;
+    margin-top:20px;
+}
+
+.stat-card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:13px 10px;
+    box-shadow:var(--shadow);
+}
+
+.stat-label{
+    color:var(--muted);
+    font-size:9px;
+    font-weight:700;
+}
+
+.stat-value{
+    font-size:20px;
+    font-weight:800;
+    margin-top:5px;
+}
+
+/* SECTION */
+
+.section{
+    margin-top:24px;
+}
+
+.section-title{
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    margin-bottom:11px;
+}
+
+/* EXAM CARD */
+
+.exam-card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:16px;
+    box-shadow:var(--shadow);
+    margin-bottom:12px;
+}
+
+.exam-card-top{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.exam-icon{
+    width:45px;
+    height:45px;
+    background:#111827;
+    color:#fff;
+    border-radius:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    flex-shrink:0;
+}
+
+.exam-info-main{
+    min-width:0;
+    flex:1;
+}
+
+.exam-title{
+    font-size:15px;
+    font-weight:800;
+    line-height:1.35;
+}
+
+.exam-desc{
+    color:var(--muted);
+    font-size:10px;
+    margin-top:4px;
+    line-height:1.5;
+}
+
+.exam-status{
+    padding:6px 8px;
+    border-radius:999px;
+    font-size:9px;
+    font-weight:800;
+    height:max-content;
+}
+
+.status-published{
+    background:#dcfce7;
+    color:#15803d;
+}
+
+.status-draft{
+    background:#f3f4f6;
+    color:#4b5563;
+}
+
+.status-expired{
+    background:#fee2e2;
+    color:#b91c1c;
+}
+
+.exam-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-top:14px;
+}
+
+.meta{
+    background:#f8fafc;
+    border:1px solid #eef0f3;
+    border-radius:9px;
+    padding:7px 9px;
+    font-size:9px;
+    color:#4b5563;
+    font-weight:700;
+}
+
+.exam-actions{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:7px;
+    margin-top:14px;
+    padding-top:13px;
+    border-top:1px solid var(--border);
+}
+
+.action-btn{
+    border:0;
+    border-radius:10px;
+    padding:10px 5px;
+    font-size:9px;
+    font-weight:800;
+}
+
+.edit-btn{
+    background:#eff6ff;
+    color:#1d4ed8;
+}
+
+.assign-btn{
+    background:#f0fdf4;
+    color:#15803d;
+}
+
+.publish-btn{
+    background:#fff7ed;
+    color:#c2410c;
+}
+
+.delete-btn{
+    background:#fef2f2;
+    color:#b91c1c;
+}
+
+/* LOADING */
+
+.loading{
+    text-align:center;
+    padding:35px 10px;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.spinner{
+    width:27px;
+    height:27px;
+    border:3px solid #e5e7eb;
+    border-top-color:#111827;
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    margin:0 auto 11px;
+}
+
+@keyframes spin{
+    to{transform:rotate(360deg)}
+}
+
+/* MODAL */
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.6);
+    backdrop-filter:blur(5px);
+    z-index:500;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+}
+
+.modal.show{
+    display:flex;
+}
+
+.modal-card{
+    width:100%;
+    max-width:760px;
+    max-height:94vh;
+    overflow:auto;
+    background:#fff;
+    border-radius:25px 25px 0 0;
+    padding:20px 16px 28px;
+    animation:up .25s ease;
+}
+
+@keyframes up{
+    from{transform:translateY(100%)}
+    to{transform:translateY(0)}
+}
+
+.handle{
+    width:40px;
+    height:4px;
+    background:#d1d5db;
+    border-radius:20px;
+    margin:0 auto 18px;
+}
+
+.modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:18px;
+}
+
+.modal-title{
+    font-size:19px;
+    font-weight:800;
+}
+
+.close-btn{
+    width:34px;
+    height:34px;
+    border:0;
+    background:#f3f4f6;
+    border-radius:10px;
+    font-size:17px;
+}
+
+/* FORM */
+
+.form-group{
+    margin-bottom:14px;
+}
+
+.form-label{
+    display:block;
+    font-size:10px;
+    font-weight:800;
+    color:#374151;
+    margin-bottom:6px;
+}
+
+input,
+textarea,
+select{
+    width:100%;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:12px;
+    padding:12px;
+    outline:none;
+    color:#111827;
+    font-size:12px;
+}
+
+input:focus,
+textarea:focus,
+select:focus{
+    border-color:#111827;
+}
+
+textarea{
+    min-height:75px;
+    resize:vertical;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+}
+
+/* SWITCH */
+
+.switch-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:#f8fafc;
+    border:1px solid #eef0f3;
+    padding:12px;
+    border-radius:13px;
+    margin-bottom:10px;
+}
+
+.switch-text strong{
+    display:block;
+    font-size:11px;
+}
+
+.switch-text span{
+    display:block;
+    color:var(--muted);
+    font-size:9px;
+    margin-top:3px;
+}
+
+.switch{
+    position:relative;
+    width:43px;
+    height:24px;
+}
+
+.switch input{
+    opacity:0;
+    width:0;
+    height:0;
+}
+
+.slider{
+    position:absolute;
+    inset:0;
+    background:#d1d5db;
+    border-radius:30px;
+    transition:.2s;
+}
+
+.slider:before{
+    content:"";
+    position:absolute;
+    width:18px;
+    height:18px;
+    left:3px;
+    top:3px;
+    background:#fff;
+    border-radius:50%;
+    transition:.2s;
+}
+
+.switch input:checked + .slider{
+    background:#111827;
+}
+
+.switch input:checked + .slider:before{
+    transform:translateX(19px);
+}
+
+/* QUESTIONS */
+
+.question-builder{
+    margin-top:20px;
+}
+
+.question-builder-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.add-question-btn{
+    border:0;
+    background:#111827;
+    color:#fff;
+    border-radius:10px;
+    padding:9px 11px;
+    font-size:10px;
+    font-weight:800;
+}
+
+.question-item{
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:13px;
+    margin-bottom:10px;
+    background:#fff;
+}
+
+.question-item-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:9px;
+}
+
+.question-number{
+    font-size:11px;
+    font-weight:800;
+}
+
+.remove-question{
+    border:0;
+    background:#fef2f2;
+    color:#b91c1c;
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:9px;
+    font-weight:800;
+}
+
+.option-row{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:7px;
+}
+
+.option-label{
+    width:24px;
+    height:24px;
+    border-radius:7px;
+    background:#f3f4f6;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:9px;
+    font-weight:800;
+    flex-shrink:0;
+}
+
+.option-row input{
+    padding:9px 10px;
+}
+
+.correct-row{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:9px;
+}
+
+.correct-row select{
+    flex:1;
+    padding:9px;
+    font-size:10px;
+}
+
+.marks-row{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:8px;
+}
+
+.marks-row label{
+    font-size:9px;
+    color:var(--muted);
+    font-weight:700;
+}
+
+.marks-row input{
+    width:90px;
+    padding:8px;
+}
+
+/* MODAL FOOTER */
+
+.modal-footer{
+    display:flex;
+    gap:9px;
+    margin-top:20px;
+    padding-top:15px;
+    border-top:1px solid var(--border);
+}
+
+.modal-btn{
+    flex:1;
+    border:0;
+    border-radius:12px;
+    padding:13px;
+    font-size:11px;
+    font-weight:800;
+}
+
+.cancel{
+    background:#f3f4f6;
+    color:#374151;
+}
+
+.save{
+    background:#111827;
+    color:#fff;
+}
+
+/* STUDENT ASSIGN */
+
+.search-box{
+    position:relative;
+    margin-bottom:12px;
+}
+
+.search-box input{
+    padding-left:37px;
+}
+
+.search-icon{
+    position:absolute;
+    left:13px;
+    top:12px;
+    font-size:13px;
+}
+
+.select-all-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:11px 12px;
+    background:#f8fafc;
+    border-radius:12px;
+    margin-bottom:9px;
+}
+
+.select-all-row label{
+    font-size:10px;
+    font-weight:800;
+}
+
+.select-all-btn{
+    border:0;
+    background:#111827;
+    color:#fff;
+    padding:7px 9px;
+    border-radius:8px;
+    font-size:9px;
+    font-weight:800;
+}
+
+.student-list{
+    max-height:400px;
+    overflow:auto;
+    border:1px solid var(--border);
+    border-radius:14px;
+}
+
+.student-row{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:12px;
+    border-bottom:1px solid #f0f1f3;
+}
+
+.student-row:last-child{
+    border-bottom:0;
+}
+
+.student-row input{
+    width:17px;
+    height:17px;
+}
+
+.student-name{
+    font-size:11px;
+    font-weight:700;
+}
+
+.student-secondary{
+    color:var(--muted);
+    font-size:9px;
+    margin-top:3px;
+}
+
+.selected-count{
+    margin-top:11px;
+    font-size:10px;
+    font-weight:800;
+    color:#15803d;
+}
+
+/* EMPTY */
+
+.empty{
+    text-align:center;
+    padding:35px 20px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:20px;
+}
+
+.empty-icon{
+    font-size:28px;
+}
+
+.empty-title{
+    font-size:15px;
+    font-weight:800;
+    margin-top:10px;
+}
+
+.empty-text{
+    color:var(--muted);
+    font-size:11px;
+    margin-top:5px;
+}
+
+/* TOAST */
+
+.toast{
+    position:fixed;
+    left:50%;
+    bottom:20px;
+    transform:translate(-50%,20px);
+    background:#111827;
+    color:#fff;
+    padding:11px 15px;
+    border-radius:12px;
+    font-size:10px;
+    font-weight:700;
+    opacity:0;
+    pointer-events:none;
+    transition:.25s;
+    z-index:9999;
+    text-align:center;
+    max-width:90%;
+}
+
+.toast.show{
+    opacity:1;
+    transform:translate(-50%,0);
+}
+
+/* DESKTOP */
+
+@media(min-width:700px){
+
+    body{
+        background:#edf0f5;
+    }
+
+    .app{
+        background:#f5f7fb;
+        box-shadow:0 0 50px rgba(0,0,0,.05);
+    }
+
+    .modal{
+        align-items:center;
+    }
+
+    .modal-card{
+        border-radius:25px;
+    }
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header">
+
+    <div class="header-row">
+
+        <div class="brand">
+
+            <div class="logo">
+                BT
+            </div>
+
+            <div>
+                <div class="brand-title">
+                    BlackTerminal
+                </div>
+
+                <div class="brand-sub">
+                    Exam Management System
+                </div>
+            </div>
+
+        </div>
+
+        <div class="admin-pill">
+            ADMIN
+        </div>
+
+    </div>
+
+</header>
+
+
+<main class="content">
+
+    <div class="page-heading">
+
+        <div>
+            <div class="page-title">
+                Exam Management
+            </div>
+
+            <div class="page-subtitle">
+                Create examinations and assign them only to selected students.
+            </div>
+        </div>
+
+        <button class="create-main-btn"
+                onclick="openCreateExam()">
+            + CREATE EXAM
+        </button>
+
+    </div>
+
+
+    <!-- STATS -->
+
+    <div class="stats">
+
+        <div class="stat-card">
+            <div class="stat-label">
+                TOTAL EXAMS
+            </div>
+            <div class="stat-value"
+                 id="totalExams">
+                0
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">
+                PUBLISHED
+            </div>
+            <div class="stat-value"
+                 id="publishedExams">
+                0
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">
+                STUDENTS
+            </div>
+            <div class="stat-value"
+                 id="totalStudents">
+                0
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- EXAMS -->
+
+    <div class="section">
+
+        <div class="section-title">
+            All Examinations
+        </div>
+
+        <div id="loadingBox"
+             class="loading">
+
+            <div class="spinner"></div>
+
+            Loading examinations...
+
+        </div>
+
+        <div id="examList"></div>
+
+        <div id="emptyBox"
+             class="empty"
+             style="display:none;">
+
+            <div class="empty-icon">
+                📝
+            </div>
+
+            <div class="empty-title">
+                No Examinations
+            </div>
+
+            <div class="empty-text">
+                Create your first examination to get started.
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+</div>
+
+
+<!-- ======================================================
+     CREATE / EDIT EXAM MODAL
+====================================================== -->
+
+<div class="modal"
+     id="examModal">
+
+    <div class="modal-card">
+
+        <div class="handle"></div>
+
+        <div class="modal-header">
+
+            <div class="modal-title"
+                 id="examModalTitle">
+                Create New Exam
+            </div>
+
+            <button class="close-btn"
+                    onclick="closeExamModal()">
+                ×
+            </button>
+
+        </div>
+
+
+        <!-- BASIC INFO -->
+
+        <div class="form-group">
+
+            <label class="form-label">
+                EXAM TITLE *
+            </label>
+
+            <input id="examTitle"
+                   placeholder="Example: Tally Final Assessment">
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label class="form-label">
+                DESCRIPTION
+            </label>
+
+            <textarea id="examDescription"
+                      placeholder="Enter examination description"></textarea>
+
+        </div>
+
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label class="form-label">
+                    DURATION (MINUTES) *
+                </label>
+
+                <input id="examDuration"
+                       type="number"
+                       min="1"
+                       value="60">
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="form-label">
+                    PASSING MARKS
+                </label>
+
+                <input id="examPassing"
+                       type="number"
+                       min="0"
+                       value="40">
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="form-label">
+                    NEGATIVE MARKS
+                </label>
+
+                <input id="examNegative"
+                       type="number"
+                       min="0"
+                       step="0.25"
+                       value="0">
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="form-label">
+                    STATUS
+                </label>
+
+                <select id="examStatus">
+
+                    <option value="draft">
+                        Draft
+                    </option>
+
+                    <option value="published">
+                        Published
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <!-- SCHEDULE -->
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label class="form-label">
+                    START DATE & TIME
+                </label>
+
+                <input id="examStart"
+                       type="datetime-local">
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="form-label">
+                    END DATE & TIME
+                </label>
+
+                <input id="examEnd"
+                       type="datetime-local">
+
+            </div>
+
+        </div>
+
+
+        <!-- SETTINGS -->
+
+        <div class="switch-row">
+
+            <div class="switch-text">
+
+                <strong>
+                    Shuffle Questions
+                </strong>
+
+                <span>
+                    Randomize question order for students
+                </span>
+
+            </div>
+
+            <label class="switch">
+
+                <input type="checkbox"
+                       id="shuffleQuestions"
+                       checked>
+
+                <span class="slider"></span>
+
+            </label>
+
+        </div>
+
+
+        <div class="switch-row">
+
+            <div class="switch-text">
+
+                <strong>
+                    One Attempt
+                </strong>
+
+                <span>
+                    Student can submit the exam only once
+                </span>
+
+            </div>
+
+            <label class="switch">
+
+                <input type="checkbox"
+                       id="oneAttempt"
+                       checked>
+
+                <span class="slider"></span>
+
+            </label>
+
+        </div>
+
+
+        <!-- QUESTIONS -->
+
+        <div class="question-builder">
+
+            <div class="question-builder-header">
+
+                <div class="section-title"
+                     style="margin:0;">
+                    Questions
+                </div>
+
+                <button class="add-question-btn"
+                        onclick="addQuestion()">
+                    + ADD QUESTION
+                </button>
+
+            </div>
+
+            <div id="questionList"></div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+            <button class="modal-btn cancel"
+                    onclick="closeExamModal()">
+                CANCEL
+            </button>
+
+            <button class="modal-btn save"
+                    onclick="saveExam()">
+                SAVE EXAM
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     ASSIGN STUDENTS MODAL
+====================================================== -->
+
+<div class="modal"
+     id="assignModal">
+
+    <div class="modal-card">
+
+        <div class="handle"></div>
+
+        <div class="modal-header">
+
+            <div>
+
+                <div class="modal-title">
+                    Assign Examination
+                </div>
+
+                <div id="assignExamName"
+                     style="
+                     color:#6b7280;
+                     font-size:10px;
+                     margin-top:4px;
+                     ">
+                    Examination
+                </div>
+
+            </div>
+
+            <button class="close-btn"
+                    onclick="closeAssignModal()">
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="search-box">
+
+            <span class="search-icon">
+                🔍
+            </span>
+
+            <input id="studentSearch"
+                   placeholder="Search student..."
+                   oninput="filterStudents()">
+
+        </div>
+
+
+        <div class="select-all-row">
+
+            <label>
+                SELECT STUDENTS
+            </label>
+
+            <button class="select-all-btn"
+                    onclick="toggleSelectAll()">
+                SELECT ALL
+            </button>
+
+        </div>
+
+
+        <div class="student-list"
+             id="studentList">
+
+            <div class="loading">
+                Loading students...
+            </div>
+
+        </div>
+
+
+        <div class="selected-count"
+             id="selectedCount">
+            0 students selected
+        </div>
+
+
+        <div class="modal-footer">
+
+            <button class="modal-btn cancel"
+                    onclick="closeAssignModal()">
+                CANCEL
+            </button>
+
+            <button class="modal-btn save"
+                    onclick="assignExam()">
+                ASSIGN EXAM
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="toast"
+     id="toast">
+</div>
+
+
+<script>
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+
+    authDomain:
+        "black-terminal-f2c91.firebaseapp.com",
+
+    projectId:
+        "black-terminal-f2c91",
+
+    storageBucket:
+        "black-terminal-f2c91.appspot.com",
+
+    messagingSenderId:
+        "552489994197",
+
+    appId:
+        "1:552489994197:web:7662331264c334ffbadf5c"
+
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db =
+    firebase.firestore();
+
+
+/* =========================================================
+   GLOBAL
+========================================================= */
+
+let exams = [];
+
+let students = [];
+
+let editingExamId = null;
+
+let assigningExamId = null;
+
+let selectedStudents = new Set();
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function normalizeName(name){
+
+    return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g," ")
+        .replace(/[\/\\.#$[\]]/g,"-");
+
+}
+
+
+function escapeHtml(value){
+
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+function showToast(message){
+
+    const toast =
+        document.getElementById("toast");
+
+    toast.textContent =
+        message;
+
+    toast.classList.add("show");
+
+    setTimeout(()=>{
+
+        toast.classList.remove("show");
+
+    },2500);
+
+}
+
+
+function timestampToDate(value){
+
+    if(!value){
+        return null;
+    }
+
+    try{
+
+        return value.toDate
+            ? value.toDate()
+            : new Date(value);
+
+    }catch(e){
+
+        return null;
+    }
+
+}
+
+
+function formatDate(value){
+
+    const date =
+        timestampToDate(value);
+
+    if(!date){
+        return "—";
+    }
+
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            day:"2-digit",
+            month:"short",
+            year:"numeric"
+        }
+    );
+
+}
+
+
+/* =========================================================
+   LOAD EXAMS
+========================================================= */
+
+async function loadExams(){
+
+    document.getElementById("loadingBox")
+        .style.display = "block";
+
+    try{
+
+        const snapshot =
+            await db.collection("exams")
+            .orderBy("createdAt","desc")
+            .get();
+
+        exams =
+            snapshot.docs.map(doc => ({
+
+                id:doc.id,
+
+                ...doc.data()
+
+            }));
+
+        renderExams();
+
+        await loadStudentCount();
+
+    }catch(error){
+
+        console.error(error);
+
+        /*
+         If createdAt ordering fails because
+         old documents do not have createdAt,
+         fallback to normal collection read.
+        */
+
+        try{
+
+            const fallback =
+                await db.collection("exams")
+                .get();
+
+            exams =
+                fallback.docs.map(doc => ({
+
+                    id:doc.id,
+
+                    ...doc.data()
+
+                }));
+
+            renderExams();
+
+            await loadStudentCount();
+
+        }catch(secondError){
+
+            console.error(secondError);
+
+            showToast(
+                "Unable to load examinations."
+            );
+
+            document.getElementById("loadingBox")
+                .style.display = "none";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   RENDER EXAMS
+========================================================= */
+
+async function renderExams(){
+
+    document.getElementById("loadingBox")
+        .style.display = "none";
+
+    const container =
+        document.getElementById("examList");
+
+    container.innerHTML = "";
+
+    document.getElementById("totalExams")
+        .textContent =
+        exams.length;
+
+    document.getElementById("publishedExams")
+        .textContent =
+        exams.filter(
+            exam =>
+                exam.status === "published"
+        ).length;
+
+    if(!exams.length){
+
+        document.getElementById("emptyBox")
+            .style.display = "block";
+
+        return;
+    }
+
+    document.getElementById("emptyBox")
+        .style.display = "none";
+
+
+    for(const exam of exams){
+
+        const questions =
+            Array.isArray(exam.questions)
+                ? exam.questions.length
+                : Number(
+                    exam.totalQuestions || 0
+                  );
+
+        let assignedCount = 0;
+
+        try{
+
+            const assignedSnapshot =
+                await db.collection("examAssignments")
+                .where("examId","==",exam.id)
+                .get();
+
+            assignedCount =
+                assignedSnapshot.size;
+
+        }catch(error){
+
+            console.log(
+                "Assignment count unavailable",
+                error
+            );
+
+        }
+
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "exam-card";
+
+        card.innerHTML = `
+
+            <div class="exam-card-top">
+
+                <div style="display:flex;gap:11px;min-width:0;">
+
+                    <div class="exam-icon">
+                        📝
+                    </div>
+
+                    <div class="exam-info-main">
+
+                        <div class="exam-title">
+                            ${escapeHtml(
+                                exam.title ||
+                                "Untitled Examination"
+                            )}
+                        </div>
+
+                        <div class="exam-desc">
+                            ${escapeHtml(
+                                exam.description ||
+                                "No description"
+                            )}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="exam-status
+                    ${
+                        exam.status === "published"
+                        ? "status-published"
+                        : "status-draft"
+                    }">
+
+                    ${
+                        exam.status === "published"
+                        ? "PUBLISHED"
+                        : "DRAFT"
+                    }
+
+                </div>
+
+            </div>
+
+
+            <div class="exam-meta">
+
+                <div class="meta">
+                    ${questions} Questions
+                </div>
+
+                <div class="meta">
+                    ${Number(exam.duration || 0)} Min
+                </div>
+
+                <div class="meta">
+                    ${Number(exam.totalMarks || 0)} Marks
+                </div>
+
+                <div class="meta">
+                    Pass ${Number(
+                        exam.passingMarks || 0
+                    )}
+                </div>
+
+                <div class="meta">
+                    👥 ${assignedCount} Assigned
+                </div>
+
+            </div>
+
+
+            <div class="exam-actions">
+
+                <button
+                    class="action-btn edit-btn"
+                    onclick="editExam('${exam.id}')">
+
+                    EDIT
+
+                </button>
+
+                <button
+                    class="action-btn assign-btn"
+                    onclick="openAssignModal('${exam.id}')">
+
+                    ASSIGN
+
+                </button>
+
+                <button
+                    class="action-btn publish-btn"
+                    onclick="togglePublish('${exam.id}')">
+
+                    ${
+                        exam.status === "published"
+                        ? "UNPUBLISH"
+                        : "PUBLISH"
+                    }
+
+                </button>
+
+                <button
+                    class="action-btn delete-btn"
+                    onclick="deleteExam('${exam.id}')">
+
+                    DELETE
+
+                </button>
+
+            </div>
+
+        `;
+
+        container.appendChild(card);
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD STUDENTS
+========================================================= */
+
+async function loadStudents(){
+
+    if(students.length){
+        return;
+    }
+
+    try{
+
+        /*
+         Existing BlackTerminal studentData collection
+         is used as the primary student source.
+        */
+
+        const snapshot =
+            await db.collection("studentData")
+            .get();
+
+        students =
+            snapshot.docs.map(doc => {
+
+                const data =
+                    doc.data();
+
+                const name =
+                    data.name ||
+                    data.studentName ||
+                    data.userName ||
+                    data.fullName ||
+                    "";
+
+                const phone =
+                    data.phone ||
+                    data.mobile ||
+                    data.mobileNumber ||
+                    "";
+
+                return {
+
+                    id:doc.id,
+
+                    name:name,
+
+                    phone:phone,
+
+                    normalized:
+                        normalizeName(name)
+
+                };
+
+            })
+            .filter(
+                student =>
+                    student.name
+            );
+
+    }catch(error){
+
+        console.error(
+            "studentData load error:",
+            error
+        );
+
+        /*
+         Fallback to students collection
+        */
+
+        try{
+
+            const fallback =
+                await db.collection("students")
+                .get();
+
+            students =
+                fallback.docs.map(doc => {
+
+                    const data =
+                        doc.data();
+
+                    const name =
+                        data.name ||
+                        data.studentName ||
+                        data.userName ||
+                        data.fullName ||
+                        "";
+
+                    const phone =
+                        data.phone ||
+                        data.mobile ||
+                        "";
+
+                    return {
+
+                        id:doc.id,
+
+                        name:name,
+
+                        phone:phone,
+
+                        normalized:
+                            normalizeName(name)
+
+                    };
+
+                })
+                .filter(
+                    student =>
+                        student.name
+                );
+
+        }catch(secondError){
+
+            console.error(secondError);
+
+            showToast(
+                "Unable to load students."
+            );
+
+        }
+
+    }
+
+    document.getElementById("totalStudents")
+        .textContent =
+        students.length;
+
+}
+
+
+/* =========================================================
+   OPEN CREATE
+========================================================= */
+
+function openCreateExam(){
+
+    editingExamId = null;
+
+    document.getElementById("examModalTitle")
+        .textContent =
+        "Create New Exam";
+
+    clearExamForm();
+
+    document.getElementById("examModal")
+        .classList.add("show");
+
+}
+
+
+/* =========================================================
+   CLEAR FORM
+========================================================= */
+
+function clearExamForm(){
+
+    document.getElementById("examTitle")
+        .value = "";
+
+    document.getElementById("examDescription")
+        .value = "";
+
+    document.getElementById("examDuration")
+        .value = 60;
+
+    document.getElementById("examPassing")
+        .value = 40;
+
+    document.getElementById("examNegative")
+        .value = 0;
+
+    document.getElementById("examStatus")
+        .value = "draft";
+
+    document.getElementById("examStart")
+        .value = "";
+
+    document.getElementById("examEnd")
+        .value = "";
+
+    document.getElementById("shuffleQuestions")
+        .checked = true;
+
+    document.getElementById("oneAttempt")
+        .checked = true;
+
+    document.getElementById("questionList")
+        .innerHTML = "";
+
+    addQuestion();
+
+}
+
+
+/* =========================================================
+   CLOSE CREATE
+========================================================= */
+
+function closeExamModal(){
+
+    document.getElementById("examModal")
+        .classList.remove("show");
+
+}
+
+
+/* =========================================================
+   ADD QUESTION
+========================================================= */
+
+function addQuestion(data = null){
+
+    const container =
+        document.getElementById("questionList");
+
+    const index =
+        container.children.length;
+
+    const question =
+        document.createElement("div");
+
+    question.className =
+        "question-item";
+
+    const options =
+        data && Array.isArray(data.options)
+            ? data.options
+            : ["","","",""];
+
+    question.innerHTML = `
+
+        <div class="question-item-header">
+
+            <div class="question-number">
+                QUESTION ${index + 1}
+            </div>
+
+            <button
+                class="remove-question"
+                onclick="removeQuestion(this)">
+
+                REMOVE
+
+            </button>
+
+        </div>
+
+
+        <input
+            class="q-text"
+            placeholder="Enter question..."
+            value="${escapeHtml(
+                data?.question ||
+                data?.text ||
+                ""
+            )}">
+
+
+        <div class="option-row">
+
+            <div class="option-label">
+                A
+            </div>
+
+            <input
+                class="q-option"
+                data-option="0"
+                placeholder="Option A"
+                value="${escapeHtml(
+                    options[0] || ""
+                )}">
+
+        </div>
+
+
+        <div class="option-row">
+
+            <div class="option-label">
+                B
+            </div>
+
+            <input
+                class="q-option"
+                data-option="1"
+                placeholder="Option B"
+                value="${escapeHtml(
+                    options[1] || ""
+                )}">
+
+        </div>
+
+
+        <div class="option-row">
+
+            <div class="option-label">
+                C
+            </div>
+
+            <input
+                class="q-option"
+                data-option="2"
+                placeholder="Option C"
+                value="${escapeHtml(
+                    options[2] || ""
+                )}">
+
+        </div>
+
+
+        <div class="option-row">
+
+            <div class="option-label">
+                D
+            </div>
+
+            <input
+                class="q-option"
+                data-option="3"
+                placeholder="Option D"
+                value="${escapeHtml(
+                    options[3] || ""
+                )}">
+
+        </div>
+
+
+        <div class="correct-row">
+
+            <label style="
+                font-size:9px;
+                font-weight:800;
+                color:#374151;
+                ">
+                CORRECT
+            </label>
+
+            <select class="q-correct">
+
+                <option value="0"
+                    ${
+                        String(
+                            data?.correctIndex ?? 0
+                        ) === "0"
+                        ? "selected"
+                        : ""
+                    }>
+                    A
+                </option>
+
+                <option value="1"
+                    ${
+                        String(
+                            data?.correctIndex ?? 0
+                        ) === "1"
+                        ? "selected"
+                        : ""
+                    }>
+                    B
+                </option>
+
+                <option value="2"
+                    ${
+                        String(
+                            data?.correctIndex ?? 0
+                        ) === "2"
+                        ? "selected"
+                        : ""
+                    }>
+                    C
+                </option>
+
+                <option value="3"
+                    ${
+                        String(
+                            data?.correctIndex ?? 0
+                        ) === "3"
+                        ? "selected"
+                        : ""
+                    }>
+                    D
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="marks-row">
+
+            <label>
+                MARKS
+            </label>
+
+            <input
+                class="q-marks"
+                type="number"
+                min="0"
+                step="0.5"
+                value="${Number(
+                    data?.marks || 2
+                )}">
+
+        </div>
+
+    `;
+
+    container.appendChild(question);
+
+    updateQuestionNumbers();
+
+}
+
+
+/* =========================================================
+   REMOVE QUESTION
+========================================================= */
+
+function removeQuestion(button){
+
+    const item =
+        button.closest(".question-item");
+
+    if(!item){
+        return;
+    }
+
+    item.remove();
+
+    updateQuestionNumbers();
+
+}
+
+
+/* =========================================================
+   QUESTION NUMBERS
+========================================================= */
+
+function updateQuestionNumbers(){
+
+    const items =
+        document.querySelectorAll(
+            ".question-item"
+        );
+
+    items.forEach((item,index)=>{
+
+        const number =
+            item.querySelector(
+                ".question-number"
+            );
+
+        if(number){
+
+            number.textContent =
+                "QUESTION " +
+                (index + 1);
+
+        }
+
+    });
+
+}
+
+
+/* =========================================================
+   COLLECT QUESTIONS
+========================================================= */
+
+function collectQuestions(){
+
+    const items =
+        document.querySelectorAll(
+            ".question-item"
+        );
+
+    const questions = [];
+
+    items.forEach(item=>{
+
+        const questionText =
+            item.querySelector(
+                ".q-text"
+            ).value.trim();
+
+        const optionInputs =
+            item.querySelectorAll(
+                ".q-option"
+            );
+
+        const options =
+            Array.from(optionInputs)
+            .map(input =>
+                input.value.trim()
+            );
+
+        const correctIndex =
+            Number(
+                item.querySelector(
+                    ".q-correct"
+                ).value
+            );
+
+        const marks =
+            Number(
+                item.querySelector(
+                    ".q-marks"
+                ).value || 0
+            );
+
+        if(
+            !questionText &&
+            options.every(
+                option => !option
+            )
+        ){
+            return;
+        }
+
+        questions.push({
+
+            question:
+                questionText,
+
+            options:
+                options,
+
+            correctIndex:
+                correctIndex,
+
+            /*
+             Student page expects
+             correctAnswer as option text.
+            */
+
+            correctAnswer:
+                options[correctIndex] || "",
+
+            marks:
+                marks
+
+        });
+
+    });
+
+    return questions;
+
+}
+
+
+/* =========================================================
+   SAVE EXAM
+========================================================= */
+
+async function saveExam(){
+
+    const title =
+        document.getElementById("examTitle")
+        .value.trim();
+
+    const description =
+        document.getElementById("examDescription")
+        .value.trim();
+
+    const duration =
+        Number(
+            document.getElementById("examDuration")
+            .value || 0
+        );
+
+    const passingMarks =
+        Number(
+            document.getElementById("examPassing")
+            .value || 0
+        );
+
+    const negativeMark =
+        Number(
+            document.getElementById("examNegative")
+            .value || 0
+        );
+
+    const status =
+        document.getElementById("examStatus")
+        .value;
+
+    const startValue =
+        document.getElementById("examStart")
+        .value;
+
+    const endValue =
+        document.getElementById("examEnd")
+        .value;
+
+    const shuffleQuestions =
+        document.getElementById(
+            "shuffleQuestions"
+        ).checked;
+
+    const oneAttempt =
+        document.getElementById(
+            "oneAttempt"
+        ).checked;
+
+    if(!title){
+
+        showToast(
+            "Please enter exam title."
+        );
+
+        return;
+    }
+
+    if(duration <= 0){
+
+        showToast(
+            "Please enter valid duration."
+        );
+
+        return;
+    }
+
+    const questions =
+        collectQuestions();
+
+    if(!questions.length){
+
+        showToast(
+            "Please add at least one question."
+        );
+
+        return;
+    }
+
+    for(let i=0;i<questions.length;i++){
+
+        const q =
+            questions[i];
+
+        if(!q.question){
+
+            showToast(
+                "Question " +
+                (i+1) +
+                " is empty."
+            );
+
+            return;
+        }
+
+        if(
+            q.options.length < 4 ||
+            q.options.some(
+                option => !option
+            )
+        ){
+
+            showToast(
+                "Please complete all options in Question " +
+                (i+1)
+            );
+
+            return;
+        }
+
+        if(q.marks <= 0){
+
+            showToast(
+                "Enter marks for Question " +
+                (i+1)
+            );
+
+            return;
+        }
+
+    }
+
+
+    const totalMarks =
+        questions.reduce(
+            (sum,q)=>
+                sum + Number(q.marks || 0),
+            0
+        );
+
+
+    const examData = {
+
+        title:title,
+
+        description:
+            description,
+
+        duration:
+            duration,
+
+        passingMarks:
+            passingMarks,
+
+        negativeMark:
+            negativeMark,
+
+        totalMarks:
+            totalMarks,
+
+        totalQuestions:
+            questions.length,
+
+        questions:
+            questions,
+
+        shuffleQuestions:
+            shuffleQuestions,
+
+        oneAttempt:
+            oneAttempt,
+
+        status:
+            status,
+
+        startAt:
+            startValue
+                ? firebase.firestore.Timestamp
+                    .fromDate(
+                        new Date(startValue)
+                    )
+                : null,
+
+        endAt:
+            endValue
+                ? firebase.firestore.Timestamp
+                    .fromDate(
+                        new Date(endValue)
+                    )
+                : null,
+
+        updatedAt:
+            firebase.firestore.FieldValue
+                .serverTimestamp()
+
+    };
+
+
+    try{
+
+        if(editingExamId){
+
+            await db.collection("exams")
+                .doc(editingExamId)
+                .update(
+                    examData
+                );
+
+            showToast(
+                "Exam updated successfully."
+            );
+
+        }else{
+
+            examData.createdAt =
+                firebase.firestore.FieldValue
+                    .serverTimestamp();
+
+            await db.collection("exams")
+                .add(
+                    examData
+                );
+
+            showToast(
+                "Exam created successfully."
+            );
+
+        }
+
+        closeExamModal();
+
+        await loadExams();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Unable to save exam."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   EDIT EXAM
+========================================================= */
+
+function editExam(examId){
+
+    const exam =
+        exams.find(
+            item => item.id === examId
+        );
+
+    if(!exam){
+        return;
+    }
+
+    editingExamId =
+        examId;
+
+    document.getElementById(
+        "examModalTitle"
+    ).textContent =
+        "Edit Examination";
+
+
+    document.getElementById("examTitle")
+        .value =
+        exam.title || "";
+
+
+    document.getElementById("examDescription")
+        .value =
+        exam.description || "";
+
+
+    document.getElementById("examDuration")
+        .value =
+        exam.duration || 60;
+
+
+    document.getElementById("examPassing")
+        .value =
+        exam.passingMarks || 0;
+
+
+    document.getElementById("examNegative")
+        .value =
+        exam.negativeMark || 0;
+
+
+    document.getElementById("examStatus")
+        .value =
+        exam.status || "draft";
+
+
+    document.getElementById("shuffleQuestions")
+        .checked =
+        exam.shuffleQuestions !== false;
+
+
+    document.getElementById("oneAttempt")
+        .checked =
+        exam.oneAttempt !== false;
+
+
+    const startDate =
+        timestampToDate(
+            exam.startAt
+        );
+
+    const endDate =
+        timestampToDate(
+            exam.endAt
+        );
+
+
+    document.getElementById("examStart")
+        .value =
+        startDate
+            ? toDateTimeLocal(startDate)
+            : "";
+
+
+    document.getElementById("examEnd")
+        .value =
+        endDate
+            ? toDateTimeLocal(endDate)
+            : "";
+
+
+    document.getElementById("questionList")
+        .innerHTML = "";
+
+
+    if(
+        Array.isArray(
+            exam.questions
+        ) &&
+        exam.questions.length
+    ){
+
+        exam.questions.forEach(
+            question =>
+                addQuestion(question)
+        );
+
+    }else{
+
+        addQuestion();
+
+    }
+
+
+    document.getElementById("examModal")
+        .classList.add("show");
+
+}
+
+
+function toDateTimeLocal(date){
+
+    const pad =
+        number =>
+            String(number)
+            .padStart(2,"0");
+
+    return date.getFullYear() +
+        "-" +
+        pad(date.getMonth()+1) +
+        "-" +
+        pad(date.getDate()) +
+        "T" +
+        pad(date.getHours()) +
+        ":" +
+        pad(date.getMinutes());
+
+}
+
+
+/* =========================================================
+   DELETE EXAM
+========================================================= */
+
+async function deleteExam(examId){
+
+    const exam =
+        exams.find(
+            item => item.id === examId
+        );
+
+    if(!exam){
+        return;
+    }
+
+    const yes =
+        confirm(
+            "Delete \"" +
+            exam.title +
+            "\"?\n\n" +
+            "This will delete the examination."
+        );
+
+    if(!yes){
+        return;
+    }
+
+    try{
+
+        /*
+         Delete exam itself.
+        Assignments are also removed.
+        Attempts are preserved for history.
+        */
+
+        await db.collection("exams")
+            .doc(examId)
+            .delete();
+
+
+        const assignmentSnapshot =
+            await db.collection(
+                "examAssignments"
+            )
+            .where(
+                "examId",
+                "==",
+                examId
+            )
+            .get();
+
+
+        const batch =
+            db.batch();
+
+        assignmentSnapshot.docs.forEach(
+            doc =>
+                batch.delete(doc.ref)
+        );
+
+        if(!assignmentSnapshot.empty){
+
+            await batch.commit();
+
+        }
+
+
+        showToast(
+            "Exam deleted."
+        );
+
+        await loadExams();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Unable to delete exam."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   PUBLISH / UNPUBLISH
+========================================================= */
+
+async function togglePublish(examId){
+
+    const exam =
+        exams.find(
+            item => item.id === examId
+        );
+
+    if(!exam){
+        return;
+    }
+
+    const newStatus =
+        exam.status === "published"
+            ? "draft"
+            : "published";
+
+    try{
+
+        await db.collection("exams")
+            .doc(examId)
+            .update({
+
+                status:
+                    newStatus,
+
+                updatedAt:
+                    firebase.firestore
+                    .FieldValue
+                    .serverTimestamp()
+
+            });
+
+        showToast(
+            newStatus === "published"
+                ? "Exam published."
+                : "Exam unpublished."
+        );
+
+        await loadExams();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Unable to update exam status."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   OPEN ASSIGN MODAL
+========================================================= */
+
+async function openAssignModal(examId){
+
+    assigningExamId =
+        examId;
+
+    selectedStudents =
+        new Set();
+
+    const exam =
+        exams.find(
+            item => item.id === examId
+        );
+
+    if(!exam){
+        return;
+    }
+
+    document.getElementById(
+        "assignExamName"
+    ).textContent =
+        exam.title || "Examination";
+
+
+    document.getElementById(
+        "studentSearch"
+    ).value = "";
+
+
+    document.getElementById(
+        "assignModal"
+    ).classList.add("show");
+
+
+    document.getElementById(
+        "studentList"
+    ).innerHTML = `
+
+        <div class="loading">
+
+            <div class="spinner"></div>
+
+            Loading students...
+
+        </div>
+
+    `;
+
+
+    try{
+
+        await loadStudents();
+
+        await loadExistingAssignments();
+
+        renderStudents();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Unable to load students."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD EXISTING ASSIGNMENTS
+========================================================= */
+
+async function loadExistingAssignments(){
+
+    if(!assigningExamId){
+        return;
+    }
+
+    try{
+
+        const snapshot =
+            await db.collection(
+                "examAssignments"
+            )
+            .where(
+                "examId",
+                "==",
+                assigningExamId
+            )
+            .get();
+
+
+        snapshot.docs.forEach(doc=>{
+
+            const data =
+                doc.data();
+
+            if(data.studentName){
+
+                selectedStudents.add(
+                    normalizeName(
+                        data.studentName
+                    )
+                );
+
+            }
+
+        });
+
+    }catch(error){
+
+        console.error(error);
+
+    }
+
+}
+
+
+/* =========================================================
+   RENDER STUDENTS
+========================================================= */
+
+function renderStudents(){
+
+    const container =
+        document.getElementById(
+            "studentList"
+        );
+
+    const search =
+        normalizeName(
+            document.getElementById(
+                "studentSearch"
+            ).value
+        );
+
+
+    const filtered =
+        students.filter(student=>{
+
+            if(!search){
+                return true;
+            }
+
+            return (
+                student.normalized
+                .includes(search)
+                ||
+                String(
+                    student.phone || ""
+                ).includes(search)
+            );
+
+        });
+
+
+    if(!filtered.length){
+
+        container.innerHTML = `
+
+            <div class="empty"
+                 style="
+                 border:0;
+                 box-shadow:none;
+                 ">
+
+                <div class="empty-icon">
+                    👤
+                </div>
+
+                <div class="empty-title">
+                    No Students Found
+                </div>
+
+            </div>
+
+        `;
+
+        updateSelectedCount();
+
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    filtered.forEach(student=>{
+
+        const normalized =
+            student.normalized;
+
+        const checked =
+            selectedStudents.has(
+                normalized
+            );
+
+
+        const row =
+            document.createElement(
+                "label"
+            );
+
+        row.className =
+            "student-row";
+
+
+        row.innerHTML = `
+
+            <input
+                type="checkbox"
+                ${checked ? "checked" : ""}
+                onchange="toggleStudent(
+                    '${escapeJs(normalized)}'
+                )">
+
+
+            <div>
+
+                <div class="student-name">
+                    ${escapeHtml(
+                        student.name
+                    )}
+                </div>
+
+                ${
+                    student.phone
+                    ? `
+                    <div class="student-secondary">
+                        ${escapeHtml(
+                            student.phone
+                        )}
+                    </div>
+                    `
+                    : ""
+                }
+
+            </div>
+
+        `;
+
+
+        container.appendChild(row);
+
+    });
+
+
+    updateSelectedCount();
+
+}
+
+
+function escapeJs(value){
+
+    return String(value || "")
+        .replace(/\\/g,"\\\\")
+        .replace(/'/g,"\\'");
+}
+
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+function filterStudents(){
+
+    renderStudents();
+
+}
+
+
+/* =========================================================
+   TOGGLE STUDENT
+========================================================= */
+
+function toggleStudent(normalized){
+
+    if(
+        selectedStudents.has(
+            normalized
+        )
+    ){
+
+        selectedStudents.delete(
+            normalized
+        );
+
+    }else{
+
+        selectedStudents.add(
+            normalized
+        );
+
+    }
+
+    updateSelectedCount();
+
+}
+
+
+/* =========================================================
+   SELECT ALL
+========================================================= */
+
+function toggleSelectAll(){
+
+    const search =
+        normalizeName(
+            document.getElementById(
+                "studentSearch"
+            ).value
+        );
+
+
+    const filtered =
+        students.filter(student=>{
+
+            if(!search){
+                return true;
+            }
+
+            return (
+                student.normalized
+                .includes(search)
+                ||
+                String(
+                    student.phone || ""
+                ).includes(search)
+            );
+
+        });
+
+
+    const allSelected =
+        filtered.length > 0 &&
+        filtered.every(
+            student =>
+                selectedStudents.has(
+                    student.normalized
+                )
+        );
+
+
+    if(allSelected){
+
+        filtered.forEach(
+            student =>
+                selectedStudents.delete(
+                    student.normalized
+                )
+        );
+
+    }else{
+
+        filtered.forEach(
+            student =>
+                selectedStudents.add(
+                    student.normalized
+                )
+        );
+
+    }
+
+
+    renderStudents();
+
+}
+
+
+/* =========================================================
+   COUNT
+========================================================= */
+
+function updateSelectedCount(){
+
+    document.getElementById(
+        "selectedCount"
+    ).textContent =
+        selectedStudents.size +
+        " student" +
+        (
+            selectedStudents.size === 1
+                ? ""
+                : "s"
+        ) +
+        " selected";
+
+}
+
+
+/* =========================================================
+   CLOSE ASSIGN
+========================================================= */
+
+function closeAssignModal(){
+
+    document.getElementById(
+        "assignModal"
+    ).classList.remove("show");
+
+    assigningExamId =
+        null;
+
+    selectedStudents =
+        new Set();
+
+}
+
+
+/* =========================================================
+   ASSIGN EXAM
+========================================================= */
+
+async function assignExam(){
+
+    if(!assigningExamId){
+
+        showToast(
+            "Please select an exam."
+        );
+
+        return;
+    }
+
+
+    if(!selectedStudents.size){
+
+        showToast(
+            "Please select at least one student."
+        );
+
+        return;
+    }
+
+
+    try{
+
+        const exam =
+            exams.find(
+                item =>
+                    item.id ===
+                    assigningExamId
+            );
+
+
+        const selected =
+            students.filter(
+                student =>
+                    selectedStudents.has(
+                        student.normalized
+                    )
+            );
+
+
+        /*
+         We first read existing assignments.
+        */
+
+        const existingSnapshot =
+            await db.collection(
+                "examAssignments"
+            )
+            .where(
+                "examId",
+                "==",
+                assigningExamId
+            )
+            .get();
+
+
+        const existingMap =
+            new Map();
+
+
+        existingSnapshot.docs.forEach(
+            doc=>{
+
+                const data =
+                    doc.data();
+
+                if(data.studentName){
+
+                    existingMap.set(
+                        normalizeName(
+                            data.studentName
+                        ),
+                        doc
+                    );
+
+                }
+
+            }
+        );
+
+
+        const batch =
+            db.batch();
+
+
+        selected.forEach(student=>{
+
+            if(
+                existingMap.has(
+                    student.normalized
+                )
+            ){
+
+                /*
+                 Already assigned.
+                Keep existing assignment.
+                */
+
+                return;
+
+            }
+
+
+            const ref =
+                db.collection(
+                    "examAssignments"
+                ).doc();
+
+
+            batch.set(
+                ref,
+                {
+
+                    examId:
+                        assigningExamId,
+
+                    examTitle:
+                        exam?.title || "",
+
+                    studentId:
+                        student.id,
+
+                    studentName:
+                        student.normalized,
+
+                    displayStudentName:
+                        student.name,
+
+                    status:
+                        "assigned",
+
+                    assignedAt:
+                        firebase.firestore
+                        .FieldValue
+                        .serverTimestamp()
+
+                }
+            );
+
+        });
+
+
+        await batch.commit();
+
+
+        /*
+         Remove assignments which
+         admin unchecked.
+        */
+
+        const selectedSet =
+            new Set(
+                selected.map(
+                    student =>
+                        student.normalized
+                )
+            );
+
+
+        const deleteBatch =
+            db.batch();
+
+
+        existingSnapshot.docs.forEach(
+            doc=>{
+
+                const data =
+                    doc.data();
+
+                const normalized =
+                    normalizeName(
+                        data.studentName
+                    );
+
+
+                if(
+                    !selectedSet.has(
+                        normalized
+                    )
+                ){
+
+                    deleteBatch.delete(
+                        doc.ref
+                    );
+
+                }
+
+            }
+        );
+
+
+        if(
+            existingSnapshot.docs.length
+        ){
+
+            await deleteBatch.commit();
+
+        }
+
+
+        showToast(
+            selected.length +
+            " student" +
+            (
+                selected.length === 1
+                    ? ""
+                    : "s"
+            ) +
+            " assigned successfully."
+        );
+
+
+        closeAssignModal();
+
+        await loadExams();
+
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(
+            "Unable to assign examination."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+
+loadExams();
+
+</script>
+
+</body>
+</html>
