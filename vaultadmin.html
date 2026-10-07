@@ -9951,52 +9951,40 @@ function renderNotifications(){
    ADD / UPDATE
 ===================================================== */
 
-function upsertNotification(
-    snap
-){
+function upsertNotification(snap){
 
     const data =
         snap.data() || {};
 
-
-    if(
-        !notificationVisible(
-            data
-        )
-    ){
+    if(!notificationVisible(data)){
 
         notificationItems =
             notificationItems.filter(
                 item =>
-                    item.id !==
-                    snap.id
+                    item.id !== snap.id
             );
-
 
         renderNotifications();
 
         return;
-
     }
 
-
     const item = {
-
-        id:
-            snap.id,
-
+        id:snap.id,
         ...data
-
     };
 
+    const alreadyExists =
+        notificationItems.some(
+            item =>
+                item.id === snap.id
+        );
 
     const index =
         notificationItems.findIndex(
             item =>
-                item.id ===
-                snap.id
+                item.id === snap.id
         );
-
 
     if(index >= 0){
 
@@ -10005,15 +9993,25 @@ function upsertNotification(
 
     }else{
 
-        notificationItems.push(
-            item
-        );
+        notificationItems.push(item);
 
     }
 
-
     renderNotifications();
 
+    /* 🔊 SOUND ONLY FOR NEW NOTIFICATION */
+
+    if(!alreadyExists){
+
+        playNotificationSound();
+
+        showToast(
+            "🔔 " +
+            (item.title || "New Notification"),
+            "info"
+        );
+
+    }
 }
 
 
@@ -10206,7 +10204,99 @@ async function resolveNotificationStudentIds(){
 
 }
 
+/* =====================================================
+   🔊 NOTIFICATION SOUND + HAPTIC
+===================================================== */
 
+let notificationAudioContext = null;
+
+function playNotificationSound(){
+
+    try{
+
+        if(!notificationAudioContext){
+            notificationAudioContext =
+                new (
+                    window.AudioContext ||
+                    window.webkitAudioContext
+                )();
+        }
+
+        const ctx =
+            notificationAudioContext;
+
+        if(ctx.state === "suspended"){
+            ctx.resume();
+        }
+
+        const oscillator =
+            ctx.createOscillator();
+
+        const gain =
+            ctx.createGain();
+
+        oscillator.type = "sine";
+
+        oscillator.frequency.setValueAtTime(
+            880,
+            ctx.currentTime
+        );
+
+        oscillator.frequency.setValueAtTime(
+            1174,
+            ctx.currentTime + 0.10
+        );
+
+        gain.gain.setValueAtTime(
+            0.0001,
+            ctx.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.16,
+            ctx.currentTime + 0.02
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            ctx.currentTime + 0.45
+        );
+
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+
+        oscillator.start();
+
+        oscillator.stop(
+            ctx.currentTime + 0.45
+        );
+
+    }catch(error){
+
+        console.log(
+            "Notification sound:",
+            error
+        );
+
+    }
+
+    /* 📳 HAPTIC */
+
+    try{
+
+        if(
+            "vibrate" in navigator
+        ){
+            navigator.vibrate([
+                80,
+                60,
+                120
+            ]);
+        }
+
+    }catch(error){}
+
+}
 /* =====================================================
    START LISTENERS
 ===================================================== */
