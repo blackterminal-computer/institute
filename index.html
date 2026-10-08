@@ -3369,7 +3369,58 @@ body:before{
         );
 }
 
+<!-- =====================================================
+     🔔 NOTIFICATION POPUP
+===================================================== -->
 
+<div
+    class="notification-overlay"
+    id="notificationOverlay"
+>
+
+    <div class="notification-box">
+
+        <div class="notification-head">
+
+            <div>
+
+                <div class="notification-head-title">
+                    Notifications
+                </div>
+
+                <div
+                    class="notification-head-subtitle"
+                    id="notificationSubtitle"
+                >
+                    Stay updated with BlackTerminal
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                class="notification-close"
+                id="notificationClose"
+            >
+                <i class="ri-close-line"></i>
+            </button>
+
+        </div>
+
+        <div
+            class="notification-list"
+            id="notificationList"
+        >
+
+            <div class="notification-empty">
+                Loading notifications...
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 /* =====================================================
    TOAST
 ===================================================== */
@@ -9509,7 +9560,1050 @@ try{
 
 }catch(error){}
 
+/* =====================================================
+   🔔 REAL-TIME NOTIFICATION SYSTEM
+===================================================== */
 
+const notificationBtn =
+    $("notificationBtn");
+
+const notificationBadge =
+    $("notificationBadge");
+
+const notificationOverlay =
+    $("notificationOverlay");
+
+const notificationClose =
+    $("notificationClose");
+
+const notificationList =
+    $("notificationList");
+
+const notificationSubtitle =
+    $("notificationSubtitle");
+
+
+let notificationItems = [];
+
+let notificationUnsubs = [];
+
+let notificationStudentIds =
+    new Set();
+
+
+const NOTIFICATION_READ_KEY =
+    "BT_NOTIFICATION_READ_V1_" +
+    encodeURIComponent(student);
+
+
+let notificationReadIds =
+    new Set();
+
+
+/* =====================================================
+   LOCAL READ STATE
+===================================================== */
+
+try{
+
+    const saved =
+        localStorage.getItem(
+            NOTIFICATION_READ_KEY
+        );
+
+    if(saved){
+
+        notificationReadIds =
+            new Set(
+                JSON.parse(saved)
+            );
+
+    }
+
+}catch(error){
+
+    console.log(
+        "Notification read cache:",
+        error
+    );
+
+}
+
+
+function saveNotificationReads(){
+
+    try{
+
+        localStorage.setItem(
+
+            NOTIFICATION_READ_KEY,
+
+            JSON.stringify([
+                ...notificationReadIds
+            ])
+
+        );
+
+    }catch(error){}
+
+}
+
+
+/* =====================================================
+   NORMALIZE
+===================================================== */
+
+function notificationNorm(value){
+
+    return String(
+        value ?? ""
+    )
+    .trim()
+    .toLowerCase()
+    .replace(
+        /\s+/g,
+        " "
+    );
+
+}
+
+
+/* =====================================================
+   ICON
+===================================================== */
+
+function notificationIcon(type){
+
+    const icons={
+
+        announcement:
+            "ri-megaphone-fill",
+
+        exam:
+            "ri-file-list-3-fill",
+
+        result:
+            "ri-trophy-fill",
+
+        warning:
+            "ri-error-warning-fill",
+
+        success:
+            "ri-checkbox-circle-fill",
+
+        info:
+            "ri-information-fill"
+
+    };
+
+
+    return (
+
+        icons[
+            String(
+                type ||
+                "info"
+            ).toLowerCase()
+        ]
+
+        ||
+
+        "ri-notification-3-fill"
+
+    );
+
+}
+
+
+/* =====================================================
+   TIME
+===================================================== */
+
+function notificationTime(value){
+
+    const time=
+    getTimeValue(
+        value
+    );
+
+
+    if(!time)
+        return "Just now";
+
+
+    const diff=
+    Math.max(
+        0,
+        Date.now()-time
+    );
+
+
+    const minutes=
+    Math.floor(
+        diff/60000
+    );
+
+
+    const hours=
+    Math.floor(
+        minutes/60
+    );
+
+
+    const days=
+    Math.floor(
+        hours/24
+    );
+
+
+    if(minutes<1)
+        return "Just now";
+
+
+    if(minutes<60)
+        return (
+            minutes+
+            "m ago"
+        );
+
+
+    if(hours<24)
+        return (
+            hours+
+            "h ago"
+        );
+
+
+    if(days===1)
+        return "Yesterday";
+
+
+    return new Date(
+        time
+    ).toLocaleDateString(
+        "en-IN",
+        {
+            day:"2-digit",
+            month:"short",
+            year:"numeric"
+        }
+    );
+
+}
+
+
+/* =====================================================
+   VISIBILITY
+===================================================== */
+
+function notificationVisible(data){
+
+    const targetType=
+    String(
+        data.targetType ||
+        ""
+    ).toLowerCase();
+
+
+    if(
+        targetType==="all"
+    )
+    return true;
+
+
+    if(
+        targetType!=="individual"
+    )
+    return false;
+
+
+    const targetId=
+    String(
+        data.targetStudentId ||
+        ""
+    ).trim();
+
+
+    const targetName=
+    notificationNorm(
+        data.targetStudentName
+    );
+
+
+    return (
+
+        notificationStudentIds.has(
+            targetId
+        )
+
+        ||
+
+        (
+            targetName &&
+            targetName===
+            notificationNorm(
+                student
+            )
+        )
+
+    );
+
+}
+
+
+/* =====================================================
+   BADGE
+===================================================== */
+
+function updateNotificationBadge(){
+
+    const unread=
+    notificationItems.filter(
+        item=>
+            !notificationReadIds.has(
+                item.id
+            )
+    ).length;
+
+
+    notificationBadge.textContent=
+    unread>99
+    ?
+    "99+"
+    :
+    String(unread);
+
+
+    notificationBadge.style.display=
+    unread
+    ?
+    "flex"
+    :
+    "none";
+
+
+    notificationBtn.classList.toggle(
+        "has-unread",
+        unread>0
+    );
+
+
+    notificationSubtitle.textContent=
+
+        unread
+
+        ?
+
+        `${unread} unread notification${
+            unread===1
+            ?
+            ""
+            :
+            "s"
+        }`
+
+        :
+
+        "You're all caught up";
+
+}
+
+
+/* =====================================================
+   RENDER
+===================================================== */
+
+function renderNotifications(){
+
+    notificationItems.sort(
+        (a,b)=>
+            getTimeValue(
+                b.createdAt
+            )
+            -
+            getTimeValue(
+                a.createdAt
+            )
+    );
+
+
+    notificationItems=
+    notificationItems.slice(
+        0,
+        100
+    );
+
+
+    updateNotificationBadge();
+
+
+    if(
+        !notificationItems.length
+    ){
+
+        notificationList.innerHTML=`
+
+            <div class="notification-empty">
+
+                <i
+                    class="ri-notification-off-line"
+                    style="
+                        display:block;
+                        font-size:32px;
+                        margin-bottom:10px;
+                    "
+                ></i>
+
+                No notifications yet.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    notificationList.innerHTML=
+
+    notificationItems
+    .map(
+        item=>{
+
+            const rawType=
+            String(
+                item.type ||
+                "info"
+            ).toLowerCase();
+
+
+            const allowedTypes=[
+
+                "announcement",
+                "exam",
+                "result",
+                "warning",
+                "success",
+                "info"
+
+            ];
+
+
+            const type=
+            allowedTypes.includes(
+                rawType
+            )
+            ?
+            rawType
+            :
+            "info";
+
+
+            const unread=
+            !notificationReadIds.has(
+                item.id
+            );
+
+
+            return `
+
+                <div
+                    class="
+                        notification-card
+                        ${unread ? "unread" : ""}
+                        type-${type}
+                    "
+                    data-id="${escapeHtml(item.id)}"
+                >
+
+                    <div class="notification-icon">
+
+                        <i
+                            class="${notificationIcon(type)}"
+                        ></i>
+
+                    </div>
+
+
+                    <div class="notification-content">
+
+                        <div class="notification-title">
+
+                            ${escapeHtml(
+                                item.title ||
+                                "Notification"
+                            )}
+
+                        </div>
+
+
+                        <div class="notification-message">
+
+                            ${escapeHtml(
+                                item.message ||
+                                ""
+                            )}
+
+                        </div>
+
+
+                        <div class="notification-meta">
+
+                            <span>
+
+                                ${escapeHtml(
+                                    item.senderName ||
+                                    "BlackTerminal Admin"
+                                )}
+
+                            </span>
+
+
+                            <span
+                                class="${
+                                    unread
+                                    ?
+                                    "notification-new"
+                                    :
+                                    ""
+                                }"
+                            >
+
+                                ${
+                                    unread
+                                    ?
+                                    "NEW • "
+                                    :
+                                    ""
+                                }
+
+                                ${notificationTime(
+                                    item.createdAt
+                                )}
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    )
+    .join("");
+
+}
+
+
+/* =====================================================
+   UPSERT
+===================================================== */
+
+function upsertNotification(
+    snap
+){
+
+    const data=
+    snap.data() || {};
+
+
+    if(
+        !notificationVisible(
+            data
+        )
+    ){
+
+        notificationItems=
+        notificationItems.filter(
+            item=>
+                item.id !==
+                snap.id
+        );
+
+
+        renderNotifications();
+
+        return;
+
+    }
+
+
+    const item={
+
+        id:
+        snap.id,
+
+        ...data
+
+    };
+
+
+    const index=
+    notificationItems.findIndex(
+        item=>
+            item.id===
+            snap.id
+    );
+
+
+    if(index>=0){
+
+        notificationItems[
+            index
+        ]=
+        item;
+
+    }else{
+
+        notificationItems.push(
+            item
+        );
+
+    }
+
+
+    renderNotifications();
+
+}
+
+
+/* =====================================================
+   REMOVE
+===================================================== */
+
+function removeNotification(
+    id
+){
+
+    notificationItems=
+    notificationItems.filter(
+        item=>
+            item.id!==id
+    );
+
+
+    renderNotifications();
+
+}
+
+
+/* =====================================================
+   SNAPSHOT
+===================================================== */
+
+function attachNotificationQuery(
+    q
+){
+
+    return onSnapshot(
+
+        q,
+
+        snapshot=>{
+
+            snapshot
+            .docChanges()
+            .forEach(
+                change=>{
+
+                    if(
+                        change.type===
+                        "removed"
+                    ){
+
+                        removeNotification(
+                            change.doc.id
+                        );
+
+                    }else{
+
+                        upsertNotification(
+                            change.doc
+                        );
+
+                    }
+
+                }
+            );
+
+        },
+
+        error=>{
+
+            console.log(
+                "Notification listener:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+/* =====================================================
+   RESOLVE CURRENT STUDENT IDS
+===================================================== */
+
+async function resolveNotificationStudentIds(){
+
+    const ids=
+    new Set();
+
+
+    const loggedStudent=
+    String(
+        student
+    ).trim();
+
+
+    if(loggedStudent)
+        ids.add(
+            loggedStudent
+        );
+
+
+    const target=
+    notificationNorm(
+        loggedStudent
+    );
+
+
+    for(
+        const collectionName
+        of
+        [
+            "students",
+            "studentData"
+        ]
+    ){
+
+        try{
+
+            const snapshot=
+            await getDocs(
+                collection(
+                    db,
+                    collectionName
+                )
+            );
+
+
+            snapshot.forEach(
+                snap=>{
+
+                    const data=
+                    snap.data() || {};
+
+
+                    const possibleNames=[
+
+                        snap.id,
+
+                        data.name,
+
+                        data.studentName,
+
+                        data.student_name,
+
+                        data.userName,
+
+                        data.fullName,
+
+                        data.student,
+
+                        data.displayName
+
+                    ];
+
+
+                    if(
+                        possibleNames.some(
+                            value=>
+                                notificationNorm(
+                                    value
+                                )===
+                                target
+                        )
+                    ){
+
+                        ids.add(
+                            snap.id
+                        );
+
+                    }
+
+                }
+            );
+
+
+        }catch(error){
+
+            console.log(
+                "Notification ID resolve:",
+                collectionName,
+                error
+            );
+
+        }
+
+    }
+
+
+    return ids;
+
+}
+
+
+/* =====================================================
+   LISTEN
+===================================================== */
+
+async function listenForNotifications(){
+
+    notificationUnsubs
+    .forEach(
+        unsubscribe=>{
+
+            try{
+                unsubscribe();
+            }catch(error){}
+
+        }
+    );
+
+
+    notificationUnsubs=[];
+
+    notificationItems=[];
+
+
+    renderNotifications();
+
+
+    notificationStudentIds=
+    await resolveNotificationStudentIds();
+
+
+    /* ALL */
+
+    notificationUnsubs.push(
+
+        attachNotificationQuery(
+
+            query(
+
+                collection(
+                    db,
+                    "notifications"
+                ),
+
+                where(
+                    "targetType",
+                    "==",
+                    "all"
+                ),
+
+                limit(100)
+
+            )
+
+        )
+
+    );
+
+
+    /* INDIVIDUAL BY ID */
+
+    notificationStudentIds
+    .forEach(
+        id=>{
+
+            notificationUnsubs.push(
+
+                attachNotificationQuery(
+
+                    query(
+
+                        collection(
+                            db,
+                            "notifications"
+                        ),
+
+                        where(
+                            "targetStudentId",
+                            "==",
+                            id
+                        ),
+
+                        limit(100)
+
+                    )
+
+                )
+
+            );
+
+        }
+    );
+
+
+    /* INDIVIDUAL BY NAME */
+
+    notificationUnsubs.push(
+
+        attachNotificationQuery(
+
+            query(
+
+                collection(
+                    db,
+                    "notifications"
+                ),
+
+                where(
+                    "targetStudentName",
+                    "==",
+                    student
+                ),
+
+                limit(100)
+
+            )
+
+        )
+
+    );
+
+}
+
+
+/* =====================================================
+   OPEN
+===================================================== */
+
+notificationBtn.onclick=
+()=>{
+
+    notificationOverlay.classList.add(
+        "show"
+    );
+
+
+    document.body.style.overflow=
+    "hidden";
+
+
+    renderNotifications();
+
+};
+
+
+/* =====================================================
+   CLOSE
+===================================================== */
+
+function closeNotifications(){
+
+    notificationOverlay.classList.remove(
+        "show"
+    );
+
+
+    document.body.style.overflow=
+    "";
+
+}
+
+
+notificationClose.onclick=
+closeNotifications;
+
+
+notificationOverlay.onclick=
+event=>{
+
+    if(
+        event.target===
+        notificationOverlay
+    ){
+
+        closeNotifications();
+
+    }
+
+};
+
+
+/* =====================================================
+   MARK AS READ
+===================================================== */
+
+notificationList.onclick=
+event=>{
+
+    const card=
+    event.target.closest(
+        ".notification-card"
+    );
+
+
+    if(!card)
+        return;
+
+
+    const id=
+    card.dataset.id;
+
+
+    if(!id)
+        return;
+
+
+    notificationReadIds.add(
+        id
+    );
+
+
+    saveNotificationReads();
+
+
+    renderNotifications();
+
+};
+
+
+/* =====================================================
+   ESC
+===================================================== */
+
+document.addEventListener(
+    "keydown",
+    event=>{
+
+        if(
+            event.key===
+            "Escape"
+        ){
+
+            closeNotifications();
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   START
+===================================================== */
+
+listenForNotifications();
 </script>
 
 
