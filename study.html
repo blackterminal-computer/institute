@@ -1612,10 +1612,6 @@ img{
 <div class="app">
 
 
-<!-- =====================================================
-     HEADER
-===================================================== -->
-
 <header class="header">
 
     <div class="header-left">
@@ -1683,11 +1679,6 @@ img{
 </header>
 
 
-
-<!-- =====================================================
-     MAIN
-===================================================== -->
-
 <main class="content">
 
 
@@ -1703,9 +1694,7 @@ img{
     <div class="hero-content">
 
         <div class="hero-icon">
-
             <i class="ri-camera-3-fill"></i>
-
         </div>
 
 
@@ -1739,7 +1728,6 @@ img{
 </section>
 
 
-
 <button
     class="create-post-btn"
     id="createPostBtn"
@@ -1751,7 +1739,6 @@ img{
     Create Post
 
 </button>
-
 
 
 <div class="filters">
@@ -1785,16 +1772,13 @@ img{
 </div>
 
 
-
 <section
     class="feed"
     id="feed"
 >
 
     <div class="loader">
-
         <div class="spinner"></div>
-
     </div>
 
 </section>
@@ -1804,11 +1788,6 @@ img{
 
 </div>
 
-
-
-<!-- =====================================================
-     BOTTOM NAV
-===================================================== -->
 
 <nav class="bottom-nav">
 
@@ -1861,11 +1840,6 @@ img{
 
 </nav>
 
-
-
-<!-- =====================================================
-     CREATE MODAL
-===================================================== -->
 
 <div
     class="modal"
@@ -1997,11 +1971,6 @@ img{
 </div>
 
 
-
-<!-- =====================================================
-     COMMENTS
-===================================================== -->
-
 <div
     class="modal"
     id="commentsModal"
@@ -2069,11 +2038,6 @@ img{
 </div>
 
 
-
-<!-- =====================================================
-     NOTIFICATIONS
-===================================================== -->
-
 <div
     class="modal"
     id="notificationModal"
@@ -2125,7 +2089,6 @@ img{
 </div>
 
 
-
 <div
     class="toast"
     id="toast"
@@ -2134,8 +2097,8 @@ img{
 </div>
 
 
-
 <script type="module">
+
 
 /* =====================================================
    FIREBASE IMPORTS
@@ -2160,14 +2123,18 @@ from
 import {
     initializeFirestore,
     getFirestore,
+
     persistentLocalCache,
     persistentMultipleTabManager,
 
     collection,
     getDocs,
+    getDoc,
+
     addDoc,
     updateDoc,
     deleteDoc,
+
     doc,
 
     query,
@@ -2180,13 +2147,14 @@ import {
     arrayRemove,
 
     onSnapshot
+
 }
 from
 "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
 /* =====================================================
-   FIREBASE CONFIG
+   COMMUNITY FIREBASE
 ===================================================== */
 
 const firebaseConfig = {
@@ -2219,7 +2187,48 @@ const app =
 
 
 /* =====================================================
-   FIRESTORE
+   PROFILE FIREBASE
+   SAME PROJECT USED BY profile.html
+===================================================== */
+
+const profileFirebaseConfig = {
+
+    apiKey:
+        "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
+
+    authDomain:
+        "black-terminal-f2c91.firebaseapp.com",
+
+    projectId:
+        "black-terminal-f2c91",
+
+    storageBucket:
+        "black-terminal-f2c91.appspot.com",
+
+    messagingSenderId:
+        "552489994197",
+
+    appId:
+        "1:552489994197:web:7662331264c334ffbadf5c"
+
+};
+
+
+const profileApp =
+    initializeApp(
+        profileFirebaseConfig,
+        "BT_PROFILE_APP"
+    );
+
+
+const profileDb =
+    getFirestore(
+        profileApp
+    );
+
+
+/* =====================================================
+   COMMUNITY FIRESTORE
 ===================================================== */
 
 let db;
@@ -2284,6 +2293,7 @@ const CLOUDINARY_UPLOAD_URL =
 let currentUser =
     null;
 
+
 let currentProfile = {
 
     name:
@@ -2296,14 +2306,18 @@ let currentProfile = {
 
 };
 
+
 let allPosts =
     [];
+
 
 let currentFilter =
     "latest";
 
+
 let selectedFile =
     null;
+
 
 let currentCommentPostId =
     null;
@@ -2314,10 +2328,12 @@ let currentCommentPostId =
 ===================================================== */
 
 const FEED_CACHE_KEY =
-    "BT_MOMENTS_FEED_CACHE_V5";
+    "BT_MOMENTS_FEED_CACHE_V6";
+
 
 const STUDENT_CACHE_KEY =
-    "BT_STUDENT_PHOTO_CACHE_V5";
+    "BT_STUDENT_PHOTO_CACHE_V6";
+
 
 const NOTIFICATION_READ_KEY =
     "BT_NOTIFICATION_READ_V5";
@@ -2326,6 +2342,7 @@ const NOTIFICATION_READ_KEY =
 let studentPhotoMap =
     new Map();
 
+
 let studentNameMap =
     new Map();
 
@@ -2333,8 +2350,10 @@ let studentNameMap =
 let notificationItems =
     [];
 
+
 let notificationUnsubs =
     [];
+
 
 let notificationReadIds =
     new Set();
@@ -2522,7 +2541,7 @@ function verifiedName(
 
 
 /* =====================================================
-   PHOTO
+   PHOTO HELPERS
 ===================================================== */
 
 function validPhoto(
@@ -2561,6 +2580,15 @@ function extractPhoto(
     if(!data)
         return "";
 
+
+    /*
+     * profile.html saves photo as:
+     *
+     * data.photo
+     *
+     * Other names are included
+     * for compatibility.
+     */
 
     return validPhoto(
 
@@ -2681,193 +2709,6 @@ function saveStudentCache(){
 
 
 /* =====================================================
-   STUDENT DIRECTORY
-===================================================== */
-
-async function loadStudentDirectory(){
-
-    /*
-     * DO NOT BLOCK FEED.
-     *
-     * This function runs in background.
-     */
-
-    const collections = [
-
-        "students",
-        "studentData"
-
-    ];
-
-
-    for(
-        const collectionName
-        of
-        collections
-    ){
-
-        try{
-
-            const snapshot =
-                await getDocs(
-                    collection(
-                        db,
-                        collectionName
-                    )
-                );
-
-
-            snapshot.forEach(
-                item => {
-
-                    const data =
-                        item.data() || {};
-
-
-                    const name =
-                        data.name ||
-                        data.studentName ||
-                        data.student_name ||
-                        data.userName ||
-                        data.fullName ||
-                        data.student ||
-                        data.displayName ||
-                        item.id;
-
-
-                    const photo =
-                        extractPhoto(
-                            data
-                        );
-
-
-                    if(!name)
-                        return;
-
-
-                    const nameKey =
-                        norm(
-                            name
-                        );
-
-
-                    /*
-                     * Save by student name.
-                     */
-
-                    if(
-                        photo ||
-                        !studentPhotoMap.has(
-                            nameKey
-                        )
-                    ){
-
-                        studentPhotoMap.set(
-                            nameKey,
-                            photo
-                        );
-
-                    }
-
-
-                    studentNameMap.set(
-                        nameKey,
-                        String(
-                            name
-                        )
-                    );
-
-
-                    /*
-                     * Save by Firebase
-                     * document ID too.
-                     */
-
-                    const idKey =
-                        norm(
-                            item.id
-                        );
-
-
-                    if(idKey){
-
-                        if(
-                            photo ||
-                            !studentPhotoMap.has(
-                                idKey
-                            )
-                        ){
-
-                            studentPhotoMap.set(
-                                idKey,
-                                photo
-                            );
-
-                        }
-
-
-                        studentNameMap.set(
-                            idKey,
-                            String(
-                                name
-                            )
-                        );
-
-                    }
-
-                }
-            );
-
-
-        }catch(error){
-
-            console.warn(
-                `${collectionName} read failed:`,
-                error
-            );
-
-        }
-
-    }
-
-
-    saveStudentCache();
-
-
-    /*
-     * Refresh profile photo.
-     */
-
-    const name =
-        getStudentName();
-
-
-    const photo =
-        getStudentPhoto(
-            name
-        );
-
-
-    if(photo){
-
-        currentProfile.photo =
-            photo;
-
-        applyProfile();
-
-    }
-
-
-    /*
-     * Refresh feed avatars.
-     */
-
-    enrichPosts();
-
-}
-
-
-/* =====================================================
    GET STUDENT PHOTO
 ===================================================== */
 
@@ -2875,6 +2716,11 @@ function getStudentPhoto(
     name,
     directPhoto = ""
 ){
+
+    /*
+     * 1. Photo saved directly
+     * inside the community post.
+     */
 
     const direct =
         validPhoto(
@@ -2886,28 +2732,236 @@ function getStudentPhoto(
         return direct;
 
 
+    /*
+     * 2. Photo fetched from
+     * profile Firebase.
+     */
+
     const key =
         norm(
             name
         );
 
 
-    if(
-        studentPhotoMap.has(
-            key
-        )
-    ){
-
-        return validPhoto(
+    const directoryPhoto =
+        validPhoto(
             studentPhotoMap.get(
                 key
             )
         );
 
+
+    if(directoryPhoto)
+        return directoryPhoto;
+
+
+    /*
+     * 3. Current student's
+     * profile photo.
+     */
+
+    if(
+        norm(
+            getStudentName()
+        ) === key
+    ){
+
+        const current =
+            validPhoto(
+                currentProfile.photo
+            );
+
+
+        if(current)
+            return current;
+
     }
 
 
     return "";
+
+}
+
+
+/* =====================================================
+   PROFILE DIRECTORY
+   READ FROM black-terminal-f2c91
+===================================================== */
+
+async function loadStudentDirectory(){
+
+    try{
+
+        console.log(
+            "Loading student photos from profile Firebase..."
+        );
+
+
+        const snapshot =
+            await getDocs(
+                collection(
+                    profileDb,
+                    "students"
+                )
+            );
+
+
+        console.log(
+            "Profile students found:",
+            snapshot.size
+        );
+
+
+        snapshot.forEach(
+            item => {
+
+                const data =
+                    item.data() || {};
+
+
+                /*
+                 * IMPORTANT:
+                 *
+                 * In profile.html the Firebase
+                 * document ID is studentName.
+                 */
+
+                const studentName =
+                    item.id ||
+                    data.name ||
+                    data.studentName ||
+                    data.userName ||
+                    data.fullName ||
+                    data.displayName ||
+                    "";
+
+
+                const photo =
+                    extractPhoto(
+                        data
+                    );
+
+
+                if(!studentName)
+                    return;
+
+
+                const nameKey =
+                    norm(
+                        studentName
+                    );
+
+
+                /*
+                 * Save photo by name.
+                 */
+
+                studentPhotoMap.set(
+                    nameKey,
+                    photo
+                );
+
+
+                studentNameMap.set(
+                    nameKey,
+                    String(
+                        studentName
+                    )
+                );
+
+
+                /*
+                 * Also support
+                 * alternative name fields.
+                 */
+
+                const alternativeNames = [
+
+                    data.name,
+                    data.studentName,
+                    data.userName,
+                    data.fullName,
+                    data.displayName
+
+                ];
+
+
+                alternativeNames.forEach(
+                    alt => {
+
+                        if(!alt)
+                            return;
+
+
+                        const altKey =
+                            norm(
+                                alt
+                            );
+
+
+                        studentPhotoMap.set(
+                            altKey,
+                            photo
+                        );
+
+
+                        studentNameMap.set(
+                            altKey,
+                            String(
+                                alt
+                            )
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        saveStudentCache();
+
+
+        /*
+         * Update current student's
+         * header and create modal.
+         */
+
+        const currentName =
+            getStudentName();
+
+
+        const currentPhoto =
+            getStudentPhoto(
+                currentName
+            );
+
+
+        if(currentPhoto){
+
+            currentProfile.photo =
+                currentPhoto;
+
+            applyProfile();
+
+        }
+
+
+        /*
+         * Refresh feed avatars.
+         */
+
+        enrichPosts();
+
+
+    }catch(error){
+
+        console.error(
+            "PROFILE DIRECTORY ERROR:",
+            error
+        );
+
+    }
 
 }
 
@@ -2940,7 +2994,7 @@ function enrichPosts(){
 
 
 /* =====================================================
-   PROFILE
+   LOAD CURRENT PROFILE
 ===================================================== */
 
 async function loadProfile(){
@@ -2954,7 +3008,7 @@ async function loadProfile(){
 
 
     /*
-     * Cache first.
+     * First use cached photo.
      */
 
     const cached =
@@ -2974,136 +3028,109 @@ async function loadProfile(){
 
 
     /*
-     * Firebase search.
+     * Directly read:
+     *
+     * students/{studentName}
+     *
+     * from profile Firebase.
      */
 
-    for(
-        const collectionName
-        of
-        [
-            "students",
-            "studentData"
-        ]
-    ){
+    try{
 
-        try{
+        if(!name){
 
-            const snapshot =
-                await getDocs(
-                    collection(
-                        db,
-                        collectionName
-                    )
-                );
+            applyProfile();
+
+            return;
+
+        }
 
 
-            let found =
-                null;
-
-
-            snapshot.forEach(
-                item => {
-
-                    if(found)
-                        return;
-
-
-                    const data =
-                        item.data() || {};
-
-
-                    const names = [
-
-                        item.id,
-                        data.name,
-                        data.studentName,
-                        data.student_name,
-                        data.userName,
-                        data.fullName,
-                        data.student,
-                        data.displayName
-
-                    ];
-
-
-                    const matched =
-                        names.some(
-                            value =>
-                                norm(value) ===
-                                norm(name)
-                        );
-
-
-                    if(matched){
-
-                        found = {
-
-                            name:
-                                data.name ||
-                                data.studentName ||
-                                data.fullName ||
-                                name,
-
-                            photo:
-                                extractPhoto(
-                                    data
-                                )
-
-                        };
-
-                    }
-
-                }
+        const studentRef =
+            doc(
+                profileDb,
+                "students",
+                name
             );
 
 
-            if(found){
-
-                currentProfile =
-                    found;
-
-
-                const key =
-                    norm(
-                        found.name
-                    );
+        const studentSnap =
+            await getDoc(
+                studentRef
+            );
 
 
-                studentPhotoMap.set(
-                    key,
-                    found.photo || ""
+        if(studentSnap.exists()){
+
+            const data =
+                studentSnap.data() || {};
+
+
+            const photo =
+                extractPhoto(
+                    data
                 );
 
 
-                studentNameMap.set(
-                    key,
-                    found.name
+            currentProfile = {
+
+                name:
+                    name,
+
+                photo:
+                    photo
+
+            };
+
+
+            const key =
+                norm(
+                    name
                 );
 
 
-                saveStudentCache();
+            studentPhotoMap.set(
+                key,
+                photo
+            );
 
 
-                applyProfile();
+            studentNameMap.set(
+                key,
+                name
+            );
 
 
-                return;
+            saveStudentCache();
 
-            }
 
-        }catch(error){
+            applyProfile();
+
+
+            /*
+             * Update avatars of
+             * all loaded posts.
+             */
+
+            enrichPosts();
+
+        }else{
 
             console.warn(
-                `Profile ${collectionName}:`,
-                error
+                "Student profile document not found:",
+                name
             );
 
         }
 
+    }catch(error){
+
+        console.error(
+            "PROFILE PHOTO FETCH ERROR:",
+            error
+        );
+
     }
-
-
-    applyProfile();
 
 }
 
@@ -3144,10 +3171,6 @@ function applyProfile(){
             "block";
 
     }else{
-
-        /*
-         * No fake initials.
-         */
 
         $("headerAvatar")
             .classList.add(
@@ -3362,11 +3385,6 @@ async function loadPosts(){
     );
 
 
-    /*
-     * FIRST:
-     * Cache immediately.
-     */
-
     const hasCache =
         loadCachedFeed();
 
@@ -3385,10 +3403,6 @@ async function loadPosts(){
 
     }
 
-
-    /*
-     * WAIT FOR AUTH
-     */
 
     if(!currentUser){
 
@@ -3413,14 +3427,6 @@ async function loadPosts(){
 
 
     try{
-
-        /*
-         * IMPORTANT:
-         *
-         * No orderBy.
-         * No composite index.
-         * Simple Firestore read.
-         */
 
         const snapshot =
             await getDocs(
@@ -3447,10 +3453,6 @@ async function loadPosts(){
                 const data =
                     item.data() || {};
 
-
-                /*
-                 * Hide expired.
-                 */
 
                 if(
                     isExpired(
@@ -3488,10 +3490,6 @@ async function loadPosts(){
         );
 
 
-        /*
-         * Sort locally.
-         */
-
         posts.sort(
             (a,b) =>
                 getTimeValue(
@@ -3508,23 +3506,15 @@ async function loadPosts(){
             posts;
 
 
-        /*
-         * SHOW FEED NOW
-         */
-
         renderCurrentFilter();
 
-
-        /*
-         * SAVE CACHE
-         */
 
         saveFeedCache();
 
 
         /*
-         * PHOTO DIRECTORY
-         * BACKGROUND ONLY
+         * Profile photo directory
+         * loads in background.
          */
 
         loadStudentDirectory()
@@ -3544,10 +3534,6 @@ async function loadPosts(){
             error
         );
 
-
-        /*
-         * NEVER keep infinite spinner.
-         */
 
         if(
             allPosts.length
@@ -3574,7 +3560,7 @@ async function loadPosts(){
 
 
 /* =====================================================
-   FEED ERROR MESSAGE
+   FEED ERROR
 ===================================================== */
 
 function showFeedMessage(
@@ -3629,7 +3615,7 @@ function showFeedMessage(
 
 
 /* =====================================================
-   AVATAR
+   AVATAR HTML
 ===================================================== */
 
 function avatarHTML(
@@ -3768,6 +3754,13 @@ function postHTML(
             currentUser.uid
         );
 
+
+    /*
+     * IMPORTANT:
+     * Always resolve photo from
+     * profile Firebase map first,
+     * then use post.studentPhoto.
+     */
 
     const photo =
         getStudentPhoto(
@@ -4525,7 +4518,7 @@ $("imageInput").onchange =
 
 
 /* =====================================================
-   COMPRESS
+   COMPRESS IMAGE
 ===================================================== */
 
 function compressImage(
@@ -4703,7 +4696,7 @@ function compressImage(
 
 
 /* =====================================================
-   CLOUDINARY UPLOAD
+   CLOUDINARY
 ===================================================== */
 
 async function uploadToCloudinary(
@@ -4844,6 +4837,13 @@ $("postSubmit").onclick =
                 getNextMidnight();
 
 
+            /*
+             * IMPORTANT:
+             *
+             * currentProfile.photo is fetched
+             * from black-terminal-f2c91.
+             */
+
             await addDoc(
                 collection(
                     db,
@@ -4855,7 +4855,7 @@ $("postSubmit").onclick =
                         currentProfile.name,
 
                     studentPhoto:
-                        currentProfile.photo,
+                        currentProfile.photo || "",
 
                     caption:
                         caption,
@@ -5075,53 +5075,92 @@ async function loadComments(
         $("commentsList").innerHTML =
             comments
             .map(
-                comment => `
+                comment => {
 
-                    <div class="comment-item">
+                    const commentPhoto =
+                        getStudentPhoto(
+                            comment.studentName,
+                            comment.studentPhoto
+                        );
 
-                        <img
-                            class="comment-avatar"
-                            src="${escapeHtml(
-                                getStudentPhoto(
-                                    comment.studentName,
-                                    comment.studentPhoto
-                                )
-                            )}"
-                            onerror="this.style.display='none'"
-                            alt=""
-                        >
 
-                        <div class="comment-body">
+                    return `
 
-                            <div class="comment-name">
+                        <div class="comment-item">
 
-                                ${verifiedName(
-                                    comment.studentName
-                                )}
+                            ${
+                                commentPhoto
 
-                            </div>
+                                ?
 
-                            <div class="comment-text">
+                                `
 
-                                ${escapeHtml(
-                                    comment.text
-                                )}
+                                <img
+                                    class="comment-avatar"
+                                    src="${escapeHtml(
+                                        commentPhoto
+                                    )}"
+                                    alt=""
+                                    onerror="this.style.display='none'"
+                                >
 
-                            </div>
+                                `
 
-                            <div class="comment-time">
+                                :
 
-                                ${formatTime(
-                                    comment.createdAt
-                                )}
+                                `
+
+                                <div
+                                    class="comment-avatar"
+                                    style="
+                                        display:flex;
+                                        align-items:center;
+                                        justify-content:center;
+                                    "
+                                >
+
+                                    <i class="ri-user-line"></i>
+
+                                </div>
+
+                                `
+
+                            }
+
+
+                            <div class="comment-body">
+
+                                <div class="comment-name">
+
+                                    ${verifiedName(
+                                        comment.studentName
+                                    )}
+
+                                </div>
+
+                                <div class="comment-text">
+
+                                    ${escapeHtml(
+                                        comment.text
+                                    )}
+
+                                </div>
+
+                                <div class="comment-time">
+
+                                    ${formatTime(
+                                        comment.createdAt
+                                    )}
+
+                                </div>
 
                             </div>
 
                         </div>
 
-                    </div>
+                    `;
 
-                `
+                }
             )
             .join("");
 
@@ -5195,7 +5234,7 @@ async function sendComment(){
                     currentProfile.name,
 
                 studentPhoto:
-                    currentProfile.photo,
+                    currentProfile.photo || "",
 
                 text:
                     text,
@@ -5206,12 +5245,6 @@ async function sendComment(){
             }
         );
 
-
-        /*
-         * Counter update can be blocked
-         * by current rules. Comment itself
-         * still succeeds.
-         */
 
         try{
 
@@ -5821,10 +5854,6 @@ function listenNotificationQuery(
 
 async function startNotifications(){
 
-    /*
-     * Cleanup old listeners.
-     */
-
     notificationUnsubs.forEach(
         fn => {
 
@@ -5843,10 +5872,6 @@ async function startNotifications(){
     notificationItems =
         [];
 
-
-    /*
-     * ALL notifications
-     */
 
     try{
 
@@ -5884,10 +5909,6 @@ async function startNotifications(){
 
     }
 
-
-    /*
-     * Current student name
-     */
 
     const studentName =
         getStudentName();
@@ -6085,7 +6106,7 @@ function scheduleMidnight(){
 
 
 /* =====================================================
-   AUTH + START
+   START
 ===================================================== */
 
 async function start(){
@@ -6096,18 +6117,21 @@ async function start(){
 
 
     /*
-     * 1.
-     * Load cache instantly.
+     * 1. Student photo cache.
      */
 
     loadStudentCache();
+
+
+    /*
+     * 2. Cached feed.
+     */
 
     loadCachedFeed();
 
 
     /*
-     * 2.
-     * Load cached profile.
+     * 3. Current profile.
      */
 
     currentProfile.name =
@@ -6132,8 +6156,8 @@ async function start(){
 
 
     /*
-     * 3.
-     * Anonymous authentication.
+     * 4. Anonymous authentication
+     * for community Firebase.
      */
 
     try{
@@ -6175,8 +6199,7 @@ async function start(){
 
 
     /*
-     * 4.
-     * Auth state.
+     * 5. Auth state.
      */
 
     onAuthStateChanged(
@@ -6201,16 +6224,14 @@ async function start(){
 
 
             /*
-             * 5.
-             * Feed first.
+             * 6. Load feed.
              */
 
             await loadPosts();
 
 
             /*
-             * 6.
-             * Profile background.
+             * 7. DIRECT PROFILE PHOTO
              */
 
             loadProfile()
@@ -6224,8 +6245,22 @@ async function start(){
 
 
             /*
-             * 7.
-             * Notifications realtime.
+             * 8. Load complete student
+             * photo directory.
+             */
+
+            loadStudentDirectory()
+                .catch(
+                    error =>
+                        console.warn(
+                            "Student directory:",
+                            error
+                        )
+                );
+
+
+            /*
+             * 9. Notifications.
              */
 
             startNotifications();
@@ -6237,7 +6272,7 @@ async function start(){
 
 
 /* =====================================================
-   START
+   START APP
 ===================================================== */
 
 start();
