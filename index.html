@@ -10879,54 +10879,197 @@ function updateNotificationBadge(){
 
 
 /* =====================================================
-   RENDER
+   🔔 RENDER NOTIFICATIONS
 ===================================================== */
 
 function renderNotifications(){
 
-    notificationItems.sort(
-        (a,b)=>
-            getTimeValue(
-                b.createdAt
-            )
-            -
-            getTimeValue(
-                a.createdAt
-            )
+    /* ---------------------------------------------
+       SORT NOTIFICATIONS — NEWEST FIRST
+    --------------------------------------------- */
+
+    const sorted = [...notificationItems].sort(
+        (a,b) => {
+
+            const ta =
+                a.createdAt?.toMillis
+                    ? a.createdAt.toMillis()
+                    : (
+                        a.createdAt?.seconds
+                            ? a.createdAt.seconds * 1000
+                            : 0
+                    );
+
+            const tb =
+                b.createdAt?.toMillis
+                    ? b.createdAt.toMillis()
+                    : (
+                        b.createdAt?.seconds
+                            ? b.createdAt.seconds * 1000
+                            : 0
+                    );
+
+            return tb - ta;
+
+        }
     );
 
 
-    notificationItems=
-    notificationItems.slice(
-        0,
-        100
-    );
+    /* ---------------------------------------------
+       COUNTS
+    --------------------------------------------- */
+
+    const allCount =
+        sorted.length;
 
 
-    updateNotificationBadge();
+    const unreadItems =
+        sorted.filter(item =>
+            !notificationReadIds.has(item.id)
+        );
 
 
-    if(
-        !notificationItems.length
-    ){
+    const unreadCount =
+        unreadItems.length;
 
-        notificationList.innerHTML=`
 
+    const importantItems =
+        sorted.filter(item =>
+            item.important === true ||
+            String(item.priority || "").toLowerCase()
+                === "important"
+        );
+
+
+    const offerItems =
+        sorted.filter(item =>
+            String(item.type || "")
+                .toLowerCase()
+                === "offer"
+        );
+
+
+    /* ---------------------------------------------
+       UPDATE TAB COUNTS
+    --------------------------------------------- */
+
+    if(notificationAllCount){
+
+        notificationAllCount.textContent =
+            allCount;
+
+    }
+
+
+    if(notificationUnreadCount){
+
+        notificationUnreadCount.textContent =
+            unreadCount;
+
+    }
+
+
+    /* ---------------------------------------------
+       UPDATE HEADER SUBTITLE
+    --------------------------------------------- */
+
+    if(notificationSubtitle){
+
+        if(unreadCount === 0){
+
+            notificationSubtitle.textContent =
+                "You're all caught up";
+
+        }else{
+
+            notificationSubtitle.textContent =
+                `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`;
+
+        }
+
+    }
+
+
+    /* ---------------------------------------------
+       UPDATE BELL BADGE
+    --------------------------------------------- */
+
+    if(notificationBadge){
+
+        if(unreadCount > 0){
+
+            notificationBadge.textContent =
+                unreadCount > 99
+                    ? "99+"
+                    : unreadCount;
+
+            notificationBadge.style.display =
+                "flex";
+
+        }else{
+
+            notificationBadge.textContent =
+                "";
+
+            notificationBadge.style.display =
+                "none";
+
+        }
+
+    }
+
+
+    /* ---------------------------------------------
+       FILTER
+    --------------------------------------------- */
+
+    let visibleItems = sorted;
+
+
+    if(activeNotificationFilter === "unread"){
+
+        visibleItems =
+            unreadItems;
+
+    }
+
+
+    if(activeNotificationFilter === "important"){
+
+        visibleItems =
+            importantItems;
+
+    }
+
+
+    if(activeNotificationFilter === "offer"){
+
+        visibleItems =
+            offerItems;
+
+    }
+
+
+    /* ---------------------------------------------
+       EMPTY STATE
+    --------------------------------------------- */
+
+    if(!visibleItems.length){
+
+        notificationList.innerHTML = `
             <div class="notification-empty">
 
-                <i
-                    class="ri-notification-off-line"
-                    style="
-                        display:block;
-                        font-size:32px;
-                        margin-bottom:10px;
-                    "
-                ></i>
-
-                No notifications yet.
+                ${
+                    activeNotificationFilter === "unread"
+                        ? "No unread notifications"
+                        : activeNotificationFilter === "important"
+                            ? "No important notifications"
+                            : activeNotificationFilter === "offer"
+                                ? "No offers available"
+                                : "No notifications yet"
+                }
 
             </div>
-
         `;
 
         return;
@@ -10934,63 +11077,52 @@ function renderNotifications(){
     }
 
 
-    notificationList.innerHTML=
+    /* ---------------------------------------------
+       RENDER CARDS
+    --------------------------------------------- */
 
-    notificationItems
-    .map(
-        item=>{
+    notificationList.innerHTML =
+        visibleItems.map(item => {
 
-            const rawType=
-            String(
-                item.type ||
-                "info"
-            ).toLowerCase();
-
-
-            const allowedTypes=[
-
-                "announcement",
-                "exam",
-                "result",
-                "warning",
-                "success",
-                "info"
-
-            ];
+            const type =
+                String(item.type || "info")
+                    .toLowerCase();
 
 
-            const type=
-            allowedTypes.includes(
-                rawType
-            )
-            ?
-            rawType
-            :
-            "info";
+            const unread =
+                !notificationReadIds.has(item.id);
 
 
-            const unread=
-            !notificationReadIds.has(
-                item.id
-            );
+            const important =
+                item.important === true ||
+                String(item.priority || "").toLowerCase()
+                    === "important";
 
 
             return `
-
                 <div
                     class="
                         notification-card
                         ${unread ? "unread" : ""}
-                        type-${type}
+                        type-${escapeHtml(type)}
                     "
                     data-id="${escapeHtml(item.id)}"
                 >
 
+                    ${
+                        unread
+                            ? `
+                                <span
+                                    class="notification-unread-dot"
+                                ></span>
+                            `
+                            : ""
+                    }
+
+
                     <div class="notification-icon">
 
-                        <i
-                            class="${notificationIcon(type)}"
-                        ></i>
+                        <i class="${notificationIcon(type)}"></i>
 
                     </div>
 
@@ -11010,8 +11142,7 @@ function renderNotifications(){
                         <div class="notification-message">
 
                             ${escapeHtml(
-                                item.message ||
-                                ""
+                                item.message || ""
                             )}
 
                         </div>
@@ -11032,19 +11163,15 @@ function renderNotifications(){
                             <span
                                 class="${
                                     unread
-                                    ?
-                                    "notification-new"
-                                    :
-                                    ""
+                                        ? "notification-new"
+                                        : ""
                                 }"
                             >
 
                                 ${
                                     unread
-                                    ?
-                                    "NEW • "
-                                    :
-                                    ""
+                                        ? "NEW • "
+                                        : ""
                                 }
 
                                 ${notificationTime(
@@ -11057,13 +11184,21 @@ function renderNotifications(){
 
                     </div>
 
-                </div>
 
+                    <button
+                        type="button"
+                        class="notification-menu"
+                        aria-label="Notification options"
+                    >
+
+                        <i class="ri-more-2-fill"></i>
+
+                    </button>
+
+                </div>
             `;
 
-        }
-    )
-    .join("");
+        }).join("");
 
 }
 
