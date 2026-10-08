@@ -10452,6 +10452,15 @@ const notificationList =
 const notificationSubtitle =
     $("notificationSubtitle");
 
+const notificationAllCount =
+    $("notificationAllCount");
+
+const notificationUnreadCount =
+    $("notificationUnreadCount");
+
+const markAllReadBtn =
+    $("markAllReadBtn");
+
 
 let notificationItems = [];
 
@@ -10461,13 +10470,103 @@ let notificationStudentIds =
     new Set();
 
 
+/* =====================================================
+   NOTIFICATION READ STORAGE
+===================================================== */
+
 const NOTIFICATION_READ_KEY =
     "BT_NOTIFICATION_READ_V1_" +
     encodeURIComponent(student);
 
-
 let notificationReadIds =
     new Set();
+
+
+/* =====================================================
+   NOTIFICATION FILTER
+===================================================== */
+
+let activeNotificationFilter = "all";
+
+
+/* =====================================================
+   NOTIFICATION TABS
+===================================================== */
+
+const notificationTabs =
+    document.querySelectorAll(
+        ".notification-tab"
+    );
+
+
+notificationTabs.forEach(tab => {
+
+    tab.addEventListener(
+        "click",
+        () => {
+
+            activeNotificationFilter =
+                tab.dataset.filter || "all";
+
+            notificationTabs.forEach(item => {
+
+                item.classList.toggle(
+                    "active",
+                    item === tab
+                );
+
+            });
+
+            renderNotifications();
+
+        }
+    );
+
+});
+
+
+/* =====================================================
+   MARK ALL AS READ
+===================================================== */
+
+if(markAllReadBtn){
+
+    markAllReadBtn.addEventListener(
+        "click",
+        () => {
+
+            notificationItems.forEach(
+                item => {
+
+                    if(item && item.id){
+
+                        notificationReadIds.add(
+                            item.id
+                        );
+
+                    }
+
+                }
+            );
+
+
+            saveNotificationReads();
+
+            renderNotifications();
+
+
+            if(typeof showToast === "function"){
+
+                showToast(
+                    "All notifications marked as read."
+                );
+
+            }
+
+        }
+    );
+
+}
 
 
 /* =====================================================
