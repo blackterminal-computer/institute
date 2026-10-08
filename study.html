@@ -4979,157 +4979,343 @@ $("imageInput").onchange =
    COMPRESS IMAGE
 ===================================================== */
 
-function compressImage(
-    file
-){
+function compressImage(file){
 
-    return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
+    return new Promise((resolve,reject)=>{
 
-            const reader =
-                new FileReader();
+        const reader = new FileReader();
 
-            reader.onload =
-                event => {
+        reader.onload = event => {
 
-                    const image =
-                        new Image();
+            const image = new Image();
 
-                    image.onload =
-                        () => {
+            image.onload = () => {
 
-                            const MAX =
-                                1600;
+                const MAX = 1600;
 
-                            let width =
-                                image.width;
+                let width = image.width;
+                let height = image.height;
 
-                            let height =
-                                image.height;
+                /* ==============================
+                   RESIZE
+                ============================== */
 
-                            if(
-                                width > MAX ||
-                                height > MAX
-                            ){
+                if(width > MAX || height > MAX){
 
-                                if(
-                                    width >
-                                    height
-                                ){
+                    if(width > height){
 
-                                    height =
-                                        Math.round(
-                                            height *
-                                            MAX /
-                                            width
-                                        );
-
-                                    width =
-                                        MAX;
-
-                                }else{
-
-                                    width =
-                                        Math.round(
-                                            width *
-                                            MAX /
-                                            height
-                                        );
-
-                                    height =
-                                        MAX;
-
-                                }
-
-                            }
-
-                            const canvas =
-                                document.createElement(
-                                    "canvas"
-                                );
-
-                            canvas.width =
-                                width;
-
-                            canvas.height =
-                                height;
-
-                            const ctx =
-                                canvas.getContext(
-                                    "2d"
-                                );
-
-                            ctx.drawImage(
-                                image,
-                                0,
-                                0,
-                                width,
-                                height
+                        height =
+                            Math.round(
+                                height * MAX / width
                             );
 
-                            canvas.toBlob(
-                                blob => {
+                        width = MAX;
 
-                                    if(!blob){
+                    }else{
 
-                                        reject(
-                                            new Error(
-                                                "Compression failed"
-                                            )
-                                        );
-
-                                        return;
-
-                                    }
-
-                                    resolve(
-                                        new File(
-                                            [blob],
-                                            "bt-moment.jpg",
-                                            {
-                                                type:
-                                                    "image/jpeg"
-                                            }
-                                        )
-                                    );
-
-                                },
-                                "image/jpeg",
-                                .80
+                        width =
+                            Math.round(
+                                width * MAX / height
                             );
 
-                        };
+                        height = MAX;
 
-                    image.onerror =
-                        () =>
+                    }
+
+                }
+
+                const canvas =
+                    document.createElement("canvas");
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx =
+                    canvas.getContext("2d");
+
+                /* ==============================
+                   DRAW PHOTO
+                ============================== */
+
+                ctx.drawImage(
+                    image,
+                    0,
+                    0,
+                    width,
+                    height
+                );
+
+                /* ==============================
+                   WATERMARK
+                ============================== */
+
+                const padding =
+                    Math.max(
+                        16,
+                        Math.round(width * 0.025)
+                    );
+
+                const titleSize =
+                    Math.max(
+                        18,
+                        Math.round(width * 0.028)
+                    );
+
+                const subtitleSize =
+                    Math.max(
+                        10,
+                        Math.round(width * 0.015)
+                    );
+
+                const title =
+                    "BLACKTERMINAL";
+
+                const subtitle =
+                    "No. 1 Computer Institute in Baripada";
+
+                /*
+                 * Measure text
+                 */
+
+                ctx.font =
+                    `800 ${titleSize}px Inter, Arial, sans-serif`;
+
+                const titleWidth =
+                    ctx.measureText(title).width;
+
+                ctx.font =
+                    `600 ${subtitleSize}px Inter, Arial, sans-serif`;
+
+                const subtitleWidth =
+                    ctx.measureText(subtitle).width;
+
+                const textWidth =
+                    Math.max(
+                        titleWidth,
+                        subtitleWidth
+                    );
+
+                const boxPaddingX =
+                    Math.max(
+                        12,
+                        Math.round(width * 0.018)
+                    );
+
+                const boxPaddingY =
+                    Math.max(
+                        9,
+                        Math.round(width * 0.014)
+                    );
+
+                const boxWidth =
+                    textWidth +
+                    boxPaddingX * 2;
+
+                const boxHeight =
+                    titleSize +
+                    subtitleSize +
+                    boxPaddingY * 2 +
+                    5;
+
+                const boxX =
+                    width -
+                    boxWidth -
+                    padding;
+
+                const boxY =
+                    height -
+                    boxHeight -
+                    padding;
+
+                /* ==============================
+                   ROUNDED BACKGROUND
+                ============================== */
+
+                const radius = 10;
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    boxX + radius,
+                    boxY
+                );
+
+                ctx.lineTo(
+                    boxX + boxWidth - radius,
+                    boxY
+                );
+
+                ctx.quadraticCurveTo(
+                    boxX + boxWidth,
+                    boxY,
+                    boxX + boxWidth,
+                    boxY + radius
+                );
+
+                ctx.lineTo(
+                    boxX + boxWidth,
+                    boxY + boxHeight - radius
+                );
+
+                ctx.quadraticCurveTo(
+                    boxX + boxWidth,
+                    boxY + boxHeight,
+                    boxX + boxWidth - radius,
+                    boxY + boxHeight
+                );
+
+                ctx.lineTo(
+                    boxX + radius,
+                    boxY + boxHeight
+                );
+
+                ctx.quadraticCurveTo(
+                    boxX,
+                    boxY + boxHeight,
+                    boxX,
+                    boxY + boxHeight - radius
+                );
+
+                ctx.lineTo(
+                    boxX,
+                    boxY + radius
+                );
+
+                ctx.quadraticCurveTo(
+                    boxX,
+                    boxY,
+                    boxX + radius,
+                    boxY
+                );
+
+                ctx.closePath();
+
+                ctx.fillStyle =
+                    "rgba(0,0,0,0.38)";
+
+                ctx.fill();
+
+                /* ==============================
+                   SUBTLE SHADOW
+                ============================== */
+
+                ctx.shadowColor =
+                    "rgba(0,0,0,0.65)";
+
+                ctx.shadowBlur = 8;
+
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 2;
+
+                /* ==============================
+                   BLACKTERMINAL
+                ============================== */
+
+                ctx.font =
+                    `800 ${titleSize}px Inter, Arial, sans-serif`;
+
+                ctx.textAlign = "right";
+                ctx.textBaseline = "top";
+
+                ctx.fillStyle =
+                    "rgba(255,255,255,0.92)";
+
+                ctx.fillText(
+                    title,
+                    boxX + boxWidth - boxPaddingX,
+                    boxY + boxPaddingY
+                );
+
+                /* ==============================
+                   SUBTITLE
+                ============================== */
+
+                ctx.font =
+                    `600 ${subtitleSize}px Inter, Arial, sans-serif`;
+
+                ctx.fillStyle =
+                    "rgba(255,255,255,0.72)";
+
+                ctx.fillText(
+                    subtitle,
+                    boxX + boxWidth - boxPaddingX,
+                    boxY +
+                    boxPaddingY +
+                    titleSize +
+                    4
+                );
+
+                /* Reset shadow */
+                ctx.shadowColor = "transparent";
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                /* ==============================
+                   EXPORT WATERMARKED IMAGE
+                ============================== */
+
+                canvas.toBlob(
+                    blob => {
+
+                        if(!blob){
+
                             reject(
                                 new Error(
-                                    "Invalid image"
+                                    "Image processing failed"
                                 )
                             );
 
-                    image.src =
-                        event.target.result;
+                            return;
 
-                };
+                        }
 
-            reader.onerror =
-                () =>
-                    reject(
-                        new Error(
-                            "Unable to read image"
-                        )
-                    );
+                        resolve(
+                            new File(
+                                [blob],
+                                "bt-moment-watermarked.jpg",
+                                {
+                                    type:
+                                        "image/jpeg"
+                                }
+                            )
+                        );
 
-            reader.readAsDataURL(
-                file
+                    },
+                    "image/jpeg",
+                    0.82
+                );
+
+            };
+
+            image.onerror = () => {
+
+                reject(
+                    new Error(
+                        "Invalid image"
+                    )
+                );
+
+            };
+
+            image.src =
+                event.target.result;
+
+        };
+
+        reader.onerror = () => {
+
+            reject(
+                new Error(
+                    "Unable to read image"
+                )
             );
 
-        }
-    );
+        };
+
+        reader.readAsDataURL(file);
+
+    });
 
 }
 
