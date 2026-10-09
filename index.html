@@ -11705,6 +11705,76 @@ document.addEventListener(
 ===================================================== */
 
 listenForNotifications();
+
+
+
+
+
+
+const MAIN_VAPID_KEY = "BFEUxPZd5Ul9p-8uBvs1a9SgwtSosdz0HG83FDfWe6b9R_nXnOcMOHekh02lvM-PBlv2CuV_ws2denexpbGuX-4";
+
+const notifyButton = document.getElementById(
+  "enableMainPwaNotifications"
+);
+
+const notifyStatus = document.getElementById(
+  "mainPwaNotificationStatus"
+);
+
+if (notifyButton) {
+  notifyButton.addEventListener("click", async () => {
+    notifyButton.disabled = true;
+    notifyStatus.textContent = "Setting up notifications...";
+
+    try {
+      if (!(await isSupported())) {
+        throw new Error("Notifications are not supported here.");
+      }
+
+      if (Notification.permission === "denied") {
+        throw new Error(
+          "Notifications are blocked. Enable them in iPhone Settings."
+        );
+      }
+
+      const permission = await Notification.requestPermission();
+
+      if (permission !== "granted") {
+        throw new Error("Notification permission was not granted.");
+      }
+
+      const registration = await navigator.serviceWorker.register(
+        "/firebase-messaging-main-sw.js",
+        { scope: "/" }
+      );
+
+      const messaging = getMessaging(app);
+
+      const token = await getToken(messaging, {
+        vapidKey: BFEUxPZd5Ul9p-8uBvs1a9SgwtSosdz0HG83FDfWe6b9R_nXnOcMOHekh02lvM-PBlv2CuV_ws2denexpbGuX-4,
+        serviceWorkerRegistration: registration
+      });
+
+      if (!token) {
+        throw new Error("FCM token could not be generated.");
+      }
+
+      localStorage.setItem("btMainFcmToken", token);
+
+      notifyStatus.textContent = "Notifications enabled successfully!";
+      document.getElementById("btFloatingNotify").style.display = "none";
+
+      console.log("Main PWA FCM token generated successfully.");
+
+    } catch (error) {
+      console.error("FCM setup error:", error);
+      notifyStatus.textContent = error.message || "Setup failed. Please retry.";
+    } finally {
+      notifyButton.disabled = false;
+    }
+  });
+}
+
 </script>
 
 <script>
