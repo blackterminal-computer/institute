@@ -1,40 +1,40 @@
-// Firebase scripts load karein
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-// Firebase ko initialize karein (Same config use karein jo index.html mein hai)
+importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js");
+
 firebase.initializeApp({
-    apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJkMBRlXA2w_WpI",
-    authDomain: "black-terminal-f2c91.firebaseapp.com",
-    projectId: "black-terminal-f2c91",
-    storageBucket: "black-terminal-f2c91.appspot.com",
-    messagingSenderId: "552489994197",
-    appId: "1:552489994197:web:7662331264c334ffbadf5c"
+  apiKey: "AIzaSyBNYjdOgZXnHLZ66-MSsfmzuVZ7Ex4m5Os",
+  authDomain: "black-d0090.firebaseapp.com",
+  databaseURL: "https://black-d0090-default-rtdb.firebaseio.com",
+  projectId: "black-d0090",
+  storageBucket: "black-d0090.firebasestorage.app",
+  messagingSenderId: "262520728205",
+  appId: "1:262520728205:web:c95151d5f88da2831890c4"
 });
 
 const messaging = firebase.messaging();
 
-// Background Notification handle karne ke liye logic
-messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Background message received: ', payload);
+messaging.onBackgroundMessage(payload => {
+  const notification = payload.notification || {};
+  const title = notification.title || "BlackTerminal Admin";
+  const options = {
+    body: notification.body || "You have a new notification.",
+    icon: "/icon-192.png",
+    data: { url: payload.data?.url || "/masterAdmin.html" }
+  };
 
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png', // Yahan apna logo link daal sakte hain
-        badge: 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png',
-        data: {
-            url: payload.data.url || '/index.html' // Click karne par kahan jaye
-        }
-    };
-
-    self.registration.showNotification(notificationTitle, notificationOptions);
+  self.registration.showNotification(title, options);
 });
 
-// Notification click hone par website open karne ka logic
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    event.waitUntil(
-        clients.openWindow(event.notification.data.url)
-    );
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+
+  const target = new URL(
+    event.notification.data?.url || "/masterAdmin.html",
+    self.location.origin
+  );
+
+  if (target.origin !== self.location.origin) return;
+
+  event.waitUntil(clients.openWindow(target.href));
 });
