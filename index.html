@@ -5130,14 +5130,6 @@ import {
 from
 "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 
-import {
-    getMessaging,
-    getToken,
-    onMessage
-}
-from
-"https://www.gstatic.com/firebasejs/12.19.0/firebase-messaging.js";
-
 
 import {
     initializeFirestore,
@@ -5194,9 +5186,6 @@ const firebaseConfig={
 
 const app=
 initializeApp(firebaseConfig);
-
-// Firebase Cloud Messaging for foreground push messages.
-const messaging = getMessaging(app);
 
 
 /*
@@ -9238,100 +9227,6 @@ try{
 }catch(error){}
 
 
-
-/* =====================================================
-   BLACKTERMINAL PUSH NOTIFICATIONS
-   ===================================================== */
-
-// Firebase Console se li hui PUBLIC Web Push VAPID key
-const FCM_VAPID_PUBLIC_KEY =
-  "BFEUxPZd5Ul9p-8uBvs1a9SgwtSosdz0HG83FDfWe6b9R_nXnOcMOHekh02lvM-PBlv2CuV_ws2denexpbGuX-4";
-
-const enablePushButton = document.getElementById("enablePush");
-const pushStatus = document.getElementById("pushStatus");
-const inAppMessage = document.getElementById("inAppMessage");
-
-if (enablePushButton && pushStatus) {
-  enablePushButton.addEventListener("click", async () => {
-    try {
-      if (!("Notification" in window)) {
-        pushStatus.textContent =
-          "This browser does not support notifications.";
-        return;
-      }
-
-      if (!("serviceWorker" in navigator)) {
-        pushStatus.textContent =
-          "This browser does not support service workers.";
-        return;
-      }
-
-      if (
-        !FCM_VAPID_PUBLIC_KEY ||
-        FCM_VAPID_PUBLIC_KEY === "PASTE_YOUR_PUBLIC_VAPID_KEY_HERE"
-      ) {
-        pushStatus.textContent =
-          "Please add your Firebase Web Push VAPID public key first.";
-        return;
-      }
-
-      if (Notification.permission === "denied") {
-        pushStatus.textContent =
-          "Notifications are blocked. Enable them in your browser settings.";
-        return;
-      }
-
-      pushStatus.textContent = "Requesting notification permission...";
-
-      const permission = await Notification.requestPermission();
-
-      if (permission !== "granted") {
-        pushStatus.textContent =
-          "Notification permission was not granted.";
-        return;
-      }
-
-      pushStatus.textContent = "Registering this device...";
-
-      const registration = await navigator.serviceWorker.ready;
-
-      const token = await getToken(messaging, {
-        vapidKey: FCM_VAPID_PUBLIC_KEY,
-        serviceWorkerRegistration: registration
-      });
-
-      if (!token) {
-        pushStatus.textContent =
-          "Could not get an FCM token. Check Firebase and VAPID settings.";
-        return;
-      }
-
-      // Next step: securely register this token with your backend.
-      // Do not expose Firebase Admin credentials in frontend code.
-      console.log("FCM token generated successfully.");
-
-      pushStatus.textContent =
-        "Notifications enabled for this device. Server registration is still pending.";
-
-    } catch (error) {
-      console.error("FCM enable error:", error);
-
-      pushStatus.textContent =
-        "Could not enable notifications. Check Firebase setup and browser console.";
-    }
-  });
-}
-
-
-// Foreground messages appear in the in-app banner below.
-onMessage(messaging, (payload) => {
-  if (!inAppMessage) return;
-  const title = payload.notification?.title || payload.data?.title || "BlackTerminal";
-  const body = payload.notification?.body || payload.data?.body || "You have a new update.";
-  inAppMessage.textContent = `${title}: ${body}`;
-  inAppMessage.hidden = false;
-});
-
 </script>
 
 
@@ -9358,31 +9253,6 @@ if ("serviceWorker" in navigator) {
 
 
 
-
-<style>
-  #pushControls {
-    position: relative; z-index: 5; width: min(92%, 680px);
-    margin: 16px auto; padding: 14px;
-    border: 1px solid rgba(0,229,255,.25); border-radius: 14px;
-    background: #0c0f16; color: #fff; font-family: Inter, sans-serif;
-  }
-  #enablePush {
-    border: 0; border-radius: 9px; padding: 11px 16px;
-    background: #00e5ff; color: #05060a; font-weight: 800; cursor: pointer;
-  }
-  #pushStatus { margin-top: 8px; color: #c8d2e3; font-size: 13px; }
-  #inAppMessage {
-    width: min(92%, 680px); margin: 12px auto; padding: 12px 14px;
-    border: 1px solid rgba(0,229,255,.35); border-radius: 10px;
-    background: #101a2b; color: #fff; font-family: Inter, sans-serif;
-  }
-</style>
-
-<div id="pushControls">
-  <button id="enablePush" type="button">Enable Notifications</button>
-  <p id="pushStatus" aria-live="polite">Enable notifications on this device.</p>
-</div>
-<div id="inAppMessage" role="status" aria-live="polite" hidden></div>
 
 </body>
 
