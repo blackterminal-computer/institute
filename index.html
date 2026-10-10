@@ -9045,9 +9045,15 @@ if ("serviceWorker" in navigator) {
 
 
 
+
 <!-- BlackTerminal Push Notifications -->
-<div id="bt-push-box">
-  <button id="bt-enable-notifications" type="button">
+<div id="bt-push-box" style="margin:20px 0;text-align:center;">
+  <button
+    id="bt-enable-notifications"
+    type="button"
+    style="padding:12px 20px;border:0;border-radius:12px;
+           background:#00e5c0;color:#081018;font-weight:700;"
+  >
     Enable Notifications
   </button>
   <p id="bt-push-status" role="status" aria-live="polite"></p>
@@ -9075,46 +9081,44 @@ const firebaseConfig = {
   appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-// Reuse this module's existing Firebase app if available.
-const app = getApps().length
-  ? getApp()
-  : initializeApp(firebaseConfig);
-
-const messaging = getMessaging(app);
+const VAPID_KEY =
+  "BFEUxPZd5Ul9p-8uBvs1a9SgwtSosdz0HG83FDfWe6b9R_nXnOcMOHekh02lvM-PBlv2CuV_ws2denexpbGuX-4";
 
 const button = document.getElementById("bt-enable-notifications");
 const status = document.getElementById("bt-push-status");
 
-// Paste your PUBLIC VAPID key from Firebase Console here.
-const VAPID_KEY = "BFEUxPZd5Ul9p-8uBvs1a9SgwtSosdz0HG83FDfWe6b9R_nXnOcMOHekh02lvM-PBlv2CuV_ws2denexpbGuX-4";
-
 button.addEventListener("click", async () => {
   button.disabled = true;
-  status.textContent = "Enabling notifications...";
+  status.textContent = "Setting up notifications...";
 
   try {
-    
-if (!("Notification" in window)) {
-  throw new Error(
-    "Notification API is unavailable in this app context."
-  );
-}
+    if (!("Notification" in window)) {
+      throw new Error(
+        "Notifications are unavailable. Open the installed Home Screen app."
+      );
+    }
 
-if (!("serviceWorker" in navigator)) {
-  throw new Error(
-    "Service Worker is unavailable in this app context."
-  );
-}
+    if (!("serviceWorker" in navigator)) {
+      throw new Error("Service Worker is unavailable.");
+    }
 
-if (window.matchMedia("(display-mode: standalone)").matches) {
-  console.log("BlackTerminal is running as an installed PWA.");
-} else {
-  console.log("BlackTerminal is running in a browser tab.");
-}
+    if (!window.isSecureContext) {
+      throw new Error("Please open BlackTerminal using HTTPS.");
+    }
 
+    if (Notification.permission === "denied") {
+      throw new Error(
+        "Notifications are blocked. Allow them in iPhone Settings."
+      );
+    }
 
-    if (VAPID_KEY === "BFEUxPZd5Ul9p-8uBvs1a9SgwtSosdz0HG83FDfWe6b9R_nXnOcMOHekh02lvM-PBlv2CuV_ws2denexpbGuX-4") {
-      throw new Error("Please add your Firebase VAPID public key first.");
+    if (
+      !window.matchMedia("(display-mode: standalone)").matches &&
+      !window.navigator.standalone
+    ) {
+      throw new Error(
+        "Please open BlackTerminal from your Home Screen."
+      );
     }
 
     const permission = await Notification.requestPermission();
@@ -9123,7 +9127,11 @@ if (window.matchMedia("(display-mode: standalone)").matches) {
       throw new Error("Notification permission was not granted.");
     }
 
-    // Use the service worker already registered by your website.
+    const app = getApps().length
+      ? getApp()
+      : initializeApp(firebaseConfig);
+
+    const messaging = getMessaging(app);
     const registration = await navigator.serviceWorker.ready;
 
     const token = await getToken(messaging, {
@@ -9132,23 +9140,25 @@ if (window.matchMedia("(display-mode: standalone)").matches) {
     });
 
     if (!token) {
-      throw new Error("FCM token could not be generated.");
+      throw new Error("Firebase could not generate a notification token.");
     }
 
-    // Testing only. Do not publish this token or put it in public HTML.
-    console.log("BlackTerminal FCM token:", token);
+    // Local testing only. Do not display or publish the token.
+    console.log("BlackTerminal FCM token generated successfully.");
 
     status.textContent =
-      "Notifications enabled on this device. Subscription created.";
+      "Notifications enabled on this device.";
 
   } catch (error) {
-    console.error("Notification setup error:", error);
-    status.textContent = error.message || "Setup failed. Please try again.";
+    console.error("BlackTerminal notification error:", error);
+    status.textContent =
+      error.message || "Setup failed. Please try again.";
   } finally {
     button.disabled = false;
   }
 });
 </script>
+
 
 </body>
 
