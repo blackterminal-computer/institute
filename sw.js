@@ -51,21 +51,26 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(payload => {
-  // FCM automatically displays background notification payloads.
-  // Manually display only data-only messages.
+  // Firebase handles notification-payload messages.
   if (payload.notification) return;
 
   const data = payload.data || {};
 
-  self.registration.showNotification(
-    data.title || "BlackTerminal",
-    {
-      body: data.body || "You have a new update.",
-      icon: "/main-icon-192.png",
-      data: {
-        url: data.url || "/index.html"
-      }
+  const options = {
+    body: data.body || "You have a new update.",
+    icon: "/main-icon-192.png",
+    data: {
+      url: data.url || "/index.html"
     }
+  };
+
+  if (data.image) {
+    options.image = data.image;
+  }
+
+  return self.registration.showNotification(
+    data.title || "BlackTerminal",
+    options
   );
 });
 
