@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "bt-shell-v7";
+const CACHE_NAME = "bt-shell-v8";
 
 const APP_SHELL = [
   "/",
