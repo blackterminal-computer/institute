@@ -5715,9 +5715,9 @@ function renderStudent(
         data
     );
 
-    const photo=
-    getPhoto(data)||
-    getPhotoCache()||
+    const photo =
+    getPhotoCache() ||
+    getPhoto(data) ||
     avatarUrl(student);
 
 
@@ -8356,174 +8356,99 @@ changePhotoBtn.onclick=
 };
 
 
-photoInput.onchange=
-async event=>{
 
-    const file=
-    event.target.files?.[0];
+photoInput.onchange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-
-    if(!file)
-        return;
-
-
-    if(
-        !file.type.startsWith(
-            "image/"
-        )
-    ){
-
-        showToast(
-            "Please select an image."
-        );
-
+    if (!file.type.startsWith("image/")) {
+        showToast("Please select an image.");
+        photoInput.value = "";
         return;
     }
 
-
-    if(
-        file.size>
-        5*1024*1024
-    ){
-
-        showToast(
-            "Image should be below 5MB."
-        );
-
+    if (file.size > 5 * 1024 * 1024) {
+        showToast("Image must be below 5MB.");
+        photoInput.value = "";
         return;
     }
 
+    try {
+        // Compress photo to reduce Firestore document size
+        const compressedPhoto = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
 
-    const reader=
-    new FileReader();
+            reader.onerror = () => reject(new Error("Could not read image"));
 
+            reader.onload = () => {
+                const img = new Image();
 
-    reader.onload=
-    async()=>{
+                img.onerror = () => reject(new Error("Invalid image"));
 
-        const image=
-        reader.result;
+                img.onload = () => {
+                    const max = 400;
+                    const scale = Math.min(
+                        1,
+                        max / Math.max(img.width, img.height)
+                    );
 
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
 
-        /*
-           Show locally immediately.
-        */
-
-        topPhoto.src=
-        image;
-
-        profilePhoto.src=
-        image;
-
-
-        savePhotoCache(
-            image
-        );
-
-
-        try{
-
-            await updateDoc(
-
-                doc(
-                    db,
-                    "students",
-                    student
-                ),
-
-                {
-                    photo:
-                    image
-                }
-
-            );
-
-
-            /*
-               Update local dashboard cache.
-            */
-
-            const cached=
-            getDashboardCache();
-
-
-            if(
-                cached?.data?.student
-            ){
-
-                cached.data.student.photo=
-                image;
-
-
-                saveDashboardCache(
-                    cached.data
-                );
-
-            }
-
-
-            showToast(
-                "Profile photo updated."
-            );
-
-
-        }catch(error){
-
-            /*
-               If document doesn't exist,
-               merge it.
-            */
-
-            try{
-
-                await setDoc(
-
-                    doc(
-                        db,
-                        "students",
-                        student
-                    ),
-
-                    {
-                        photo:
-                        image
-                    },
-
-                    {
-                        merge:true
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) {
+                        reject(new Error("Canvas unavailable"));
+                        return;
                     }
 
-                );
+                    ctx.drawImage(
+                        img, 0, 0, canvas.width, canvas.height
+                    );
 
+                    resolve(canvas.toDataURL("image/jpeg", 0.65));
+                };
 
-                showToast(
-                    "Profile photo updated."
-                );
+                img.src = reader.result;
+            };
 
+            reader.readAsDataURL(file);
+        });
 
-            }catch(error2){
+        // Save locally first for instant display
+        savePhotoCache(compressedPhoto);
+        topPhoto.src = compressedPhoto;
+        profilePhoto.src = compressedPhoto;
 
-                console.error(
-                    error2
-                );
+        // Save permanently to the existing student document
+        await setDoc(
+            doc(db, "students", student),
+            { photo: compressedPhoto },
+            { merge: true }
+        );
 
+        // Update dashboard cache too
+        const cached = getDashboardCache();
 
-                showToast(
-                    "Could not update photo."
-                );
+        if (cached?.data) {
+            cached.data.student = {
+                ...(cached.data.student || {}),
+                photo: compressedPhoto
+            };
 
-            }
-
+            saveDashboardCache(cached.data);
         }
 
-    };
+        showToast("Photo saved successfully!");
 
-
-    reader.readAsDataURL(
-        file
-    );
-
+    } catch (error) {
+        console.error("Profile photo save failed:", error);
+        showToast("Save failed. Check Firebase permissions.");
+    } finally {
+        photoInput.value = "";
+    }
 };
+
 
 
 /* =====================================================
