@@ -6285,207 +6285,105 @@ function updateStudentCache(
    ATTENDANCE RENDER
 ===================================================== */
 
-function renderAttendance(
-    dashboard
-){
+function renderAttendance(dashboard) {
+    const students = dashboard?.students || [];
+    const attendance = dashboard?.attendance || [];
 
-    const students=
-    dashboard?.students||[];
+    const uniqueDates = new Set();
+    const map = {};
+    let recordedPresentDays = 0;
 
-    const attendance=
-    dashboard?.attendance||[];
+    students.forEach(item => {
+        const name = item.name || item.id || "Student";
 
+        map[name] = {
+            name,
+            photo: item.photo || avatarUrl(name),
+            count: 0,
+            manualPresentDays: item.manualPresentDays
+        };
+    });
 
-    const uniqueDates=
-    new Set();
+    attendance.forEach(item => {
+        const id = String(item.id || "");
+        const pos = id.lastIndexOf("_");
 
+        if (pos < 0) return;
 
-    let currentCount=0;
+        const name = id.substring(0, pos);
+        const date = id.substring(pos + 1);
 
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
 
-    const map={};
+        uniqueDates.add(date);
 
+        // Legacy attendance records without status are Present.
+        // Explicit non-present statuses are excluded.
+        const record = item;
+        const status = String(record.status ?? "present").toLowerCase();
 
-    students.forEach(
-        item=>{
-
-            const name=
-            item.name||
-            item.id||
-            "Student";
-
-
-            map[name]={
-
-                name,
-
-                photo:
-                getPhoto(item)||
-                avatarUrl(name),
-
-                count:0
-
-            };
-
-        }
-    );
-
-
-    attendance.forEach(
-        item=>{
-
-            const id=
-            String(
-                item.id||""
-            );
-
-
-            const pos=
-            id.lastIndexOf("_");
-
-
-            if(pos<0)
-                return;
-
-
-            const name=
-            id.substring(
-                0,
-                pos
-            );
-
-
-            const date=
-            id.substring(
-                pos+1
-            );
-
-
-            if(
-                !/^\d{4}-\d{2}-\d{2}$/
-                .test(date)
-            )
+        if (!["", "present", "p", "approved"].includes(status)) {
             return;
-
-
-            uniqueDates.add(
-                date
-            );
-
-
-            if(
-                name===student
-            ){
-
-                currentCount++;
-
-            }
-
-
-            if(
-                map[name]
-            ){
-
-                map[name].count++;
-
-            }
-
         }
+
+        if (map[name]) {
+            map[name].count++;
+        }
+
+        if (name === student) {
+            recordedPresentDays++;
+        }
+    });
+
+    // Find the logged-in student's Firebase student document.
+    const currentStudent = students.find(item =>
+        String(item.id || "").trim() === String(student).trim() ||
+        String(item.name || "").trim() === String(student).trim()
     );
 
+    // Use the manual total when saved; otherwise use recorded days.
+    const manualValue = currentStudent?.manualPresentDays;
 
-    attendanceCount.textContent=
+    const hasManualTotal =
+        manualValue !== null &&
+        manualValue !== undefined &&
+        manualValue !== "" &&
+        Number.isFinite(Number(manualValue)) &&
+        Number(manualValue) >= 0;
 
-        currentCount+
-        (
-            currentCount===1?
-            " Day":
-            " Days"
-        );
+    const currentCount = hasManualTotal
+        ? Math.floor(Number(manualValue))
+        : recordedPresentDays;
 
+    attendanceCount.textContent =
+        currentCount + (currentCount === 1 ? " Day" : " Days");
 
-    let percent=0;
+    // Keep the existing percentage method, using the unique
+    // attendance dates as the denominator.
+    const percent = uniqueDates.size
+        ? Math.min(100, (currentCount / uniqueDates.size) * 100)
+        : 0;
 
+    attendancePercent.textContent = Math.round(percent) + "%";
 
-    if(
-        uniqueDates.size
-    ){
-
-        percent=
-        Math.min(
-            100,
-            currentCount/
-            uniqueDates.size*
-            100
-        );
-
-    }
-
-
-    attendancePercent.textContent=
-    Math.round(
-        percent
-    )+"%";
-
-
-    const top=
-    Object.values(
-        map
-    )
-
-    .map(
-        item=>({
-
+    // Top 3 remains based on actual daily attendance records.
+    const top = Object.values(map)
+        .map(item => ({
             ...item,
-
-            percentage:
-
-                uniqueDates.size?
-
-                Math.min(
-                    100,
-                    item.count/
-                    uniqueDates.size*
-                    100
-                ):
-
-                0
-
+            percentage: uniqueDates.size
+                ? Math.min(100, (item.count / uniqueDates.size) * 100)
+                : 0
+        }))
+        .sort((a, b) => {
+            if (b.percentage !== a.percentage) {
+                return b.percentage - a.percentage;
+            }
+            return b.count - a.count;
         })
-    )
+        .slice(0, 3);
 
-    .sort(
-        (a,b)=>{
-
-            if(
-                b.percentage!==
-                a.percentage
-            )
-            return (
-                b.percentage-
-                a.percentage
-            );
-
-
-            return (
-                b.count-
-                a.count
-            );
-
-        }
-    )
-
-    .slice(
-        0,
-        3
-    );
-
-
-    renderTopAttendance(
-        top
-    );
+    renderTopAttendance(top);
 }
-
 
 /* =====================================================
    TOP ATTENDANCE
