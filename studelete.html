@@ -9,7 +9,7 @@
   <style>
     :root {
       --bg: #f3f6fb;
-      --card: #fff;
+      --card: #ffffff;
       --text: #172033;
       --muted: #68758a;
       --border: #e1e7f0;
@@ -74,7 +74,12 @@
     }
 
     .stat { padding: 16px; }
-    .stat small { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+    .stat small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
     .stat strong { font-size: 25px; }
 
     .toolbar {
@@ -114,7 +119,10 @@
 
     #studentList { display: grid; gap: 13px; }
 
-    .student-card { padding: 16px; min-width: 0; }
+    .student-card {
+      padding: 16px;
+      min-width: 0;
+    }
 
     .student-heading {
       display: flex;
@@ -178,11 +186,9 @@
     }
 
     button:disabled { opacity: .55; cursor: not-allowed; }
-
     .save-btn { color: white; background: var(--primary); }
     .delete-btn { color: var(--danger); background: #fff0f0; }
     .attendance-btn { color: white; background: #243b66; }
-    .secondary-btn { color: var(--text); background: #edf1f7; }
 
     .attendance-panel {
       margin-top: 14px;
@@ -190,8 +196,53 @@
     }
 
     .attendance-panel h4 { margin: 0 0 12px; }
-    .attendance-fields { display: grid; gap: 10px; }
-    .attendance-message { font-size: 12px; color: var(--muted); margin-top: 9px; line-height: 1.5; }
+
+    .attendance-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .attendance-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin: 12px 0;
+    }
+
+    .attendance-stat {
+      background: #f5f8fc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px;
+      min-width: 0;
+    }
+
+    .attendance-stat small {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .attendance-stat strong { font-size: 20px; }
+
+    .attendance-percentage {
+      margin-top: 10px;
+      background: #e8f6ef;
+      color: #176b4d;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .attendance-message {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 9px;
+      line-height: 1.5;
+    }
 
     .pagination {
       display: flex;
@@ -210,7 +261,12 @@
       border: 1px solid var(--border);
     }
 
-    .page-btn.active { color: white; background: var(--navy); border-color: var(--navy); }
+    .page-btn.active {
+      color: white;
+      background: var(--navy);
+      border-color: var(--navy);
+    }
+
     .page-btn:disabled { opacity: .35; }
 
     .message {
@@ -238,6 +294,7 @@
       .toolbar { grid-template-columns: minmax(0, 1fr) 220px; }
       .field-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .attendance-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .attendance-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -310,7 +367,6 @@
   } from
     "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // Replace the API key with the same value used by your existing site.
   const firebaseConfig = {
     apiKey: "PASTE_YOUR_EXISTING_FIREBASE_API_KEY",
     authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -322,20 +378,25 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
   const PAGE_SIZE = 10;
 
-  // Assumed attendance schema:
-  // attendance/{studentId_YYYY-MM-DD}
-  // { studentId, date, status, updatedAt }
-  //
-  // Verify your existing attendance schema before using this feature.
+  /*
+    ATTENDANCE SCHEMA ASSUMED BY THIS PAGE:
+    Collection: attendance
+    Document ID: studentId_YYYY-MM-DD
+    Fields: studentId, studentName, date, status, updatedAt
+
+    Existing attendance records in another format need an adapter.
+  */
 
   let students = [];
+  let attendanceRecords = [];
   let currentPage = 1;
   let unsubscribeStudents = null;
+  let unsubscribeAttendance = null;
   let loading = true;
   let loadError = "";
+  let attendanceError = "";
 
   const listEl = document.getElementById("studentList");
   const statusEl = document.getElementById("statusMessage");
@@ -396,6 +457,26 @@
 
   function getAttendanceDocId(studentId, date) {
     return `${studentId}_${date}`;
+  }
+
+  function getAttendanceSummary(studentId) {
+    const records = attendanceRecords.filter(record =>
+      record.studentId === studentId &&
+      ["Present", "Absent", "Leave"].includes(record.status)
+    );
+
+    const present = records.filter(r => r.status === "Present").length;
+    const absent = records.filter(r => r.status === "Absent").length;
+    const leave = records.filter(r => r.status === "Leave").length;
+    const total = present + absent + leave;
+
+    // Percentage uses Present / all recorded attendance statuses.
+    // Leave is included in the denominator.
+    const percentage = total > 0
+      ? Math.round((present / total) * 100)
+      : 0;
+
+    return { present, absent, leave, total, percentage };
   }
 
   function getFilteredStudents() {
@@ -488,6 +569,7 @@
       const id = escapeHTML(student.id);
       const name = escapeHTML(getDisplayName(student));
       const phone = escapeHTML(getPhone(student));
+      const attendance = getAttendanceSummary(student.id);
 
       return `
         <article class="student-card" data-student-card="${id}">
@@ -520,6 +602,36 @@
             </div>
           </div>
 
+          <div class="attendance-panel">
+            <h4>Attendance Summary</h4>
+            <div class="attendance-summary">
+              <div class="attendance-stat">
+                <small>Present</small>
+                <strong>${attendance.present}</strong>
+              </div>
+              <div class="attendance-stat">
+                <small>Absent</small>
+                <strong>${attendance.absent}</strong>
+              </div>
+              <div class="attendance-stat">
+                <small>Leave</small>
+                <strong>${attendance.leave}</strong>
+              </div>
+              <div class="attendance-stat">
+                <small>Total Recorded</small>
+                <strong>${attendance.total}</strong>
+              </div>
+            </div>
+            <div class="attendance-percentage">
+              Attendance Percentage: ${attendance.percentage}%
+            </div>
+            ${attendanceError
+              ? `<div class="attendance-message">Attendance could not be loaded. Verify the collection and Firestore permissions.</div>`
+              : attendance.total === 0
+                ? `<div class="attendance-message">No attendance records found for this student in the expected format.</div>`
+                : ""}
+          </div>
+
           <div class="actions">
             <button class="save-btn" type="button"
               data-action="save" data-id="${id}">Save Details</button>
@@ -533,8 +645,7 @@
           </div>
 
           <section class="attendance-panel hidden" id="attendance-${id}">
-            <h4>Attendance Editor</h4>
-
+            <h4>Edit Daily Attendance</h4>
             <div class="attendance-fields">
               <div class="field">
                 <label for="att-date-${id}">Attendance Date</label>
@@ -543,7 +654,7 @@
               </div>
 
               <div class="field">
-                <label for="att-status-${id}">Attendance Status</label>
+                <label for="att-status-${id}">Status</label>
                 <select id="att-status-${id}">
                   <option value="Present">Present</option>
                   <option value="Absent">Absent</option>
@@ -562,9 +673,7 @@
             </div>
 
             <div class="attendance-message" id="att-msg-${id}">
-              Select a date to load its saved attendance status.
-              Saving will write to the attendance collection using the
-              assumed document format described in the code.
+              Choose a date to load its saved attendance.
             </div>
           </section>
         </article>
@@ -657,11 +766,12 @@
     const student = students.find(item => item.id === id);
 
     if (!student) {
-      alert("Student record not found. Please refresh the page.");
+      alert("Student record not found. Refresh the page.");
       return;
     }
 
     const actualName = getStudentName(student);
+
     if (!confirm(
       `Delete "${getDisplayName(student)}" from students?\n\n` +
       "Related attendance and payment records will not be deleted."
@@ -698,6 +808,7 @@
     if (!dateInput || !statusInput || !message) return;
 
     const date = dateInput.value;
+
     if (!date) {
       message.textContent = "Please select a date.";
       return;
@@ -706,32 +817,32 @@
     message.textContent = "Loading saved attendance...";
 
     try {
-      const attendanceRef = doc(
+      const ref = doc(
         db, "attendance", getAttendanceDocId(studentId, date)
       );
-      const attendanceSnap = await getDoc(attendanceRef);
 
-      if (attendanceSnap.exists()) {
-        const saved = attendanceSnap.data();
+      const snapshot = await getDoc(ref);
 
-        if (["Present", "Absent", "Leave"].includes(saved.status)) {
-          statusInput.value = saved.status;
-        } else {
+      if (snapshot.exists()) {
+        const saved = snapshot.data();
+
+        if (!["Present", "Absent", "Leave"].includes(saved.status)) {
           message.textContent =
-            "A record exists but its status is not recognized. Check your existing attendance schema.";
+            "Existing status is not recognized. Verify your attendance schema.";
           return;
         }
 
+        statusInput.value = saved.status;
         message.textContent = `Saved status for ${date}: ${saved.status}.`;
       } else {
         statusInput.value = "Present";
         message.textContent =
-          `No record found for ${date}. Saving creates a new attendance record.`;
+          `No record found for ${date}. Saving creates a new record.`;
       }
     } catch (error) {
       console.error("Attendance read failed:", error);
       message.textContent =
-        "Could not read attendance. Check Firestore permissions and document format.";
+        "Could not read attendance. Check Firestore permissions and schema.";
     }
   }
 
@@ -744,14 +855,13 @@
 
     const date = dateInput.value;
     const status = statusInput.value;
-    const today = getLocalDate();
 
     if (!date) {
       alert("Please select an attendance date.");
       return;
     }
 
-    if (date > today) {
+    if (date > getLocalDate()) {
       alert("Future attendance dates are not allowed.");
       return;
     }
@@ -762,6 +872,7 @@
     }
 
     const student = students.find(item => item.id === studentId);
+
     if (!student) {
       alert("Student record not found. Refresh and try again.");
       return;
@@ -778,11 +889,11 @@
     message.textContent = "Saving attendance...";
 
     try {
-      const attendanceRef = doc(
+      const ref = doc(
         db, "attendance", getAttendanceDocId(studentId, date)
       );
 
-      await setDoc(attendanceRef, {
+      await setDoc(ref, {
         studentId,
         studentName: getDisplayName(student),
         date,
@@ -795,8 +906,8 @@
     } catch (error) {
       console.error("Attendance save failed:", error);
       message.textContent =
-        "Attendance could not be saved. Check Firestore permissions and schema.";
-      alert("Could not save attendance. Check your Firestore security rules.");
+        "Attendance could not be saved. Check permissions and schema.";
+      alert("Could not save attendance. Check Firestore security rules.");
     } finally {
       button.disabled = false;
       button.textContent = oldText;
@@ -823,13 +934,13 @@
         const panel = document.getElementById(`attendance-${id}`);
         if (!panel) break;
 
-        const isHidden = panel.classList.toggle("hidden");
-        button.textContent = isHidden
-          ? "Edit Attendance"
-          : "Hide Attendance";
-        button.setAttribute("aria-expanded", String(!isHidden));
+        const opening = panel.classList.contains("hidden");
+        panel.classList.toggle("hidden");
 
-        if (!isHidden) await loadAttendanceForm(id);
+        button.textContent = opening ? "Hide Attendance" : "Edit Attendance";
+        button.setAttribute("aria-expanded", String(opening));
+
+        if (opening) await loadAttendanceForm(id);
         break;
       }
 
@@ -883,6 +994,27 @@
         loading = false;
         loadError =
           "Unable to load students. Check your connection and Firestore security rules.";
+        renderStudents();
+      }
+    );
+
+    if (unsubscribeAttendance) unsubscribeAttendance();
+
+    unsubscribeAttendance = onSnapshot(
+      collection(db, "attendance"),
+      snapshot => {
+        attendanceRecords = snapshot.docs.map(item => ({
+          ...item.data(),
+          id: item.id
+        }));
+
+        attendanceError = "";
+        renderStudents();
+      },
+      error => {
+        console.error("Attendance loading failed:", error);
+        attendanceRecords = [];
+        attendanceError = "Attendance unavailable";
         renderStudents();
       }
     );
