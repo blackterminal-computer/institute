@@ -4875,7 +4875,63 @@ body:before{
 
 </div>
 
+<!-- FLOATING REFRESH BUTTON -->
+<button
+    type="button"
+    id="floatingRefresh"
+    class="floating-refresh"
+    aria-label="Refresh dashboard data"
+    title="Refresh Dashboard"
+>
+    <i class="ri-refresh-line"></i>
+</button>
 
+<style>
+.floating-refresh {
+    position: fixed;
+    right: 18px;
+    bottom: 140px;
+    z-index: 9991;
+
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #ffffff;
+    background: linear-gradient(135deg, #4d7cff, #a855f7);
+    border: 1px solid rgba(255,255,255,.2);
+
+    box-shadow: 0 8px 25px rgba(77,124,255,.3);
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.floating-refresh:disabled {
+    opacity: .7;
+    cursor: wait;
+}
+
+.floating-refresh.loading i {
+    animation: refreshSpin .8s linear infinite;
+}
+
+@keyframes refreshSpin {
+    to { transform: rotate(360deg); }
+}
+
+@media(max-width:600px) {
+    .floating-refresh {
+        right: 13px;
+        bottom: 132px;
+        width: 45px;
+        height: 45px;
+    }
+}
+</style>
 <!-- =====================================================
      FLOATING ROADMAP
 ===================================================== -->
@@ -9051,6 +9107,41 @@ try{
 }catch(error){}
 
 
+
+
+
+
+
+// FLOATING DASHBOARD REFRESH
+const floatingRefresh = document.getElementById("floatingRefresh");
+
+floatingRefresh.addEventListener("click", async () => {
+    if (floatingRefresh.disabled) return;
+
+    floatingRefresh.disabled = true;
+    floatingRefresh.classList.add("loading");
+
+    try {
+        // Reload latest student details, XP and rank.
+        const freshUser = await getUserFromServer();
+
+        if (freshUser && Object.keys(freshUser).length) {
+            renderStudent(freshUser);
+            updateStudentCache(freshUser);
+        }
+
+        // Reload attendance, students, faculty and ratings.
+        await backgroundRefresh();
+
+        showToast("Dashboard refreshed successfully!");
+    } catch (error) {
+        console.error("Dashboard refresh failed:", error);
+        showToast("Refresh failed. Please try again.");
+    } finally {
+        floatingRefresh.disabled = false;
+        floatingRefresh.classList.remove("loading");
+    }
+});
 </script>
 
 
