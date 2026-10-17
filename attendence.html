@@ -6,11 +6,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#020617">
 <title>BT | Smart Attendance</title>
+
 <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-:root{--primary:#6366f1;--purple:#8b5cf6;--cyan:#06b6d4;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--bg:#020617;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.085)}
+:root {
+ --primary:#6366f1;--purple:#8b5cf6;--cyan:#06b6d4;
+ --green:#22c55e;--red:#ef4444;--orange:#f59e0b;
+ --bg:#020617;--text:#f8fafc;--muted:#94a3b8;
+ --border:rgba(255,255,255,.085)
+}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
 body{min-height:100vh;padding:12px;background:radial-gradient(circle at 15% 0%,#6366f133,transparent 32%),radial-gradient(circle at 100% 70%,#06b6d41c,transparent 30%),var(--bg);color:var(--text)}
 button{font:inherit;cursor:pointer}
@@ -47,6 +53,23 @@ h1{font-size:23px;font-weight:800}
 .reward{text-align:center;padding:10px 4px;border:1px solid #ffffff12;border-radius:12px;opacity:.45}
 .reward.unlocked{opacity:1;background:#f59e0b0d;border-color:#f59e0b55}
 .reward i{font-size:22px;color:#fbbf24}.reward strong,.reward span{display:block;font-size:8px;margin-top:5px}.reward span{color:var(--muted)}
+
+/* COLLAPSIBLE ATTENDANCE HISTORY */
+.history-card{padding:0;overflow:hidden}
+.history-toggle{width:100%;min-height:78px;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;color:var(--text);background:transparent;border:0;cursor:pointer}
+.history-toggle:focus-visible{outline:2px solid #818cf8;outline-offset:-3px;border-radius:20px}
+.history-heading{display:flex;align-items:center;gap:12px;min-width:0}
+.history-icon{width:43px;height:43px;flex-shrink:0;display:grid;place-items:center;border-radius:13px;background:#6366f126;color:#a5b4fc;font-size:22px}
+.history-title{display:block;font-size:12px;font-weight:800}
+.history-subtitle{display:block;margin-top:5px;color:var(--muted);font-size:9px;font-weight:500}
+.history-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.history-count{color:#a5b4fc;font-size:9px;font-weight:800}
+.history-chevron{font-size:22px;color:#94a3b8;transition:transform .25s ease}
+.history-toggle[aria-expanded="true"] .history-chevron{transform:rotate(180deg)}
+.history-content{padding:0 15px 16px;animation:historyReveal .2s ease}
+.history-content[hidden]{display:none!important}
+@keyframes historyReveal{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+
 .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
 .month-label{font-size:12px;font-weight:800;text-align:center}
 .arrow{width:35px;height:35px;border:1px solid #ffffff15;background:#ffffff08;border-radius:10px;color:white}
@@ -96,14 +119,18 @@ h1{font-size:23px;font-weight:800}
 .done{background:#22c55e;color:#052e16}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid #ffffff55;border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:380px){body{padding:8px}.hero{padding:18px 12px}h1{font-size:21px}.card{padding:13px}.stat-num{font-size:16px}.calendar{gap:4px}.day{border-radius:7px}}
+@media(max-width:380px){body{padding:8px}.hero{padding:18px 12px}h1{font-size:21px}.card{padding:13px}.history-card{padding:0}.history-toggle{padding:13px}.history-content{padding:0 13px 13px}.stat-num{font-size:16px}.calendar{gap:4px}.day{border-radius:7px}}
 </style>
 </head>
 
 <body>
 <div class="container">
+
 <header class="header">
- <div class="brand"><div class="logo"><i class="ri-shield-check-fill"></i></div><div><div class="brand-name">BlackTerminal</div><div class="brand-sub">STUDENT ATTENDANCE</div></div></div>
+ <div class="brand">
+  <div class="logo"><i class="ri-shield-check-fill"></i></div>
+  <div><div class="brand-name">BlackTerminal</div><div class="brand-sub">STUDENT ATTENDANCE</div></div>
+ </div>
  <div class="live">● LIVE</div>
 </header>
 
@@ -111,19 +138,25 @@ h1{font-size:23px;font-weight:800}
  <div class="location"><i class="ri-map-pin-user-fill"></i></div>
  <h1>Smart Attendance</h1>
  <p class="desc">Your monthly fee and location are verified before recording attendance.</p>
+
  <div class="info-grid">
   <div class="info"><div class="label">STUDENT</div><div id="student-display" class="value">Checking...</div></div>
   <div class="info"><div class="label">LAST ATTENDANCE</div><div id="last-attendance-date" class="value">Checking...</div></div>
  </div>
+
  <div id="payment-card" class="payment">
   <div id="payment-icon" class="payment-icon"><i class="ri-loader-4-line"></i></div>
   <div><div id="payment-title" class="payment-title">Checking monthly fee...</div><div id="payment-subtitle" class="payment-sub">Verifying payment.</div></div>
  </div>
+
  <div class="policy"><strong>Attendance Policy</strong><br>Maintain at least <strong>70% attendance</strong>. Attendance below 70% may result in a <strong>₹500 fine</strong>.</div>
 </section>
 
 <section class="card">
- <div class="section-head"><div><div class="section-title">🏆 Your Performance</div><div class="section-sub">Attendance streak and achievements</div></div><span id="reward-level" class="badge">Starter</span></div>
+ <div class="section-head">
+  <div><div class="section-title">🏆 Your Performance</div><div class="section-sub">Attendance streak and achievements</div></div>
+  <span id="reward-level" class="badge">Starter</span>
+ </div>
  <div class="stats">
   <div class="stat"><i class="ri-calendar-check-line stat-icon"></i><div id="stat-month" class="stat-num">0</div><div class="stat-label">Present this month</div></div>
   <div class="stat"><i class="ri-fire-line stat-icon"></i><div id="stat-streak" class="stat-num">0</div><div class="stat-label">Day streak</div></div>
@@ -138,17 +171,54 @@ h1{font-size:23px;font-weight:800}
  </div>
 </section>
 
-<section class="card">
- <div class="section-head"><div><div class="section-title">📅 Attendance History</div><div class="section-sub">Monthly attendance calendar</div></div><button id="refresh-history" class="mini-btn">↻ Refresh</button></div>
- <div class="calendar-toolbar">
-  <button id="prev-month" class="arrow" aria-label="Previous month"><i class="ri-arrow-left-s-line"></i></button>
-  <div id="calendar-month" class="month-label">Loading...</div>
-  <button id="next-month" class="arrow" aria-label="Next month"><i class="ri-arrow-right-s-line"></i></button>
+<!-- COLLAPSIBLE ATTENDANCE HISTORY -->
+<section class="card history-card" id="attendance-history-card">
+
+ <button
+  type="button"
+  class="history-toggle"
+  id="history-toggle"
+  aria-expanded="false"
+  aria-controls="history-content">
+
+  <span class="history-heading">
+   <span class="history-icon"><i class="ri-calendar-check-line"></i></span>
+   <span>
+    <span class="history-title">Attendance History</span>
+    <span class="history-subtitle">View monthly records &amp; calendar</span>
+   </span>
+  </span>
+
+  <span class="history-right">
+   <span class="history-count" id="history-count">VIEW</span>
+   <i class="ri-arrow-down-s-line history-chevron"></i>
+  </span>
+ </button>
+
+ <div id="history-content" class="history-content" hidden>
+
+  <div class="section-head">
+   <div><div class="section-title">📅 Monthly Calendar</div><div class="section-sub">Your saved attendance records</div></div>
+   <button id="refresh-history" class="mini-btn" type="button">↻ Refresh</button>
+  </div>
+
+  <div class="calendar-toolbar">
+   <button id="prev-month" class="arrow" type="button" aria-label="Previous month"><i class="ri-arrow-left-s-line"></i></button>
+   <div id="calendar-month" class="month-label">Loading...</div>
+   <button id="next-month" class="arrow" type="button" aria-label="Next month"><i class="ri-arrow-right-s-line"></i></button>
+  </div>
+
+  <div id="calendar-grid" class="calendar"></div>
+
+  <div class="legend">
+   <span><i class="dot" style="background:#22c55e"></i>Present</span>
+   <span><i class="dot" style="background:#818cf8"></i>Today</span>
+   <span><i class="dot" style="background:#475569"></i>No record</span>
+  </div>
+
+  <div class="summary"><span>Present this month</span><strong id="calendar-month-total">0 days</strong></div>
+  <div id="history-list" class="history-list"><div class="empty">Open or refresh to load attendance history.</div></div>
  </div>
- <div id="calendar-grid" class="calendar"></div>
- <div class="legend"><span><i class="dot" style="background:#22c55e"></i>Present</span><span><i class="dot" style="background:#818cf8"></i>Today</span><span><i class="dot" style="background:#475569"></i>No record</span></div>
- <div class="summary"><span>Present this month</span><strong id="calendar-month-total">0 days</strong></div>
- <div id="history-list" class="history-list"><div class="empty">Loading attendance history...</div></div>
 </section>
 
 <section class="card action">
@@ -157,21 +227,29 @@ h1{font-size:23px;font-weight:800}
   <div class="gps"><div class="gps-label">📍 Distance from center</div><div id="gps-distance" class="gps-value">Not verified</div></div>
   <div class="gps"><div class="gps-label">◎ GPS accuracy</div><div id="gps-accuracy" class="gps-value">Not checked</div></div>
  </div>
+
  <div class="buttons">
-  <button id="checkin-btn" class="primary" disabled>MARK ATTENDANCE</button>
-  <button id="retry-gps" class="secondary">📍 Retry GPS</button>
+  <button id="checkin-btn" class="primary" type="button" disabled>MARK ATTENDANCE</button>
+  <button id="retry-gps" class="secondary" type="button">📍 Retry GPS</button>
  </div>
+
  <div class="request">
   <div><div class="request-title">Unable to mark attendance?</div><div class="request-sub">Send a request to the administrator</div></div>
-  <button id="open-request" class="request-btn">REQUEST</button>
+  <button id="open-request" class="request-btn" type="button">REQUEST</button>
  </div>
 </section>
+
 <a href="index.html" class="home"><i class="ri-arrow-left-line"></i> Back to Dashboard</a>
 </div>
 
+<!-- ATTENDANCE REQUEST MODAL -->
 <div id="request-overlay" class="overlay">
  <div class="modal">
-  <div class="modal-head"><div><div class="modal-title">Attendance Request</div><div class="modal-sub">Tell us what went wrong</div></div><button id="close-request" class="close"><i class="ri-close-line"></i></button></div>
+  <div class="modal-head">
+   <div><div class="modal-title">Attendance Request</div><div class="modal-sub">Tell us what went wrong</div></div>
+   <button id="close-request" class="close" type="button"><i class="ri-close-line"></i></button>
+  </div>
+
   <div class="reason-grid">
    <div class="reason"><input type="radio" name="attendanceReason" id="reasonGps" value="GPS / Location Error"><label for="reasonGps">📍 GPS / Location Error</label></div>
    <div class="reason"><input type="radio" name="attendanceReason" id="reasonInternet" value="Internet / Connection Error"><label for="reasonInternet">📶 Internet Error</label></div>
@@ -179,14 +257,22 @@ h1{font-size:23px;font-weight:800}
    <div class="reason"><input type="radio" name="attendanceReason" id="reasonUnknown" value="I Don't Know the Reason"><label for="reasonUnknown">❓ Don't Know</label></div>
    <div class="reason"><input type="radio" name="attendanceReason" id="reasonOther" value="Other"><label for="reasonOther">✏️ Other Reason</label></div>
   </div>
+
   <textarea id="customReason" class="custom" maxlength="200" placeholder="Explain your problem..."></textarea>
-  <button id="sendRequestBtn" class="send">SEND ATTENDANCE REQUEST</button>
+  <button id="sendRequestBtn" class="send" type="button">SEND ATTENDANCE REQUEST</button>
   <div class="note">Your request will be reviewed by the administrator.</div>
  </div>
 </div>
 
+<!-- SUCCESS MODAL -->
 <div id="success-overlay" class="overlay success-overlay">
- <div class="modal success-card"><div class="success-icon"><i class="ri-checkbox-circle-fill"></i></div><h3 id="success-title">Success</h3><p id="success-message"></p><div id="success-date" class="section-sub" style="margin-top:12px"></div><button id="success-close" class="done">DONE</button></div>
+ <div class="modal success-card">
+  <div class="success-icon"><i class="ri-checkbox-circle-fill"></i></div>
+  <h3 id="success-title">Success</h3>
+  <p id="success-message"></p>
+  <div id="success-date" class="section-sub" style="margin-top:12px"></div>
+  <button id="success-close" class="done" type="button">DONE</button>
+ </div>
 </div>
 
 <script type="module">
@@ -195,7 +281,7 @@ import {
  getFirestore,doc,getDoc,setDoc,updateDoc,serverTimestamp,onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* Existing Firebase project: preserved */
+/* Existing Firebase configuration */
 const firebaseConfig={
  apiKey:"AIzaSyCEYfwfZv2CkpgJ8Q9vNwRlRlXA2w_WpI",
  authDomain:"black-terminal-f2c91.firebaseapp.com",
@@ -204,6 +290,7 @@ const firebaseConfig={
  messagingSenderId:"552489994197",
  appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
+
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
@@ -251,7 +338,6 @@ let paymentUnsubscribe=null,historyLoaded=false;
 let selectedMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 let historyRecords=new Map();
 let loadedMonths=new Set();
-let historyError="";
 
 function setButton(text,disabled=true){
  $("checkin-btn").disabled=disabled;
@@ -268,8 +354,7 @@ function updateAccess(){
 }
 
 function showPayment(paid){
- paymentLoaded=true;
- paymentPaid=paid;
+ paymentLoaded=true;paymentPaid=paid;
  $("payment-card").classList.toggle("paid",paid);
  $("payment-icon").innerHTML=paid?'<i class="ri-checkbox-circle-fill"></i>':'<i class="ri-lock-2-line"></i>';
  $("payment-title").textContent=paid?`Fee Paid • ${currentMonth}`:`Fee Pending • ${currentMonth}`;
@@ -279,8 +364,7 @@ function showPayment(paid){
 
 async function checkPayment(){
  if(!validStudent)return;
- paymentLoaded=false;
- updateAccess();
+ paymentLoaded=false;updateAccess();
  try{
   const snap=await getDoc(doc(db,"payments",student,"months",currentMonth));
   showPayment(snap.exists()&&String(snap.data()?.status||"").toLowerCase()==="paid");
@@ -293,7 +377,6 @@ async function checkPayment(){
   updateAccess();
  }
 }
-
 function listenPayment(){
  if(paymentUnsubscribe)paymentUnsubscribe();
  if(!validStudent)return;
@@ -322,15 +405,13 @@ async function loadLastAttendance(){
   $("last-attendance-date").textContent="Unable to load";
  }
 }
-
 async function checkTodayAttendance(){
  if(!validStudent)return false;
  try{
   const snap=await getDoc(doc(db,"attendance",`${student}_${today()}`));
   attendanceAlreadyMarked=snap.exists();
   if(attendanceAlreadyMarked)setStatus("Today's attendance is already recorded.","#4ade80");
-  updateAccess();
-  return attendanceAlreadyMarked;
+  updateAccess();return attendanceAlreadyMarked;
  }catch(e){
   console.error("Today's attendance:",e.code,e.message);
   setStatus("Could not verify today's attendance.","#fbbf24");
@@ -344,7 +425,6 @@ function distanceKm(a,b,c,d){
  const q=Math.sin(x/2)**2+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(y/2)**2;
  return 6371*2*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));
 }
-
 function resetGPS(msg){
  locationVerified=false;gpsPosition=null;
  $("gps-distance").textContent="Not verified";
@@ -353,14 +433,12 @@ function resetGPS(msg){
  updateAccess();
 }
 function verifyPosition(pos){
- const c=pos.coords;
- const accuracy=Number(c.accuracy);
+ const c=pos.coords,accuracy=Number(c.accuracy);
  const distance=distanceKm(c.latitude,c.longitude,INST_LAT,INST_LON);
  $("gps-distance").textContent=`${Math.round(distance*1000)} m`;
  $("gps-accuracy").textContent=`±${Math.round(accuracy)} m`;
  if(!Number.isFinite(accuracy)||accuracy>MAX_GPS_ACCURACY){
-  resetGPS(`GPS accuracy is low (±${Math.round(accuracy)} m). Retry outdoors.`);
-  return;
+  resetGPS(`GPS accuracy is low (±${Math.round(accuracy)} m). Retry outdoors.`);return;
  }
  if(distance>ALLOWED_RANGE){
   locationVerified=false;gpsPosition=null;
@@ -377,8 +455,7 @@ function retryGPS(){
  if(!navigator.geolocation){resetGPS("GPS is not supported by this browser.");return;}
  if(!window.isSecureContext){resetGPS("GPS requires HTTPS.");return;}
  if(gpsBusy)return;
- gpsBusy=true;
- resetGPS("Getting accurate GPS location...");
+ gpsBusy=true;resetGPS("Getting accurate GPS location...");
  $("retry-gps").disabled=true;
  $("retry-gps").innerHTML='<span class="spinner"></span>';
  navigator.geolocation.getCurrentPosition(pos=>{
@@ -391,28 +468,16 @@ function retryGPS(){
  },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 }
 
-/*
- * FIX: No collection-wide query.
- * Read existing deterministic document IDs:
- * attendance/{studentName_YYYY-MM-DD}
- *
- * This avoids requiring permission to query the entire collection.
- */
+/* Read existing attendance document IDs individually. */
 async function getAttendanceForDate(key){
  if(!validStudent||!parseKey(key))return null;
- const cached=historyRecords.get(key);
- if(cached)return cached;
- try{
-  const snap=await getDoc(doc(db,"attendance",`${student}_${key}`));
-  if(!snap.exists())return null;
-  const data=snap.data()||{};
-  const record={...data,id:snap.id,dateKey:key};
-  historyRecords.set(key,record);
-  return record;
- }catch(e){
-  console.error("History document read:",key,e.code,e.message);
-  throw e;
- }
+ if(historyRecords.has(key))return historyRecords.get(key);
+ const snap=await getDoc(doc(db,"attendance",`${student}_${key}`));
+ if(!snap.exists())return null;
+ const data=snap.data()||{};
+ const record={...data,id:snap.id,dateKey:key};
+ historyRecords.set(key,record);
+ return record;
 }
 
 async function loadHistory(){
@@ -422,7 +487,6 @@ async function loadHistory(){
  }
  $("refresh-history").disabled=true;
  $("history-list").innerHTML='<div class="empty"><i class="ri-loader-4-line"></i>Loading saved records...</div>';
-
  try{
   const year=selectedMonth.getFullYear(),month=selectedMonth.getMonth();
   const days=new Date(year,month+1,0).getDate();
@@ -430,34 +494,23 @@ async function loadHistory(){
   for(let day=1;day<=days;day++){
    keys.push(`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`);
   }
-
-  // Read each existing ID individually, in small batches.
   for(let i=0;i<keys.length;i+=7){
    await Promise.all(keys.slice(i,i+7).map(getAttendanceForDate));
   }
 
-  // Load the most recent 30 days for the streak display.
-  const recentKeys=[];
-  const d=new Date();
-  for(let i=0;i<30;i++){
-   recentKeys.push(dateKey(d));
-   d.setDate(d.getDate()-1);
-  }
+  const recentKeys=[],d=new Date();
+  for(let i=0;i<30;i++){recentKeys.push(dateKey(d));d.setDate(d.getDate()-1);}
   for(let i=0;i<recentKeys.length;i+=7){
    await Promise.all(recentKeys.slice(i,i+7).map(getAttendanceForDate));
   }
 
   loadedMonths.add(monthKey(selectedMonth));
   historyLoaded=true;
-  historyError="";
   renderCalendar();
   renderRewards();
  }catch(e){
-  historyLoaded=false;
-  historyError=e.code||e.message||"Unknown error";
-  $("history-list").innerHTML=
-   `<div class="empty"><i class="ri-error-warning-line"></i>Could not read attendance documents.<br>Error: ${safe(historyError)}<br>Check Firestore rules and document IDs.</div>`;
-  console.error("Attendance history failed:",e);
+  console.error("Attendance history failed:",e.code,e.message);
+  $("history-list").innerHTML=`<div class="empty"><i class="ri-error-warning-line"></i>Could not read attendance records.<br>${safe(e.code||e.message||"Check Firestore permissions and document IDs.")}</div>`;
  }finally{
   $("refresh-history").disabled=false;
  }
@@ -465,54 +518,45 @@ async function loadHistory(){
 
 function monthRecords(d){
  const prefix=monthKey(d)+"-";
- return [...historyRecords.values()]
-  .filter(r=>r.dateKey.startsWith(prefix)&&(r.studentName===student||r.userName===student))
-  .sort((a,b)=>b.dateKey.localeCompare(a.dateKey));
+ return [...historyRecords.values()].filter(r=>
+  r.dateKey.startsWith(prefix)&&(r.studentName===student||r.userName===student)
+ ).sort((a,b)=>b.dateKey.localeCompare(a.dateKey));
 }
-
 function renderCalendar(){
- const grid=$("calendar-grid");
- const y=selectedMonth.getFullYear(),m=selectedMonth.getMonth();
+ const grid=$("calendar-grid"),y=selectedMonth.getFullYear(),m=selectedMonth.getMonth();
  $("calendar-month").textContent=monthName(selectedMonth);
  $("next-month").disabled=monthKey(selectedMonth)>=monthKey(new Date());
-
- const weekdays=["S","M","T","W","T","F","S"];
- let html=weekdays.map(x=>`<div class="weekday">${x}</div>`).join("");
+ let html=["S","M","T","W","T","F","S"].map(x=>`<div class="weekday">${x}</div>`).join("");
  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
- const present=new Set(monthRecords(selectedMonth).map(r=>r.dateKey));
- const now=today();
+ const present=new Set(monthRecords(selectedMonth).map(r=>r.dateKey)),now=today();
  for(let i=0;i<first;i++)html+='<div class="day empty"></div>';
  for(let day=1;day<=days;day++){
   const key=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-  const isPresent=present.has(key),isToday=key===now,isFuture=key>now;
-  const cls=["day",isPresent?"present":"",isToday?"today":"",isFuture?"future":""].filter(Boolean).join(" ");
-  html+=`<div class="${cls}" title="${key}${isPresent?" - Present":""}"><span>${day}</span><span class="mark">${isPresent?"✓":isToday?"•":""}</span></div>`;
+  const p=present.has(key),t=key===now,f=key>now;
+  const cls=["day",p?"present":"",t?"today":"",f?"future":""].filter(Boolean).join(" ");
+  html+=`<div class="${cls}" title="${key}${p?" - Present":""}"><span>${day}</span><span class="mark">${p?"✓":t?"•":""}</span></div>`;
  }
  grid.innerHTML=html;
  const records=monthRecords(selectedMonth);
  $("calendar-month-total").textContent=`${records.length} day${records.length===1?"":"s"}`;
+ $("history-count").textContent=records.length?`${records.length} DAYS`:"VIEW";
  if(!historyLoaded)return;
  $("history-list").innerHTML=records.length?records.map(r=>{
-  let time="Attendance recorded";
-  if(r.timestamp&&typeof r.timestamp.toDate==="function")time=r.timestamp.toDate().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+  const time=r.timestamp&&typeof r.timestamp.toDate==="function"
+   ?r.timestamp.toDate().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})
+   :"Attendance recorded";
   return `<div class="history-row"><div><div class="history-date">${safe(formatDate(r.dateKey))}</div><div class="history-meta">${safe(time)}</div></div><span class="badge">✓ PRESENT</span></div>`;
  }).join(""):'<div class="empty"><i class="ri-calendar-line"></i>No attendance records found for this month.</div>';
 }
-
 function countStreak(){
- let d=parseKey(today());
- if(!d)return 0;
- const has=k=>historyRecords.has(k);
- if(!has(today()))d.setDate(d.getDate()-1);
+ let d=parseKey(today());if(!d)return 0;
+ if(!historyRecords.has(today()))d.setDate(d.getDate()-1);
  let count=0;
- while(count<30&&has(dateKey(d))){
-  count++;d.setDate(d.getDate()-1);
- }
+ while(count<30&&historyRecords.has(dateKey(d))){count++;d.setDate(d.getDate()-1);}
  return count;
 }
 function renderRewards(){
- const records=monthRecords(new Date());
- const streak=countStreak();
+ const records=monthRecords(new Date()),streak=countStreak();
  $("stat-month").textContent=records.length;
  $("stat-streak").textContent=streak;
  $("stat-total").textContent=historyRecords.size;
@@ -538,15 +582,12 @@ async function markAttendance(){
   if(!paymentSnap.exists()||String(paymentSnap.data()?.status||"").toLowerCase()!=="paid"){
    showPayment(false);throw new Error("Monthly payment is not marked paid.");
   }
-
   const attendanceRef=doc(db,"attendance",`${student}_${date}`);
-  const existing=await getDoc(attendanceRef);
-  if(existing.exists()){
+  if((await getDoc(attendanceRef)).exists()){
    attendanceAlreadyMarked=true;
    showSuccess("Already Present","Your attendance is already recorded.",date);
    return;
   }
-
   const studentRef=doc(db,"students",student);
   const studentSnap=await getDoc(studentRef);
   const data=studentSnap.exists()?studentSnap.data():{};
@@ -556,24 +597,17 @@ async function markAttendance(){
    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
    if(last&&!isNaN(last.getTime())&&dateKey(last)===dateKey(yesterday))streak=(Number(data.streak)||0)+1;
   }
-
   await setDoc(attendanceRef,{
-   studentName:student,
-   userName:student,
-   date,
-   timestamp:serverTimestamp(),
-   paymentMonth:currentMonth,
-   paymentStatus:"paid"
+   studentName:student,userName:student,date,
+   timestamp:serverTimestamp(),paymentMonth:currentMonth,paymentStatus:"paid"
   });
-
   if(studentSnap.exists())await updateDoc(studentRef,{streak,lastAttendanceDate:date});
-
-  attendanceAlreadyMarked=true;
   historyRecords.delete(date);
+  attendanceAlreadyMarked=true;
   $("last-attendance-date").textContent=formatDate(date);
   showSuccess("Present Successfully!",`${student}, your attendance has been recorded successfully.`,date);
   updateAccess();
-  await loadHistory();
+  if(! $("history-content").hidden)await loadHistory();
  }catch(e){
   console.error("Attendance write:",e.code,e.message);
   alert("Attendance failed: "+(e.message||"Please try again."));
@@ -636,7 +670,18 @@ async function submitRequest(){
  }
 }
 
-/* UI events */
+/* Collapse / expand attendance history */
+$("history-toggle").addEventListener("click",async()=>{
+ const opening=$("history-toggle").getAttribute("aria-expanded")!=="true";
+ $("history-toggle").setAttribute("aria-expanded",String(opening));
+ $("history-content").hidden=!opening;
+ $("history-count").textContent=opening?"CLOSE":(monthRecords(selectedMonth).length?`${monthRecords(selectedMonth).length} DAYS`:"VIEW");
+
+ if(opening&&!loadedMonths.has(monthKey(selectedMonth))){
+  await loadHistory();
+ }
+});
+
 $("checkin-btn").addEventListener("click",markAttendance);
 $("retry-gps").addEventListener("click",retryGPS);
 $("refresh-history").addEventListener("click",loadHistory);
@@ -646,7 +691,9 @@ $("prev-month").addEventListener("click",async()=>{
 });
 $("next-month").addEventListener("click",async()=>{
  const next=new Date(selectedMonth.getFullYear(),selectedMonth.getMonth()+1,1);
- if(monthKey(next)<=monthKey(new Date())){selectedMonth=next;renderCalendar();await loadHistory();}
+ if(monthKey(next)<=monthKey(new Date())){
+  selectedMonth=next;renderCalendar();await loadHistory();
+ }
 });
 $("open-request").addEventListener("click",openRequest);
 $("close-request").addEventListener("click",closeRequest);
@@ -667,12 +714,14 @@ async function init(){
   updateAccess();return;
  }
  $("student-display").textContent=student;
- await Promise.allSettled([loadLastAttendance(),checkTodayAttendance(),checkPayment(),loadHistory()]);
+ await Promise.allSettled([loadLastAttendance(),checkTodayAttendance(),checkPayment()]);
  listenPayment();
  retryGPS();
 }
 init();
-window.addEventListener("pagehide",()=>{if(paymentUnsubscribe){paymentUnsubscribe();paymentUnsubscribe=null;}});
+window.addEventListener("pagehide",()=>{
+ if(paymentUnsubscribe){paymentUnsubscribe();paymentUnsubscribe=null;}
+});
 </script>
 </body>
 </html>
