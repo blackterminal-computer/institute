@@ -321,10 +321,7 @@ button { cursor:pointer; }
   font-weight:700;
 }
 
-.search-input:focus {
-  border-color:rgba(0,242,254,.45);
-}
-
+.search-input:focus { border-color:rgba(0,242,254,.45); }
 .search-input::placeholder { color:#475569; }
 
 .filter-row {
@@ -413,13 +410,8 @@ button { cursor:pointer; }
   background:rgba(255,170,0,.06);
 }
 
-.rank-2-row {
-  border-color:rgba(0,242,254,.3);
-}
-
-.rank-3-row {
-  border-color:rgba(243,85,218,.3);
-}
+.rank-2-row { border-color:rgba(0,242,254,.3); }
+.rank-3-row { border-color:rgba(243,85,218,.3); }
 
 .is-me {
   box-shadow:inset 0 0 0 1px var(--green);
@@ -551,6 +543,7 @@ button { cursor:pointer; }
 }
 
 .empty-state strong { font-size:12px; }
+
 .empty-state span {
   display:block;
   margin-top:5px;
@@ -568,7 +561,7 @@ button { cursor:pointer; }
   to { background-position:-200% 0; }
 }
 
-/* Student profile modal */
+/* Profile modal */
 
 .modal-backdrop {
   position:fixed;
@@ -827,7 +820,7 @@ button { cursor:pointer; }
     <div class="arena-icon"><i class="ri-signal-tower-fill"></i></div>
     <div>
       <strong>RANKING CORE</strong>
-      <small style="display:block;margin-top:3px;color:#64748b;font-size:8px">REAL-TIME XP STANDINGS</small>
+      <small>REAL-TIME XP STANDINGS</small>
     </div>
   </div>
   <div class="sync-status" id="sync-status">FIREBASE SYNC · WAITING</div>
@@ -923,11 +916,80 @@ function getPic(name) {
   return `https://api.dicebear.com/7.x/pixel-art/png?seed=${encodeURIComponent(name || "default")}&size=150`;
 }
 
-function safePhoto(photo, name) {
-  if (typeof photo === "string" && /^https?:\/\//i.test(photo) && !/["'<>\s]/.test(photo)) {
-    return photo;
+/* Read common existing profile-photo field names. */
+function photoFromRecord(player) {
+  const candidates = [
+    player?.photo,
+    player?.photoURL,
+    player?.photoUrl,
+    player?.profilePic,
+    player?.profilePicture,
+    player?.profileImage,
+    player?.profileImageUrl,
+    player?.avatar,
+    player?.avatarUrl,
+    player?.image,
+    player?.imageUrl,
+    player?.picture,
+    player?.pictureUrl,
+    player?.studentPhoto,
+    player?.studentImage,
+    player?.userPhoto,
+    player?.profile?.photo,
+    player?.profile?.photoURL,
+    player?.profile?.photoUrl,
+    player?.profile?.image,
+    player?.profile?.avatar,
+    player?.personal?.photo,
+    player?.personal?.profileImage
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+
+    if (candidate && typeof candidate === "object") {
+      const url =
+        candidate.url ||
+        candidate.src ||
+        candidate.downloadURL ||
+        candidate.downloadUrl;
+
+      if (typeof url === "string" && url.trim()) {
+        return url.trim();
+      }
+    }
   }
+
+  return "";
+}
+
+function safePhoto(photo, name) {
+  if (typeof photo === "string") {
+    const value = photo.trim();
+
+    if (
+      /^https?:\/\//i.test(value) &&
+      !/["<>\s]/.test(value)
+    ) {
+      return value;
+    }
+
+    if (
+      /^data:image\/(png|jpe?g|gif|webp|avif);base64,[a-z0-9+/=]+$/i.test(value)
+    ) {
+      return value;
+    }
+  }
+
   return getPic(name);
+}
+
+/* Avoid repeated image-error loops. */
+function imageFallback(img) {
+  img.onerror = null;
+  img.src = getPic(img.dataset.studentName || "Student");
 }
 
 function escapeHTML(value) {
@@ -952,7 +1014,7 @@ function formatXP(value) {
 function showToast(message) {
   $("toast-root").innerHTML = `<div class="toast">${escapeHTML(message)}</div>`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => $("toast-root").replaceChildren(), 2600);
+  toastTimer = setTimeout(() => $("toast-root").replaceChildren(),2600);
 }
 
 function achievementList(xp) {
@@ -969,7 +1031,7 @@ function achievementList(xp) {
   }));
 }
 
-function earnedBadges(player, rank) {
+function earnedBadges(player,rank) {
   const xp = xpOf(player);
   const badges = [];
 
@@ -990,15 +1052,14 @@ function earnedBadges(player, rank) {
   return badges;
 }
 
-function rankProgress(data, rank) {
-  if (rank <= 1 || !data[rank - 2]) {
+function rankProgress(data,rank) {
+  if (rank <= 1 || !data[rank-2]) {
     return {needed:0,percent:100};
   }
 
-  const current = xpOf(data[rank - 1]);
-  const target = xpOf(data[rank - 2]);
+  const current = xpOf(data[rank-1]);
+  const target = xpOf(data[rank-2]);
   const needed = Math.max(0,target-current+1);
-
   const lower = rank < data.length ? xpOf(data[rank]) : 0;
   const gap = Math.max(1,target-lower);
   const earned = Math.max(0,current-lower);
@@ -1009,28 +1070,31 @@ function rankProgress(data, rank) {
 
 function renderPodium(data) {
   const positions = [
-    {player:data[1],cls:"second",rank:"#2",big:false},
-    {player:data[0],cls:"first",rank:"#1 SERVER KING",big:true},
-    {player:data[2],cls:"third",rank:"#3",big:false}
+    {player:data[1],cls:"second",rank:"#2"},
+    {player:data[0],cls:"first",rank:"#1 SERVER KING"},
+    {player:data[2],cls:"third",rank:"#3"}
   ];
 
   $("podium-root").innerHTML = `
     <div class="podium-grid">
-      ${positions.map(({player,cls,rank,big}) => {
+      ${positions.map(({player,cls,rank}) => {
         if (!player) {
-          return `
-            <div class="podium-card ${cls}">
-              <div class="podium-rank">${rank}</div>
-              <div class="podium-name">NO STUDENT</div>
-              <div class="podium-xp">—</div>
-            </div>`;
+          return `<div class="podium-card ${cls}">
+            <div class="podium-rank">${rank}</div>
+            <div class="podium-name">NO STUDENT</div>
+            <div class="podium-xp">—</div>
+          </div>`;
         }
 
         return `
           <button class="podium-card ${cls}" data-profile="${escapeHTML(player.id)}">
             ${cls === "first" ? '<div class="podium-crown">👑</div>' : ""}
             <div class="podium-rank">${rank}</div>
-            <img class="podium-avatar" src="${escapeHTML(safePhoto(player.photo,player.name))}" alt="" loading="lazy">
+            <img class="podium-avatar"
+              src="${escapeHTML(safePhoto(player.photo,player.name))}"
+              data-student-name="${escapeHTML(player.name)}"
+              onerror="imageFallback(this)"
+              alt="Student profile" loading="lazy">
             <div class="podium-name">${escapeHTML(player.name)}</div>
             <div class="podium-xp">${formatXP(xpOf(player))} XP</div>
           </button>`;
@@ -1059,7 +1123,9 @@ function getFilteredData() {
   const search = currentSearch.trim().toLowerCase();
 
   if (search) {
-    data = data.filter(p => String(p.name || "").toLowerCase().includes(search));
+    data = data.filter(p =>
+      String(p.name || "").toLowerCase().includes(search)
+    );
   }
 
   return data;
@@ -1086,12 +1152,13 @@ function renderUI() {
   }
 
   $("king-name").textContent = data[0].name;
-  $("total-xp").textContent = formatXP(data.reduce((sum,p) => sum + xpOf(p),0));
+  $("total-xp").textContent = formatXP(
+    data.reduce((sum,p) => sum + xpOf(p),0)
+  );
 
   renderPodium(data);
 
   const filtered = getFilteredData();
-
   $("player-count").textContent = `${filtered.length} / ${data.length} PLAYERS`;
 
   if (!filtered.length) {
@@ -1117,9 +1184,10 @@ function renderUI() {
         : `<span class="rank-movement same"><i class="ri-subtract-line"></i> ${player.previousRank ? "SAME RANK" : "NEW SESSION"}</span>`;
 
     const badges = earnedBadges(player,rank).slice(0,2);
-
     const badgeHTML = badges.length
-      ? `<div class="row-badges">${badges.map(b => `<span class="mini-badge"><i class="${b.icon}"></i> ${b.text}</span>`).join("")}</div>`
+      ? `<div class="row-badges">${badges.map(b =>
+          `<span class="mini-badge"><i class="${b.icon}"></i> ${b.text}</span>`
+        ).join("")}</div>`
       : "";
 
     const rowClass = rank <= 3 ? `rank-${rank}-row` : "";
@@ -1130,7 +1198,11 @@ function renderUI() {
         data-profile="${escapeHTML(player.id)}">
         <div class="p-info">
           <span class="r-num">${rank <= 3 ? ["","🥇","🥈","🥉"][rank] : "#" + rank}</span>
-          <img class="p-avatar" src="${escapeHTML(safePhoto(player.photo,player.name))}" alt="" loading="lazy">
+          <img class="p-avatar"
+            src="${escapeHTML(safePhoto(player.photo,player.name))}"
+            data-student-name="${escapeHTML(player.name)}"
+            onerror="imageFallback(this)"
+            alt="Student profile" loading="lazy">
           <div class="p-name-wrap">
             <span class="p-name">${escapeHTML(player.name)}</span>
             ${isMe ? '<span class="player-tag">CURRENT PLAYER</span>' : ""}
@@ -1156,18 +1228,20 @@ function openProfile(id) {
   const progress = rankProgress(globalPlayersDataset,rank);
   const achievements = achievementList(xp);
   const badges = earnedBadges(player,rank);
+  const target = rank > 1 ? globalPlayersDataset[rank-2] : null;
 
-  // A streak is shown only if a numeric streak field actually exists.
   const streak = Number(player.streak);
   const streakText = Number.isFinite(streak) && streak > 0
     ? `${Math.floor(streak)} days`
     : "Not available";
 
-  const target = rank > 1 ? globalPlayersDataset[rank-2] : null;
-
   $("profile-content").innerHTML = `
     <div class="profile-top">
-      <img class="profile-avatar" src="${escapeHTML(safePhoto(player.photo,player.name))}" alt="">
+      <img class="profile-avatar"
+        src="${escapeHTML(safePhoto(player.photo,player.name))}"
+        data-student-name="${escapeHTML(player.name)}"
+        onerror="imageFallback(this)"
+        alt="Student profile">
       <div class="profile-name" id="profile-name">${escapeHTML(player.name)}</div>
       <div class="profile-sub">BLACKTERMINAL STUDENT PROFILE</div>
     </div>
@@ -1180,7 +1254,8 @@ function openProfile(id) {
 
     <div class="profile-section-title">NEXT RANK PROGRESS</div>
     <div style="font-size:11px;font-weight:900">
-      ${rank === 1 ? "👑 YOU ARE THE GLOBAL LEADER" : `${formatXP(progress.needed)} XP needed to overtake`}
+      ${rank === 1 ? "👑 YOU ARE THE GLOBAL LEADER" :
+        `${formatXP(progress.needed)} XP needed to overtake`}
     </div>
     <div class="progress-track"><div class="progress-fill" style="width:${progress.percent}%"></div></div>
     <div class="progress-caption">
@@ -1211,9 +1286,8 @@ function openProfile(id) {
     </div>
 
     <p class="reward-note">
-      Badges are based on current XP and global rank. Monthly champion status,
+      Badges use current XP and global rank. Monthly champion status,
       historical rank and attendance streaks require actual corresponding data.
-      No historical or monthly results are invented.
     </p>`;
 
   $("profile-backdrop").classList.add("open");
@@ -1273,15 +1347,17 @@ function handleSnapshot(snapshot) {
     return {
       ...value,
       id:doc.id,
-      name:String(doc.id || value.name || "Student")
+      name:String(value.name || value.studentName || doc.id),
+      photo:photoFromRecord(value)
     };
   });
 
-  // Deterministic order: XP descending, document ID as tie-breaker.
-  raw.sort((a,b) => xpOf(b)-xpOf(a) || a.id.localeCompare(b.id));
+  raw.sort((a,b) =>
+    xpOf(b)-xpOf(a) || a.id.localeCompare(b.id)
+  );
 
   const next = raw.map((player,index) => {
-    const rank = index + 1;
+    const rank = index+1;
     const previousRank = previousRanks.has(player.id)
       ? previousRanks.get(player.id)
       : null;
@@ -1300,8 +1376,6 @@ function handleSnapshot(snapshot) {
   );
 
   globalPlayersDataset = next;
-
-  // Save this snapshot's ranks for the next live update.
   previousRanks = new Map(next.map(p => [p.id,p.rank]));
 
   $("live-label").textContent = "LIVE";
@@ -1311,7 +1385,6 @@ function handleSnapshot(snapshot) {
   })}`;
 
   try {
-    // Keep the original cache key for compatibility.
     localStorage.setItem(
       CACHE_KEY,
       JSON.stringify(next.map(({rank,previousRank,movement,...p}) => p))
@@ -1343,7 +1416,6 @@ function handleSnapshot(snapshot) {
 function loadCachedData() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
-
     if (!Array.isArray(cached)) return;
 
     cached.sort((a,b) =>
@@ -1355,6 +1427,7 @@ function loadCachedData() {
       ...p,
       id:p.id || p.name,
       name:p.name || p.id || "Student",
+      photo:photoFromRecord(p),
       rank:index+1,
       previousRank:null,
       movement:"new"
