@@ -1,1 +1,490 @@
-gggh
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080b16">
+<meta name="description" content="BlackTerminal Wallet — View XP rewards and estimated wallet value.">
+<title>My Wallet | BlackTerminal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #080b16;
+  --card: #111729;
+  --card2: #151d33;
+  --text: #f5f7ff;
+  --muted: #9ca8c2;
+  --purple: #8664ff;
+  --green: #38dfa0;
+  --border: rgba(255,255,255,.09);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, sans-serif;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+.container { max-width: 760px; margin: auto; padding: 18px; }
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; padding: 10px 0 22px;
+}
+.brand { font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
+.brand span { color: var(--purple); }
+.small-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 14px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); border-radius: 12px;
+  font-size: 12px; font-weight: 700;
+}
+h1 { font-size: clamp(27px, 6vw, 38px); margin: 10px 0 7px; }
+.subtitle { color: var(--muted); line-height: 1.6; font-size: 14px; margin: 0 0 22px; }
+
+.banner {
+  position: relative; overflow: hidden; min-height: 190px;
+  border-radius: 24px; padding: 25px;
+  background: linear-gradient(120deg,#31216f,#6544d9 52%,#147b94);
+  border: 1px solid rgba(255,255,255,.16);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 18px;
+}
+.banner:before, .banner:after {
+  content: ""; position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,.08); pointer-events: none;
+}
+.banner:before { width: 190px; height: 190px; right: 20px; top: -100px; }
+.banner:after { width: 130px; height: 130px; right: 90px; bottom: -90px; }
+.banner-copy { position: relative; z-index: 1; max-width: 68%; }
+.eyebrow { text-transform: uppercase; font-size: 10px; letter-spacing: 2px; font-weight: 800; opacity: .85; }
+.banner h2 { margin: 10px 0; font-size: clamp(23px,5vw,32px); line-height: 1.15; }
+.banner p { font-size: 13px; line-height: 1.6; margin: 0; color: #e8e4ff; }
+.banner-art { position: relative; z-index: 1; font-size: clamp(58px,15vw,88px); filter: drop-shadow(0 12px 15px #1a104f66); }
+
+.card {
+  background: linear-gradient(145deg,var(--card),#0e1424);
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 21px; margin-bottom: 16px;
+}
+.section-title { font-size: 16px; font-weight: 800; margin: 0 0 17px; }
+.balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.balance-box { padding: 15px; border-radius: 15px; background: var(--card2); min-width: 0; }
+.balance-label { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+.balance-number { font-size: clamp(23px,5.5vw,31px); font-weight: 800; overflow-wrap: anywhere; }
+.xp-color { color: #b9a7ff; }
+.money-color { color: var(--green); }
+.rate {
+  margin-top: 13px; padding: 13px 14px; border-radius: 13px;
+  background: rgba(56,223,160,.08); border: 1px solid rgba(56,223,160,.13);
+  font-size: 12px; color: #b9f8dd; line-height: 1.6;
+}
+.field-label { display: block; font-size: 12px; color: var(--muted); margin: 15px 0 8px; }
+.input-wrap { position: relative; }
+input {
+  width: 100%; padding: 15px; color: var(--text); outline: none;
+  border: 1px solid var(--border); border-radius: 13px;
+  background: #090e1b; font-size: 16px;
+}
+input:focus { border-color: var(--purple); }
+.convert-result {
+  margin: 16px 0; padding: 16px; border-radius: 14px;
+  background: #0a1020; border: 1px solid var(--border);
+}
+.convert-result small { color: var(--muted); }
+.convert-result strong { display: block; margin-top: 7px; color: var(--green); font-size: 28px; }
+.primary-btn {
+  width: 100%; border: 0; padding: 15px; border-radius: 13px;
+  color: white; font-weight: 800;
+  background: linear-gradient(100deg,#7755f7,#9a61ff);
+}
+.primary-btn:disabled { opacity: .5; cursor: not-allowed; }
+.note { color: var(--muted); font-size: 11px; line-height: 1.7; margin: 12px 0 0; }
+.status {
+  border-radius: 13px; padding: 13px; margin-bottom: 16px;
+  font-size: 13px; line-height: 1.6; display: none;
+}
+.status.show { display: block; }
+.status.info { background: #17223a; color: #cbd8ff; }
+.status.error { background: #3a1922; color: #ffc4cf; }
+.status.success { background: #103327; color: #a8f5d2; }
+.loading { color: var(--muted); font-size: 13px; }
+.footer { text-align: center; color: #7e8aa5; font-size: 11px; padding: 14px 5px 28px; line-height: 1.8; }
+.hidden { display: none !important; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+
+@media(max-width: 420px) {
+  .container { padding: 13px; }
+  .card { padding: 16px; }
+  .banner { padding: 20px 17px; min-height: 175px; }
+  .balance-box { padding: 12px; }
+  .balance-number { font-size: 22px; }
+}
+</style>
+</head>
+
+<body>
+<main class="container">
+
+  <header class="topbar">
+    <a href="index.html" class="brand">BLACK<span>TERMINAL</span></a>
+    <a href="course.html" class="small-btn">Explore Courses ↗</a>
+  </header>
+
+  <h1>My Wallet <span style="color:#a58aff">✦</span></h1>
+  <p class="subtitle">Your learning rewards, XP points and estimated wallet value.</p>
+
+  <!-- WALLET BANNER -->
+  <section class="banner" aria-label="BlackTerminal rewards banner">
+    <div class="banner-copy">
+      <div class="eyebrow">Learn • Earn • Grow</div>
+      <h2>Your XP.<br>Your Rewards.</h2>
+      <p>Keep learning, earn XP and track your estimated rewards in one place.</p>
+    </div>
+    <div class="banner-art" aria-hidden="true">🎁</div>
+  </section>
+
+  <div id="status" class="status info" role="status"></div>
+
+  <!-- XP AND ESTIMATED VALUE -->
+  <section class="card">
+    <h2 class="section-title">Your Wallet Overview</h2>
+    <div class="balance-grid">
+      <div class="balance-box">
+        <div class="balance-label">⭐ Total XP</div>
+        <div id="totalXP" class="balance-number xp-color">—</div>
+      </div>
+      <div class="balance-box">
+        <div class="balance-label">💰 Estimated Value</div>
+        <div id="estimatedValue" class="balance-number money-color">₹—</div>
+      </div>
+    </div>
+    <div class="rate">
+      <strong>Conversion rate:</strong> 100 XP = ₹1<br>
+      Your rupee value is an estimate; it is not a cash balance or a confirmed payment.
+    </div>
+    <p id="studentLabel" class="note">Connecting to your student account…</p>
+  </section>
+
+  <!-- XP CONVERTER -->
+  <section class="card">
+    <h2 class="section-title">⇄ Calculate XP Conversion</h2>
+    <p class="subtitle" style="margin-bottom:8px">
+      Enter an XP amount to see its estimated rupee equivalent.
+    </p>
+
+    <label class="field-label" for="xpInput">XP you want to calculate</label>
+    <input id="xpInput" type="number" min="0" step="100" inputmode="numeric" placeholder="Enter XP amount" disabled>
+
+    <div class="convert-result">
+      <small>Estimated amount</small>
+      <strong id="conversionValue">₹0.00</strong>
+      <small id="conversionDetail">100 XP = ₹1</small>
+    </div>
+
+    <button id="convertBtn" class="primary-btn" disabled>
+      Conversion Not Enabled
+    </button>
+
+    <p class="note">
+      This calculator does not deduct XP, transfer money, or create a course purchase.
+      Real conversion must be enabled securely by the BlackTerminal administrator.
+    </p>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="card">
+    <h2 class="section-title">How Your Wallet Works</h2>
+    <p style="font-size:13px;line-height:1.9;color:var(--muted);margin:0">
+      <span style="color:#b9a7ff">01.</span> Sign in with your student account.<br>
+      <span style="color:#b9a7ff">02.</span> Your XP is fetched from the configured Firestore student record.<br>
+      <span style="color:#b9a7ff">03.</span> The page calculates your estimated value using 100 XP = ₹1.<br>
+      <span style="color:#b9a7ff">04.</span> Actual redemption can be enabled after secure backend verification.
+    </p>
+  </section>
+
+  <footer class="footer">
+    BlackTerminal Computer Institute<br>
+    BlackTerminal Wallet · XP Reward Calculator<br>
+    XP value is indicative only. No cash withdrawal or redemption is performed by this page.
+  </footer>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/*
+=========================================================
+BLACKTERMINAL WALLET CONFIGURATION
+=========================================================
+
+1. This page uses the existing BlackTerminal Firebase project.
+2. It expects Firebase Authentication for student identity.
+3. Default Firestore collection: students
+4. Default XP field: xp
+
+If your XP is stored in a different collection or field,
+update WALLET_CONFIG below.
+
+The code attempts:
+- students/{Firebase Auth UID}
+- then a student document with uid == Firebase Auth UID
+
+It never reads an arbitrary student ID from the URL.
+*/
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCEYfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WI",
+  authDomain: "black-terminal-f2c91.firebaseapp.com",
+  projectId: "black-terminal-f2c91",
+  storageBucket: "black-terminal-f2c91.firebasestorage.app",
+  messagingSenderId: "552489994197",
+  appId: "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const WALLET_CONFIG = {
+  studentCollection: "students",
+  xpField: "xp",
+  rateXP: 100,
+  rateRupees: 1
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = (id) => document.getElementById(id);
+
+const statusBox = $("status");
+const totalXPElement = $("totalXP");
+const estimatedValueElement = $("estimatedValue");
+const studentLabel = $("studentLabel");
+const xpInput = $("xpInput");
+const conversionValue = $("conversionValue");
+const conversionDetail = $("conversionDetail");
+const convertBtn = $("convertBtn");
+
+let currentXP = 0;
+let walletReady = false;
+
+function showStatus(message, type = "info") {
+  statusBox.textContent = message;
+  statusBox.className = "status show " + type;
+}
+
+function hideStatus() {
+  statusBox.className = "status";
+  statusBox.textContent = "";
+}
+
+function formatXP(value) {
+  return Math.floor(value).toLocaleString("en-IN");
+}
+
+function formatRupees(value) {
+  return Number(value).toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function xpToRupees(xp) {
+  return (xp / WALLET_CONFIG.rateXP) * WALLET_CONFIG.rateRupees;
+}
+
+function updateCalculator() {
+  const raw = Number(xpInput.value);
+  const valid = xpInput.value.trim() !== "" &&
+    Number.isFinite(raw) &&
+    Number.isInteger(raw) &&
+    raw >= 0;
+
+  if (!valid) {
+    conversionValue.textContent = "₹0.00";
+    conversionDetail.textContent = "Enter a valid whole number of XP.";
+    return;
+  }
+
+  conversionValue.textContent = formatRupees(xpToRupees(raw));
+  conversionDetail.textContent =
+    `${formatXP(raw)} XP ÷ ${WALLET_CONFIG.rateXP} × ₹${WALLET_CONFIG.rateRupees}`;
+}
+
+xpInput.addEventListener("input", updateCalculator);
+
+/*
+Fetch the signed-in student's own record.
+If Firestore security rules deny a read, an error will be shown.
+*/
+async function fetchStudentXP(user) {
+  const studentsRef = collection(db, WALLET_CONFIG.studentCollection);
+  let studentData = null;
+
+  // First try a document whose ID equals the authenticated UID.
+  const directRef = doc(db, WALLET_CONFIG.studentCollection, user.uid);
+  const directSnap = await getDoc(directRef);
+
+  if (directSnap.exists()) {
+    studentData = directSnap.data();
+  } else {
+    // Otherwise look for a document whose uid field matches.
+    const q = query(
+      studentsRef,
+      where("uid", "==", user.uid),
+      limit(1)
+    );
+    const results = await getDocs(q);
+
+    if (!results.empty) {
+      studentData = results.docs[0].data();
+    }
+  }
+
+  if (!studentData) {
+    throw new Error(
+      "Your student record was not found. Please contact BlackTerminal admin."
+    );
+  }
+
+  const rawXP = studentData[WALLET_CONFIG.xpField];
+
+  if (
+    typeof rawXP !== "number" ||
+    !Number.isFinite(rawXP) ||
+    rawXP < 0
+  ) {
+    throw new Error(
+      `XP field "${WALLET_CONFIG.xpField}" is missing or is not a valid number. Check your Firestore data.`
+    );
+  }
+
+  return {
+    xp: Math.floor(rawXP),
+    name: studentData.name || studentData.studentName || user.displayName || "Student"
+  };
+}
+
+function renderWallet(xp, name) {
+  currentXP = xp;
+  walletReady = true;
+
+  totalXPElement.textContent = formatXP(xp);
+  estimatedValueElement.textContent = formatRupees(xpToRupees(xp));
+  studentLabel.textContent = `Signed in as ${name}`;
+  xpInput.disabled = false;
+  xpInput.max = String(xp);
+  xpInput.value = String(xp);
+  updateCalculator();
+
+  convertBtn.disabled = false;
+  convertBtn.textContent = "Conversion Not Enabled";
+  convertBtn.title = "This page only calculates an estimate.";
+  hideStatus();
+}
+
+onAuthStateChanged(auth, async (user) => {
+  walletReady = false;
+  convertBtn.disabled = true;
+  xpInput.disabled = true;
+
+  if (!user) {
+    totalXPElement.textContent = "—";
+    estimatedValueElement.textContent = "₹—";
+    studentLabel.textContent = "No student is signed in.";
+    xpInput.value = "";
+    conversionValue.textContent = "₹0.00";
+    conversionDetail.textContent = "Sign in to view your XP.";
+    convertBtn.textContent = "Student Sign-In Required";
+
+    showStatus(
+      "Please sign in using your BlackTerminal student account. This page does not display XP without an authenticated student.",
+      "info"
+    );
+    return;
+  }
+
+  totalXPElement.textContent = "…";
+  estimatedValueElement.textContent = "₹…";
+  studentLabel.textContent = "Fetching XP from Firebase…";
+  showStatus("Loading your student wallet…", "info");
+
+  try {
+    const student = await fetchStudentXP(user);
+    renderWallet(student.xp, student.name);
+  } catch (error) {
+    console.error("Wallet fetch error:", error);
+    totalXPElement.textContent = "—";
+    estimatedValueElement.textContent = "₹—";
+    studentLabel.textContent = "Could not load your XP.";
+    xpInput.value = "";
+    conversionValue.textContent = "₹0.00";
+    conversionDetail.textContent = "Wallet data unavailable.";
+    convertBtn.textContent = "Wallet Unavailable";
+
+    showStatus(
+      error.message || "Could not fetch your XP. Check your Firebase setup and security rules.",
+      "error"
+    );
+  }
+});
+
+/*
+No XP deduction or money transfer is performed.
+A secure backend is required before enabling actual conversion.
+*/
+convertBtn.addEventListener("click", () => {
+  if (!walletReady) {
+    showStatus("Your wallet is not ready yet.", "error");
+    return;
+  }
+
+  const amount = Number(xpInput.value);
+
+  if (
+    xpInput.value.trim() === "" ||
+    !Number.isInteger(amount) ||
+    amount < 0
+  ) {
+    showStatus("Please enter a valid whole number of XP.", "error");
+    return;
+  }
+
+  if (amount > currentXP) {
+    showStatus(
+      `You have ${formatXP(currentXP)} XP. You cannot calculate more than your available XP.`,
+      "error"
+    );
+    return;
+  }
+
+  showStatus(
+    `Estimated value: ${formatRupees(xpToRupees(amount))}. Actual conversion is not enabled. No XP has been deducted and no money has been transferred.`,
+    "info"
+  );
+});
+
+updateCalculator();
+</script>
+</body>
+</html>
