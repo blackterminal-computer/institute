@@ -1,1 +1,691 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070b14">
+<title>Wallet Admin | BlackTerminal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#070b14;
+  --panel:#0e1524;
+  --panel2:#111c2e;
+  --border:#24324a;
+  --text:#edf3ff;
+  --muted:#8fa1bc;
+  --blue:#65a8ff;
+  --green:#42d99a;
+  --red:#ff737d;
+  --yellow:#ffc86b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:radial-gradient(ellipse at top,#152746 0%,var(--bg) 48%);
+  color:var(--text);
+  font-family:Inter,Arial,sans-serif;
+  min-height:100vh;
+}
+button,input{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.container{max-width:1250px;margin:auto;padding:22px}
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;margin-bottom:25px
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:46px;height:46px;border-radius:14px;
+  display:grid;place-items:center;background:linear-gradient(135deg,#65a8ff,#7d65ff);
+  color:#fff;font-weight:800;font-size:19px;
+  box-shadow:0 8px 28px #3678ff35
+}
+h1{font-size:23px;margin:0 0 5px}
+.subtitle{font-size:12px;color:var(--muted)}
+.header-actions{display:flex;gap:9px;flex-wrap:wrap}
+.btn{
+  border:1px solid var(--border);background:var(--panel2);
+  color:var(--text);padding:11px 14px;border-radius:11px;
+  font-weight:700;font-size:12px
+}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#07101f}
+.btn.danger{background:#35151d;border-color:#6c2c39;color:#ffb1b7}
+.btn.success{background:#10372b;border-color:#23634d;color:#a2f5ce}
+.btn:hover{filter:brightness(1.12)}
+.notice{
+  border:1px solid #344767;background:#0e1a2d;border-radius:14px;
+  padding:14px 16px;margin-bottom:20px;color:#c8d8f2;
+  font-size:12px;line-height:1.7
+}
+.notice strong{color:#fff}
+.stats{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:13px;margin-bottom:22px
+}
+.stat{
+  background:linear-gradient(145deg,#111c2e,#0b1220);
+  border:1px solid var(--border);border-radius:16px;padding:18px
+}
+.stat-label{font-size:11px;color:var(--muted);margin-bottom:12px}
+.stat-value{font-size:27px;font-weight:800;letter-spacing:-1px}
+.stat-foot{font-size:10px;color:var(--muted);margin-top:7px}
+.stat.pending .stat-value{color:var(--yellow)}
+.stat.approved .stat-value{color:var(--green)}
+.stat.rejected .stat-value{color:var(--red)}
+.section{
+  background:#0b1220dd;border:1px solid var(--border);
+  border-radius:18px;overflow:hidden
+}
+.section-top{
+  padding:18px;display:flex;justify-content:space-between;
+  align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border)
+}
+.section-top h2{font-size:16px;margin:0 0 5px}
+.section-top p{font-size:11px;color:var(--muted);margin:0}
+.filters{display:flex;gap:7px;flex-wrap:wrap;padding:15px 18px 0}
+.filter{
+  padding:9px 12px;border:1px solid var(--border);border-radius:10px;
+  background:transparent;color:var(--muted);font-size:11px;font-weight:700
+}
+.filter.active{background:#17345a;color:#d8e8ff;border-color:#386bb0}
+.search-wrap{padding:14px 18px}
+.search{
+  width:100%;background:#070d18;border:1px solid var(--border);
+  color:var(--text);padding:13px 14px;border-radius:11px;outline:none
+}
+.search:focus{border-color:var(--blue)}
+.request-list{padding:0 18px 18px;display:grid;gap:12px}
+.request{
+  border:1px solid var(--border);border-radius:15px;
+  padding:16px;background:linear-gradient(145deg,#111b2c,#0b1220)
+}
+.request-head{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:12px;flex-wrap:wrap;margin-bottom:15px
+}
+.student-name{font-size:15px;font-weight:800;margin-bottom:5px;overflow-wrap:anywhere}
+.request-id{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
+.badge{
+  font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.5px;border-radius:20px;padding:7px 10px;
+  background:#283449;color:#d9e5f7;white-space:nowrap
+}
+.badge.pending{background:#45351a;color:#ffdb91}
+.badge.approved{background:#103a2d;color:#8af0bd}
+.badge.rejected{background:#401c26;color:#ffabb3}
+.details{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;margin-bottom:14px
+}
+.detail{padding:11px;border-radius:10px;background:#080e19;border:1px solid #1b2940;min-width:0}
+.detail-label{font-size:9px;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
+.detail-value{font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.detail-value.credit{color:var(--green)}
+.request-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;padding-top:13px;border-top:1px solid #1c2940
+}
+.request-date{font-size:10px;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.empty{
+  text-align:center;padding:50px 15px;color:var(--muted);font-size:13px
+}
+.empty-icon{font-size:32px;margin-bottom:10px}
+.status-line{font-size:11px;color:var(--muted);padding:12px 18px}
+.status-line.error{color:#ff9ba3}
+.status-line.ok{color:#8af0bd}
+.loading{
+  padding:40px 15px;text-align:center;color:var(--muted);font-size:12px
+}
+.spinner{
+  width:23px;height:23px;border:2px solid #293d5b;
+  border-top-color:var(--blue);border-radius:50%;
+  animation:spin .8s linear infinite;margin:0 auto 12px
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.footer{text-align:center;color:#71839e;font-size:10px;padding:20px}
+.modal-backdrop{
+  position:fixed;inset:0;background:#000b;display:none;
+  align-items:center;justify-content:center;padding:18px;z-index:20
+}
+.modal-backdrop.show{display:flex}
+.modal{
+  width:min(440px,100%);background:#101a2b;border:1px solid var(--border);
+  border-radius:17px;padding:22px;box-shadow:0 25px 80px #0008
+}
+.modal h3{margin:0 0 10px;font-size:18px}
+.modal p{font-size:12px;line-height:1.7;color:var(--muted)}
+.modal textarea{
+  width:100%;min-height:85px;resize:vertical;background:#080e19;
+  border:1px solid var(--border);color:var(--text);padding:12px;
+  border-radius:10px;outline:none
+}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:15px}
+@media(max-width:760px){
+  .container{padding:14px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .stat{padding:14px}.stat-value{font-size:23px}
+  .details{grid-template-columns:repeat(2,minmax(0,1fr))}
+  h1{font-size:19px}
+  .section-top{padding:15px}
+  .request-list{padding:0 12px 12px}
+  .filters,.search-wrap{padding-left:12px;padding-right:12px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <header>
+    <div class="brand">
+      <div class="logo">BT</div>
+      <div>
+        <h1>Wallet Admin</h1>
+        <div class="subtitle">BlackTerminal Computer Institute · Redemption Center</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="refreshBtn">↻ Refresh</button>
+      <button class="btn" id="dashboardBtn">Master Admin</button>
+    </div>
+  </header>
+
+  <div class="notice">
+    <strong>Secure admin session</strong><br>
+    This page reuses the existing Firebase login. Open it from your authenticated
+    master admin session. Only authorized admins can read requests or process approvals.
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">TOTAL REQUESTS</div>
+      <div class="stat-value" id="totalCount">—</div>
+      <div class="stat-foot">Loaded redemption requests</div>
+    </div>
+    <div class="stat pending">
+      <div class="stat-label">PENDING</div>
+      <div class="stat-value" id="pendingCount">—</div>
+      <div class="stat-foot">Awaiting review</div>
+    </div>
+    <div class="stat approved">
+      <div class="stat-label">APPROVED</div>
+      <div class="stat-value" id="approvedCount">—</div>
+      <div class="stat-foot">Approved requests</div>
+    </div>
+    <div class="stat rejected">
+      <div class="stat-label">REJECTED</div>
+      <div class="stat-value" id="rejectedCount">—</div>
+      <div class="stat-foot">Rejected requests</div>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="section-top">
+      <div>
+        <h2>Redemption Requests</h2>
+        <p>Review student wallet redemption requests</p>
+      </div>
+      <div class="subtitle" id="lastUpdated">Not loaded yet</div>
+    </div>
+
+    <div class="filters">
+      <button class="filter active" data-filter="all">All</button>
+      <button class="filter" data-filter="pending">Pending</button>
+      <button class="filter" data-filter="approved">Approved</button>
+      <button class="filter" data-filter="rejected">Rejected</button>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="searchInput" placeholder="Search student, course or request ID..." autocomplete="off">
+    </div>
+
+    <div class="status-line" id="statusLine" aria-live="polite">Connecting to Firebase…</div>
+    <div class="request-list" id="requestList">
+      <div class="loading"><div class="spinner"></div>Loading wallet requests…</div>
+    </div>
+  </section>
+
+  <div class="footer">BlackTerminal · Wallet Management · Secure server-side processing</div>
+</div>
+
+<div class="modal-backdrop" id="rejectModal">
+  <div class="modal">
+    <h3>Reject redemption request?</h3>
+    <p id="rejectDescription">Add an optional reason for the student.</p>
+    <textarea id="rejectReason" placeholder="Reason (optional)"></textarea>
+    <div class="modal-actions">
+      <button class="btn" id="cancelReject">Cancel</button>
+      <button class="btn danger" id="confirmReject">Confirm Reject</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp, getApps } from
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getAuth,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+  getFunctions,
+  httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+/*
+  IMPORTANT:
+  Keep this config identical to the one in your existing dashboard/masterAdmin.
+  Firebase client configuration is not an admin secret.
+*/
+const firebaseConfig = {
+  apiKey: "AIzaSyCEfwZv2CkpgJ8Q9vNwRlRlXA2w_WpI",
+  authDomain: "black-terminal-f2c91.firebaseapp.com",
+  projectId: "black-terminal-f2c91",
+  storageBucket: "black-terminal-f2c91.appspot.com",
+  messagingSenderId: "552489994197",
+  appId: "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const functions = getFunctions(app);
+
+const requestList = document.getElementById("requestList");
+const statusLine = document.getElementById("statusLine");
+const searchInput = document.getElementById("searchInput");
+const rejectModal = document.getElementById("rejectModal");
+
+let allRequests = [];
+let currentFilter = "all";
+let selectedRejectId = null;
+let busy = false;
+let authorized = false;
+
+const $ = id => document.getElementById(id);
+
+function setStatus(message, type = "") {
+  statusLine.textContent = message;
+  statusLine.className = "status-line" + (type ? " " + type : "");
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function firstValue(data, keys, fallback = "—") {
+  for (const key of keys) {
+    if (data[key] !== undefined && data[key] !== null && data[key] !== "") {
+      return data[key];
+    }
+  }
+  return fallback;
+}
+
+function normalizeStatus(value) {
+  const status = String(value || "pending").toLowerCase().trim();
+  if (["approved", "complete", "completed", "success"].includes(status)) return "approved";
+  if (["rejected", "declined", "denied"].includes(status)) return "rejected";
+  return "pending";
+}
+
+function formatDate(value) {
+  try {
+    if (!value) return "Date unavailable";
+    const date = typeof value.toDate === "function"
+      ? value.toDate()
+      : new Date(value);
+    if (Number.isNaN(date.getTime())) return "Date unavailable";
+    return date.toLocaleString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    });
+  } catch {
+    return "Date unavailable";
+  }
+}
+
+function getRequestName(data) {
+  return firstValue(data, ["studentName", "name", "displayName", "student", "userName"]);
+}
+
+function getCourse(data) {
+  return firstValue(data, ["courseName", "course", "requestedCourse", "itemName", "title"]);
+}
+
+function getXP(data) {
+  const value = firstValue(data, ["xpCost", "requiredXP", "xpUsed", "xpPoints", "xp"], 0);
+  return Number(value) || 0;
+}
+
+function getCredit(data) {
+  const value = firstValue(data, ["creditAmount", "walletAmount", "amount", "credits", "rewardAmount"], 0);
+  return Number(value) || 0;
+}
+
+function getRequestDate(data) {
+  return data.createdAt || data.requestedAt || data.timestamp || data.date || null;
+}
+
+function updateStats() {
+  $("totalCount").textContent = allRequests.length;
+  $("pendingCount").textContent = allRequests.filter(x => x.status === "pending").length;
+  $("approvedCount").textContent = allRequests.filter(x => x.status === "approved").length;
+  $("rejectedCount").textContent = allRequests.filter(x => x.status === "rejected").length;
+}
+
+function render() {
+  const term = searchInput.value.trim().toLowerCase();
+  const filtered = allRequests.filter(item => {
+    const matchesFilter = currentFilter === "all" || item.status === currentFilter;
+    const searchable = [
+      item.id, getRequestName(item.data), getCourse(item.data),
+      item.data.studentId, item.data.email, item.data.uid
+    ].join(" ").toLowerCase();
+    return matchesFilter && searchable.includes(term);
+  });
+
+  if (!filtered.length) {
+    requestList.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">◫</div>
+        <div>No matching redemption requests</div>
+        <div style="font-size:11px;margin-top:7px">Try another filter or search term.</div>
+      </div>`;
+    return;
+  }
+
+  requestList.innerHTML = filtered.map(item => {
+    const data = item.data;
+    const name = getRequestName(data);
+    const course = getCourse(data);
+    const xp = getXP(data);
+    const credit = getCredit(data);
+    const date = formatDate(getRequestDate(data));
+    const reason = firstValue(data, ["reason", "note", "message"], "");
+    const status = item.status;
+
+    const actions = status === "pending"
+      ? `<div class="actions">
+          <button class="btn success" data-action="approve" data-id="${escapeHTML(item.id)}">✓ Approve</button>
+          <button class="btn danger" data-action="reject" data-id="${escapeHTML(item.id)}">✕ Reject</button>
+        </div>`
+      : `<div class="actions"><span class="subtitle">No action available</span></div>`;
+
+    return `
+      <article class="request">
+        <div class="request-head">
+          <div>
+            <div class="student-name">${escapeHTML(name)}</div>
+            <div class="request-id">Request ID: ${escapeHTML(item.id)}</div>
+          </div>
+          <span class="badge ${status}">${escapeHTML(status)}</span>
+        </div>
+        <div class="details">
+          <div class="detail">
+            <div class="detail-label">Course / Item</div>
+            <div class="detail-value">${escapeHTML(course)}</div>
+          </div>
+          <div class="detail">
+            <div class="detail-label">XP Requested</div>
+            <div class="detail-value">${xp.toLocaleString("en-IN")} XP</div>
+          </div>
+          <div class="detail">
+            <div class="detail-label">Wallet Credit</div>
+            <div class="detail-value credit">₹${credit.toLocaleString("en-IN")}</div>
+          </div>
+          <div class="detail">
+            <div class="detail-label">Student ID</div>
+            <div class="detail-value">${escapeHTML(firstValue(data, ["studentId", "uid", "userId"]))}</div>
+          </div>
+        </div>
+        ${reason ? `<div class="subtitle" style="margin-bottom:13px;overflow-wrap:anywhere">Note: ${escapeHTML(reason)}</div>` : ""}
+        <div class="request-bottom">
+          <div class="request-date">◷ ${escapeHTML(date)}</div>
+          ${actions}
+        </div>
+      </article>`;
+  }).join("");
+}
+
+async function checkAdmin(user) {
+  if (!user) return false;
+  const token = await user.getIdTokenResult(true);
+  return token.claims.admin === true;
+}
+
+async function loadRequests() {
+  if (!authorized || busy) return;
+  busy = true;
+  $("refreshBtn").disabled = true;
+  setStatus("Loading requests…");
+
+  try {
+    const requestsQuery = query(
+      collection(db, "walletRequests"),
+      orderBy("createdAt", "desc"),
+      limit(300)
+    );
+    const snapshot = await getDocs(requestsQuery);
+
+    allRequests = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        data,
+        status: normalizeStatus(data.status)
+      };
+    });
+
+    updateStats();
+    render();
+    $("lastUpdated").textContent = "Updated " + new Date().toLocaleTimeString("en-IN");
+    setStatus(`Loaded ${allRequests.length} request(s).`, "ok");
+  } catch (error) {
+    console.error(error);
+    setStatus(
+      error.code === "permission-denied"
+        ? "Access denied. Check Firestore rules and admin permissions."
+        : "Could not load requests: " + (error.message || "Unknown error"),
+      "error"
+    );
+    requestList.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">⚠</div>
+        <div>Unable to load wallet requests</div>
+        <div style="font-size:11px;margin-top:8px">Check the walletRequests collection, Firestore rules, and browser console.</div>
+      </div>`;
+  } finally {
+    busy = false;
+    $("refreshBtn").disabled = false;
+  }
+}
+
+async function runAction(action, requestId, reason = "") {
+  if (!authorized || !auth.currentUser) {
+    setStatus("Admin session is not available. Open masterAdmin.html and sign in.", "error");
+    return;
+  }
+
+  if (busy) return;
+  const item = allRequests.find(x => x.id === requestId);
+  if (!item || item.status !== "pending") {
+    setStatus("This request is no longer pending. Refresh the list.", "error");
+    return;
+  }
+
+  const button = document.querySelector(`[data-action="${action}"][data-id="${CSS.escape(requestId)}"]`);
+  if (button) button.disabled = true;
+  busy = true;
+
+  try {
+    await auth.currentUser.getIdToken(true);
+
+    const callableName = action === "approve"
+      ? "approveWalletRequest"
+      : "rejectWalletRequest";
+
+    const callable = httpsCallable(functions, callableName);
+    const payload = action === "approve"
+      ? { requestId }
+      : { requestId, reason };
+
+    const result = await callable(payload);
+
+    setStatus(
+      action === "approve"
+        ? "Approval processed by server."
+        : "Rejection processed by server.",
+      "ok"
+    );
+
+    console.log("Wallet action result:", result.data);
+    await loadRequests();
+  } catch (error) {
+    console.error(error);
+    setStatus(
+      "Action failed: " + (error.message || "Unknown error") +
+      ". Verify that the secure Cloud Function is deployed and admin claims are set.",
+      "error"
+    );
+    if (button) button.disabled = false;
+  } finally {
+    busy = false;
+  }
+}
+
+requestList.addEventListener("click", async event => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const { action, id } = button.dataset;
+  if (!id) return;
+
+  if (action === "approve") {
+    const item = allRequests.find(x => x.id === id);
+    if (!item || item.status !== "pending") return;
+
+    const confirmed = confirm(
+      `Approve this redemption request?\n\nStudent: ${getRequestName(item.data)}\nCourse: ${getCourse(item.data)}\n\nThe server will validate the request.`
+    );
+    if (confirmed) await runAction("approve", id);
+  }
+
+  if (action === "reject") {
+    selectedRejectId = id;
+    $("rejectReason").value = "";
+    $("rejectDescription").textContent =
+      `Reject request ${id}? You can enter an optional reason for the student.`;
+    rejectModal.classList.add("show");
+  }
+});
+
+$("confirmReject").addEventListener("click", async () => {
+  if (!selectedRejectId) return;
+  const id = selectedRejectId;
+  const reason = $("rejectReason").value.trim();
+  rejectModal.classList.remove("show");
+  selectedRejectId = null;
+  await runAction("reject", id, reason);
+});
+
+$("cancelReject").addEventListener("click", () => {
+  rejectModal.classList.remove("show");
+  selectedRejectId = null;
+});
+
+rejectModal.addEventListener("click", event => {
+  if (event.target === rejectModal) {
+    rejectModal.classList.remove("show");
+    selectedRejectId = null;
+  }
+});
+
+document.querySelectorAll(".filter").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".filter").forEach(x => x.classList.remove("active"));
+    button.classList.add("active");
+    currentFilter = button.dataset.filter;
+    render();
+  });
+});
+
+searchInput.addEventListener("input", render);
+$("refreshBtn").addEventListener("click", loadRequests);
+$("dashboardBtn").addEventListener("click", () => {
+  window.location.href = "masterAdmin.html";
+});
+
+/*
+  Reuse the Firebase Auth session from masterAdmin.html.
+  Same origin and same Firebase project are required.
+*/
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    authorized = false;
+    setStatus(
+      "No active login found. Sign in through masterAdmin.html, then open Wallet Admin.",
+      "error"
+    );
+    requestList.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🔐</div>
+        <div>Admin session required</div>
+        <div style="font-size:11px;margin-top:8px">Open Master Admin, sign in, then return to this page.</div>
+        <div style="margin-top:16px">
+          <button class="btn primary" id="openMasterLogin">Open Master Admin</button>
+        </div>
+      </div>`;
+    $("openMasterLogin")?.addEventListener("click", () => {
+      window.location.href = "masterAdmin.html";
+    });
+    return;
+  }
+
+  try {
+    authorized = await checkAdmin(user);
+    if (!authorized) {
+      setStatus("Signed in, but this account does not have the admin claim.", "error");
+      requestList.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">⛔</div>
+          <div>Admin permission required</div>
+          <div style="font-size:11px;margin-top:8px">Ask the project administrator to assign the Firebase admin custom claim.</div>
+        </div>`;
+      return;
+    }
+    setStatus("Admin session verified.", "ok");
+    await loadRequests();
+  } catch (error) {
+    console.error(error);
+    authorized = false;
+    setStatus("Could not verify admin permissions: " + error.message, "error");
+  }
+});
+</script>
+</body>
+</html>
+
