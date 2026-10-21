@@ -415,23 +415,36 @@ function renderStudentOptions(){
 }
 
 async function loadStudentsOnce(){
- if(studentsLoaded)return;
+    if (studentsLoaded) return;
 
- try{
-  const snap=await getDocs(collection(db,"students"));
-  allStudents=snap.docs.map(d=>({id:d.id,...d.data()}));
-  studentsLoadFailed=false;
- }catch(e){
-  console.error("Students one-time load failed:",e);
-  studentsLoadFailed=true;
-  toast(e.code==="resource-exhausted"
-   ?"Firebase quota exceeded. Check Firebase Usage."
-   :"Unable to load student records.");
- }finally{
-  studentsLoaded=true;
-  renderStudentOptions();
-  renderLeaderboard();
- }
+    try {
+        // Fetch students once; do not create a full collection listener.
+        const snap = await getDocs(collection(db, "students"));
+
+        allStudents = snap.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+        }));
+
+        studentsLoadFailed = false;
+
+    } catch (e) {
+        console.error("Students one-time load failed:", e);
+
+        studentsLoadFailed = true;
+
+        toast(
+            e.code === "resource-exhausted"
+                ? "Firebase quota exceeded. Wait for quota reset."
+                : "Unable to load student records."
+        );
+
+    } finally {
+        studentsLoaded = true;
+
+        renderStudentOptions();
+        renderLeaderboard();
+    }
 }
 
 async function loadRewardSettings(){
