@@ -4153,6 +4153,195 @@ body:before{
 
 
 
+
+
+/* BLACKTERMINAL RATING POPUP */
+.bt-rating-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s ease, visibility .3s ease;
+}
+
+.bt-rating-overlay.bt-rating-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.bt-rating-sheet {
+    width: 100%;
+    max-width: 520px;
+    background: #fff;
+    color: #191919;
+    border-radius: 28px 28px 0 0;
+    padding: 32px 24px calc(28px + env(safe-area-inset-bottom));
+    text-align: center;
+    transform: translateY(100%);
+    transition: transform .4s cubic-bezier(.2,.8,.2,1);
+    max-height: 92dvh;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.bt-rating-visible .bt-rating-sheet {
+    transform: translateY(0);
+}
+
+.bt-rating-title {
+    font-size: clamp(25px, 6vw, 34px);
+    font-weight: 750;
+    line-height: 1.25;
+    letter-spacing: -1px;
+    margin: 12px 0 14px;
+}
+
+.bt-rating-subtitle {
+    font-size: 18px;
+    color: #888;
+    line-height: 1.5;
+    margin: 0 0 25px;
+}
+
+.bt-rating-art {
+    width: 100%;
+    max-width: 300px;
+    height: 250px;
+    margin: 0 auto 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bt-rating-art svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.bt-rating-stars {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    background: #f7f7f9;
+    border: 2px solid #e9e9ec;
+    border-radius: 20px;
+    padding: 14px 12px;
+    max-width: 320px;
+    margin: -2px auto 30px;
+}
+
+.bt-rating-star {
+    border: 0;
+    background: transparent;
+    color: #d8d8de;
+    font-size: 36px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    transition: transform .15s ease, color .15s ease;
+}
+
+.bt-rating-star.bt-star-active {
+    color: #f7b900;
+}
+
+.bt-rating-star:active {
+    transform: scale(1.2);
+}
+
+.bt-rating-yes {
+    display: block;
+    width: 100%;
+    min-height: 76px;
+    border: 0;
+    border-radius: 15px;
+    background: #623df2;
+    color: #fff;
+    font-size: 23px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 12px 35px rgba(98, 61, 242, .22);
+}
+
+.bt-rating-yes:active {
+    transform: scale(.985);
+}
+
+.bt-rating-later {
+    display: block;
+    margin: 22px auto 0;
+    padding: 8px 20px;
+    border: 0;
+    background: transparent;
+    color: #999;
+    font-size: 19px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.bt-rating-feedback {
+    width: 100%;
+    min-height: 90px;
+    padding: 14px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    resize: vertical;
+    box-sizing: border-box;
+    font: inherit;
+    margin-bottom: 18px;
+}
+
+.bt-rating-thanks {
+    display: none;
+    color: #623df2;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 20px 0;
+}
+
+@media (min-width: 700px) {
+    .bt-rating-overlay {
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    .bt-rating-sheet {
+        border-radius: 28px;
+        padding: 32px;
+        max-height: 90dvh;
+    }
+}
+
+@media (max-width: 380px) {
+    .bt-rating-sheet {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .bt-rating-art {
+        height: 210px;
+    }
+
+    .bt-rating-star {
+        font-size: 30px;
+    }
+
+    .bt-rating-yes {
+        min-height: 66px;
+    }
+}
+
+
 </style>
 
 </head>
@@ -9511,6 +9700,230 @@ if ("serviceWorker" in navigator) {
 
 
 
+<!-- BLACKTERMINAL RATING POPUP -->
+<div class="bt-rating-overlay" id="btRatingOverlay"
+     aria-hidden="true">
+
+  <div class="bt-rating-sheet"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="btRatingTitle">
+
+    <h2 class="bt-rating-title" id="btRatingTitle">
+      How is it going<span id="btRatingStudentName"></span>?
+    </h2>
+
+    <p class="bt-rating-subtitle">
+      Enjoying your experience with BlackTerminal?
+    </p>
+
+    <!-- Cute mascot illustration -->
+    <div class="bt-rating-art">
+      <svg viewBox="0 0 320 250"
+           xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-label="Cute mascot with five stars">
+
+        <path d="M48 18 L53 31 L66 36 L53 41 L48 54 L43 41 L30 36 L43 31 Z"
+              fill="#FFD629"/>
+
+        <!-- Mascot body -->
+        <path d="M91 170 V103
+                 C91 59 120 31 160 31
+                 C200 31 229 59 229 103
+                 V170 Z"
+              fill="#DEB8F4"/>
+
+        <!-- Eyes -->
+        <circle cx="133" cy="103" r="17" fill="#fff"/>
+        <circle cx="187" cy="103" r="17" fill="#fff"/>
+        <circle cx="133" cy="103" r="10" fill="#4D075B"/>
+        <circle cx="187" cy="103" r="10" fill="#4D075B"/>
+
+        <!-- Smile -->
+        <path d="M146 126 Q160 142 174 126"
+              stroke="#4D075B"
+              stroke-width="5"
+              stroke-linecap="round"
+              fill="none"/>
+
+        <!-- Rating card -->
+        <rect x="32" y="160" width="256" height="76"
+              rx="17" fill="#F7F7F9"
+              stroke="#E7E7EA" stroke-width="2"/>
+
+        <!-- Stars -->
+        <g fill="#F8BA00">
+          <path d="M59 180 l5 11 12 1 -9 8 3 12 -11 -6 -10 6 2 -12 -9 -8 12 -1z"/>
+          <path d="M108 180 l5 11 12 1 -9 8 3 12 -11 -6 -10 6 2 -12 -9 -8 12 -1z"/>
+          <path d="M157 180 l5 11 12 1 -9 8 3 12 -11 -6 -10 6 2 -12 -9 -8 12 -1z"/>
+          <path d="M206 180 l5 11 12 1 -9 8 3 12 -11 -6 -10 6 2 -12 -9 -8 12 -1z"/>
+          <path d="M255 180 l5 11 12 1 -9 8 3 12 -11 -6 -10 6 2 -12 -9 -8 12 -1z"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Interactive stars -->
+    <div class="bt-rating-stars" id="btRatingStarPicker"
+         aria-label="Select a rating">
+      <button class="bt-rating-star" data-rating="1"
+              aria-label="1 star" type="button">★</button>
+      <button class="bt-rating-star" data-rating="2"
+              aria-label="2 stars" type="button">★</button>
+      <button class="bt-rating-star" data-rating="3"
+              aria-label="3 stars" type="button">★</button>
+      <button class="bt-rating-star" data-rating="4"
+              aria-label="4 stars" type="button">★</button>
+      <button class="bt-rating-star" data-rating="5"
+              aria-label="5 stars" type="button">★</button>
+    </div>
+
+    <div id="btRatingFeedbackArea" hidden>
+      <textarea id="btRatingComment"
+        class="bt-rating-feedback"
+        maxlength="500"
+        placeholder="Tell us how we can improve (optional)..."></textarea>
+    </div>
+
+    <button class="bt-rating-yes" id="btRatingSubmit"
+            type="button">Yes</button>
+
+    <button class="bt-rating-later" id="btRatingLater"
+            type="button">Not sure yet</button>
+
+    <p class="bt-rating-thanks" id="btRatingThanks">
+      Thank you for your feedback!
+    </p>
+
+  </div>
+</div>
+
+<script>
+
+(function () {
+  const overlay = document.getElementById("btRatingOverlay");
+  if (!overlay) return;
+
+  const stars = [...overlay.querySelectorAll(".bt-rating-star")];
+  const submit = document.getElementById("btRatingSubmit");
+  const later = document.getElementById("btRatingLater");
+  const feedbackArea = document.getElementById("btRatingFeedbackArea");
+  const comment = document.getElementById("btRatingComment");
+  const thanks = document.getElementById("btRatingThanks");
+  const nameEl = document.getElementById("btRatingStudentName");
+
+  let selectedRating = 0;
+  let submitted = false;
+
+  // Set the student's display name here if available.
+  // Example: window.btStudentName = "Robert";
+  const studentName = window.btStudentName || "";
+  if (studentName) nameEl.textContent = ", " + studentName;
+
+  function paintStars(value) {
+    stars.forEach((star, index) => {
+      const active = index < value;
+      star.classList.toggle("bt-star-active", active);
+      star.setAttribute("aria-pressed", String(active));
+    });
+  }
+
+  function openRatingPopup() {
+    if (localStorage.getItem("btRatingDismissed") === "1" ||
+        localStorage.getItem("btRatingSubmitted") === "1") {
+      return;
+    }
+
+    overlay.classList.add("bt-rating-visible");
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeRatingPopup() {
+    overlay.classList.remove("bt-rating-visible");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    localStorage.setItem("btRatingDismissed", "1");
+  }
+
+  stars.forEach(star => {
+    star.addEventListener("click", () => {
+      selectedRating = Number(star.dataset.rating);
+      paintStars(selectedRating);
+      feedbackArea.hidden = false;
+      submit.textContent = "Submit Rating";
+    });
+  });
+
+  submit.addEventListener("click", async () => {
+    if (!selectedRating) {
+      // Match the screenshot's initial "Yes" action.
+      feedbackArea.hidden = false;
+      submit.textContent = "Choose stars to continue";
+      return;
+    }
+
+    if (submitted) return;
+    submitted = true;
+    submit.disabled = true;
+    submit.textContent = "Submitting...";
+
+    const ratingData = {
+      rating: selectedRating,
+      feedback: comment.value.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      // Optional Firebase integration:
+      // Define window.btSaveRating = async (data) => { ...Firestore... }
+      // in your existing Firebase module script.
+      if (typeof window.btSaveRating === "function") {
+        await window.btSaveRating(ratingData);
+      } else {
+        // Local fallback only. This does NOT send ratings to the admin.
+        const oldRatings = JSON.parse(
+          localStorage.getItem("btLocalRatings") || "[]"
+        );
+        oldRatings.push(ratingData);
+        localStorage.setItem("btLocalRatings", JSON.stringify(oldRatings));
+      }
+
+      localStorage.setItem("btRatingSubmitted", "1");
+      stars.forEach(star => star.disabled = true);
+      feedbackArea.hidden = true;
+      submit.style.display = "none";
+      later.style.display = "none";
+      thanks.style.display = "block";
+
+      setTimeout(() => {
+        overlay.classList.remove("bt-rating-visible");
+        overlay.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }, 1800);
+
+    } catch (error) {
+      console.error("Rating save failed:", error);
+      submit.disabled = false;
+      submit.textContent = "Try Again";
+      submitted = false;
+      alert("Rating save nahi hui. Please dobara try karein.");
+    }
+  });
+
+  later.addEventListener("click", closeRatingPopup);
+
+  // Show once after a short delay for this browser/device.
+  // Test it by calling window.btShowRating() from the console.
+  window.btShowRating = openRatingPopup;
+
+  if (!localStorage.getItem("btRatingDismissed") &&
+      !localStorage.getItem("btRatingSubmitted")) {
+    setTimeout(openRatingPopup, 2500);
+  }
+})();
+
+
+</script>
 
 </body>
 
