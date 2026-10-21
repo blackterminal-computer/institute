@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,12 +120,12 @@ footer{text-align:center;padding:27px 0 0;color:#65748b;font-size:10px;letter-sp
   <div class="payment-card paid">
     <div class="payment-heading"><i class="ri-checkbox-circle-fill"></i> Paid Amount</div>
     <div class="payment-amount">₹<span id="paidAmount">0</span></div>
-    <div class="payment-help">Rewards already marked as paid.</div>
+    <div class="payment-help" id="paidHelp">Rewards already marked as paid.</div>
   </div>
   <div class="payment-card pending">
     <div class="payment-heading"><i class="ri-time-fill"></i> Pending Amount</div>
     <div class="payment-amount">₹<span id="pendingAmount">0</span></div>
-    <div class="payment-help">Approved rewards awaiting payment.</div>
+    <div class="payment-help" id="pendingHelp">Approved rewards awaiting payment.</div>
   </div>
 </section>
 
@@ -148,7 +147,7 @@ footer{text-align:center;padding:27px 0 0;color:#65748b;font-size:10px;letter-sp
   </div>
   <div id="leaderboard"><div class="empty">Loading leaderboard...</div></div>
   <div class="my-rank" id="myRank">Your leaderboard position will appear here.</div>
-  <div class="notice"><i class="ri-information-line"></i> Rankings use verified referral counts. Earnings are estimated from configured cash rewards and may differ from paid/pending amounts until the admin payment ledger is connected.</div>
+  <div class="notice"><i class="ri-information-line"></i> Rankings use verified referral counts. Estimated earnings are not a payment guarantee.</div>
 </section>
 
 <section class="section invite-box">
@@ -162,7 +161,7 @@ footer{text-align:center;padding:27px 0 0;color:#65748b;font-size:10px;letter-sp
     <button class="btn btn-whatsapp" id="whatsappBtn"><i class="ri-whatsapp-line"></i> Share on WhatsApp</button>
     <button class="btn btn-secondary" id="copyBtn"><i class="ri-file-copy-line"></i> Copy Invite Link</button>
   </div>
-  <div class="notice">Only eligible students can be referred. Do not share private student information in public leaderboard profiles.</div>
+  <div class="notice">Student selection is loaded once per page session. If Firebase quota is already exhausted, restore quota or wait for its reset before retrying.</div>
 </section>
 
 <section class="section">
@@ -174,21 +173,21 @@ footer{text-align:center;padding:27px 0 0;color:#65748b;font-size:10px;letter-sp
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {initializeApp,getApps,getApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
  getFirestore,collection,doc,getDoc,getDocs,onSnapshot,query,where,
  runTransaction,serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
- apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WI",
+ apiKey:"AIzaSyCEYfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
  authDomain:"black-terminal-f2c91.firebaseapp.com",
  projectId:"black-terminal-f2c91",
  storageBucket:"black-terminal-f2c91.firebasestorage.app",
  messagingSenderId:"552489994197",
  appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
-const app=initializeApp(firebaseConfig);
+const app=getApps().length?getApp():initializeApp(firebaseConfig);
 const db=getFirestore(app);
 const currentStudent=(localStorage.getItem("studentName")||"").trim();
 const inviteBase="https://blackterminal-computer.github.io/institute/login.html";
@@ -199,18 +198,23 @@ let referrals=[];
 let eligibleStudents=[];
 let paymentRecords=[];
 let allStudents=[];
-let stopReferrals=null,stopPayments=null,stopStudents=null;
+let studentsLoaded=false;
+let paymentsLoaded=false;
+let rewardsLoaded=false;
+let studentsLoadFailed=false;
+let paymentsLoadFailed=false;
+let rewardsLoadFailed=false;
+let stopReferrals=null;
+let stopPayments=null;
 
 const $=id=>document.getElementById(id);
 const money=n=>Math.max(0,Number(n)||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2600)}
+function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2800)}
 function inviteLink(){const u=new URL(inviteBase);if(currentStudent)u.searchParams.set("ref",currentStudent);return u.toString()}
 function verifiedReferralCount(){return referrals.filter(r=>String(r.status||"").toLowerCase()==="verified").length}
 function milestoneCount(count){return rewardConfig.filter(r=>r.enabled&&count>=Number(r.count||0)).length}
 
-/* Configured reward calculation: count-1 Cash reward is the per-referral rate.
-   Other enabled Cash milestones are one-time bonuses. */
 function calculateCash(count){
  const enabled=rewardConfig.filter(r=>r.enabled).sort((a,b)=>Number(a.count)-Number(b.count));
  const base=enabled.find(r=>String(r.type||"").toLowerCase()==="cash"&&Number(r.count)===1);
@@ -220,6 +224,7 @@ function calculateCash(count){
  });
  return Math.max(0,total);
 }
+
 function paymentTotals(){
  let paid=0,pending=0;
  paymentRecords.forEach(p=>{
@@ -230,6 +235,7 @@ function paymentTotals(){
  });
  return {paid,pending};
 }
+
 function renderRoadmap(count){
  const el=$("rewardRoadmap");
  const rewards=rewardConfig.filter(r=>r.enabled).sort((a,b)=>Number(a.count)-Number(b.count));
@@ -249,27 +255,45 @@ function renderRoadmap(count){
   </article>`;
  }).join("");
 }
+
 function renderWallet(){
  const count=verifiedReferralCount();
  const {paid,pending}=paymentTotals();
  const earned=calculateCash(count);
- $("walletAmount").textContent=money(Math.max(0,earned-paid-pending));
- $("paidAmount").textContent=money(paid);
- $("pendingAmount").textContent=money(pending);
+
+ $("walletAmount").textContent=paymentsLoadFailed?"—":money(Math.max(0,earned-paid-pending));
+ $("paidAmount").textContent=paymentsLoadFailed?"—":money(paid);
+ $("pendingAmount").textContent=paymentsLoadFailed?"—":money(pending);
+ $("paidHelp").textContent=paymentsLoadFailed?"Payment records unavailable":"Rewards already marked as paid.";
+ $("pendingHelp").textContent=paymentsLoadFailed?"Could not verify payment ledger":"Approved rewards awaiting payment.";
+
  $("verifiedCount").textContent=count;
  $("xpCount").textContent=money(count*XP_PER_VERIFIED_REFERRAL);
  $("milestoneCount").textContent=milestoneCount(count);
+
  const tier=count>=20?"TIER 4":count>=10?"TIER 3":count>=5?"TIER 2":"TIER 1";
- $("tierBadge").textContent=tier;$("walletTier").textContent=tier;
+ $("tierBadge").textContent=tier;
+ $("walletTier").textContent=tier;
+
  const base=rewardConfig.find(r=>r.enabled&&String(r.type||"").toLowerCase()==="cash"&&Number(r.count)===1);
- $("walletNote").textContent="₹"+money(base?.value||0)+" per verified referral + eligible cash bonuses";
+ $("walletNote").textContent=rewardsLoadFailed
+  ?"Reward settings unavailable"
+  :"₹"+money(base?.value||0)+" per verified referral + eligible cash bonuses";
+
  renderRoadmap(count);
 }
+
 function renderReferrals(){
  const el=$("referralList");
  const sorted=[...referrals].sort((a,b)=>(b.referral_status_updated_at?.seconds||0)-(a.referral_status_updated_at?.seconds||0));
  $("referralSummary").textContent=sorted.length+" TOTAL";
- if(!sorted.length){el.innerHTML='<div class="empty">No referrals yet.<br>Invite a friend to get started!</div>';return}
+
+ if(!sorted.length){
+  el.innerHTML='<div class="empty">No referrals yet.<br>Invite a friend to get started!</div>';
+  renderWallet();
+  return;
+ }
+
  el.innerHTML=sorted.slice(0,20).map(r=>{
   const name=r.studentName||r.name||r.id||"Student";
   const verified=String(r.status||"").toLowerCase()==="verified";
@@ -277,28 +301,49 @@ function renderReferrals(){
   const date=d?.toDate?d.toDate().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"Referral submitted";
   return `<div class="referral-row"><div class="referral-person"><div class="avatar">${safe(name.charAt(0).toUpperCase())}</div><div><div class="person-name">${safe(name)}</div><div class="person-date">${safe(date)}</div></div></div><span class="status ${verified?"verified":"pending"}">${verified?"✓ VERIFIED":"PENDING"}</span></div>`;
  }).join("");
+
+ renderWallet();
 }
 
-/* Profile photo fields accepted: photoURL, photoUrl, profilePic, profileImage, imageURL */
-function photoOf(s){return s.photoURL||s.photoUrl||s.profilePic||s.profileImage||s.imageURL||s.avatarUrl||""}
-function nameOf(s,id){return String(s.studentName||s.name||s.fullName||id||"Student")}
+/* Supports common profile image fields. Actual Firestore schema must match one of these. */
+function photoOf(s){
+ return s.photoURL||s.photoUrl||s.profilePic||s.profileImage||
+ s.imageURL||s.avatarUrl||s.profilePicture||s.photo||s.avatar||s.image||"";
+}
+function nameOf(s,id){return String(s.studentName||s.name||s.fullName||id||"Student").trim()}
+
 function verifiedCountFor(referrerName){
  return allStudents.filter(s=>
   String(s.referred_by||"")===String(referrerName)&&
   String(s.status||"").toLowerCase()==="verified"
  ).length;
 }
+
 function renderLeaderboard(){
  const el=$("leaderboard");
- if(!allStudents.length){el.innerHTML='<div class="empty">No leaderboard data available yet.</div>';return}
- const names=[...new Set(allStudents.map(s=>String(s.studentName||s.name||s.fullName||s.id||"").trim()).filter(Boolean))];
- const ranked=names.map(name=>{
-  const own=allStudents.find(s=>String(s.studentName||s.name||s.fullName||s.id||"").trim()===name)||{};
-  const count=verifiedCountFor(name);
-  return {name,count,earned:calculateCash(count),photo:photoOf(own),id:own.id||name};
- }).filter(s=>s.count>0).sort((a,b)=>b.count-a.count||b.earned-a.earned||a.name.localeCompare(b.name));
 
- if(!ranked.length){el.innerHTML='<div class="empty">The leaderboard will appear after referrals are verified.</div>';$("myRank").textContent="You have not entered the leaderboard yet. Get your first verified referral!";return}
+ if(!studentsLoaded){
+  el.innerHTML='<div class="empty">Leaderboard data is loading...</div>';
+  return;
+ }
+ if(studentsLoadFailed){
+  el.innerHTML='<div class="empty">Leaderboard unavailable. Check Firebase quota and permissions.</div>';
+  return;
+ }
+
+ const names=[...new Set(allStudents.map(s=>nameOf(s,s.id)).filter(Boolean))];
+ const ranked=names.map(name=>{
+  const own=allStudents.find(s=>nameOf(s,s.id)===name)||{};
+  const count=verifiedCountFor(name);
+  return {name,count,earned:calculateCash(count),photo:photoOf(own)};
+ }).filter(s=>s.count>0)
+ .sort((a,b)=>b.count-a.count||b.earned-a.earned||a.name.localeCompare(b.name));
+
+ if(!ranked.length){
+  el.innerHTML='<div class="empty">The leaderboard will appear after referrals are verified.</div>';
+  $("myRank").textContent="Get your first verified referral to enter the leaderboard.";
+  return;
+ }
 
  el.innerHTML=ranked.slice(0,5).map((s,i)=>{
   const rank=i+1;
@@ -306,6 +351,7 @@ function renderLeaderboard(){
   const avatar=s.photo
    ?`<div class="avatar"><img src="${safe(s.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.textContent='${safe(s.name.charAt(0).toUpperCase())}'"></div>`
    :`<div class="avatar">${safe(s.name.charAt(0).toUpperCase())}</div>`;
+
   return `<div class="leader-row">
    <div class="rank ${cls}">${rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":"#"+rank}</div>
    ${avatar}
@@ -317,32 +363,90 @@ function renderLeaderboard(){
  const my=ranked.findIndex(s=>s.name===currentStudent);
  $("myRank").textContent=my>=0
   ?`Your position: #${my+1} · ${ranked[my].count} verified referrals · Estimated cash earnings ₹${money(ranked[my].earned)}`
-  :"Your current position: outside the Top 5. Keep inviting friends to climb the leaderboard!";
+  :"Your current position: outside the Top 5. Keep inviting friends!";
 }
+
+/*
+ * Important quota optimization:
+ * The students collection is fetched ONCE per page load.
+ * Referral updates no longer trigger another full students collection read.
+ * This reduces repeated reads, but a very large collection still costs reads.
+ */
 function renderStudentOptions(){
  const select=$("studentSelect");
- if(!currentStudent){select.innerHTML='<option value="">Student identity not found</option>';$("inviteBtn").disabled=true;return}
- if(!eligibleStudents.length){select.innerHTML='<option value="">No eligible students available</option>';$("inviteBtn").disabled=true;return}
- select.innerHTML='<option value="">Select a student</option>'+eligibleStudents.map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join("");
+
+ if(!currentStudent){
+  select.innerHTML='<option value="">Student identity not found</option>';
+  $("inviteBtn").disabled=true;
+  return;
+ }
+ if(!studentsLoaded){
+  select.innerHTML='<option value="">Loading eligible students...</option>';
+  $("inviteBtn").disabled=true;
+  return;
+ }
+ if(studentsLoadFailed){
+  select.innerHTML='<option value="">Could not load students — check quota</option>';
+  $("inviteBtn").disabled=true;
+  return;
+ }
+
+ const referredIds=new Set(referrals.map(r=>r.id));
+ const eligible=allStudents.filter(s=>{
+  const status=String(s.status||"").toLowerCase();
+  const name=nameOf(s,s.id);
+  return s.id!==currentStudent&&name!==currentStudent&&
+   !s.referred_by&&!referredIds.has(s.id)&&
+   status!=="pending"&&status!=="verified";
+ }).map(s=>({id:s.id,name:nameOf(s,s.id)}))
+ .sort((a,b)=>a.name.localeCompare(b.name));
+
+ eligibleStudents=eligible;
+
+ if(!eligible.length){
+  select.innerHTML='<option value="">No eligible students available</option>';
+  $("inviteBtn").disabled=true;
+  return;
+ }
+
+ select.innerHTML='<option value="">Select a student</option>'+
+  eligible.map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join("");
  $("inviteBtn").disabled=false;
 }
-async function loadEligibleStudents(){
+
+async function loadStudentsOnce(){
+ if(studentsLoaded)return;
+
  try{
   const snap=await getDocs(collection(db,"students"));
-  const referredIds=new Set(referrals.map(r=>r.id));
-  eligibleStudents=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>{
-   const status=String(s.status||"").toLowerCase();
-   const name=nameOf(s,s.id);
-   return s.id!==currentStudent&&name!==currentStudent&&!s.referred_by&&!referredIds.has(s.id)&&status!=="pending"&&status!=="verified";
-  }).map(s=>({id:s.id,name:nameOf(s,s.id)})).sort((a,b)=>a.name.localeCompare(b.name));
+  allStudents=snap.docs.map(d=>({id:d.id,...d.data()}));
+  studentsLoadFailed=false;
+ }catch(e){
+  console.error("Students one-time load failed:",e);
+  studentsLoadFailed=true;
+  toast(e.code==="resource-exhausted"
+   ?"Firebase quota exceeded. Check Firebase Usage."
+   :"Unable to load student records.");
+ }finally{
+  studentsLoaded=true;
   renderStudentOptions();
- }catch(e){console.error(e);$("studentSelect").innerHTML='<option value="">Could not load students</option>'}
+  renderLeaderboard();
+ }
 }
+
 async function loadRewardSettings(){
  try{
   const snap=await getDoc(doc(db,"referralSettings","config"));
+
   if(snap.exists()&&Array.isArray(snap.data().rewards)){
-   rewardConfig=snap.data().rewards.map((r,i)=>({id:r.id||"reward-"+i,count:Number(r.count||0),name:r.name||"Reward",type:r.type||"Achievement",value:Number(r.value||0),enabled:r.enabled!==false})).filter(r=>r.count>0);
+   rewardConfig=snap.data().rewards.map((r,i)=>({
+    id:r.id||"reward-"+i,
+    count:Number(r.count||0),
+    name:r.name||"Reward",
+    type:r.type||"Achievement",
+    value:Number(r.value||0),
+    enabled:r.enabled!==false
+   })).filter(r=>r.count>0);
   }else{
    rewardConfig=[
     {id:"r1",count:1,name:"Cash Reward",type:"Cash",value:100,enabled:true},
@@ -352,72 +456,143 @@ async function loadRewardSettings(){
     {id:"r5",count:20,name:"Pen Drive",type:"Physical",value:1000,enabled:true}
    ];
   }
-  renderWallet();renderLeaderboard();
- }catch(e){console.error("Rewards config:",e);toast("Could not load reward settings")}
+  rewardsLoadFailed=false;
+ }catch(e){
+  console.error("Rewards config:",e);
+  rewardsLoadFailed=true;
+  toast(e.code==="resource-exhausted"
+   ?"Firebase quota exceeded."
+   :"Could not load reward settings.");
+ }
+ rewardsLoaded=true;
+ renderWallet();
+ renderLeaderboard();
 }
+
 function watchReferrals(){
  if(stopReferrals)stopReferrals();
- const q=query(collection(db,"students"),where("referred_by","==",currentStudent));
- stopReferrals=onSnapshot(q,async snap=>{
-  referrals=snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderReferrals();renderWallet();await loadEligibleStudents();
- },e=>{console.error(e);$("referralList").innerHTML='<div class="empty">Could not load referrals. Check Firestore permissions.</div>'});
+
+ stopReferrals=onSnapshot(
+  query(collection(db,"students"),where("referred_by","==",currentStudent)),
+  snap=>{
+   referrals=snap.docs.map(d=>({id:d.id,...d.data()}));
+   renderReferrals();
+   renderStudentOptions();
+   renderLeaderboard();
+  },
+  e=>{
+   console.error("Referral listener:",e);
+   $("referralList").innerHTML=
+    '<div class="empty">Could not load referrals. Check Firebase permissions or quota.</div>';
+   toast(e.code==="resource-exhausted"
+    ?"Firebase quota exceeded."
+    :"Could not load referrals.");
+  }
+ );
 }
+
 function watchPayments(){
  if(stopPayments)stopPayments();
- const q=query(collection(db,"referralPayments"),where("referrerName","==",currentStudent));
- stopPayments=onSnapshot(q,snap=>{
-  paymentRecords=snap.docs.map(d=>({id:d.id,...d.data()}));renderWallet();
- },e=>{console.warn("Payment records unavailable:",e);paymentRecords=[];renderWallet()});
+
+ stopPayments=onSnapshot(
+  query(collection(db,"referralPayments"),where("referrerName","==",currentStudent)),
+  snap=>{
+   paymentRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+   paymentsLoaded=true;
+   paymentsLoadFailed=false;
+   renderWallet();
+  },
+  e=>{
+   console.error("Payment listener:",e);
+   paymentsLoaded=true;
+   paymentsLoadFailed=true;
+   renderWallet();
+   toast(e.code==="resource-exhausted"
+    ?"Payment data unavailable: Firebase quota exceeded."
+    :"Payment records could not be loaded.");
+  }
+ );
 }
-function watchStudentsForLeaderboard(){
- if(stopStudents)stopStudents();
- stopStudents=onSnapshot(collection(db,"students"),snap=>{
-  allStudents=snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderLeaderboard();
- },e=>{console.error("Leaderboard:",e);$("leaderboard").innerHTML='<div class="empty">Leaderboard data is unavailable. Check Firestore permissions.</div>'});
-}
+
 async function submitReferral(){
  const studentId=$("studentSelect").value;
- if(!currentStudent||currentStudent==="Guest"){toast("Please sign in first.");return}
+
+ if(!currentStudent){toast("Please sign in first.");return}
  if(!studentId){toast("Please select a student.");return}
  if(studentId===currentStudent){toast("You cannot refer yourself.");return}
- const btn=$("inviteBtn");btn.disabled=true;btn.textContent="Submitting...";
+
+ const btn=$("inviteBtn");
+ btn.disabled=true;
+ btn.innerHTML='<i class="ri-loader-4-line"></i> Submitting...';
+
  try{
   const studentRef=doc(db,"students",studentId);
+
   await runTransaction(db,async tx=>{
    const snap=await tx.get(studentRef);
+
    if(!snap.exists())throw new Error("Student record not found.");
-   const data=snap.data(),status=String(data.status||"").toLowerCase();
-   if(data.referred_by)throw new Error("This student has already been referred.");
-   if(status==="pending"||status==="verified")throw new Error("This student already has a referral status.");
-   tx.update(studentRef,{referred_by:currentStudent,status:"pending",referral_status_updated_at:serverTimestamp()});
+
+   const data=snap.data();
+   const status=String(data.status||"").toLowerCase();
+
+   if(data.referred_by)throw new Error("This student already has a referrer.");
+   if(status==="pending"||status==="verified"){
+    throw new Error("This student already has a referral status.");
+   }
+
+   tx.update(studentRef,{
+    referred_by:currentStudent,
+    status:"pending",
+    referral_status_updated_at:serverTimestamp()
+   });
   });
+
   toast("Referral submitted successfully!");
- }catch(e){console.error(e);toast(e.message||"Could not submit referral")}
- finally{btn.innerHTML='<i class="ri-user-add-fill"></i> Submit Referral';btn.disabled=false}
+ }catch(e){
+  console.error("Referral submit:",e);
+  toast(e.code==="resource-exhausted"
+   ?"Firebase quota exceeded."
+   :(e.message||"Could not submit referral."));
+ }finally{
+  btn.innerHTML='<i class="ri-user-add-fill"></i> Submit Referral';
+  renderStudentOptions();
+ }
 }
+
 $("inviteBtn").addEventListener("click",submitReferral);
+
 $("copyBtn").addEventListener("click",async()=>{
- try{await navigator.clipboard.writeText(inviteLink());toast("Invite link copied!")}
- catch{toast("Unable to copy link.")}
+ try{
+  await navigator.clipboard.writeText(inviteLink());
+  toast("Invite link copied!");
+ }catch(e){
+  toast("Unable to copy link. Please copy it manually.");
+ }
 });
+
 $("whatsappBtn").addEventListener("click",()=>{
  const msg="Join BlackTerminal Computer Institute, Baripada! 🎓\nStudy, learn and grow with us.\nUse my invite link: "+inviteLink();
  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank","noopener,noreferrer");
 });
 
-if(!currentStudent||currentStudent==="Guest"){
+if(!currentStudent){
  $("walletNote").textContent="Please sign in to view your rewards.";
  $("studentSelect").innerHTML='<option value="">Sign in required</option>';
  $("inviteBtn").disabled=true;
  $("referralList").innerHTML='<div class="empty">Please sign in through the student portal.</div>';
  $("leaderboard").innerHTML='<div class="empty">Please sign in to view the leaderboard.</div>';
+ $("paidAmount").textContent="—";
+ $("pendingAmount").textContent="—";
 }else{
+ /*
+  * One full students collection read, not a full collection snapshot listener.
+  * Subsequent referral updates only update the filtered referral query.
+  */
+ loadStudentsOnce();
  loadRewardSettings();
  watchReferrals();
  watchPayments();
- watchStudentsForLeaderboard();
 }
 </script>
 </body>
