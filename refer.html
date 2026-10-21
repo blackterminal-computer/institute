@@ -225,87 +225,62 @@ function calculateCash(count){
  return Math.max(0,total);
 }
 
-function paymentTotals() {
-    let paid = 0;
-    let pending = 0;
-
-    paymentRecords.forEach((p) => {
-        const amount = Math.max(0, Number(p.amount) || 0);
-        const status = String(p.status || "").trim().toLowerCase();
-
-        if (status === "paid") {
-            paid += amount;
-        } else if (
-            status === "pending" ||
-            status === "approved"
-        ) {
-            pending += amount;
-        }
-    });
-
-    return { paid, pending };
+function paymentTotals(){
+ let paid=0,pending=0;
+ paymentRecords.forEach(p=>{
+  const amount=Math.max(0,Number(p.amount||0));
+  const status=String(p.status||"").toLowerCase();
+  if(status==="paid")paid+=amount;
+  else if(status==="pending"||status==="approved")pending+=amount;
+ });
+ return {paid,pending};
 }
 
-function renderWallet() {
-    const count = verifiedReferralCount();
-    const totals = paymentTotals();
+function renderRoadmap(count){
+ const el=$("rewardRoadmap");
+ const rewards=rewardConfig.filter(r=>r.enabled).sort((a,b)=>Number(a.count)-Number(b.count));
+ if(!rewards.length){el.innerHTML='<div class="empty">No reward milestones configured.</div>';return}
+ const next=rewards.find(r=>count<Number(r.count));
+ el.innerHTML=rewards.map(r=>{
+  const n=Number(r.count||0),unlocked=count>=n,isNext=next&&next.id===r.id;
+  const type=String(r.type||"Achievement").toLowerCase();
+  const icon=type==="cash"?"ri-coins-fill":type==="physical"?"ri-gift-fill":type==="course"?"ri-graduation-cap-fill":type==="special"?"ri-trophy-fill":"ri-medal-fill";
+  const detail=type==="cash"?"₹"+money(r.value):Number(r.value)>0?"Value ₹"+money(r.value):r.type;
+  return `<article class="reward-card ${unlocked?"unlocked":""} ${isNext?"next":""}">
+   <div class="reward-icon"><i class="${icon}"></i></div>
+   <div class="reward-count">${n} verified referrals</div>
+   <div class="reward-name">${safe(r.name||"Reward")}</div>
+   <div class="reward-type">${safe(detail)}</div>
+   <span class="reward-status">${unlocked?"✓ MILESTONE REACHED":isNext?"NEXT MILESTONE":"LOCKED"}</span>
+  </article>`;
+ }).join("");
+}
 
-    const paid = totals.paid;
-    const pending = totals.pending;
-    const earned = calculateCash(count);
+function renderWallet(){
+ const count=verifiedReferralCount();
+ const {paid,pending}=paymentTotals();
+ const earned=calculateCash(count);
 
-    // Unpaid available rewards
-    const available = Math.max(
-        0,
-        earned - paid - pending
-    );
+ $("walletAmount").textContent=paymentsLoadFailed?"—":money(Math.max(0,earned-paid-pending));
+ $("paidAmount").textContent=paymentsLoadFailed?"—":money(paid);
+ $("pendingAmount").textContent=paymentsLoadFailed?"—":money(pending);
+ $("paidHelp").textContent=paymentsLoadFailed?"Payment records unavailable":"Rewards already marked as paid.";
+ $("pendingHelp").textContent=paymentsLoadFailed?"Could not verify payment ledger":"Approved rewards awaiting payment.";
 
-    $("walletAmount").textContent =
-        paymentsLoadFailed ? "—" : money(available);
+ $("verifiedCount").textContent=count;
+ $("xpCount").textContent=money(count*XP_PER_VERIFIED_REFERRAL);
+ $("milestoneCount").textContent=milestoneCount(count);
 
-    $("paidAmount").textContent =
-        paymentsLoadFailed ? "—" : money(paid);
+ const tier=count>=20?"TIER 4":count>=10?"TIER 3":count>=5?"TIER 2":"TIER 1";
+ $("tierBadge").textContent=tier;
+ $("walletTier").textContent=tier;
 
-    $("pendingAmount").textContent =
-        paymentsLoadFailed ? "—" : money(pending);
+ const base=rewardConfig.find(r=>r.enabled&&String(r.type||"").toLowerCase()==="cash"&&Number(r.count)===1);
+ $("walletNote").textContent=rewardsLoadFailed
+  ?"Reward settings unavailable"
+  :"₹"+money(base?.value||0)+" per verified referral + eligible cash bonuses";
 
-    $("paidHelp").textContent = paymentsLoadFailed
-        ? "Payment records unavailable."
-        : "Rewards already marked as paid.";
-
-    $("pendingHelp").textContent = paymentsLoadFailed
-        ? "Could not verify payment records."
-        : "Approved rewards awaiting payment.";
-
-    $("verifiedCount").textContent = count;
-
-    $("xpCount").textContent =
-        money(count * XP_PER_VERIFIED_REFERRAL);
-
-    $("milestoneCount").textContent =
-        milestoneCount(count);
-
-    const tier =
-        count >= 20 ? "TIER 4" :
-        count >= 10 ? "TIER 3" :
-        count >= 5  ? "TIER 2" :
-                      "TIER 1";
-
-    $("tierBadge").textContent = tier;
-    $("walletTier").textContent = tier;
-
-    const base = rewardConfig.find(r =>
-        r.enabled &&
-        String(r.type || "").toLowerCase() === "cash" &&
-        Number(r.count) === 1
-    );
-
-    $("walletNote").textContent = rewardsLoadFailed
-        ? "Reward settings unavailable."
-        : "₹" + money(base?.value || 0) +
-          " per verified referral + eligible cash bonuses";
-
-    renderRoadmap(count);
+ renderRoadmap(count);
 }
 
 function renderReferrals(){
