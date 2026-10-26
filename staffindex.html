@@ -1,7646 +1,1476 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
->
-
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#050507">
 <title>Staff Terminal | Black Terminal</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
-<link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <style>
-
-/* =========================================================
-   BLACK TERMINAL STAFF APP
-========================================================= */
-
-:root{
-
-    --blue:#0A84FF;
-    --blue-soft:#4DA3FF;
-
-    --green:#30D158;
-    --green-dark:#20A944;
-
-    --red:#FF453A;
-    --orange:#FF9F0A;
-    --purple:#BF5AF2;
-    --cyan:#22D3EE;
-
-    --bg:#050507;
-    --surface:#111116;
-    --surface-2:#17171E;
-    --surface-3:#1D1D25;
-
-    --white:#FFFFFF;
-    --text:#F5F5F7;
-    --text-soft:#C7C7CC;
-    --muted:#8E8E93;
-    --muted-2:#66666D;
-
-    --border:rgba(255,255,255,.08);
-    --border-strong:rgba(255,255,255,.13);
-
-    --radius-xl:28px;
-    --radius-lg:22px;
-    --radius-md:18px;
-    --radius-sm:14px;
-
-    --shadow:
-        0 18px 50px rgba(0,0,0,.42);
-
-    --safe-top:env(safe-area-inset-top);
-    --safe-bottom:env(safe-area-inset-bottom);
-
+:root {
+  --blue:#0A84FF;
+  --green:#30D158;
+  --red:#FF453A;
+  --orange:#FF9F0A;
+  --purple:#BF5AF2;
+  --cyan:#22D3EE;
+  --bg:#050507;
+  --surface:#111116;
+  --text:#F5F5F7;
+  --muted:#8E8E93;
+  --border:rgba(255,255,255,.08);
+  --radius:22px;
+  --shadow:0 18px 50px rgba(0,0,0,.42);
+  --safe-top:env(safe-area-inset-top);
+  --safe-bottom:env(safe-area-inset-bottom);
 }
-
-*{
-
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
-
-}
-
-html{
-
-    scroll-behavior:smooth;
-
-}
-
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
 body{
-
-    margin:0;
-    min-height:100vh;
-
-    color:var(--text);
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "SF Pro Text",
-        "Segoe UI",
-        sans-serif;
-
-    background:
-
-        radial-gradient(
-            circle at 0% 0%,
-            rgba(191,90,242,.12),
-            transparent 30%
-        ),
-
-        radial-gradient(
-            circle at 100% 8%,
-            rgba(10,132,255,.13),
-            transparent 30%
-        ),
-
-        #050507;
-
-    padding:
-        calc(var(--safe-top) + 18px)
-        16px
-        calc(var(--safe-bottom) + 120px);
-
-    -webkit-font-smoothing:antialiased;
-
-}
-
-button,
-input{
-
-    font-family:inherit;
-
-}
-
-button{
-
-    -webkit-appearance:none;
-
-}
-
-button:active{
-
-    transform:scale(.98);
-
-}
-
-.app{
-
-    width:100%;
-    max-width:520px;
-    margin:0 auto;
-
-}
-
-
-/* =========================================================
-   HEADER
-========================================================= */
-
-.topbar{
-
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:15px;
-
-    margin:
-        8px
-        2px
-        22px;
-
-}
-
-.greeting{
-
-    min-width:0;
-
-}
-
-.date-label{
-
-    margin-bottom:7px;
-
-    color:var(--purple);
-
-    font-size:12px;
-    line-height:1.2;
-    font-weight:850;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-
-}
-
-.greeting h1{
-
-    margin:0;
-
-    color:#fff;
-
-    font-size:34px;
-    line-height:1.05;
-    letter-spacing:-1.3px;
-    font-weight:900;
-
-}
-
-.streak{
-
-    flex-shrink:0;
-
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-
-    min-width:72px;
-    min-height:72px;
-
-    padding:9px;
-
-    border-radius:22px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,159,10,.15),
-            rgba(255,159,10,.04)
-        );
-
-    border:1px solid rgba(255,159,10,.22);
-
-    box-shadow:
-        0 10px 25px rgba(255,159,10,.08);
-
-}
-
-.streak i{
-
-    color:var(--orange);
-    font-size:18px;
-    margin-bottom:3px;
-
-}
-
-.streak strong{
-
-    color:#fff;
-    font-size:19px;
-    line-height:1;
-    font-weight:900;
-
-}
-
-.streak span{
-
-    margin-top:4px;
-
-    color:var(--orange);
-
-    font-size:9px;
-    font-weight:850;
-    letter-spacing:1px;
-
-}
-
-
-/* =========================================================
-   SECTION
-========================================================= */
-
-.section-label{
-
-    display:flex;
-    align-items:center;
-    gap:9px;
-
-    margin:
-        26px
-        4px
-        11px;
-
-    color:var(--muted);
-
-    font-size:11px;
-    font-weight:900;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-
-}
-
-.section-label::before{
-
-    content:"";
-
-    width:7px;
-    height:7px;
-
-    border-radius:50%;
-
-    background:var(--blue);
-
-    box-shadow:
-        0 0 10px rgba(10,132,255,.7);
-
-}
-
-
-/* =========================================================
-   HERO
-========================================================= */
-
-.hero{
-
-    position:relative;
-
-    min-height:155px;
-
-    margin-bottom:22px;
-
-    padding:25px 22px;
-
-    overflow:hidden;
-
-    border-radius:var(--radius-xl);
-
-    background:
-        linear-gradient(
-            135deg,
-            #12121A 0%,
-            #191929 55%,
-            #11111A 100%
-        );
-
-    border:1px solid rgba(10,132,255,.24);
-
-    box-shadow:var(--shadow);
-
-}
-
-.hero::before{
-
-    content:"";
-
-    position:absolute;
-
-    width:190px;
-    height:190px;
-
-    right:-70px;
-    top:-90px;
-
-    border-radius:50%;
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(191,90,242,.23),
-            transparent 68%
-        );
-
-}
-
-.hero::after{
-
-    content:"";
-
-    position:absolute;
-
-    width:170px;
-    height:170px;
-
-    left:-100px;
-    bottom:-110px;
-
-    border-radius:50%;
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(10,132,255,.17),
-            transparent 70%
-        );
-
-}
-
-.hero-content{
-
-    position:relative;
-    z-index:3;
-    width:67%;
-
-}
-
-.hero-kicker{
-
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-
-    margin-bottom:10px;
-
-    color:#73B9FF;
-
-    font-size:11px;
-    font-weight:900;
-    letter-spacing:1.2px;
-
-}
-
-.hero h2{
-
-    margin:0;
-
-    color:#fff;
-
-    font-size:23px;
-    line-height:1.12;
-    letter-spacing:-.5px;
-    font-weight:900;
-
-}
-
-.hero-line{
-
-    width:48px;
-    height:4px;
-
-    margin-top:13px;
-
-    border-radius:10px;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--blue),
-            var(--purple)
-        );
-
-}
-
-.hero-image{
-
-    position:absolute;
-
-    right:-3px;
-    bottom:-1px;
-
-    width:170px;
-    height:170px;
-
-    background:
-        url(
-            "https://i.ibb.co/RrHyVyr/salman-khan.png"
-        )
-        center bottom / contain
-        no-repeat;
-
-    filter:
-        drop-shadow(
-            0 15px 20px
-            rgba(0,0,0,.65)
-        );
-
-    z-index:2;
-
-}
-
-
-/* =========================================================
-   CARD
-========================================================= */
-
-.card{
-
-    position:relative;
-
-    margin-bottom:17px;
-
-    padding:21px;
-
-    border-radius:var(--radius-xl);
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(25,25,32,.96),
-            rgba(14,14,19,.96)
-        );
-
-    border:1px solid var(--border);
-
-    box-shadow:var(--shadow);
-
-}
-
-.card-header{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:15px;
-
-    margin-bottom:20px;
-
-}
-
-.card-heading{
-
-    display:flex;
-    align-items:center;
-    gap:12px;
-
-}
-
-.card-icon{
-
-    width:46px;
-    height:46px;
-
-    flex-shrink:0;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:16px;
-
-    background:rgba(10,132,255,.10);
-
-    border:1px solid rgba(10,132,255,.16);
-
-    color:var(--blue);
-
-    font-size:18px;
-
-}
-
-.card-title{
-
-    margin:0;
-
-    color:#fff;
-
-    font-size:19px;
-    line-height:1.15;
-    font-weight:900;
-
-}
-
-.card-subtitle{
-
-    margin:5px 0 0;
-
-    color:var(--muted);
-
-    font-size:12px;
-    line-height:1.4;
-
-}
-
-
-/* =========================================================
-   EARNINGS
-========================================================= */
-
-.earnings-card{
-
-    overflow:hidden;
-
-}
-
-.earnings-grid{
-
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-
-}
-
-.earning-box{
-
-    min-height:112px;
-
-    padding:18px;
-
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-
-    border-radius:20px;
-
-    background:
-        rgba(255,255,255,.035);
-
-    border:1px solid rgba(255,255,255,.065);
-
-}
-
-.earning-label{
-
-    color:var(--muted);
-
-    font-size:11px;
-    font-weight:850;
-    letter-spacing:.8px;
-    text-transform:uppercase;
-
-}
-
-.earning-value{
-
-    margin-top:13px;
-
-    color:#fff;
-
-    font-size:30px;
-    line-height:1;
-    letter-spacing:-1px;
-    font-weight:900;
-
-}
-
-.earning-value.blue{
-
-    color:#62B1FF;
-
-}
-
-.earning-value.green{
-
-    color:#4DE878;
-
-}
-
-.progress-area{
-
-    margin-top:19px;
-
-}
-
-.progress-top{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    margin-bottom:8px;
-
-    color:var(--muted);
-
-    font-size:11px;
-    font-weight:750;
-
-}
-
-.progress-track{
-
-    height:10px;
-
-    overflow:hidden;
-
-    border-radius:20px;
-
-    background:rgba(255,255,255,.06);
-
-}
-
-.progress-fill{
-
-    width:0%;
-    height:100%;
-
-    border-radius:20px;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--purple),
-            var(--blue),
-            var(--green)
-        );
-
-    transition:
-        width 1s cubic-bezier(.16,1,.3,1);
-
-}
-
-.cycle-info{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    margin-top:9px;
-
-    color:var(--muted);
-
-    font-size:12px;
-
-}
-
-.payout-btn{
-
-    display:none;
-
-    width:100%;
-
-    margin-top:14px;
-
-    padding:16px;
-
-    border:0;
-
-    border-radius:17px;
-
-    color:#061008;
-
-    background:
-        linear-gradient(
-            135deg,
-            #59EE7A,
-            #30D158
-        );
-
-    font-size:14px;
-    font-weight:900;
-
-}
-
-
-/* =========================================================
-   ACCORDION
-========================================================= */
-
-.accordion-card{
-
-    overflow:hidden;
-
-}
-
-.accordion-header{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    gap:15px;
-
-    cursor:pointer;
-    user-select:none;
-
-}
-
-.accordion-arrow{
-
-    width:42px;
-    height:42px;
-
-    flex-shrink:0;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:14px;
-
-    background:rgba(255,255,255,.055);
-
-    color:#aaa;
-
-    transition:.3s ease;
-
-}
-
-.accordion-arrow.open{
-
-    transform:rotate(180deg);
-
-}
-
-.accordion-body{
-
-    max-height:0;
-
-    overflow:hidden;
-
-    opacity:0;
-
-    transition:
-        max-height .45s ease,
-        opacity .3s ease,
-        margin-top .3s ease;
-
-}
-
-.accordion-body.open{
-
-    max-height:1800px;
-
-    margin-top:20px;
-
-    opacity:1;
-
-}
-
-
-/* =========================================================
-   SALARY ACTIVITY
-========================================================= */
-
-.salary-card{
-
-    border-top:3px solid var(--orange);
-
-}
-
-.salary-icon{
-
-    color:var(--orange);
-
-    background:rgba(255,159,10,.10);
-
-    border-color:rgba(255,159,10,.18);
-
-}
-
-.current-balance{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    gap:15px;
-
-    padding:18px;
-    margin-bottom:13px;
-
-    border-radius:20px;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(48,209,88,.08),
-            rgba(10,132,255,.045)
-        );
-
-    border:1px solid rgba(48,209,88,.13);
-
-}
-
-.current-label{
-
-    color:var(--muted);
-
-    font-size:10px;
-    font-weight:850;
-    letter-spacing:1px;
-
-}
-
-.current-amount{
-
-    margin-top:5px;
-
-    color:#fff;
-
-    font-size:27px;
-    font-weight:900;
-
-}
-
-.last-update{
-
-    text-align:right;
-
-}
-
-.last-update small{
-
-    display:block;
-
-    color:var(--muted-2);
-
-    font-size:9px;
-    font-weight:800;
-
-}
-
-.last-update span{
-
-    display:block;
-
-    margin-top:4px;
-
-    color:var(--green);
-
-    font-size:10px;
-    font-weight:800;
-
-}
-
-.activity-list{
-
-    display:flex;
-    flex-direction:column;
-    gap:11px;
-
-}
-
-.activity-item{
-
-    padding:16px;
-
-    border-radius:19px;
-
-    background:rgba(255,255,255,.025);
-
-    border:1px solid rgba(255,255,255,.065);
-
-}
-
-.activity-item.added{
-
-    border-left:4px solid var(--green);
-
-}
-
-.activity-item.reduced{
-
-    border-left:4px solid var(--red);
-
-}
-
-.activity-item.modified{
-
-    border-left:4px solid var(--orange);
-
-}
-
-.activity-top{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    gap:12px;
-
-}
-
-.activity-main{
-
-    display:flex;
-    align-items:center;
-    gap:11px;
-
-    min-width:0;
-
-}
-
-.activity-symbol{
-
-    width:40px;
-    height:40px;
-
-    flex-shrink:0;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:13px;
-
-    background:rgba(255,255,255,.05);
-
-}
-
-.added .activity-symbol{
-
-    color:var(--green);
-
-}
-
-.reduced .activity-symbol{
-
-    color:var(--red);
-
-}
-
-.modified .activity-symbol{
-
-    color:var(--orange);
-
-}
-
-.activity-name{
-
-    min-width:0;
-
-}
-
-.activity-name strong{
-
-    display:block;
-
-    color:#fff;
-
-    font-size:13px;
-    font-weight:850;
-
-}
-
-.activity-name small{
-
-    display:block;
-
-    margin-top:4px;
-
-    color:var(--muted);
-
-    font-size:10px;
-
-}
-
-.activity-amount{
-
-    flex-shrink:0;
-
-    font-size:16px;
-    font-weight:900;
-
-}
-
-.added .activity-amount{
-
-    color:var(--green);
-
-}
-
-.reduced .activity-amount{
-
-    color:var(--red);
-
-}
-
-.modified .activity-amount{
-
-    color:var(--orange);
-
-}
-
-.activity-details{
-
-    margin-top:13px;
-    padding-top:12px;
-
-    border-top:1px solid rgba(255,255,255,.05);
-
-}
-
-.detail-row{
-
-    display:flex;
-    justify-content:space-between;
-
-    gap:12px;
-
-    margin-top:7px;
-
-    font-size:11px;
-
-}
-
-.detail-row:first-child{
-
-    margin-top:0;
-
-}
-
-.detail-row span:first-child{
-
-    color:var(--muted-2);
-
-}
-
-.detail-row span:last-child{
-
-    color:#C9C9CE;
-
-    text-align:right;
-
-    font-weight:700;
-
-    word-break:break-word;
-
-}
-
-.empty-state{
-
-    padding:30px 15px;
-
-    text-align:center;
-
-    color:var(--muted-2);
-
-    font-size:12px;
-
-}
-
-.empty-state i{
-
-    display:block;
-
-    margin-bottom:10px;
-
-    font-size:25px;
-
-}
-
-
-/* =========================================================
-   HISTORY
-========================================================= */
-
-.history-card{
-
-    border-top:3px solid var(--cyan);
-
-}
-
-.history-icon{
-
-    color:var(--cyan);
-
-    background:rgba(34,211,238,.09);
-
-    border-color:rgba(34,211,238,.18);
-
-}
-
-.history-summary{
-
-    display:grid;
-
-    grid-template-columns:repeat(3,1fr);
-
-    gap:10px;
-
-    margin-bottom:14px;
-
-}
-
-.history-stat{
-
-    padding:16px 8px;
-
-    text-align:center;
-
-    border-radius:17px;
-
-    background:rgba(255,255,255,.035);
-
-    border:1px solid rgba(255,255,255,.06);
-
-}
-
-.history-stat strong{
-
-    display:block;
-
-    color:#fff;
-
-    font-size:24px;
-    font-weight:900;
-
-}
-
-.history-stat span{
-
-    display:block;
-
-    margin-top:5px;
-
-    color:var(--muted);
-
-    font-size:9px;
-    font-weight:850;
-    letter-spacing:.6px;
-
-}
-
-.history-wrap{
-
-    overflow:auto;
-
-    max-height:470px;
-
-    border-radius:17px;
-
-    border:1px solid rgba(255,255,255,.07);
-
-}
-
-.history-table{
-
-    width:100%;
-    min-width:350px;
-
-    border-collapse:collapse;
-
-}
-
-.history-table th{
-
-    position:sticky;
-    top:0;
-    z-index:2;
-
-    padding:13px 10px;
-
-    text-align:left;
-
-    color:var(--muted);
-
-    background:#18181F;
-
-    font-size:9px;
-    font-weight:900;
-
-    text-transform:uppercase;
-
-}
-
-.history-table td{
-
-    padding:13px 10px;
-
-    color:#E5E5EA;
-
-    font-size:11px;
-
-    border-top:1px solid rgba(255,255,255,.05);
-
-}
-
-.history-date{
-
-    font-weight:850;
-
-}
-
-.history-day{
-
-    color:var(--muted);
-
-}
-
-.history-time{
-
-    color:#7DD3FC;
-    font-weight:800;
-
-}
-
-.present-pill{
-
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-
-    padding:6px 9px;
-
-    border-radius:9px;
-
-    color:var(--green);
-
-    background:rgba(48,209,88,.08);
-
-    border:1px solid rgba(48,209,88,.14);
-
-    font-size:9px;
-    font-weight:900;
-
-}
-
-
-/* =========================================================
-   STRICT
-========================================================= */
-
-.strict-card{
-
-    display:none;
-
-    border-left:4px solid var(--red);
-
-}
-
-.strict-grid{
-
-    display:grid;
-
-    grid-template-columns:repeat(4,1fr);
-
-    gap:9px;
-
-}
-
-.strict-date{
-
-    padding:14px 5px;
-
-    text-align:center;
-
-    border-radius:16px;
-
-    color:#fff;
-
-    background:rgba(255,69,58,.055);
-
-    border:1px solid rgba(255,69,58,.17);
-
-}
-
-.strict-date.today{
-
-    background:
-        linear-gradient(
-            180deg,
-            #FF453A,
-            #C92828
-        );
-
-    border:none;
-
-    box-shadow:
-        0 9px 20px
-        rgba(255,69,58,.2);
-
-}
-
-.strict-date small{
-
-    display:block;
-
-    color:var(--red);
-
-    font-size:9px;
-    font-weight:900;
-
-    text-transform:uppercase;
-
-}
-
-.strict-date.today small{
-
-    color:#fff;
-
-}
-
-.strict-date strong{
-
-    display:block;
-
-    margin-top:5px;
-
-    font-size:23px;
-    font-weight:900;
-
-}
-
-
-/* =========================================================
-   QUICK ACTIONS
-========================================================= */
-
-.quick-actions{
-
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-
-}
-
-.quick-action{
-
-    display:flex;
-    align-items:center;
-    gap:15px;
-
-    width:100%;
-
-    padding:18px;
-
-    border-radius:21px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(25,25,32,.96),
-            rgba(14,14,19,.96)
-        );
-
-    border:1px solid var(--border);
-
-    box-shadow:
-        0 10px 28px rgba(0,0,0,.28);
-
-    cursor:pointer;
-
-    text-align:left;
-    color:#fff;
-
-}
-
-.quick-icon{
-
-    width:50px;
-    height:50px;
-
-    flex-shrink:0;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:17px;
-
-    font-size:20px;
-
-}
-
-.quick-info{
-
-    flex:1;
-    min-width:0;
-
-}
-
-.quick-info strong{
-
-    display:block;
-
-    color:#fff;
-
-    font-size:16px;
-    font-weight:900;
-
-}
-
-.quick-info span{
-
-    display:block;
-
-    margin-top:5px;
-
-    color:var(--muted);
-
-    font-size:11px;
-    line-height:1.35;
-
-}
-
-.quick-arrow{
-
-    width:40px;
-    height:40px;
-
-    flex-shrink:0;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:13px;
-
-    background:rgba(255,255,255,.05);
-
-    color:#999;
-
-}
-
-
-/* =========================================================
-   TASKS
-========================================================= */
-
-.tasks-card{
-
-    border-top:3px solid var(--purple);
-
-}
-
-.task-zone{
-
-    position:relative;
-
-    min-height:130px;
-
-    border-radius:20px;
-
-    overflow:hidden;
-
-}
-
-.task-content{
-
-    transition:
-        filter .35s ease,
-        opacity .35s ease;
-
-}
-
-.task-zone.locked .task-content{
-
-    filter:blur(7px);
-
-    opacity:.38;
-
-    pointer-events:none;
-
-    user-select:none;
-
-}
-
-.task-lock-overlay{
-
-    position:absolute;
-
-    inset:0;
-
-    z-index:20;
-
-    display:none;
-
-    align-items:center;
-    justify-content:center;
-
-    padding:15px;
-
-    background:
-        rgba(5,5,9,.73);
-
-    backdrop-filter:blur(3px);
-
-    border:1px solid rgba(255,255,255,.07);
-
-    border-radius:20px;
-
-}
-
-.task-zone.locked .task-lock-overlay{
-
-    display:flex;
-
-}
-
-.lock-box{
-
-    width:100%;
-
-    padding:18px;
-
-    text-align:center;
-
-    border-radius:19px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.065),
-            rgba(255,255,255,.02)
-        );
-
-    border:1px solid rgba(255,255,255,.09);
-
-}
-
-.lock-icon{
-
-    width:50px;
-    height:50px;
-
-    margin:0 auto 10px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:16px;
-
-    color:var(--orange);
-
-    background:rgba(255,159,10,.10);
-
-    border:1px solid rgba(255,159,10,.2);
-
-    font-size:20px;
-
-}
-
-.lock-box strong{
-
-    display:block;
-
-    color:#fff;
-
-    font-size:14px;
-    font-weight:900;
-
-}
-
-.lock-box p{
-
-    margin:7px 0 0;
-
-    color:var(--muted);
-
-    font-size:11px;
-    line-height:1.5;
-
-}
-
-.lock-status{
-
-    display:inline-flex;
-
-    align-items:center;
-    gap:5px;
-
-    margin-top:10px;
-
-    padding:6px 9px;
-
-    border-radius:9px;
-
-    color:var(--red);
-
-    background:rgba(255,69,58,.08);
-
-    border:1px solid rgba(255,69,58,.14);
-
-    font-size:9px;
-    font-weight:900;
-
-}
-
-
-/* =========================================================
-   TASK ITEM
-========================================================= */
-
-.task-list{
-
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-
-}
-
-.task-item{
-
-    display:block;
-
-    padding:17px;
-
-    border-radius:20px;
-
-    background:rgba(255,255,255,.028);
-
-    border:1px solid rgba(255,255,255,.07);
-
-}
-
-.task-item.priority{
-
-    border-left:4px solid var(--purple);
-
-}
-
-.task-item.normal{
-
-    border-left:4px solid rgba(255,255,255,.10);
-
-}
-
-.task-top{
-
-    display:flex;
-    align-items:flex-start;
-    gap:12px;
-
-}
-
-.task-dot{
-
-    width:11px;
-    height:11px;
-
-    flex-shrink:0;
-
-    margin-top:5px;
-
-    border-radius:50%;
-
-    background:var(--purple);
-
-}
-
-.task-dot.completed{
-
-    background:var(--green);
-
-}
-
-.task-dot.normal{
-
-    background:#666;
-
-}
-
-.task-info{
-
-    min-width:0;
-    flex:1;
-
-}
-
-.task-name{
-
-    margin:0;
-
-    color:#F1F1F4;
-
-    font-size:15px;
-    line-height:1.4;
-    font-weight:750;
-
-    word-break:break-word;
-
-}
-
-.task-name.done{
-
-    color:var(--muted);
-
-    text-decoration:line-through;
-
-}
-
-.task-meta{
-
-    margin-top:7px;
-
-    color:var(--muted);
-
-    font-size:10px;
-
-}
-
-.priority-label{
-
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-
-    margin-left:5px;
-
-    padding:4px 7px;
-
-    border-radius:7px;
-
-    color:var(--purple);
-
-    background:rgba(191,90,242,.09);
-
-    border:1px solid rgba(191,90,242,.16);
-
-    font-size:8px;
-    font-weight:900;
-
-}
-
-.task-reward-row{
-
-    display:flex;
-    flex-wrap:wrap;
-    gap:7px;
-
-    margin-top:12px;
-
-}
-
-.reward-pill{
-
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-
-    padding:7px 9px;
-
-    border-radius:9px;
-
-    font-size:9px;
-    font-weight:850;
-
-}
-
-.reward-pill.wage{
-
-    color:var(--cyan);
-
-    background:rgba(34,211,238,.07);
-
-    border:1px solid rgba(34,211,238,.12);
-
-}
-
-.reward-pill.amount{
-
-    color:var(--green);
-
-    background:rgba(48,209,88,.08);
-
-    border:1px solid rgba(48,209,88,.13);
-
-}
-
-.reward-pill.wallet{
-
-    color:var(--orange);
-
-    background:rgba(255,159,10,.07);
-
-    border:1px solid rgba(255,159,10,.13);
-
-}
-
-.reward-pill.credited{
-
-    color:var(--green);
-
-    background:rgba(48,209,88,.07);
-
-}
-
-.task-bottom{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    gap:10px;
-
-    margin-top:15px;
-    padding-top:14px;
-
-    border-top:1px solid rgba(255,255,255,.06);
-
-}
-
-.task-amount{
-
-    color:var(--green);
-
-    font-size:20px;
-    font-weight:900;
-
-}
-
-.task-amount.normal{
-
-    color:#777;
-
-}
-
-.task-btn{
-
-    min-width:125px;
-    min-height:44px;
-
-    padding:10px 14px;
-
-    border-radius:13px;
-
-    border:1px solid rgba(191,90,242,.22);
-
-    color:#D8A8FF;
-
-    background:rgba(191,90,242,.09);
-
-    font-size:11px;
-    font-weight:900;
-
-}
-
-.task-btn.completed{
-
-    color:var(--green);
-
-    background:rgba(48,209,88,.09);
-
-}
-
-
-/* =========================================================
-   LEAD
-========================================================= */
-
-.lead-card{
-
-    border-top:3px solid var(--blue);
-
-}
-
-.input-group{
-
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-
-}
-
-.input{
-
-    width:100%;
-    min-height:56px;
-
-    padding:0 17px;
-
-    outline:none;
-
-    border-radius:17px;
-
-    color:#fff;
-
-    background:rgba(255,255,255,.035);
-
-    border:1px solid rgba(255,255,255,.08);
-
-    font-size:15px;
-
-}
-
-.input::placeholder{
-
-    color:#696970;
-
-}
-
-.input:focus{
-
-    border-color:rgba(191,90,242,.6);
-
-}
-
-.submit-btn{
-
-    width:100%;
-    min-height:56px;
-
-    margin-top:12px;
-
-    border:0;
-
-    border-radius:17px;
-
-    color:#060609;
-
-    background:
-        linear-gradient(
-            135deg,
-            #fff,
-            #D9D9E0
-        );
-
-    font-size:14px;
-    font-weight:900;
-
-}
-
-
-/* =========================================================
-   FOOTER
-========================================================= */
-
-.footer{
-
-    margin-top:30px;
-
-    text-align:center;
-
-    color:#4F4F56;
-
-    font-size:10px;
-    font-weight:850;
-    letter-spacing:1.5px;
-
-}
-
-
-/* =========================================================
-   PUNCH DOCK
-========================================================= */
-
-.mobile-punch-dock{
-
-    position:fixed;
-
-    left:12px;
-    right:12px;
-
-    bottom:
-        calc(var(--safe-bottom) + 10px);
-
-    z-index:500;
-
-    max-width:496px;
-
-    margin:auto;
-
-    padding:8px;
-
-    border-radius:24px;
-
-    background:
-        rgba(17,17,23,.91);
-
-    border:1px solid rgba(255,255,255,.11);
-
-    backdrop-filter:blur(22px);
-
-    box-shadow:
-        0 18px 45px rgba(0,0,0,.55);
-
-}
-
-.dock-label{
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    padding:
-        5px
-        10px
-        7px;
-
-}
-
-.dock-label strong{
-
-    color:#fff;
-
-    font-size:11px;
-
-}
-
-.dock-label span{
-
-    color:var(--muted);
-
-    font-size:9px;
-
-}
-
-.slider-track{
-
-    position:relative;
-
-    width:100%;
-    height:72px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    overflow:hidden;
-
-    border-radius:22px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.075),
-            rgba(255,255,255,.018)
-        );
-
-    border:1px solid rgba(255,255,255,.11);
-
-}
-
-.slider-track.disabled{
-
-    border-color:
-        rgba(255,69,58,.25);
-
-}
-
-.slider-text{
-
-    position:relative;
-    z-index:1;
-
-    color:#A8A8AE;
-
-    font-size:12px;
-    font-weight:900;
-    letter-spacing:1.2px;
-
-    text-align:center;
-
-    pointer-events:none;
-
-}
-
-.slider-handle{
-
-    position:absolute;
-
-    left:6px;
-    top:6px;
-
-    width:60px;
-    height:60px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:18px;
-
-    z-index:3;
-
-    cursor:grab;
-
-    touch-action:none;
-
-    background:
-        linear-gradient(
-            145deg,
-            #34353E,
-            #18191F 55%,
-            #0C0D11
-        );
-
-    border:1px solid rgba(255,255,255,.19);
-
-    box-shadow:
-        0 7px 0 rgba(0,0,0,.52),
-        0 12px 22px rgba(0,0,0,.55);
-
-}
-
-.slider-handle i{
-
-    color:var(--blue);
-
-    font-size:21px;
-
-}
-
-.success-state{
-
-    border-color:
-        rgba(48,209,88,.6)!important;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(48,209,88,.13),
-            rgba(48,209,88,.035)
-        )!important;
-
-}
-
-.punch-message{
-
-    display:none;
-
-    align-items:center;
-    gap:10px;
-
-    margin-top:12px;
-    padding:13px 14px;
-
-    border-radius:15px;
-
-    color:#FF8B84;
-
-    background:rgba(255,69,58,.07);
-
-    border:1px solid rgba(255,69,58,.17);
-
-    font-size:12px;
-
-}
-
-.punch-message.show{
-
-    display:flex;
-
-}
-
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-.toast{
-
-    position:fixed;
-
-    left:50%;
-
-    bottom:
-        calc(var(--safe-bottom) + 105px);
-
-    z-index:1000;
-
-    width:
-        min(
-            calc(100% - 32px),
-            430px
-        );
-
-    display:flex;
-    align-items:center;
-    gap:10px;
-
-    padding:15px 17px;
-
-    border-radius:17px;
-
-    color:#fff;
-
-    background:
-        rgba(25,25,32,.96);
-
-    border:1px solid rgba(255,255,255,.11);
-
-    box-shadow:
-        0 18px 45px rgba(0,0,0,.55);
-
-    font-size:13px;
-    font-weight:750;
-
-    transform:
-        translate(-50%,150px);
-
-    opacity:0;
-
-    pointer-events:none;
-
-    transition:
-        transform .35s ease,
-        opacity .35s ease;
-
-}
-
-.toast.show{
-
-    transform:
-        translate(-50%,0);
-
-    opacity:1;
-
-}
-
-.toast i{
-
-    color:var(--green);
-
-    font-size:17px;
-
-}
-
-
-/* =========================================================
-   SMALL
-========================================================= */
-
+  margin:0;min-height:100vh;color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:radial-gradient(circle at 0 0,rgba(191,90,242,.12),transparent 30%),
+  radial-gradient(circle at 100% 8%,rgba(10,132,255,.13),transparent 30%),#050507;
+  padding:calc(var(--safe-top) + 18px) 16px calc(var(--safe-bottom) + 120px);
+  -webkit-font-smoothing:antialiased;
+}
+button,input{font-family:inherit}
+button{cursor:pointer;-webkit-appearance:none}
+button:active{transform:scale(.98)}
+.app{width:100%;max-width:520px;margin:auto}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin:8px 2px 22px}
+.greeting{min-width:0}
+.date-label{margin-bottom:7px;color:var(--purple);font-size:12px;font-weight:850;letter-spacing:1.5px;text-transform:uppercase}
+.greeting h1{margin:0;font-size:34px;line-height:1.05;letter-spacing:-1.3px;font-weight:900}
+.streak{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:72px;min-height:72px;padding:9px;border-radius:22px;background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.22)}
+.streak i{color:var(--orange);font-size:18px;margin-bottom:3px}
+.streak strong{font-size:19px}
+.streak span{margin-top:4px;color:var(--orange);font-size:9px;font-weight:850;letter-spacing:1px}
+.section-label{display:flex;align-items:center;gap:9px;margin:26px 4px 11px;color:var(--muted);font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase}
+.section-label:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 10px rgba(10,132,255,.7)}
+.hero{position:relative;min-height:155px;margin-bottom:22px;padding:25px 22px;overflow:hidden;border-radius:28px;background:linear-gradient(135deg,#12121A,#191929 55%,#11111A);border:1px solid rgba(10,132,255,.24);box-shadow:var(--shadow)}
+.hero-content{position:relative;z-index:3;width:67%}
+.hero-kicker{display:inline-flex;gap:7px;margin-bottom:10px;color:#73B9FF;font-size:11px;font-weight:900;letter-spacing:1.2px}
+.hero h2{margin:0;font-size:23px;line-height:1.12;font-weight:900}
+.hero-line{width:48px;height:4px;margin-top:13px;border-radius:10px;background:linear-gradient(90deg,var(--blue),var(--purple))}
+.hero-image{position:absolute;right:-3px;bottom:-1px;width:170px;height:170px;background:url("https://i.ibb.co/RrHyVyr/salman-khan.png") center bottom/contain no-repeat;filter:drop-shadow(0 15px 20px rgba(0,0,0,.65))}
+.card{position:relative;margin-bottom:17px;padding:21px;border-radius:28px;background:linear-gradient(145deg,rgba(25,25,32,.96),rgba(14,14,19,.96));border:1px solid var(--border);box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}
+.card-heading{display:flex;align-items:center;gap:12px}
+.card-icon{width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:16px;background:rgba(10,132,255,.1);border:1px solid rgba(10,132,255,.16);color:var(--blue);font-size:18px}
+.card-title{margin:0;font-size:19px;font-weight:900}
+.card-subtitle{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.4}
+.earnings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.earning-box{min-height:112px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.065)}
+.earning-label{color:var(--muted);font-size:11px;font-weight:850;letter-spacing:.8px;text-transform:uppercase}
+.earning-value{margin-top:13px;font-size:30px;line-height:1;font-weight:900}
+.earning-value.blue{color:#62B1FF}
+.earning-value.green{color:#4DE878}
+.progress-area{margin-top:19px}
+.progress-top,.cycle-info{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:11px}
+.progress-top{margin-bottom:8px}
+.progress-track{height:10px;overflow:hidden;border-radius:20px;background:rgba(255,255,255,.06)}
+.progress-fill{width:0;height:100%;border-radius:20px;background:linear-gradient(90deg,var(--purple),var(--blue),var(--green));transition:width 1s ease}
+.cycle-info{margin-top:9px;font-size:12px}
+.payout-btn{display:none;width:100%;margin-top:14px;padding:16px;border:0;border-radius:17px;color:#061008;background:linear-gradient(135deg,#59EE7A,#30D158);font-size:14px;font-weight:900}
+.accordion-card{overflow:hidden}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;gap:15px;cursor:pointer;user-select:none}
+.accordion-arrow{width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(255,255,255,.055);color:#aaa;transition:.3s}
+.accordion-arrow.open{transform:rotate(180deg)}
+.accordion-body{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s,opacity .3s,margin-top .3s}
+.accordion-body.open{max-height:5000px;margin-top:20px;opacity:1}
+.salary-card{border-top:3px solid var(--orange)}
+.salary-icon{color:var(--orange);background:rgba(255,159,10,.1);border-color:rgba(255,159,10,.18)}
+.current-balance{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:18px;margin-bottom:13px;border-radius:20px;background:linear-gradient(135deg,rgba(48,209,88,.08),rgba(10,132,255,.045));border:1px solid rgba(48,209,88,.13)}
+.current-label{color:var(--muted);font-size:10px;font-weight:850;letter-spacing:1px}
+.current-amount{margin-top:5px;font-size:27px;font-weight:900}
+.last-update{text-align:right}
+.last-update small{display:block;color:var(--muted);font-size:9px;font-weight:800}
+.last-update span{display:block;margin-top:4px;color:var(--green);font-size:10px;font-weight:800}
+.activity-list{display:flex;flex-direction:column;gap:11px}
+.activity-item{padding:16px;border-radius:19px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.065)}
+.activity-item.added{border-left:4px solid var(--green)}
+.activity-item.reduced{border-left:4px solid var(--red)}
+.activity-item.modified{border-left:4px solid var(--orange)}
+.activity-top,.activity-main{display:flex;align-items:center;gap:11px}
+.activity-top{justify-content:space-between}
+.activity-main{min-width:0}
+.activity-symbol{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:13px;background:rgba(255,255,255,.05)}
+.added .activity-symbol,.added .activity-amount{color:var(--green)}
+.reduced .activity-symbol,.reduced .activity-amount{color:var(--red)}
+.modified .activity-symbol,.modified .activity-amount{color:var(--orange)}
+.activity-name{min-width:0}
+.activity-name strong{display:block;font-size:13px}
+.activity-name small{display:block;margin-top:4px;color:var(--muted);font-size:10px}
+.activity-amount{flex-shrink:0;font-size:16px;font-weight:900}
+.activity-details{margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05)}
+.detail-row{display:flex;justify-content:space-between;gap:12px;margin-top:7px;font-size:11px}
+.detail-row:first-child{margin-top:0}
+.detail-row span:first-child{color:var(--muted)}
+.detail-row span:last-child{color:#C9C9CE;text-align:right;font-weight:700;word-break:break-word}
+.empty-state{padding:30px 15px;text-align:center;color:var(--muted);font-size:12px}
+.empty-state i{display:block;margin-bottom:10px;font-size:25px}
+.history-card{border-top:3px solid var(--cyan)}
+.history-icon{color:var(--cyan);background:rgba(34,211,238,.09);border-color:rgba(34,211,238,.18)}
+.history-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.history-stat{padding:16px 8px;text-align:center;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}
+.history-stat strong{display:block;font-size:24px;font-weight:900}
+.history-stat span{display:block;margin-top:5px;color:var(--muted);font-size:9px;font-weight:850}
+.history-wrap{overflow:auto;max-height:470px;border-radius:17px;border:1px solid rgba(255,255,255,.07)}
+.history-table{width:100%;min-width:350px;border-collapse:collapse}
+.history-table th{position:sticky;top:0;z-index:2;padding:13px 10px;text-align:left;color:var(--muted);background:#18181F;font-size:9px;font-weight:900;text-transform:uppercase}
+.history-table td{padding:13px 10px;font-size:11px;border-top:1px solid rgba(255,255,255,.05)}
+.history-date{font-weight:850}
+.history-day{color:var(--muted)}
+.history-time{color:#7DD3FC;font-weight:800}
+.present-pill{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:9px;color:var(--green);background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.14);font-size:9px;font-weight:900}
+.strict-card{display:none;border-left:4px solid var(--red)}
+.strict-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.strict-date{padding:14px 5px;text-align:center;border-radius:16px;background:rgba(255,69,58,.055);border:1px solid rgba(255,69,58,.17)}
+.strict-date.today{background:linear-gradient(180deg,#FF453A,#C92828);border:none}
+.strict-date small{display:block;color:var(--red);font-size:9px;font-weight:900}
+.strict-date.today small{color:#fff}
+.strict-date strong{display:block;margin-top:5px;font-size:23px}
+.quick-actions{display:flex;flex-direction:column;gap:12px}
+.quick-action{display:flex;align-items:center;gap:15px;width:100%;padding:18px;border-radius:21px;background:linear-gradient(145deg,rgba(25,25,32,.96),rgba(14,14,19,.96));border:1px solid var(--border);box-shadow:0 10px 28px rgba(0,0,0,.28);text-align:left;color:#fff}
+.quick-icon{width:50px;height:50px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:17px;font-size:20px}
+.quick-info{flex:1;min-width:0}
+.quick-info strong{display:block;font-size:16px;font-weight:900}
+.quick-info span{display:block;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.35}
+.quick-arrow{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:13px;background:rgba(255,255,255,.05);color:#999}
+.tasks-card{border-top:3px solid var(--purple)}
+.task-zone{position:relative;min-height:130px;border-radius:20px;overflow:hidden}
+.task-content{transition:filter .35s,opacity .35s}
+.task-zone.locked .task-content{filter:blur(7px);opacity:.38;pointer-events:none;user-select:none}
+.task-lock-overlay{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:15px;background:rgba(5,5,9,.73);backdrop-filter:blur(3px);border-radius:20px}
+.task-zone.locked .task-lock-overlay{display:flex}
+.lock-box{width:100%;padding:18px;text-align:center;border-radius:19px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09)}
+.lock-icon{width:50px;height:50px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;border-radius:16px;color:var(--orange);background:rgba(255,159,10,.1);font-size:20px}
+.lock-box strong{display:block;font-size:14px}
+.lock-box p{margin:7px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+.lock-status{display:inline-flex;gap:5px;margin-top:10px;padding:6px 9px;border-radius:9px;color:var(--red);background:rgba(255,69,58,.08);font-size:9px;font-weight:900}
+.task-list{display:flex;flex-direction:column;gap:12px}
+.task-item{padding:17px;border-radius:20px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07)}
+.task-item.priority{border-left:4px solid var(--purple)}
+.task-item.normal{border-left:4px solid rgba(255,255,255,.1)}
+.task-top{display:flex;align-items:flex-start;gap:12px}
+.task-dot{width:11px;height:11px;flex-shrink:0;margin-top:5px;border-radius:50%;background:var(--purple)}
+.task-dot.completed{background:var(--green)}
+.task-dot.normal{background:#666}
+.task-info{min-width:0;flex:1}
+.task-name{margin:0;font-size:15px;line-height:1.4;font-weight:750;word-break:break-word}
+.task-name.done{color:var(--muted);text-decoration:line-through}
+.task-meta{margin-top:7px;color:var(--muted);font-size:10px}
+.priority-label{display:inline-flex;gap:4px;margin-left:5px;padding:4px 7px;border-radius:7px;color:var(--purple);background:rgba(191,90,242,.09);font-size:8px;font-weight:900}
+.task-reward-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.reward-pill{display:inline-flex;align-items:center;gap:5px;padding:7px 9px;border-radius:9px;font-size:9px;font-weight:850}
+.reward-pill.wage{color:var(--cyan);background:rgba(34,211,238,.07)}
+.reward-pill.amount,.reward-pill.credited{color:var(--green);background:rgba(48,209,88,.08)}
+.reward-pill.wallet{color:var(--orange);background:rgba(255,159,10,.07)}
+.task-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:15px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)}
+.task-amount{color:var(--green);font-size:20px;font-weight:900}
+.task-amount.normal{color:#777}
+.task-btn{min-width:125px;min-height:44px;padding:10px 14px;border-radius:13px;border:1px solid rgba(191,90,242,.22);color:#D8A8FF;background:rgba(191,90,242,.09);font-size:11px;font-weight:900}
+.task-btn.completed{color:var(--green);background:rgba(48,209,88,.09)}
+.lead-card{border-top:3px solid var(--blue)}
+.input-group{display:flex;flex-direction:column;gap:10px}
+.input{width:100%;min-height:56px;padding:0 17px;outline:none;border-radius:17px;color:#fff;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-size:15px}
+.input::placeholder{color:#696970}
+.input:focus{border-color:rgba(191,90,242,.6)}
+.submit-btn{width:100%;min-height:56px;margin-top:12px;border:0;border-radius:17px;color:#060609;background:linear-gradient(135deg,#fff,#D9D9E0);font-size:14px;font-weight:900}
+.footer{margin-top:30px;text-align:center;color:#4F4F56;font-size:10px;font-weight:850;letter-spacing:1.5px}
+.mobile-punch-dock{position:fixed;left:12px;right:12px;bottom:calc(var(--safe-bottom) + 10px);z-index:500;max-width:496px;margin:auto;padding:8px;border-radius:24px;background:rgba(17,17,23,.91);border:1px solid rgba(255,255,255,.11);backdrop-filter:blur(22px);box-shadow:0 18px 45px rgba(0,0,0,.55)}
+.dock-label{display:flex;align-items:center;justify-content:space-between;padding:5px 10px 7px}
+.dock-label strong{font-size:11px}
+.dock-label span{color:var(--muted);font-size:9px}
+.slider-track{position:relative;width:100%;height:72px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.018));border:1px solid rgba(255,255,255,.11)}
+.slider-track.disabled{border-color:rgba(255,69,58,.25)}
+.slider-text{position:relative;z-index:1;color:#A8A8AE;font-size:12px;font-weight:900;letter-spacing:1.2px;text-align:center;pointer-events:none}
+.slider-handle{position:absolute;left:6px;top:6px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;border-radius:18px;z-index:3;cursor:grab;touch-action:none;background:linear-gradient(145deg,#34353E,#18191F 55%,#0C0D11);border:1px solid rgba(255,255,255,.19);box-shadow:0 7px 0 rgba(0,0,0,.52),0 12px 22px rgba(0,0,0,.55)}
+.slider-handle i{color:var(--blue);font-size:21px}
+.success-state{border-color:rgba(48,209,88,.6)!important;background:linear-gradient(145deg,rgba(48,209,88,.13),rgba(48,209,88,.035))!important}
+.punch-message{display:none;align-items:center;gap:10px;margin-top:12px;padding:13px 14px;border-radius:15px;color:#FF8B84;background:rgba(255,69,58,.07);border:1px solid rgba(255,69,58,.17);font-size:12px}
+.punch-message.show{display:flex}
+.toast{position:fixed;left:50%;bottom:calc(var(--safe-bottom) + 105px);z-index:1000;width:min(calc(100% - 32px),430px);display:flex;align-items:center;gap:10px;padding:15px 17px;border-radius:17px;color:#fff;background:rgba(25,25,32,.96);border:1px solid rgba(255,255,255,.11);box-shadow:0 18px 45px rgba(0,0,0,.55);font-size:13px;font-weight:750;transform:translate(-50%,150px);opacity:0;pointer-events:none;transition:transform .35s,opacity .35s}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.toast i{color:var(--green);font-size:17px}
 @media(max-width:380px){
-
-    body{
-
-        padding-left:12px;
-        padding-right:12px;
-
-    }
-
-    .greeting h1{
-
-        font-size:30px;
-
-    }
-
-    .hero{
-
-        min-height:145px;
-        padding:21px 18px;
-
-    }
-
-    .hero h2{
-
-        font-size:20px;
-
-    }
-
-    .hero-image{
-
-        width:150px;
-        height:155px;
-
-    }
-
-    .card{
-
-        padding:17px;
-
-    }
-
-    .earning-value{
-
-        font-size:25px;
-
-    }
-
-    .strict-grid{
-
-        grid-template-columns:repeat(3,1fr);
-
-    }
-
+  body{padding-left:12px;padding-right:12px}
+  .greeting h1{font-size:30px}
+  .hero{min-height:145px;padding:21px 18px}
+  .hero h2{font-size:20px}
+  .hero-image{width:150px;height:155px}
+  .card{padding:17px}
+  .earning-value{font-size:25px}
+  .strict-grid{grid-template-columns:repeat(3,1fr)}
 }
-
-
-/* =========================================================
-   DEBUG PANEL
-========================================================= */
-
-.debug-panel{
-
-    position:fixed;
-
-    left:10px;
-    right:10px;
-
-    top:10px;
-
-    z-index:2000;
-
-    display:none;
-
-    padding:12px;
-
-    border-radius:15px;
-
-    color:#fff;
-
-    background:
-        rgba(10,10,15,.96);
-
-    border:1px solid rgba(255,255,255,.12);
-
-    font-size:10px;
-
-}
-
-.debug-panel.show{
-
-    display:block;
-
-}
-
-.debug-panel strong{
-
-    color:var(--green);
-
-}
-
 </style>
-
 </head>
 
-
 <body>
-
 <div class="app">
-
-
 <header class="topbar">
-
-    <div class="greeting">
-
-        <div
-            class="date-label"
-            id="current-date"
-        >
-            Loading...
-        </div>
-
-        <h1 id="user-display">
-            Staff Terminal
-        </h1>
-
-    </div>
-
-
-    <div class="streak">
-
-        <i class="fas fa-fire"></i>
-
-        <strong id="streak-val">
-            0
-        </strong>
-
-        <span>
-            DAYS
-        </span>
-
-    </div>
-
+  <div class="greeting">
+    <div class="date-label" id="current-date">Loading...</div>
+    <h1 id="user-display">Staff Terminal</h1>
+  </div>
+  <div class="streak">
+    <i class="fas fa-fire"></i>
+    <strong id="streak-val">0</strong>
+    <span>DAYS</span>
+  </div>
 </header>
 
-
 <div class="hero">
-
-    <div class="hero-content">
-
-        <div class="hero-kicker">
-
-            <i class="fas fa-crown"></i>
-
-            PERFORMANCE PARTNER
-
-        </div>
-
-        <h2>
-
-            Swag Se<br>
-
-            Punch In Karo!
-
-        </h2>
-
-        <div class="hero-line"></div>
-
-    </div>
-
-
-    <div class="hero-image"></div>
-
+  <div class="hero-content">
+    <div class="hero-kicker"><i class="fas fa-crown"></i> PERFORMANCE PARTNER</div>
+    <h2>Swag Se<br>Punch In Karo!</h2>
+    <div class="hero-line"></div>
+  </div>
+  <div class="hero-image"></div>
 </div>
 
-
-<div class="section-label">
-    Earnings
-</div>
-
-
+<div class="section-label">Earnings</div>
 <section class="card earnings-card">
-
-    <div class="card-header">
-
-        <div class="card-heading">
-
-            <div class="card-icon">
-
-                <i class="fas fa-chart-line"></i>
-
-            </div>
-
-            <div>
-
-                <h2 class="card-title">
-                    Your Earnings
-                </h2>
-
-                <p class="card-subtitle">
-                    Current salary and daily earning
-                </p>
-
-            </div>
-
-        </div>
-
+  <div class="card-header">
+    <div class="card-heading">
+      <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+      <div>
+        <h2 class="card-title">Your Earnings</h2>
+        <p class="card-subtitle">Current salary and daily earning</p>
+      </div>
     </div>
+  </div>
 
-
-    <div class="earnings-grid">
-
-        <div class="earning-box">
-
-            <div class="earning-label">
-                Daily Wage
-            </div>
-
-            <div
-                class="earning-value blue"
-                id="daily-rate"
-            >
-                ₹0
-            </div>
-
-        </div>
-
-
-        <div class="earning-box">
-
-            <div class="earning-label">
-                Balance
-            </div>
-
-            <div
-                class="earning-value green"
-                id="total-earning"
-            >
-                ₹0
-            </div>
-
-        </div>
-
+  <div class="earnings-grid">
+    <div class="earning-box">
+      <div class="earning-label">Daily Wage</div>
+      <div class="earning-value blue" id="daily-rate">₹0</div>
     </div>
-
-
-    <div class="progress-area">
-
-        <div class="progress-top">
-
-            <span>
-                Salary Progress
-            </span>
-
-            <span id="progress-percent">
-                0%
-            </span>
-
-        </div>
-
-
-        <div class="progress-track">
-
-            <div
-                class="progress-fill"
-                id="salary-progress"
-            ></div>
-
-        </div>
-
-
-        <div class="cycle-info">
-
-            <span>
-                Monthly Cycle
-            </span>
-
-            <span id="cycle-days">
-                -- days remaining
-            </span>
-
-        </div>
-
+    <div class="earning-box">
+      <div class="earning-label">Balance</div>
+      <div class="earning-value green" id="total-earning">₹0</div>
     </div>
+  </div>
 
+  <div class="progress-area">
+    <div class="progress-top"><span>Salary Progress</span><span id="progress-percent">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="salary-progress"></div></div>
+    <div class="cycle-info"><span>Monthly Cycle</span><span id="cycle-days">-- days remaining</span></div>
+  </div>
 
-    <button
-        class="payout-btn"
-        id="payout-btn"
-        onclick="requestSalary()"
-    >
-
-        REQUEST PAYOUT
-
-        <i class="fas fa-wallet"></i>
-
-    </button>
-
+  <button class="payout-btn" id="payout-btn" onclick="requestSalary()">REQUEST PAYOUT <i class="fas fa-wallet"></i></button>
 </section>
 
-
-<div class="section-label">
-    Attendance
-</div>
-
-
+<div class="section-label">Attendance</div>
 <section class="card">
-
-    <div class="card-header">
-
-        <div class="card-heading">
-
-            <div
-                class="card-icon"
-                style="
-                    color:var(--green);
-                    background:rgba(48,209,88,.09);
-                    border-color:rgba(48,209,88,.15)
-                "
-            >
-
-                <i class="fas fa-fingerprint"></i>
-
-            </div>
-
-
-            <div>
-
-                <h2 class="card-title">
-                    Daily Attendance
-                </h2>
-
-                <p class="card-subtitle">
-                    Use the bottom slider to punch in
-                </p>
-
-            </div>
-
-        </div>
-
+  <div class="card-header">
+    <div class="card-heading">
+      <div class="card-icon" style="color:var(--green)"><i class="fas fa-fingerprint"></i></div>
+      <div>
+        <h2 class="card-title">Daily Attendance</h2>
+        <p class="card-subtitle">Use the bottom slider to punch in</p>
+      </div>
     </div>
+  </div>
 
-
-    <div
-        id="attendance-status-card"
-        style="
-            display:flex;
-            align-items:center;
-            gap:14px;
-            padding:17px;
-            border-radius:20px;
-            background:rgba(255,255,255,.035);
-            border:1px solid rgba(255,255,255,.065);
-        "
-    >
-
-        <div
-            id="attendance-status-icon"
-            style="
-                width:50px;
-                height:50px;
-                flex-shrink:0;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                border-radius:17px;
-                color:var(--orange);
-                background:rgba(255,159,10,.09);
-                border:1px solid rgba(255,159,10,.15);
-                font-size:20px;
-            "
-        >
-
-            <i class="fas fa-clock"></i>
-
-        </div>
-
-
-        <div
-            style="
-                min-width:0;
-                flex:1
-            "
-        >
-
-            <strong
-                id="attendance-status-title"
-                style="
-                    display:block;
-                    color:#fff;
-                    font-size:15px;
-                    font-weight:900;
-                "
-            >
-
-                Attendance Pending
-
-            </strong>
-
-
-            <span
-                id="attendance-status-text"
-                style="
-                    display:block;
-                    margin-top:5px;
-                    color:var(--muted);
-                    font-size:11px;
-                    line-height:1.4;
-                "
-            >
-
-                Swipe the Punch-In control at the bottom.
-
-            </span>
-
-        </div>
-
+  <div id="attendance-status-card" style="display:flex;align-items:center;gap:14px;padding:17px;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.065)">
+    <div id="attendance-status-icon" style="width:50px;height:50px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:17px;color:var(--orange);background:rgba(255,159,10,.09);font-size:20px"><i class="fas fa-clock"></i></div>
+    <div style="min-width:0;flex:1">
+      <strong id="attendance-status-title" style="display:block;font-size:15px">Attendance Pending</strong>
+      <span id="attendance-status-text" style="display:block;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.4">Swipe the Punch-In control at the bottom.</span>
     </div>
+  </div>
 
-
-    <div
-        class="punch-message"
-        id="punch-control-message"
-    >
-
-        <i class="fas fa-user-lock"></i>
-
-        <span id="punch-control-text">
-
-            Punch-in has been disabled by Admin.
-
-        </span>
-
-    </div>
-
+  <div class="punch-message" id="punch-control-message">
+    <i class="fas fa-user-lock"></i><span id="punch-control-text">Punch-in has been disabled by Admin.</span>
+  </div>
 </section>
-
 
 <section class="card accordion-card salary-card">
-
-    <div
-        class="accordion-header"
-        onclick="toggleSalaryActivity()"
-    >
-
-        <div class="card-heading">
-
-            <div class="card-icon salary-icon">
-
-                <i class="fas fa-money-bill-transfer"></i>
-
-            </div>
-
-            <div>
-
-                <h2 class="card-title">
-                    Salary Activity
-                </h2>
-
-                <p class="card-subtitle">
-                    Admin changes & earning history
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="accordion-arrow"
-            id="salary-activity-arrow"
-        >
-
-            <i class="fas fa-chevron-down"></i>
-
-        </div>
-
+  <div class="accordion-header" onclick="toggleSalaryActivity()">
+    <div class="card-heading">
+      <div class="card-icon salary-icon"><i class="fas fa-money-bill-transfer"></i></div>
+      <div>
+        <h2 class="card-title">Salary Activity</h2>
+        <p class="card-subtitle">Admin changes & earning history</p>
+      </div>
     </div>
+    <div class="accordion-arrow" id="salary-activity-arrow"><i class="fas fa-chevron-down"></i></div>
+  </div>
 
-
-    <div
-        class="accordion-body"
-        id="salary-activity-body"
-    >
-
-        <div class="current-balance">
-
-            <div>
-
-                <div class="current-label">
-                    CURRENT BALANCE
-                </div>
-
-                <div
-                    class="current-amount"
-                    id="activity-current-balance"
-                >
-                    ₹0
-                </div>
-
-            </div>
-
-
-            <div class="last-update">
-
-                <small>
-                    LAST UPDATE
-                </small>
-
-                <span id="activity-last-update">
-                    --
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="activity-list"
-            id="salary-change-list"
-        >
-
-            <div class="empty-state">
-
-                <i class="fas fa-spinner fa-spin"></i>
-
-                Loading salary activity...
-
-            </div>
-
-        </div>
-
+  <div class="accordion-body" id="salary-activity-body">
+    <div class="current-balance">
+      <div>
+        <div class="current-label">CURRENT BALANCE</div>
+        <div class="current-amount" id="activity-current-balance">₹0</div>
+      </div>
+      <div class="last-update"><small>LAST UPDATE</small><span id="activity-last-update">--</span></div>
     </div>
-
+    <div class="activity-list" id="salary-change-list">
+      <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>Loading salary activity...</div>
+    </div>
+  </div>
 </section>
-
 
 <section class="card accordion-card history-card">
-
-    <div
-        class="accordion-header"
-        onclick="toggleHistory()"
-    >
-
-        <div class="card-heading">
-
-            <div class="card-icon history-icon">
-
-                <i class="fas fa-clock-rotate-left"></i>
-
-            </div>
-
-            <div>
-
-                <h2 class="card-title">
-                    Punch History
-                </h2>
-
-                <p class="card-subtitle">
-                    Last 30 days attendance
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="accordion-arrow"
-            id="history-arrow"
-        >
-
-            <i class="fas fa-chevron-down"></i>
-
-        </div>
-
+  <div class="accordion-header" onclick="toggleHistory()">
+    <div class="card-heading">
+      <div class="card-icon history-icon"><i class="fas fa-clock-rotate-left"></i></div>
+      <div>
+        <h2 class="card-title">Punch History</h2>
+        <p class="card-subtitle">Last 30 days attendance</p>
+      </div>
     </div>
+    <div class="accordion-arrow" id="history-arrow"><i class="fas fa-chevron-down"></i></div>
+  </div>
 
-
-    <div
-        class="accordion-body"
-        id="history-body"
-    >
-
-        <div class="history-summary">
-
-            <div class="history-stat">
-
-                <strong id="history-present">
-                    0
-                </strong>
-
-                <span>
-                    PRESENT
-                </span>
-
-            </div>
-
-
-            <div class="history-stat">
-
-                <strong id="history-total">
-                    30
-                </strong>
-
-                <span>
-                    DAYS
-                </span>
-
-            </div>
-
-
-            <div class="history-stat">
-
-                <strong id="history-missed">
-                    0
-                </strong>
-
-                <span>
-                    MISSED
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="history-wrap">
-
-            <table class="history-table">
-
-                <thead>
-
-                    <tr>
-
-                        <th>Date</th>
-                        <th>Day</th>
-                        <th>Punch</th>
-                        <th>Status</th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody id="history-table-body">
-
-                    <tr>
-
-                        <td
-                            colspan="4"
-                            style="
-                                text-align:center;
-                                padding:30px;
-                                color:#777
-                            "
-                        >
-
-                            <i class="fas fa-spinner fa-spin"></i>
-
-                            Loading history...
-
-                        </td>
-
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
+  <div class="accordion-body" id="history-body">
+    <div class="history-summary">
+      <div class="history-stat"><strong id="history-present">0</strong><span>PRESENT</span></div>
+      <div class="history-stat"><strong id="history-total">30</strong><span>DAYS</span></div>
+      <div class="history-stat"><strong id="history-missed">0</strong><span>MISSED</span></div>
     </div>
-
+    <div class="history-wrap">
+      <table class="history-table">
+        <thead><tr><th>Date</th><th>Day</th><th>Punch</th><th>Status</th></tr></thead>
+        <tbody id="history-table-body">
+          <tr><td colspan="4" style="text-align:center;padding:30px;color:#777">Open history to load records.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </section>
 
-
-<section
-    class="card strict-card"
-    id="strict-card"
->
-
-    <div class="card-header">
-
-        <div class="card-heading">
-
-            <div
-                class="card-icon"
-                style="
-                    color:var(--red);
-                    background:rgba(255,69,58,.09);
-                    border-color:rgba(255,69,58,.15)
-                "
-            >
-
-                <i class="fas fa-calendar-check"></i>
-
-            </div>
-
-
-            <div>
-
-                <h2
-                    class="card-title"
-                    style="color:var(--red)"
-                >
-
-                    Strict Attendance
-
-                </h2>
-
-                <p class="card-subtitle">
-
-                    Important attendance dates
-
-                </p>
-
-            </div>
-
-        </div>
-
+<section class="card strict-card" id="strict-card">
+  <div class="card-header">
+    <div class="card-heading">
+      <div class="card-icon" style="color:var(--red)"><i class="fas fa-calendar-check"></i></div>
+      <div>
+        <h2 class="card-title" style="color:var(--red)">Strict Attendance</h2>
+        <p class="card-subtitle">Important attendance dates</p>
+      </div>
     </div>
-
-
-    <div
-        id="strict-days-list"
-        class="strict-grid"
-    ></div>
-
+  </div>
+  <div id="strict-days-list" class="strict-grid"></div>
 </section>
 
-
-<div class="section-label">
-    Work & Students
-</div>
-
-
+<div class="section-label">Work & Students</div>
 <div class="quick-actions">
+  <button class="quick-action" onclick="window.location.href='fees.html'">
+    <div class="quick-icon" style="color:var(--blue);background:rgba(10,132,255,.1)"><i class="fas fa-wallet"></i></div>
+    <div class="quick-info"><strong>Student Fees Ledger</strong><span>Manage and trace student billing status</span></div>
+    <div class="quick-arrow"><i class="fas fa-arrow-right"></i></div>
+  </button>
 
+  <button class="quick-action" onclick="window.location.href='defaulters.html'">
+    <div class="quick-icon" style="color:var(--orange);background:rgba(255,159,10,.1)"><i class="fas fa-triangle-exclamation"></i></div>
+    <div class="quick-info"><strong>Defaulters Tracker</strong><span>Check continuous absence and pending cases</span></div>
+    <div class="quick-arrow"><i class="fas fa-arrow-right"></i></div>
+  </button>
 
-    <button
-        class="quick-action"
-        onclick="window.location.href='fees.html'"
-    >
-
-        <div
-            class="quick-icon"
-            style="
-                color:var(--blue);
-                background:rgba(10,132,255,.10)
-            "
-        >
-
-            <i class="fas fa-wallet"></i>
-
-        </div>
-
-
-        <div class="quick-info">
-
-            <strong>
-                Student Fees Ledger
-            </strong>
-
-            <span>
-                Manage and trace student billing status
-            </span>
-
-        </div>
-
-
-        <div class="quick-arrow">
-
-            <i class="fas fa-arrow-right"></i>
-
-        </div>
-
-    </button>
-
-
-    <button
-        class="quick-action"
-        onclick="window.location.href='defaulters.html'"
-    >
-
-        <div
-            class="quick-icon"
-            style="
-                color:var(--orange);
-                background:rgba(255,159,10,.10)
-            "
-        >
-
-            <i class="fas fa-triangle-exclamation"></i>
-
-        </div>
-
-
-        <div class="quick-info">
-
-            <strong>
-                Defaulters Tracker
-            </strong>
-
-            <span>
-                Check continuous absence and pending cases
-            </span>
-
-        </div>
-
-
-        <div class="quick-arrow">
-
-            <i class="fas fa-arrow-right"></i>
-
-        </div>
-
-    </button>
-
-
-    <button
-        class="quick-action"
-        onclick="window.location.href='present.html'"
-    >
-
-        <div
-            class="quick-icon"
-            style="
-                color:var(--green);
-                background:rgba(48,209,88,.10)
-            "
-        >
-
-            <i class="fas fa-user-check"></i>
-
-        </div>
-
-
-        <div class="quick-info">
-
-            <strong>
-                Students Present Today
-            </strong>
-
-            <span>
-
-                Live attendance:
-                <b
-                    id="present-count"
-                    style="color:var(--green)"
-                >
-                    0
-                </b>
-                active
-
-            </span>
-
-        </div>
-
-
-        <div class="quick-arrow">
-
-            <i class="fas fa-arrow-right"></i>
-
-        </div>
-
-    </button>
-
+  <button class="quick-action" onclick="window.location.href='present.html'">
+    <div class="quick-icon" style="color:var(--green);background:rgba(48,209,88,.1)"><i class="fas fa-user-check"></i></div>
+    <div class="quick-info">
+      <strong>Students Present Today</strong>
+      <span>Live attendance: <b id="present-count" style="color:var(--green)">0</b> active</span>
+    </div>
+    <div class="quick-arrow"><i class="fas fa-arrow-right"></i></div>
+  </button>
 </div>
 
-
-<div class="section-label">
-    Today's Work
-</div>
-
-
+<div class="section-label">Today's Work</div>
 <section class="card tasks-card">
-
-    <div class="card-header">
-
-        <div class="card-heading">
-
-            <div
-                class="card-icon"
-                style="
-                    color:var(--purple);
-                    background:rgba(191,90,242,.10);
-                    border-color:rgba(191,90,242,.17)
-                "
-            >
-
-                <i class="fas fa-bolt"></i>
-
-            </div>
-
-
-            <div>
-
-                <h2 class="card-title">
-                    Priority Assignments
-                </h2>
-
-                <p class="card-subtitle">
-                    Complete tasks after punching in
-                </p>
-
-            </div>
-
-        </div>
-
+  <div class="card-header">
+    <div class="card-heading">
+      <div class="card-icon" style="color:var(--purple);background:rgba(191,90,242,.1)"><i class="fas fa-bolt"></i></div>
+      <div>
+        <h2 class="card-title">Priority Assignments</h2>
+        <p class="card-subtitle">Complete tasks after punching in</p>
+      </div>
     </div>
+  </div>
 
-
-    <div
-        class="task-zone locked"
-        id="task-zone"
-    >
-
-        <div
-            class="task-content"
-            id="task-content"
-        >
-
-            <div
-                class="task-list"
-                id="task-list"
-            >
-
-                <div class="empty-state">
-
-                    <i class="fas fa-spinner fa-spin"></i>
-
-                    Loading tasks...
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="task-lock-overlay"
-            id="task-lock-overlay"
-        >
-
-            <div class="lock-box">
-
-                <div
-                    class="lock-icon"
-                >
-
-                    <i
-                        class="fas fa-lock"
-                        id="task-lock-icon"
-                    ></i>
-
-                </div>
-
-
-                <strong id="task-lock-title">
-                    TASKS LOCKED
-                </strong>
-
-
-                <p id="task-lock-subtitle">
-
-                    Punch in successfully to unlock
-                    today's assignments.
-
-                </p>
-
-
-                <div class="lock-status">
-
-                    <i class="fas fa-shield-halved"></i>
-
-                    PUNCH REQUIRED
-
-                </div>
-
-            </div>
-
-        </div>
-
+  <div class="task-zone locked" id="task-zone">
+    <div class="task-content" id="task-content">
+      <div class="task-list" id="task-list">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>Loading tasks...</div>
+      </div>
     </div>
-
+    <div class="task-lock-overlay" id="task-lock-overlay">
+      <div class="lock-box">
+        <div class="lock-icon"><i class="fas fa-lock" id="task-lock-icon"></i></div>
+        <strong id="task-lock-title">TASKS LOCKED</strong>
+        <p id="task-lock-subtitle">Punch in successfully to unlock today's assignments.</p>
+        <div class="lock-status"><i class="fas fa-shield-halved"></i> PUNCH REQUIRED</div>
+      </div>
+    </div>
+  </div>
 </section>
-
 
 <section class="card lead-card">
-
-    <div class="card-header">
-
-        <div class="card-heading">
-
-            <div class="card-icon">
-
-                <i class="fas fa-paper-plane"></i>
-
-            </div>
-
-
-            <div>
-
-                <h2 class="card-title">
-                    Quick Lead Entry
-                </h2>
-
-                <p class="card-subtitle">
-                    Add a new student enquiry
-                </p>
-
-            </div>
-
-        </div>
-
+  <div class="card-header">
+    <div class="card-heading">
+      <div class="card-icon"><i class="fas fa-paper-plane"></i></div>
+      <div>
+        <h2 class="card-title">Quick Lead Entry</h2>
+        <p class="card-subtitle">Add a new student enquiry</p>
+      </div>
     </div>
+  </div>
 
+  <div class="input-group">
+    <input class="input" type="text" id="l-name" placeholder="Student full name" autocomplete="name">
+    <input class="input" type="tel" id="l-phone" placeholder="WhatsApp number" autocomplete="tel">
+    <input class="input" type="text" id="l-course" placeholder="Target course">
+  </div>
 
-    <div class="input-group">
-
-        <input
-            class="input"
-            type="text"
-            id="l-name"
-            placeholder="Student full name"
-            autocomplete="name"
-        >
-
-
-        <input
-            class="input"
-            type="tel"
-            id="l-phone"
-            placeholder="WhatsApp number"
-            autocomplete="tel"
-        >
-
-
-        <input
-            class="input"
-            type="text"
-            id="l-course"
-            placeholder="Target course"
-        >
-
-    </div>
-
-
-    <button
-        class="submit-btn"
-        onclick="submitLead()"
-    >
-
-        SUBMIT LEAD
-
-        <i class="fas fa-arrow-right"></i>
-
-    </button>
-
+  <button class="submit-btn" onclick="submitLead()">SUBMIT LEAD <i class="fas fa-arrow-right"></i></button>
 </section>
 
-
-<div class="footer">
-
-    BLACK TERMINAL • STAFF TERMINAL v5.0
-
+<div class="footer">BLACK TERMINAL • STAFF TERMINAL v5.0</div>
 </div>
-
-</div>
-
-
-<!-- =====================================================
-     BOTTOM PUNCH
-===================================================== -->
 
 <div class="mobile-punch-dock">
-
-    <div class="dock-label">
-
-        <strong>
-
-            <i class="fas fa-fingerprint"></i>
-
-            Attendance
-
-        </strong>
-
-
-        <span id="dock-hint">
-
-            Swipe to punch in
-
-        </span>
-
+  <div class="dock-label">
+    <strong><i class="fas fa-fingerprint"></i> Attendance</strong>
+    <span id="dock-hint">Swipe to punch in</span>
+  </div>
+  <div class="slider-track" id="sl-track-dock">
+    <div class="slider-handle" id="sl-handle-dock">
+      <i class="fas fa-fingerprint" id="sl-icon-dock"></i>
     </div>
-
-
-    <div
-        class="slider-track"
-        id="sl-track-dock"
-    >
-
-        <div
-            class="slider-handle"
-            id="sl-handle-dock"
-        >
-
-            <i
-                class="fas fa-fingerprint"
-                id="sl-icon-dock"
-            ></i>
-
-        </div>
-
-
-        <span
-            class="slider-text"
-            id="sl-text-dock"
-        >
-
-            SLIDE TO PUNCH IN
-
-        </span>
-
-    </div>
-
+    <span class="slider-text" id="sl-text-dock">SLIDE TO PUNCH IN</span>
+  </div>
 </div>
 
-
-<div
-    class="toast"
-    id="toast"
->
-
-    <i class="fas fa-circle-check"></i>
-
-    <span id="toast-text">
-        Done
-    </span>
-
+<div class="toast" id="toast">
+  <i class="fas fa-circle-check"></i>
+  <span id="toast-text">Done</span>
 </div>
 
+<!-- PART 3 starts here: JavaScript and closing HTML tags -->
 
 <script>
+"use strict";
 
 /* =========================================================
-   FIREBASE
+   FIREBASE CONFIGURATION
 ========================================================= */
 
 const firebaseConfig = {
-
-    apiKey:
-        "AIzaSyCEfwZv2Cpkq-uFRLvJJKRlXA2w_WpI",
-
-    authDomain:
-        "black-terminal-f2c91.firebaseapp.com",
-
-    databaseURL:
-        "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
-
-    projectId:
-        "black-terminal-f2c91",
-
-    storageBucket:
-        "black-terminal-f2c91.appspot.com",
-
-    messagingSenderId:
-        "552489994197",
-
-    appId:
-        "1:552489994197:web:7662331264c334ffbadf5c"
-
+    apiKey: "AIzaSyCEfwZv2Cpkq-uFRLvJJKRlXA2w_WpI",
+    authDomain: "black-terminal-f2c91.firebaseapp.com",
+    databaseURL: "https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+    projectId: "black-terminal-f2c91",
+    storageBucket: "black-terminal-f2c91.appspot.com",
+    messagingSenderId: "552489994197",
+    appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-
 if (!firebase.apps.length) {
-
-    firebase.initializeApp(
-        firebaseConfig
-    );
-
+    firebase.initializeApp(firebaseConfig);
 }
 
-
-const db =
-    firebase.database();
-
-const fs =
-    firebase.firestore();
-
+const db = firebase.database();
+const fs = firebase.firestore();
 
 /* =========================================================
    SESSION
 ========================================================= */
 
-let staffId =
-    localStorage.getItem(
-        "bt_staff_id"
-    );
-
-
-let staffName =
-    localStorage.getItem(
-        "bt_staff_name"
-    ) ||
-    "Staff";
-
-
-/*
- * Recover staff ID from alternate
- * localStorage keys if needed.
- */
+let staffId = localStorage.getItem("bt_staff_id");
+let staffName = localStorage.getItem("bt_staff_name") || "Staff";
 
 if (!staffId) {
-
-    const alternateKeys = [
-
-        "staffId",
-        "staff_id",
-        "btStaffId",
-        "userId",
-        "user_id"
-
-    ];
-
-
-    for (
-        const key of alternateKeys
-    ) {
-
-        const value =
-            localStorage.getItem(
-                key
-            );
-
-
+    for (const key of [
+        "staffId", "staff_id", "btStaffId", "userId", "user_id"
+    ]) {
+        const value = localStorage.getItem(key);
         if (value) {
-
-            staffId =
-                value;
-
-
-            localStorage.setItem(
-                "bt_staff_id",
-                value
-            );
-
-
+            staffId = value;
+            localStorage.setItem("bt_staff_id", value);
             break;
-
         }
-
     }
-
 }
-
 
 if (!staffId) {
-
-    alert(
-        "Staff session not found. Please login again."
-    );
-
-    window.location.href =
-        "index.html";
-
+    alert("Staff session not found. Please login again.");
+    window.location.href = "index.html";
 }
-
 
 /* =========================================================
-   STATE
+   STATE AND HELPERS
 ========================================================= */
 
-let isAttendanceMarkedToday =
-    false;
+let isAttendanceMarkedToday = false;
+let punchEnabled = true;
+let currentSalaryBalance = 0;
+let currentDailyWage = 0;
+let staffListenerStarted = false;
+let tasksListenerStarted = false;
+let punchBusy = false;
+let toastTimer = null;
 
-let punchEnabled =
-    true;
-
-let currentSalaryBalance =
-    0;
-
-let currentDailyWage =
-    0;
-
-let staffListenerStarted =
-    false;
-
-let tasksListenerStarted =
-    false;
-
-let punchBusy =
-    false;
-
-let toastTimer;
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function getLocalDate(){
-
-    const d =
-        new Date();
-
-    return (
-
-        d.getFullYear()
-        + "-"
-        + String(
-            d.getMonth()+1
-        ).padStart(2,"0")
-        + "-"
-        + String(
-            d.getDate()
-        ).padStart(2,"0")
-
-    );
-
+function getLocalDate() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-
-function getMonthKey(){
-
-    const d =
-        new Date();
-
-    return (
-
-        d.getFullYear()
-        + "-"
-        + String(
-            d.getMonth()+1
-        ).padStart(2,"0")
-
-    );
-
+function getMonthKey() {
+    return getLocalDate().slice(0, 7);
 }
 
-
-function formatTime(
-    date
-){
-
-    return date.toLocaleTimeString(
-        "en-IN",
-        {
-            hour:"2-digit",
-            minute:"2-digit",
-            second:"2-digit",
-            hour12:true
-        }
-    );
-
+function formatTime(date) {
+    return date.toLocaleTimeString("en-IN", {
+        hour: "2-digit", minute: "2-digit",
+        second: "2-digit", hour12: true
+    });
 }
 
-
-function formatMoney(
-    amount
-){
-
-    const value =
-        Number(
-            amount || 0
-        );
-
-
-    if (
-        !isFinite(value)
-    ){
-
-        return "0";
-
-    }
-
-
-    const rounded =
-        Math.round(
-            value * 100
-        ) / 100;
-
-
-    return rounded.toLocaleString(
-        "en-IN",
-        {
-            minimumFractionDigits:
-                rounded % 1 === 0
-                    ? 0
-                    : 2,
-
-            maximumFractionDigits:
-                2
-        }
-    );
-
+function formatMoney(amount) {
+    const n = Number(amount || 0);
+    if (!Number.isFinite(n)) return "0";
+    const rounded = Math.round(n * 100) / 100;
+    return rounded.toLocaleString("en-IN", {
+        minimumFractionDigits: rounded % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2
+    });
 }
 
-
-function escapeHtml(
-    value
-){
-
-    return String(
-        value ?? ""
-    )
-    .replace(
-        /&/g,
-        "&amp;"
-    )
-    .replace(
-        /</g,
-        "&lt;"
-    )
-    .replace(
-        />/g,
-        "&gt;"
-    )
-    .replace(
-        /"/g,
-        "&quot;"
-    )
-    .replace(
-        /'/g,
-        "&#039;"
-    );
-
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    const text = document.getElementById("toast-text");
+    if (!toast || !text) return;
 
-/* =========================================================
-   TOAST
-========================================================= */
-
-function showToast(
-    message
-){
-
-    const toast =
-        document.getElementById(
-            "toast"
-        );
-
-
-    const text =
-        document.getElementById(
-            "toast-text"
-        );
-
-
-    if (
-        !toast ||
-        !text
-    ){
-
-        return;
-
-    }
-
-
-    text.innerText =
-        message;
-
-
-    toast.classList.add(
-        "show"
-    );
-
-
-    clearTimeout(
-        toastTimer
-    );
-
-
-    toastTimer =
-        setTimeout(
-            ()=>{
-
-                toast.classList.remove(
-                    "show"
-                );
-
-            },
-            3000
-        );
-
+    text.innerText = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 3000);
 }
 
-
-/* =========================================================
-   HEADER
-========================================================= */
-
-function renderHeader(){
-
-    const firstName =
-        String(
-            staffName
-        )
-        .trim()
-        .split(
-            /\s+/
-        )[0]
-        ||
-        "Staff";
-
-
-    const user =
-        document.getElementById(
-            "user-display"
-        );
-
-
-    const date =
-        document.getElementById(
-            "current-date"
-        );
-
-
-    if (user){
-
-        user.innerText =
-            `Hi, ${firstName}`;
-
-    }
-
-
-    if (date){
-
-        date.innerText =
-            new Date().toLocaleDateString(
-                "en-IN",
-                {
-                    weekday:"long",
-                    month:"long",
-                    day:"numeric"
-                }
-            );
-
-    }
-
+function renderHeader() {
+    const firstName = String(staffName).trim().split(/\s+/)[0] || "Staff";
+    document.getElementById("user-display").innerText = `Hi, ${firstName}`;
+    document.getElementById("current-date").innerText =
+        new Date().toLocaleDateString("en-IN", {
+            weekday: "long", month: "long", day: "numeric"
+        });
 }
 
-
-/* =========================================================
-   FIREBASE CONNECTION
-========================================================= */
-
-function testFirebase(){
-
-    console.log(
-        "================================="
-    );
-
-    console.log(
-        "BLACK TERMINAL STAFF TERMINAL"
-    );
-
-    console.log(
-        "STAFF ID:",
-        staffId
-    );
-
-    console.log(
-        "STAFF NAME:",
-        staffName
-    );
-
-    console.log(
-        "================================="
-    );
-
-
-    db.ref(
-        ".info/connected"
-    )
-    .on(
-        "value",
-        snap=>{
-
-            console.log(
-                "Realtime Database connected:",
-                snap.val()
-            );
-
-        }
-    );
-
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const rad = n => n * Math.PI / 180;
+    const p1 = rad(lat1), p2 = rad(lat2);
+    const dp = rad(lat2 - lat1), dl = rad(lon2 - lon1);
+    const a = Math.sin(dp/2)**2 +
+        Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
 
 /* =========================================================
    STAFF DATA
 ========================================================= */
 
-function listenStaffData(){
+function listenStaffData() {
+    if (staffListenerStarted) return;
+    staffListenerStarted = true;
 
-    if (
-        staffListenerStarted
-    ){
+    db.ref(`staff/${staffId}`).on("value", snapshot => {
+        if (!snapshot.exists()) {
+            showToast("Staff profile not found.");
+            return;
+        }
 
-        return;
+        const data = snapshot.val() || {};
+        staffName = data.name || data.staffName || data.fullName || staffName;
+        localStorage.setItem("bt_staff_name", staffName);
 
-    }
-
-
-    staffListenerStarted =
-        true;
-
-
-    const ref =
-        db.ref(
-            `staff/${staffId}`
+        punchEnabled = data.punchEnabled !== false;
+        currentDailyWage = Number(
+            data.perDayWage ?? data.dailyWage ?? data.dailyRate ??
+            data.wage ?? data.salaryPerDay ?? 0
+        );
+        currentSalaryBalance = Number(
+            data.salary ?? data.currentSalary ?? data.balance ??
+            data.wallet ?? data.earnings ?? 0
         );
 
-
-    console.log(
-        "Reading:",
-        `staff/${staffId}`
-    );
-
-
-    ref.on(
-        "value",
-
-        snapshot=>{
-
-            console.log(
-                "STAFF DATA:",
-                snapshot.val()
-            );
-
-
-            if (
-                !snapshot.exists()
-            ){
-
-                showToast(
-                    "Staff profile not found."
-                );
-
-                console.error(
-                    "No staff data at:",
-                    `staff/${staffId}`
-                );
-
-                return;
-
-            }
-
-
-            const data =
-                snapshot.val() ||
-                {};
-
-
-            staffName =
-                data.name ||
-                data.staffName ||
-                data.fullName ||
-                staffName;
-
-
-            localStorage.setItem(
-                "bt_staff_name",
-                staffName
-            );
-
-
-            punchEnabled =
-                data.punchEnabled !==
-                false;
-
-
-            currentDailyWage =
-                Number(
-                    data.perDayWage ??
-                    data.dailyWage ??
-                    data.dailyRate ??
-                    data.wage ??
-                    data.salaryPerDay ??
-                    0
-                );
-
-
-            if (
-                !isFinite(
-                    currentDailyWage
-                )
-            ){
-
-                currentDailyWage =
-                    0;
-
-            }
-
-
-            currentSalaryBalance =
-                Number(
-                    data.salary ??
-                    data.currentSalary ??
-                    data.balance ??
-                    data.wallet ??
-                    data.earnings ??
-                    0
-                );
-
-
-            if (
-                !isFinite(
-                    currentSalaryBalance
-                )
-            ){
-
-                currentSalaryBalance =
-                    0;
-
-            }
-
-
-            const daily =
-                document.getElementById(
-                    "daily-rate"
-                );
-
-
-            const balance =
-                document.getElementById(
-                    "total-earning"
-                );
-
-
-            const activityBalance =
-                document.getElementById(
-                    "activity-current-balance"
-                );
-
-
-            const streak =
-                document.getElementById(
-                    "streak-val"
-                );
-
-
-            if (daily){
-
-                daily.innerText =
-                    `₹${formatMoney(
-                        currentDailyWage
-                    )}`;
-
-            }
-
-
-            if (balance){
-
-                balance.innerText =
-                    `₹${formatMoney(
-                        currentSalaryBalance
-                    )}`;
-
-            }
-
-
-            if (activityBalance){
-
-                activityBalance.innerText =
-                    `₹${formatMoney(
-                        currentSalaryBalance
-                    )}`;
-
-            }
-
-
-            if (streak){
-
-                streak.innerText =
-                    Number(
-                        data.streak || 0
-                    );
-
-            }
-
-
-            const target =
-                currentDailyWage *
-                25;
-
-
-            const percent =
-                target > 0
-                ?
-                Math.min(
-                    (
-                        currentSalaryBalance /
-                        target
-                    ) * 100,
-                    100
-                )
-                :
-                0;
-
-
-            const progress =
-                document.getElementById(
-                    "salary-progress"
-                );
-
-
-            const progressText =
-                document.getElementById(
-                    "progress-percent"
-                );
-
-
-            if (progress){
-
-                progress.style.width =
-                    percent + "%";
-
-            }
-
-
-            if (progressText){
-
-                progressText.innerText =
-                    Math.round(
-                        percent
-                    ) + "%";
-
-            }
-
-
-            renderHeader();
-
+        if (!Number.isFinite(currentDailyWage)) currentDailyWage = 0;
+        if (!Number.isFinite(currentSalaryBalance)) currentSalaryBalance = 0;
+
+        document.getElementById("daily-rate").innerText =
+            `₹${formatMoney(currentDailyWage)}`;
+        document.getElementById("total-earning").innerText =
+            `₹${formatMoney(currentSalaryBalance)}`;
+        document.getElementById("activity-current-balance").innerText =
+            `₹${formatMoney(currentSalaryBalance)}`;
+        document.getElementById("streak-val").innerText =
+            Number(data.streak || 0);
+
+        const target = currentDailyWage * 25;
+        const percent = target > 0
+            ? Math.min(currentSalaryBalance / target * 100, 100)
+            : 0;
+
+        document.getElementById("salary-progress").style.width = `${percent}%`;
+        document.getElementById("progress-percent").innerText =
+            `${Math.round(percent)}%`;
+
+        renderHeader();
+        updateAttendanceUI();
+        updatePunchUI();
+        updateTaskLock();
+        updatePayoutButton();
+    }, error => {
+        console.error("STAFF DATA ERROR:", error);
+        showToast("Staff data loading failed.");
+    });
+}
+
+/* =========================================================
+   ATTENDANCE STATUS AND SLIDER UI
+========================================================= */
+
+function loadTodayAttendance() {
+    const today = getLocalDate();
+
+    db.ref(`attendance/${staffId}/${today}`).once("value")
+        .then(snapshot => {
+            isAttendanceMarkedToday = snapshot.exists();
             updateAttendanceUI();
-
             updatePunchUI();
-
             updateTaskLock();
-
-            updatePayoutButton();
-
-        },
-
-        error=>{
-
-            console.error(
-                "STAFF DATA ERROR:",
-                error
-            );
-
-            showToast(
-                "Staff data loading failed."
-            );
-
-        }
-    );
-
+        })
+        .catch(error => {
+            console.error("ATTENDANCE ERROR:", error);
+            showToast("Unable to load attendance.");
+        });
 }
 
+function updateAttendanceUI() {
+    const icon = document.getElementById("attendance-status-icon");
+    const title = document.getElementById("attendance-status-title");
+    const text = document.getElementById("attendance-status-text");
 
-/* =========================================================
-   ATTENDANCE
-========================================================= */
+    if (!icon || !title || !text) return;
 
-function loadTodayAttendance(){
+    if (!punchEnabled) {
+        icon.innerHTML = '<i class="fas fa-user-lock"></i>';
+        icon.style.color = "var(--red)";
+        title.innerText = "Punch-In Disabled";
+        title.style.color = "var(--red)";
+        text.innerText = "Admin has temporarily disabled attendance access.";
+    } else if (isAttendanceMarkedToday) {
+        icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+        icon.style.color = "var(--green)";
+        title.innerText = "Present Today";
+        title.style.color = "var(--green)";
+        text.innerText = "Attendance recorded successfully.";
+    } else {
+        icon.innerHTML = '<i class="fas fa-clock"></i>';
+        icon.style.color = "var(--orange)";
+        title.innerText = "Attendance Pending";
+        title.style.color = "#fff";
+        text.innerText = "Swipe the Punch-In control at the bottom.";
+    }
 
-    const today =
-        getLocalDate();
-
-
-    const path =
-        `attendance/${staffId}/${today}`;
-
-
-    console.log(
-        "Checking:",
-        path
-    );
-
-
-    db.ref(path)
-    .once("value")
-    .then(
-        snapshot=>{
-
-            console.log(
-                "TODAY ATTENDANCE:",
-                snapshot.val()
-            );
-
-
-            isAttendanceMarkedToday =
-                snapshot.exists();
-
-
-            updateAttendanceUI();
-
-            updatePunchUI();
-
-            updateTaskLock();
-
-        }
-    )
-    .catch(
-        error=>{
-
-            console.error(
-                "ATTENDANCE ERROR:",
-                error
-            );
-
-        }
-    );
-
+    const message = document.getElementById("punch-control-message");
+    if (message) message.classList.toggle("show", !punchEnabled);
 }
 
+function updatePunchUI() {
+    const track = document.getElementById("sl-track-dock");
+    const handle = document.getElementById("sl-handle-dock");
+    const text = document.getElementById("sl-text-dock");
+    const icon = document.getElementById("sl-icon-dock");
+    if (!track || !handle || !text || !icon) return;
 
-/* =========================================================
-   ATTENDANCE UI
-========================================================= */
+    handle.style.transition = "all .25s ease";
 
-function updateAttendanceUI(){
-
-    const icon =
-        document.getElementById(
-            "attendance-status-icon"
-        );
-
-
-    const title =
-        document.getElementById(
-            "attendance-status-title"
-        );
-
-
-    const text =
-        document.getElementById(
-            "attendance-status-text"
-        );
-
-
-    if (
-        !icon ||
-        !title ||
-        !text
-    ){
-
+    if (!punchEnabled) {
+        track.classList.add("disabled");
+        track.classList.remove("success-state");
+        handle.style.transform = "translateX(0px)";
+        handle.style.pointerEvents = "none";
+        icon.className = "fas fa-lock";
+        icon.style.color = "var(--red)";
+        text.innerText = "PUNCH IN DISABLED BY ADMIN";
+        text.style.color = "var(--red)";
         return;
-
     }
 
-
-    if (
-        punchEnabled === false
-    ){
-
-        icon.innerHTML =
-            '<i class="fas fa-user-lock"></i>';
-
-        icon.style.color =
-            "var(--red)";
-
-        title.innerText =
-            "Punch-In Disabled";
-
-        title.style.color =
-            "var(--red)";
-
-        text.innerText =
-            "Admin has temporarily disabled your attendance access.";
-
+    if (isAttendanceMarkedToday) {
+        const max = Math.max(track.clientWidth - handle.clientWidth - 12, 0);
+        track.classList.remove("disabled");
+        track.classList.add("success-state");
+        handle.style.transform = `translateX(${max}px)`;
+        handle.style.background = "var(--green)";
+        handle.style.pointerEvents = "none";
+        icon.className = "fas fa-check-circle";
+        icon.style.color = "#fff";
+        text.innerText = "PUNCHED PRESENT";
+        text.style.color = "var(--green)";
         return;
-
     }
 
-
-    if (
-        isAttendanceMarkedToday
-    ){
-
-        icon.innerHTML =
-            '<i class="fas fa-check-circle"></i>';
-
-        icon.style.color =
-            "var(--green)";
-
-        title.innerText =
-            "Present Today";
-
-        title.style.color =
-            "var(--green)";
-
-        text.innerText =
-            "Attendance recorded successfully. Today's work is unlocked.";
-
-        return;
-
-    }
-
-
-    icon.innerHTML =
-        '<i class="fas fa-clock"></i>';
-
-    icon.style.color =
-        "var(--orange)";
-
-    title.innerText =
-        "Attendance Pending";
-
-    title.style.color =
-        "#fff";
-
-    text.innerText =
-        "Swipe the Punch-In control at the bottom.";
-
+    track.classList.remove("disabled", "success-state");
+    handle.style.transform = "translateX(0px)";
+    handle.style.background = "";
+    handle.style.pointerEvents = "auto";
+    icon.className = "fas fa-fingerprint";
+    icon.style.color = "var(--blue)";
+    text.innerText = "SLIDE TO PUNCH IN";
+    text.style.color = "#A8A8AE";
 }
 
+function updateTaskLock() {
+    const zone = document.getElementById("task-zone");
+    const icon = document.getElementById("task-lock-icon");
+    const title = document.getElementById("task-lock-title");
+    const subtitle = document.getElementById("task-lock-subtitle");
+    if (!zone || !icon || !title || !subtitle) return;
 
-/* =========================================================
-   PUNCH UI
-========================================================= */
+    const unlocked = punchEnabled && isAttendanceMarkedToday;
+    zone.classList.toggle("locked", !unlocked);
 
-function updatePunchUI(){
-
-    const track =
-        document.getElementById(
-            "sl-track-dock"
-        );
-
-
-    const handle =
-        document.getElementById(
-            "sl-handle-dock"
-        );
-
-
-    const text =
-        document.getElementById(
-            "sl-text-dock"
-        );
-
-
-    const icon =
-        document.getElementById(
-            "sl-icon-dock"
-        );
-
-
-    if (
-        !track ||
-        !handle ||
-        !text ||
-        !icon
-    ){
-
-        return;
-
+    if (unlocked) {
+        icon.className = "fas fa-unlock";
+        title.innerText = "TASKS UNLOCKED";
+        subtitle.innerText = "You can now complete your assignments.";
+    } else if (!punchEnabled) {
+        icon.className = "fas fa-user-lock";
+        title.innerText = "TASKS LOCKED";
+        subtitle.innerText = "Admin has disabled punch-in access.";
+    } else {
+        icon.className = "fas fa-lock";
+        title.innerText = "TASKS LOCKED";
+        subtitle.innerText = "Punch in successfully to unlock today's assignments.";
     }
-
-
-    if (
-        punchEnabled === false
-    ){
-
-        track.classList.add(
-            "disabled"
-        );
-
-        track.classList.remove(
-            "success-state"
-        );
-
-        handle.style.pointerEvents =
-            "none";
-
-        handle.style.transform =
-            "translateX(0px)";
-
-        icon.className =
-            "fas fa-lock";
-
-        icon.style.color =
-            "var(--red)";
-
-        text.innerText =
-            "PUNCH IN DISABLED BY ADMIN";
-
-        text.style.color =
-            "var(--red)";
-
-        return;
-
-    }
-
-
-    if (
-        isAttendanceMarkedToday
-    ){
-
-        const max =
-            Math.max(
-                track.clientWidth -
-                handle.clientWidth -
-                12,
-                0
-            );
-
-
-        track.classList.remove(
-            "disabled"
-        );
-
-        track.classList.add(
-            "success-state"
-        );
-
-        handle.style.transform =
-            `translateX(${max}px)`;
-
-        handle.style.background =
-            "var(--green)";
-
-        handle.style.pointerEvents =
-            "none";
-
-        icon.className =
-            "fas fa-check-circle";
-
-        icon.style.color =
-            "#fff";
-
-        text.innerText =
-            "PUNCHED PRESENT";
-
-        text.style.color =
-            "var(--green)";
-
-        return;
-
-    }
-
-
-    track.classList.remove(
-        "disabled"
-    );
-
-    track.classList.remove(
-        "success-state"
-    );
-
-
-    handle.style.transform =
-        "translateX(0px)";
-
-    handle.style.background =
-        "";
-
-    handle.style.pointerEvents =
-        "auto";
-
-
-    icon.className =
-        "fas fa-fingerprint";
-
-    icon.style.color =
-        "var(--blue)";
-
-
-    text.innerText =
-        "SLIDE TO PUNCH IN";
-
-    text.style.color =
-        "#A8A8AE";
-
 }
-
-
-/* =========================================================
-   TASK LOCK
-========================================================= */
-
-function updateTaskLock(){
-
-    const zone =
-        document.getElementById(
-            "task-zone"
-        );
-
-
-    const icon =
-        document.getElementById(
-            "task-lock-icon"
-        );
-
-
-    const title =
-        document.getElementById(
-            "task-lock-title"
-        );
-
-
-    const subtitle =
-        document.getElementById(
-            "task-lock-subtitle"
-        );
-
-
-    if (
-        !zone ||
-        !icon ||
-        !title ||
-        !subtitle
-    ){
-
-        return;
-
-    }
-
-
-    if (
-        punchEnabled === true &&
-        isAttendanceMarkedToday === true
-    ){
-
-        zone.classList.remove(
-            "locked"
-        );
-
-        icon.className =
-            "fas fa-unlock";
-
-        title.innerText =
-            "TASKS UNLOCKED";
-
-        subtitle.innerText =
-            "Punch-in verified. You can now complete your assignments.";
-
-        return;
-
-    }
-
-
-    zone.classList.add(
-        "locked"
-    );
-
-
-    if (
-        punchEnabled === false
-    ){
-
-        icon.className =
-            "fas fa-user-lock";
-
-        title.innerText =
-            "TASKS LOCKED";
-
-        subtitle.innerText =
-            "Admin has disabled punch-in access.";
-
-    }
-
-    else{
-
-        icon.className =
-            "fas fa-lock";
-
-        title.innerText =
-            "TASKS LOCKED";
-
-        subtitle.innerText =
-            "Punch in successfully to unlock today's assignments.";
-
-    }
-
-}
-
 
 /* =========================================================
    SALARY ACTIVITY
 ========================================================= */
 
-function listenSalaryActivity(){
-
-    db.ref(
-        `salaryAdjustments/${staffId}`
-    )
-    .on(
-        "value",
-
-        snapshot=>{
-
-            renderSalaryActivity(
-                snapshot
-            );
-
-        },
-
-        error=>{
-
-            console.error(
-                "Salary activity:",
-                error
-            );
-
-        }
-    );
-
+function listenSalaryActivity() {
+    db.ref(`salaryAdjustments/${staffId}`).on("value", renderSalaryActivity,
+        error => console.error("Salary activity error:", error));
 }
 
+function renderSalaryActivity(snapshot) {
+    const list = document.getElementById("salary-change-list");
+    if (!list) return;
 
-function renderSalaryActivity(
-    snapshot
-){
-
-    const list =
-        document.getElementById(
-            "salary-change-list"
-        );
-
-
-    if (!list){
-
+    if (!snapshot.exists()) {
+        list.innerHTML = '<div class="empty-state">No salary changes yet.</div>';
         return;
-
     }
-
-
-    if (
-        !snapshot.exists()
-    ){
-
-        list.innerHTML = `
-
-            <div class="empty-state">
-
-                <i class="fas fa-receipt"></i>
-
-                No salary changes yet.
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
 
     const items = [];
+    snapshot.forEach(child => items.push({id: child.key, ...(child.val() || {})}));
 
-
-    snapshot.forEach(
-        child=>{
-
-            items.push({
-
-                id:
-                    child.key,
-
-                ...(child.val() || {})
-
-            });
-
-        }
+    items.sort((a,b) =>
+        Number(b.timestamp || b.updatedAt || b.createdAt || 0) -
+        Number(a.timestamp || a.updatedAt || a.createdAt || 0)
     );
 
-
-    items.sort(
-        (a,b)=>
-            Number(
-                b.timestamp ||
-                b.updatedAt ||
-                b.createdAt ||
-                0
-            )
-            -
-            Number(
-                a.timestamp ||
-                a.updatedAt ||
-                a.createdAt ||
-                0
-            )
-    );
-
-
-    list.innerHTML =
-        "";
-
-
-    items.forEach(
-        item=>{
-
-            const type =
-                String(
-                    item.type ||
-                    item.action ||
-                    "modify"
-                )
-                .toLowerCase();
-
-
-            const amount =
-                Number(
-                    item.amount ||
-                    item.changeAmount ||
-                    0
-                );
-
-
-            let className =
-                "modified";
-
-            let icon =
-                "fa-pen-to-square";
-
-            let title =
-                "Salary Modified";
-
-            let amountText =
-                `₹${formatMoney(
-                    Math.abs(amount)
-                )}`;
-
-
-            if (
-                [
-                    "add",
-                    "added",
-                    "credit",
-                    "increase",
-                    "increment"
-                ].includes(type)
-            ){
-
-                className =
-                    "added";
-
-                icon =
-                    "fa-plus";
-
-                title =
-                    "Amount Added";
-
-                amountText =
-                    `+₹${formatMoney(
-                        Math.abs(amount)
-                    )}`;
-
-            }
-
-
-            else if (
-                [
-                    "reduce",
-                    "reduced",
-                    "debit",
-                    "decrease",
-                    "deduction"
-                ].includes(type)
-            ){
-
-                className =
-                    "reduced";
-
-                icon =
-                    "fa-minus";
-
-                title =
-                    "Amount Reduced";
-
-                amountText =
-                    `-₹${formatMoney(
-                        Math.abs(amount)
-                    )}`;
-
-            }
-
-
-            const timestamp =
-                Number(
-                    item.timestamp ||
-                    item.updatedAt ||
-                    item.createdAt ||
-                    0
-                );
-
-
-            let dateText =
-                "--";
-
-
-            let timeText =
-                "--";
-
-
-            if (timestamp){
-
-                const d =
-                    new Date(
-                        timestamp
-                    );
-
-
-                dateText =
-                    d.toLocaleDateString(
-                        "en-IN",
-                        {
-                            day:"2-digit",
-                            month:"short",
-                            year:"numeric"
-                        }
-                    );
-
-
-                timeText =
-                    d.toLocaleTimeString(
-                        "en-IN",
-                        {
-                            hour:"2-digit",
-                            minute:"2-digit",
-                            hour12:true
-                        }
-                    );
-
-            }
-
-
-            list.innerHTML += `
-
-                <div
-                    class="
-                        activity-item
-                        ${className}
-                    "
-                >
-
-                    <div class="activity-top">
-
-                        <div class="activity-main">
-
-                            <div class="activity-symbol">
-
-                                <i
-                                    class="
-                                        fas
-                                        ${icon}
-                                    "
-                                ></i>
-
-                            </div>
-
-                            <div class="activity-name">
-
-                                <strong>
-
-                                    ${title}
-
-                                </strong>
-
-                                <small>
-
-                                    ${dateText}
-                                    •
-                                    ${timeText}
-
-                                </small>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="activity-amount">
-
-                            ${amountText}
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="activity-details">
-
-                        <div class="detail-row">
-
-                            <span>
-                                Admin
-                            </span>
-
-                            <span>
-
-                                ${escapeHtml(
-                                    item.adminName ||
-                                    item.admin ||
-                                    "Admin"
-                                )}
-
-                            </span>
-
-                        </div>
-
-
-                        <div class="detail-row">
-
-                            <span>
-                                Reason
-                            </span>
-
-                            <span>
-
-                                ${escapeHtml(
-                                    item.reason ||
-                                    item.note ||
-                                    item.description ||
-                                    "Manual salary adjustment"
-                                )}
-
-                            </span>
-
-                        </div>
-
-                    </div>
-
+    list.innerHTML = items.map(item => {
+        const type = String(item.type || item.action || "modify").toLowerCase();
+        const amount = Number(item.amount || item.changeAmount || 0);
+        const added = ["add","added","credit","increase","increment"].includes(type);
+        const reduced = ["reduce","reduced","debit","decrease","deduction"].includes(type);
+        const cls = added ? "added" : reduced ? "reduced" : "modified";
+        const title = added ? "Amount Added" : reduced ? "Amount Reduced" : "Salary Modified";
+        const sign = added ? "+" : reduced ? "-" : "";
+        const icon = added ? "fa-plus" : reduced ? "fa-minus" : "fa-pen-to-square";
+        const ts = Number(item.timestamp || item.updatedAt || item.createdAt || 0);
+        const date = ts ? new Date(ts).toLocaleString("en-IN") : "--";
+
+        return `
+          <div class="activity-item ${cls}">
+            <div class="activity-top">
+              <div class="activity-main">
+                <div class="activity-symbol"><i class="fas ${icon}"></i></div>
+                <div class="activity-name">
+                  <strong>${title}</strong>
+                  <small>${escapeHtml(date)}</small>
                 </div>
+              </div>
+              <div class="activity-amount">${sign}₹${formatMoney(Math.abs(amount))}</div>
+            </div>
+            <div class="activity-details">
+              <div class="detail-row"><span>Admin</span><span>${escapeHtml(item.adminName || item.admin || "Admin")}</span></div>
+              <div class="detail-row"><span>Reason</span><span>${escapeHtml(item.reason || item.note || item.description || "Manual salary adjustment")}</span></div>
+            </div>
+          </div>`;
+    }).join("");
 
-            `;
-
-        }
-    );
-
+    const last = items[0];
+    const ts = Number(last.timestamp || last.updatedAt || last.createdAt || 0);
+    document.getElementById("activity-last-update").innerText =
+        ts ? new Date(ts).toLocaleDateString("en-IN") : "--";
 }
-
-
-/* =========================================================
-   TASK REWARD
-========================================================= */
-
-function getTaskReward(
-    task
-){
-
-    if (!task){
-
-        return 0;
-
-    }
-
-
-    let reward =
-        Number(
-            task.rewardPerTask
-        );
-
-
-    if (
-        isFinite(reward) &&
-        reward > 0
-    ){
-
-        return reward;
-
-    }
-
-
-    reward =
-        Number(
-            task.walletReward
-        );
-
-
-    if (
-        isFinite(reward) &&
-        reward > 0
-    ){
-
-        return reward;
-
-    }
-
-
-    reward =
-        Number(
-            task.amount
-        );
-
-
-    if (
-        isFinite(reward) &&
-        reward > 0
-    ){
-
-        return reward;
-
-    }
-
-
-    const wage =
-        Number(
-            task.dailyWage ||
-            currentDailyWage ||
-            0
-        );
-
-
-    const total =
-        Number(
-            task.totalPriorityTasks ||
-            0
-        );
-
-
-    if (
-        wage > 0 &&
-        total > 0
-    ){
-
-        return Number(
-            (
-                wage /
-                total
-            ).toFixed(2)
-        );
-
-    }
-
-
-    return 0;
-
-}
-
 
 /* =========================================================
    TASKS
 ========================================================= */
 
-function listenTasks(){
-
-    if (
-        tasksListenerStarted
-    ){
-
-        return;
-
+function getTaskReward(task) {
+    for (const value of [
+        task.rewardPerTask, task.walletReward, task.amount
+    ]) {
+        const n = Number(value);
+        if (Number.isFinite(n) && n > 0) return n;
     }
 
-
-    tasksListenerStarted =
-        true;
-
-
-    const path =
-        `tasks/${staffId}`;
-
-
-    console.log(
-        "Reading:",
-        path
-    );
-
-
-    db.ref(path)
-    .on(
-        "value",
-
-        snapshot=>{
-
-            console.log(
-                "TASK DATA:",
-                snapshot.val()
-            );
-
-
-            renderTasks(
-                snapshot
-            );
-
-        },
-
-        error=>{
-
-            console.error(
-                "TASK ERROR:",
-                error
-            );
-
-
-            const list =
-                document.getElementById(
-                    "task-list"
-                );
-
-
-            if (list){
-
-                list.innerHTML = `
-
-                    <div class="empty-state">
-
-                        <i class="fas fa-triangle-exclamation"></i>
-
-                        Unable to load tasks.
-
-                    </div>
-
-                `;
-
-            }
-
-        }
-    );
-
+    const wage = Number(task.dailyWage || currentDailyWage || 0);
+    const total = Number(task.totalPriorityTasks || 0);
+    return wage > 0 && total > 0 ? Number((wage / total).toFixed(2)) : 0;
 }
 
+function listenTasks() {
+    if (tasksListenerStarted) return;
+    tasksListenerStarted = true;
 
-function renderTasks(
-    snapshot
-){
+    db.ref(`tasks/${staffId}`).on("value", renderTasks, error => {
+        console.error("TASK ERROR:", error);
+        document.getElementById("task-list").innerHTML =
+            '<div class="empty-state">Unable to load tasks.</div>';
+    });
+}
 
-    const container =
-        document.getElementById(
-            "task-list"
-        );
+function renderTasks(snapshot) {
+    const container = document.getElementById("task-list");
+    if (!container) return;
 
-
-    if (!container){
-
+    if (!snapshot.exists()) {
+        container.innerHTML = '<div class="empty-state">No active tasks</div>';
         return;
-
     }
-
-
-    if (
-        !snapshot.exists()
-    ){
-
-        container.innerHTML = `
-
-            <div class="empty-state">
-
-                <i class="fas fa-check-double"></i>
-
-                No active tasks
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
 
     const tasks = [];
+    snapshot.forEach(child => {
+        const data = child.val() || {};
+        if (data.showToStaff === false || data.status === "Cancelled") return;
+        tasks.push({id: child.key, data});
+    });
 
+    if (!tasks.length) {
+        container.innerHTML = '<div class="empty-state">No visible assignments</div>';
+        return;
+    }
 
-    snapshot.forEach(
-        child=>{
+    const priorityCount = tasks.filter(x => x.data.priority === true).length;
 
-            const task =
-                child.val() ||
-                {};
+    container.innerHTML = tasks.map(({id, data}) => {
+        const done = data.status === "Completed";
+        const priority = data.priority === true;
+        const reward = getTaskReward(data);
+        const credited = data.walletCredited === true || data.wasEverCredited === true;
+        const name = escapeHtml(data.task || data.title || data.name || "Untitled Task");
+        const date = data.date && !isNaN(new Date(data.date).getTime())
+            ? new Date(data.date).toLocaleDateString("en-IN")
+            : "--";
 
+        const rewardHTML = priority ? `
+          <div class="task-reward-row">
+            <span class="reward-pill wage"><i class="fas fa-coins"></i> Daily ₹${formatMoney(Number(data.dailyWage || currentDailyWage || 0))}</span>
+            <span class="reward-pill wage"><i class="fas fa-list-ol"></i> ${Number(data.totalPriorityTasks || priorityCount || 1)} Tasks</span>
+            <span class="reward-pill amount"><i class="fas fa-wallet"></i> ₹${formatMoney(reward)} / Task</span>
+            <span class="reward-pill ${credited ? "credited" : "wallet"}"><i class="fas ${credited ? "fa-check-circle" : "fa-clock"}"></i> ${credited ? "CREDITED" : "ON COMPLETION"}</span>
+          </div>` : "";
 
-            if (
-                task.showToStaff ===
-                false
-            ){
-
-                return;
-
-            }
-
-
-            if (
-                task.status ===
-                "Cancelled"
-            ){
-
-                return;
-
-            }
-
-
-            tasks.push({
-
-                id:
-                    child.key,
-
-                data:
-                    task
-
-            });
-
-        }
-    );
-
-
-    if (
-        tasks.length === 0
-    ){
-
-        container.innerHTML = `
-
-            <div class="empty-state">
-
-                <i class="fas fa-eye-slash"></i>
-
-                No visible assignments
-
+        return `
+          <article class="task-item ${priority ? "priority" : "normal"}">
+            <div class="task-top">
+              <div class="task-dot ${done ? "completed" : priority ? "" : "normal"}"></div>
+              <div class="task-info">
+                <p class="task-name ${done ? "done" : ""}">${name}
+                  ${priority ? '<span class="priority-label"><i class="fas fa-bolt"></i> PRIORITY</span>' : ""}
+                </p>
+                <div class="task-meta">${done ? "Completed" : "New assignment"} • ${escapeHtml(date)}</div>
+                ${rewardHTML}
+              </div>
             </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    const priorityCount =
-        tasks.filter(
-            item =>
-                item.data.priority ===
-                true
-        ).length;
-
-
-    container.innerHTML =
-        "";
-
-
-    tasks.forEach(
-        item=>{
-
-            const taskId =
-                item.id;
-
-
-            const task =
-                item.data;
-
-
-            const done =
-                task.status ===
-                "Completed";
-
-
-            const priority =
-                task.priority ===
-                true;
-
-
-            const reward =
-                getTaskReward(
-                    task
-                );
-
-
-            const credited =
-                task.walletCredited ===
-                true ||
-                task.wasEverCredited ===
-                true;
-
-
-            const taskName =
-                escapeHtml(
-                    task.task ||
-                    task.title ||
-                    task.name ||
-                    "Untitled Task"
-                );
-
-
-            let dateText =
-                "--";
-
-
-            if (
-                task.date
-            ){
-
-                const d =
-                    new Date(
-                        task.date
-                    );
-
-
-                if (
-                    !isNaN(
-                        d.getTime()
-                    )
-                ){
-
-                    dateText =
-                        d.toLocaleDateString(
-                            "en-IN",
-                            {
-                                day:"2-digit",
-                                month:"short",
-                                year:"numeric"
-                            }
-                        );
-
-                }
-
-            }
-
-
-            let rewardHTML =
-                "";
-
-
-            if (
-                priority
-            ){
-
-                const dailyWage =
-                    Number(
-                        task.dailyWage ||
-                        currentDailyWage ||
-                        0
-                    );
-
-
-                const totalTasks =
-                    Number(
-                        task.totalPriorityTasks ||
-                        priorityCount ||
-                        1
-                    );
-
-
-                rewardHTML = `
-
-                    <div class="task-reward-row">
-
-                        <span class="reward-pill wage">
-
-                            <i class="fas fa-coins"></i>
-
-                            Daily ₹${formatMoney(
-                                dailyWage
-                            )}
-
-                        </span>
-
-
-                        <span class="reward-pill wage">
-
-                            <i class="fas fa-list-ol"></i>
-
-                            ${totalTasks} Tasks
-
-                        </span>
-
-
-                        <span class="reward-pill amount">
-
-                            <i class="fas fa-wallet"></i>
-
-                            ₹${formatMoney(
-                                reward
-                            )}
-                            / Task
-
-                        </span>
-
-
-                        <span
-                            class="
-                                reward-pill
-                                wallet
-                                ${
-                                    credited
-                                        ?
-                                        "credited"
-                                        :
-                                        ""
-                                }
-                            "
-                        >
-
-                            <i
-                                class="
-                                    fas
-                                    ${
-                                        credited
-                                            ?
-                                            "fa-check-circle"
-                                            :
-                                            "fa-clock"
-                                    }
-                                "
-                            ></i>
-
-                            ${
-                                credited
-                                    ?
-                                    "CREDITED"
-                                    :
-                                    "ON COMPLETION"
-                            }
-
-                        </span>
-
-                    </div>
-
-                `;
-
-            }
-
-
-            container.innerHTML += `
-
-                <article
-                    class="
-                        task-item
-                        ${
-                            priority
-                                ?
-                                "priority"
-                                :
-                                "normal"
-                        }
-                    "
-                >
-
-                    <div class="task-top">
-
-                        <div
-                            class="
-                                task-dot
-                                ${
-                                    done
-                                        ?
-                                        "completed"
-                                        :
-                                        (
-                                            priority
-                                                ?
-                                                ""
-                                                :
-                                                "normal"
-                                        )
-                                }
-                            "
-                        ></div>
-
-
-                        <div class="task-info">
-
-                            <p
-                                class="
-                                    task-name
-                                    ${
-                                        done
-                                            ?
-                                            "done"
-                                            :
-                                            ""
-                                    }
-                                "
-                            >
-
-                                ${taskName}
-
-                                ${
-                                    priority
-                                        ?
-                                        `
-                                            <span class="priority-label">
-
-                                                <i class="fas fa-bolt"></i>
-
-                                                PRIORITY
-
-                                            </span>
-                                        `
-                                        :
-                                        ""
-                                }
-
-                            </p>
-
-
-                            <div class="task-meta">
-
-                                ${
-                                    done
-                                        ?
-                                        "Completed"
-                                        :
-                                        "New assignment"
-                                }
-
-                                •
-
-                                ${dateText}
-
-                            </div>
-
-
-                            ${rewardHTML}
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="task-bottom">
-
-                        <div
-                            class="
-                                task-amount
-                                ${
-                                    priority
-                                        ?
-                                        ""
-                                        :
-                                        "normal"
-                                }
-                            "
-                        >
-
-                            ${
-                                priority
-                                    ?
-                                    `₹${formatMoney(
-                                        reward
-                                    )}`
-                                    :
-                                    "—"
-                            }
-
-                        </div>
-
-
-                        <button
-                            class="
-                                task-btn
-                                ${
-                                    done
-                                        ?
-                                        "completed"
-                                        :
-                                        ""
-                                }
-                            "
-                            data-complete-task="${escapeHtml(
-                                taskId
-                            )}"
-                            ${
-                                done
-                                    ?
-                                    "disabled"
-                                    :
-                                    ""
-                            }
-                        >
-
-                            ${
-                                done
-                                    ?
-                                    `
-                                        <i class="fas fa-check"></i>
-                                        DONE
-                                    `
-                                    :
-                                    `
-                                        MARK DONE
-                                        <i class="fas fa-arrow-right"></i>
-                                    `
-                            }
-
-                        </button>
-
-                    </div>
-
-                </article>
-
-            `;
-
-        }
-    );
-
+            <div class="task-bottom">
+              <div class="task-amount ${priority ? "" : "normal"}">${priority ? `₹${formatMoney(reward)}` : "—"}</div>
+              <button class="task-btn ${done ? "completed" : ""}"
+                data-complete-task="${escapeHtml(id)}" ${done ? "disabled" : ""}>
+                ${done ? '<i class="fas fa-check"></i> DONE' : 'MARK DONE <i class="fas fa-arrow-right"></i>'}
+              </button>
+            </div>
+          </article>`;
+    }).join("");
 }
 
+document.addEventListener("click", event => {
+    const button = event.target.closest("[data-complete-task]");
+    if (button) completeTask(button.getAttribute("data-complete-task"));
+});
 
-/* =========================================================
-   TASK COMPLETE
-========================================================= */
-
-document.addEventListener(
-    "click",
-    event=>{
-
-        const button =
-            event.target.closest(
-                "[data-complete-task]"
-            );
-
-
-        if (!button){
-
-            return;
-
-        }
-
-
-        completeTask(
-            button.getAttribute(
-                "data-complete-task"
-            )
-        );
-
-    }
-);
-
-
-async function completeTask(
-    taskId
-){
-
-    if (
-        punchEnabled !== true ||
-        isAttendanceMarkedToday !== true
-    ){
-
-        showToast(
-            "Punch-in required before completing tasks."
-        );
-
+/*
+ * WARNING:
+ * The task transaction prevents duplicate completion of one task.
+ * Salary credit is still a separate operation. For reliable financial
+ * processing, use a trusted Cloud Function with idempotency and rules
+ * that prevent staff from writing salary values directly.
+ */
+async function completeTask(taskId) {
+    if (!punchEnabled || !isAttendanceMarkedToday) {
+        showToast("Punch-in required before completing tasks.");
         return;
-
     }
 
+    if (!confirm("Have you really completed this task?")) return;
 
-    if (
-        !confirm(
-            "Have you really completed this task?"
-        )
-    ){
+    try {
+        const taskRef = db.ref(`tasks/${staffId}/${taskId}`);
+        const now = Date.now();
+        let reward = 0;
 
-        return;
+        const result = await taskRef.transaction(task => {
+            if (!task || task.status === "Completed" ||
+                task.status === "Cancelled" || task.showToStaff === false) {
+                return;
+            }
 
-    }
+            reward = task.priority === true ? getTaskReward(task) : 0;
 
-
-    try{
-
-        const taskRef =
-            db.ref(
-                `tasks/${staffId}/${taskId}`
-            );
-
-
-        const snapshot =
-            await taskRef.once(
-                "value"
-            );
-
-
-        if (
-            !snapshot.exists()
-        ){
-
-            throw new Error(
-                "Task not found."
-            );
-
-        }
-
-
-        const task =
-            snapshot.val() ||
-            {};
-
-
-        if (
-            task.status ===
-            "Completed"
-        ){
-
-            throw new Error(
-                "Task already completed."
-            );
-
-        }
-
-
-        const reward =
-            task.priority ===
-            true
-            ?
-            getTaskReward(
-                task
-            )
-            :
-            0;
-
-
-        const now =
-            Date.now();
-
-
-        const updates =
-            {};
-
-
-        updates[
-            `tasks/${staffId}/${taskId}/status`
-        ] =
-            "Completed";
-
-
-        updates[
-            `tasks/${staffId}/${taskId}/completedAt`
-        ] =
-            now;
-
-
-        updates[
-            `tasks/${staffId}/${taskId}/completedBy`
-        ] =
-            staffName;
-
-
-        if (
-            reward > 0
-        ){
-
-            updates[
-                `tasks/${staffId}/${taskId}/walletReward`
-            ] =
-                reward;
-
-
-            updates[
-                `tasks/${staffId}/${taskId}/rewardPerTask`
-            ] =
-                reward;
-
-
-            updates[
-                `tasks/${staffId}/${taskId}/walletCredited`
-            ] =
-                true;
-
-
-            updates[
-                `tasks/${staffId}/${taskId}/walletCreditedAt`
-            ] =
-                now;
-
-
-            updates[
-                `staff/${staffId}/salary`
-            ] =
-                firebase.database.ServerValue.increment(
-                    reward
-                );
-
-
-            updates[
-                `salaryTransactions/${staffId}/task_${taskId}_${now}`
-            ] = {
-
-                type:
-                    "task_reward",
-
-                taskId:
-                    taskId,
-
-                amount:
-                    reward,
-
-                staffId:
-                    staffId,
-
-                staffName:
-                    staffName,
-
-                timestamp:
-                    now,
-
-                source:
-                    "staff_task_completion"
-
+            return {
+                ...task,
+                status: "Completed",
+                completedAt: now,
+                completedBy: staffName,
+                ...(reward > 0 ? {
+                    walletReward: reward,
+                    rewardPerTask: reward,
+                    walletCredited: true,
+                    walletCreditedAt: now
+                } : {})
             };
+        }, undefined, false);
 
+        if (!result.committed) {
+            showToast("Task already completed or unavailable.");
+            return;
         }
 
+        if (reward > 0) {
+            const updates = {};
+            updates[`staff/${staffId}/salary`] =
+                firebase.database.ServerValue.increment(reward);
+            updates[`salaryTransactions/${staffId}/task_${taskId}`] = {
+                type: "task_reward",
+                taskId,
+                amount: reward,
+                staffId,
+                staffName,
+                timestamp: now,
+                source: "staff_task_completion"
+            };
+            await db.ref().update(updates);
+        }
 
-        await db.ref().update(
-            updates
-        );
+        showToast(reward > 0
+            ? `Task completed • ₹${formatMoney(reward)} earned`
+            : "Task completed.");
 
-
-        showToast(
-            reward > 0
-                ?
-                `Task completed • ₹${formatMoney(
-                    reward
-                )} earned`
-                :
-                "Task completed."
-        );
-
+    } catch (error) {
+        console.error("TASK COMPLETION ERROR:", error);
+        showToast("Task update failed. Contact Admin if needed.");
     }
-
-    catch(error){
-
-        console.error(
-            "Task completion:",
-            error
-        );
-
-
-        showToast(
-            error.message ||
-            "Task completion failed."
-        );
-
-    }
-
 }
-
 
 /* =========================================================
    PRESENT COUNT
 ========================================================= */
 
-function listenPresentCount(){
+function listenPresentCount() {
+    db.ref("attendance").on("value", snapshot => {
+        const today = getLocalDate();
+        let count = 0;
 
-    const today =
-        getLocalDate();
+        snapshot.forEach(staffSnapshot => {
+            if (staffSnapshot.child(today).exists()) count++;
+        });
 
-
-    db.ref(
-        "attendance"
-    )
-    .on(
-        "value",
-
-        snapshot=>{
-
-            let count =
-                0;
-
-
-            snapshot.forEach(
-                staffSnapshot=>{
-
-                    if (
-                        staffSnapshot
-                        .child(today)
-                        .exists()
-                    ){
-
-                        count++;
-
-                    }
-
-                }
-            );
-
-
-            const element =
-                document.getElementById(
-                    "present-count"
-                );
-
-
-            if (element){
-
-                element.innerText =
-                    count;
-
-            }
-
-        },
-
-        error=>{
-
-            console.error(
-                "Present count:",
-                error
-            );
-
-        }
-    );
-
+        document.getElementById("present-count").innerText = count;
+    }, error => console.error("Present count:", error));
 }
-
 
 /* =========================================================
    HISTORY
 ========================================================= */
 
-function toggleHistory(){
+function toggleHistory() {
+    const body = document.getElementById("history-body");
+    const arrow = document.getElementById("history-arrow");
+    body.classList.toggle("open");
+    arrow.classList.toggle("open");
 
-    const body =
-        document.getElementById(
-            "history-body"
-        );
-
-
-    const arrow =
-        document.getElementById(
-            "history-arrow"
-        );
-
-
-    if (!body){
-
-        return;
-
-    }
-
-
-    body.classList.toggle(
-        "open"
-    );
-
-
-    if (arrow){
-
-        arrow.classList.toggle(
-            "open"
-        );
-
-    }
-
-
-    if (
-        body.classList.contains(
-            "open"
-        )
-    ){
-
-        loadHistory();
-
-    }
-
+    if (body.classList.contains("open")) loadHistory();
 }
 
-
-function loadHistory(){
-
-    db.ref(
-        `attendance/${staffId}`
-    )
-    .once(
-        "value"
-    )
-    .then(
-        snapshot=>{
-
-            renderHistory(
-                snapshot.val() ||
-                {}
-            );
-
-        }
-    )
-    .catch(
-        error=>{
-
-            console.error(
-                "History:",
-                error
-            );
-
-        }
-    );
-
+function loadHistory() {
+    db.ref(`attendance/${staffId}`).once("value")
+        .then(snapshot => renderHistory(snapshot.val() || {}))
+        .catch(error => {
+            console.error("History:", error);
+            showToast("Unable to load attendance history.");
+        });
 }
 
+function renderHistory(records) {
+    const table = document.getElementById("history-table-body");
+    const today = new Date();
+    let present = 0, missed = 0, html = "";
 
-function renderHistory(
-    records
-){
+    for (let i = 0; i < 30; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
 
-    const table =
-        document.getElementById(
-            "history-table-body"
-        );
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+        const record = records[key];
+        const exists = !!record;
 
+        if (exists) present++;
+        else missed++;
 
-    if (!table){
+        const punch = record ? record.punchInTime || record.time || "--" : "--";
 
-        return;
-
+        html += `<tr>
+          <td class="history-date">${d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})}</td>
+          <td class="history-day">${d.toLocaleDateString("en-IN",{weekday:"short"})}</td>
+          <td class="history-time">${escapeHtml(punch)}</td>
+          <td>${exists
+            ? '<span class="present-pill"><i class="fas fa-check"></i> PRESENT</span>'
+            : `<span style="color:#666;font-size:9px;font-weight:800">${i === 0 ? "NOT YET" : "MISSED"}</span>`}</td>
+        </tr>`;
     }
 
-
-    const today =
-        new Date();
-
-
-    let present =
-        0;
-
-
-    let missed =
-        0;
-
-
-    let html =
-        "";
-
-
-    for (
-        let i = 0;
-        i < 30;
-        i++
-    ){
-
-        const d =
-            new Date(
-                today
-            );
-
-
-        d.setDate(
-            today.getDate() -
-            i
-        );
-
-
-        const date =
-            d.getFullYear()
-            + "-"
-            + String(
-                d.getMonth()+1
-            ).padStart(2,"0")
-            + "-"
-            + String(
-                d.getDate()
-            ).padStart(2,"0");
-
-
-        const record =
-            records[
-                date
-            ];
-
-
-        const exists =
-            !!record;
-
-
-        if (exists){
-
-            present++;
-
-        }
-        else{
-
-            missed++;
-
-        }
-
-
-        const punch =
-            record
-            ?
-            (
-                record.punchInTime ||
-                record.time ||
-                "--"
-            )
-            :
-            "--";
-
-
-        html += `
-
-            <tr>
-
-                <td class="history-date">
-
-                    ${d.toLocaleDateString(
-                        "en-IN",
-                        {
-                            day:"2-digit",
-                            month:"short"
-                        }
-                    )}
-
-                </td>
-
-
-                <td class="history-day">
-
-                    ${d.toLocaleDateString(
-                        "en-IN",
-                        {
-                            weekday:"short"
-                        }
-                    )}
-
-                </td>
-
-
-                <td class="history-time">
-
-                    ${
-                        punch === "--"
-                            ?
-                            "--"
-                            :
-                            `
-                                <i class="far fa-clock"></i>
-                                ${escapeHtml(
-                                    punch
-                                )}
-                            `
-                    }
-
-                </td>
-
-
-                <td>
-
-                    ${
-                        exists
-                            ?
-                            `
-                                <span class="present-pill">
-
-                                    <i class="fas fa-check"></i>
-
-                                    PRESENT
-
-                                </span>
-                            `
-                            :
-                            `
-                                <span
-                                    style="
-                                        color:#666;
-                                        font-size:9px;
-                                        font-weight:800
-                                    "
-                                >
-
-                                    ${
-                                        i === 0
-                                            ?
-                                            "NOT YET"
-                                            :
-                                            "MISSED"
-                                    }
-
-                                </span>
-                            `
-                    }
-
-                </td>
-
-            </tr>
-
-        `;
-
-    }
-
-
-    table.innerHTML =
-        html;
-
-
-    document.getElementById(
-        "history-present"
-    ).innerText =
-        present;
-
-
-    document.getElementById(
-        "history-total"
-    ).innerText =
-        "30";
-
-
-    document.getElementById(
-        "history-missed"
-    ).innerText =
-        missed;
-
+    table.innerHTML = html;
+    document.getElementById("history-present").innerText = present;
+    document.getElementById("history-total").innerText = "30";
+    document.getElementById("history-missed").innerText = missed;
 }
 
+function toggleSalaryActivity() {
+    document.getElementById("salary-activity-body").classList.toggle("open");
+    document.getElementById("salary-activity-arrow").classList.toggle("open");
+}
 
 /* =========================================================
-   SALARY ACCORDION
+   STRICT ATTENDANCE DAYS
 ========================================================= */
 
-function toggleSalaryActivity(){
-
-    const body =
-        document.getElementById(
-            "salary-activity-body"
-        );
-
-
-    const arrow =
-        document.getElementById(
-            "salary-activity-arrow"
-        );
-
-
-    if (!body){
-
-        return;
-
-    }
-
-
-    body.classList.toggle(
-        "open"
-    );
-
-
-    if (arrow){
-
-        arrow.classList.toggle(
-            "open"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   STRICT DAYS
-========================================================= */
-
-function listenStrictDays(){
-
-    const card =
-        document.getElementById(
-            "strict-card"
-        );
-
-
-    const list =
-        document.getElementById(
-            "strict-days-list"
-        );
-
-
-    if (
-        !card ||
-        !list
-    ){
-
-        return;
-
-    }
-
-
-    db.ref(
-        "strictDays"
-    )
-    .on(
-        "value",
-
-        snapshot=>{
-
-            if (
-                !snapshot.exists()
-            ){
-
-                card.style.display =
-                    "none";
-
-                return;
-
-            }
-
-
-            const today =
-                getLocalDate();
-
-
-            const dates = [];
-
-
-            snapshot.forEach(
-                child=>{
-
-                    const value =
-                        child.val();
-
-
-                    if (
-                        typeof value ===
-                        "string"
-                    ){
-
-                        dates.push(
-                            value
-                        );
-
-                    }
-                    else if (
-                        value &&
-                        value.date
-                    ){
-
-                        dates.push(
-                            value.date
-                        );
-
-                    }
-
-                }
-            );
-
-
-            const valid =
-                dates
-                .filter(
-                    date =>
-                        date >= today
-                )
-                .sort();
-
-
-            if (
-                valid.length === 0
-            ){
-
-                card.style.display =
-                    "none";
-
-                return;
-
-            }
-
-
-            list.innerHTML =
-                "";
-
-
-            valid.forEach(
-                dateValue=>{
-
-                    const d =
-                        new Date(
-                            dateValue +
-                            "T00:00:00"
-                        );
-
-
-                    if (
-                        isNaN(
-                            d.getTime()
-                        )
-                    ){
-
-                        return;
-
-                    }
-
-
-                    const todayClass =
-                        dateValue ===
-                        today
-                        ?
-                        "today"
-                        :
-                        "";
-
-
-                    list.innerHTML += `
-
-                        <div
-                            class="
-                                strict-date
-                                ${todayClass}
-                            "
-                        >
-
-                            <small>
-
-                                ${
-                                    dateValue ===
-                                    today
-                                        ?
-                                        "TODAY"
-                                        :
-                                        d.toLocaleDateString(
-                                            "en-IN",
-                                            {
-                                                month:"short"
-                                            }
-                                        )
-                                }
-
-                            </small>
-
-
-                            <strong>
-
-                                ${d.getDate()}
-
-                            </strong>
-
-                        </div>
-
-                    `;
-
-                }
-            );
-
-
-            card.style.display =
-                "block";
-
+function listenStrictDays() {
+    db.ref("strictDays").on("value", snapshot => {
+        const card = document.getElementById("strict-card");
+        const list = document.getElementById("strict-days-list");
+        const today = getLocalDate();
+
+        const dates = [];
+        snapshot.forEach(child => {
+            const value = child.val();
+            if (typeof value === "string") dates.push(value);
+            else if (value && value.date) dates.push(value.date);
+        });
+
+        const valid = dates.filter(d => d >= today).sort();
+
+        if (!valid.length) {
+            card.style.display = "none";
+            return;
         }
-    );
 
+        list.innerHTML = valid.map(value => {
+            const d = new Date(`${value}T00:00:00`);
+            if (isNaN(d.getTime())) return "";
+            return `<div class="strict-date ${value === today ? "today" : ""}">
+              <small>${value === today ? "TODAY" : d.toLocaleDateString("en-IN",{month:"short"})}</small>
+              <strong>${d.getDate()}</strong>
+            </div>`;
+        }).join("");
+
+        card.style.display = "block";
+    }, error => console.error("Strict days:", error));
 }
 
-
 /* =========================================================
-   LEAD
+   LEAD ENTRY
 ========================================================= */
 
-function submitLead(){
+async function submitLead() {
+    const name = document.getElementById("l-name").value.trim();
+    const phone = document.getElementById("l-phone").value.trim();
+    const course = document.getElementById("l-course").value.trim();
 
-    const name =
-        document.getElementById(
-            "l-name"
-        ).value.trim();
-
-
-    const phone =
-        document.getElementById(
-            "l-phone"
-        ).value.trim();
-
-
-    const course =
-        document.getElementById(
-            "l-course"
-        ).value.trim();
-
-
-    if (!name){
-
-        showToast(
-            "Please enter student name."
-        );
-
+    if (!name) {
+        showToast("Please enter student name.");
         return;
-
     }
 
-
-    if (
-        phone.replace(
-            /\D/g,
-            ""
-        ).length < 10
-    ){
-
-        showToast(
-            "Please enter a valid WhatsApp number."
-        );
-
+    if (phone.replace(/\D/g, "").length < 10) {
+        showToast("Please enter a valid WhatsApp number.");
         return;
-
     }
 
-
-    db.ref(
-        "leads"
-    )
-    .push({
-
-        name:
+    try {
+        await db.ref("leads").push({
             name,
-
-        phone:
             phone,
-
-        course:
             course,
-
-        staff:
-            staffName,
-
-        staffId:
+            staff: staffName,
             staffId,
+            timestamp: Date.now()
+        });
 
-        timestamp:
-            Date.now()
+        document.getElementById("l-name").value = "";
+        document.getElementById("l-phone").value = "";
+        document.getElementById("l-course").value = "";
+        showToast("Lead submitted successfully.");
 
-    })
-    .then(
-        ()=>{
-
-            document.getElementById(
-                "l-name"
-            ).value =
-                "";
-
-            document.getElementById(
-                "l-phone"
-            ).value =
-                "";
-
-            document.getElementById(
-                "l-course"
-            ).value =
-                "";
-
-            showToast(
-                "Lead submitted successfully."
-            );
-
-        }
-    )
-    .catch(
-        error=>{
-
-            console.error(
-                "Lead:",
-                error
-            );
-
-            showToast(
-                "Lead submission failed."
-            );
-
-        }
-    );
-
+    } catch (error) {
+        console.error("Lead submission:", error);
+        showToast("Lead submission failed.");
+    }
 }
 
-
 /* =========================================================
-   PAYOUT
+   PAYOUT REQUEST
 ========================================================= */
 
-function requestSalary(){
-
-    if (
-        currentSalaryBalance <= 0
-    ){
-
-        showToast(
-            "Cannot request payout for ₹0 balance."
-        );
-
+async function requestSalary() {
+    if (currentSalaryBalance <= 0) {
+        showToast("Cannot request payout for ₹0 balance.");
         return;
-
     }
 
+    try {
+        const ref = db.ref(`salaryRequests/${staffId}`);
+        const existing = await ref.once("value");
 
-    const now =
-        new Date();
-
-
-    const lastDay =
-        new Date(
-            now.getFullYear(),
-            now.getMonth()+1,
-            0
-        ).getDate();
-
-
-    const daysRemaining =
-        lastDay -
-        now.getDate();
-
-
-    const isEmergency =
-        daysRemaining > 0;
-
-
-    let amount =
-        currentSalaryBalance;
-
-
-    if (
-        isEmergency
-    ){
-
-        const max =
-            Math.floor(
-                currentSalaryBalance *
-                0.5
-            );
-
-
-        if (
-            max <= 0
-        ){
-
-            showToast(
-                "Emergency advance unavailable."
-            );
-
-            return;
-
-        }
-
-
-        const input =
-            prompt(
-                `Maximum emergency advance: ₹${max}\n\nEnter amount:`
-            );
-
-
-        if (
-            input === null
-        ){
-
-            return;
-
-        }
-
-
-        amount =
-            parseInt(
-                input.replace(
-                    /[^0-9]/g,
-                    ""
-                )
-            );
-
-
-        if (
-            !isFinite(amount) ||
-            amount <= 0 ||
-            amount > max
-        ){
-
-            showToast(
-                `Maximum allowed amount is ₹${max}.`
-            );
-
-            return;
-
-        }
-
-    }
-    else{
-
-        if (
-            !confirm(
-                `Request full payout of ₹${formatMoney(
-                    amount
-                )}?`
-            )
-        ){
-
-            return;
-
-        }
-
-    }
-
-
-    db.ref(
-        `salaryRequests/${staffId}`
-    )
-    .set({
-
-        name:
-            staffName,
-
-        amount:
-            `₹${amount}`,
-
-        numericAmount:
-            amount,
-
-        status:
-            "Pending",
-
-        requestType:
-            isEmergency
-                ?
-                "Emergency Advance"
-                :
-                "Regular Payout",
-
-        requestedAt:
-            new Date().toISOString()
-
-    })
-    .then(
-        ()=>{
-
-            showToast(
-                "Salary request sent successfully."
-            );
-
+        if (existing.exists() && existing.val().status === "Pending") {
+            showToast("A salary request is already pending.");
             updatePayoutButton();
-
+            return;
         }
-    )
-    .catch(
-        error=>{
 
-            console.error(
-                "Payout:",
-                error
-            );
+        const now = new Date();
+        const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+        const daysRemaining = lastDay - now.getDate();
+        const emergency = daysRemaining > 0;
+        let amount = currentSalaryBalance;
 
-            showToast(
-                "Salary request failed."
-            );
+        if (emergency) {
+            const max = Math.floor(currentSalaryBalance * 0.5);
+            if (max <= 0) {
+                showToast("Emergency advance unavailable.");
+                return;
+            }
 
+            const input = prompt(`Maximum emergency advance: ₹${max}\nEnter amount:`);
+            if (input === null) return;
+
+            amount = Number(input.replace(/[^\d.]/g, ""));
+            if (!Number.isFinite(amount) || amount <= 0 || amount > max) {
+                showToast(`Maximum allowed amount is ₹${max}.`);
+                return;
+            }
+        } else if (!confirm(`Request full payout of ₹${formatMoney(amount)}?`)) {
+            return;
         }
-    );
 
+        await ref.set({
+            name: staffName,
+            amount: `₹${amount}`,
+            numericAmount: amount,
+            status: "Pending",
+            requestType: emergency ? "Emergency Advance" : "Regular Payout",
+            requestedAt: new Date().toISOString()
+        });
+
+        showToast("Salary request sent successfully.");
+        updatePayoutButton();
+
+    } catch (error) {
+        console.error("Payout:", error);
+        showToast("Salary request failed.");
+    }
 }
 
+async function updatePayoutButton() {
+    const button = document.getElementById("payout-btn");
+    if (!button) return;
 
-function updatePayoutButton(){
+    if (currentSalaryBalance <= 0) {
+        button.style.display = "none";
+        return;
+    }
 
-    const button =
-        document.getElementById(
-            "payout-btn"
+    try {
+        const snap = await db.ref(`salaryRequests/${staffId}`).once("value");
+        if (snap.exists() && snap.val().status === "Pending") {
+            button.style.display = "block";
+            button.innerText = "REQUEST PENDING...";
+            button.disabled = true;
+            return;
+        }
+
+        const now = new Date();
+        const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+        const daysRemaining = lastDay - now.getDate();
+
+        if (daysRemaining <= 0 || now.getDate() >= 20) {
+            button.style.display = "block";
+            button.disabled = false;
+            button.innerText = daysRemaining <= 0
+                ? "REQUEST PAYOUT"
+                : "REQUEST EMERGENCY ADVANCE";
+        } else {
+            button.style.display = "none";
+        }
+    } catch (error) {
+        console.error("Payout status:", error);
+    }
+}
+
+/* =========================================================
+   PUNCH-IN — GPS AND DUPLICATE PROTECTION
+========================================================= */
+
+async function markAttendance() {
+    if (punchBusy || !punchEnabled || isAttendanceMarkedToday) return;
+
+    punchBusy = true;
+
+    try {
+        const permission = await db.ref(`staff/${staffId}/punchEnabled`).once("value");
+
+        if (permission.exists() && permission.val() === false) {
+            punchEnabled = false;
+            updateAttendanceUI();
+            updatePunchUI();
+            throw new Error("Punch-in is disabled by Admin.");
+        }
+
+        if (!navigator.geolocation) throw new Error("GPS is not supported.");
+
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            });
+        });
+
+        const distance = calculateDistance(
+            position.coords.latitude,
+            position.coords.longitude,
+            21.9403651,
+            86.7376570
         );
 
-
-    if (
-        !button ||
-        currentSalaryBalance <= 0
-    ){
-
-        if (button){
-
-            button.style.display =
-                "none";
-
+        if (distance > 100) {
+            throw new Error(`You are ${Math.round(distance)} metres away. Attendance requires you to be within 100 metres.`);
         }
 
-        return;
+        const today = getLocalDate();
+        const now = new Date();
+        const punchTime = formatTime(now);
 
+        const attendance = {
+            time: punchTime,
+            punchInTime: punchTime,
+            timestamp: Date.now(),
+            status: "Present",
+            name: staffName,
+            date: today,
+            month: getMonthKey(),
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+        };
+
+        const ref = db.ref(`attendance/${staffId}/${today}`);
+        const result = await ref.transaction(
+            current => current === null ? attendance : undefined,
+            undefined,
+            false
+        );
+
+        if (!result.committed) {
+            isAttendanceMarkedToday = true;
+            updateAttendanceUI();
+            updatePunchUI();
+            updateTaskLock();
+            throw new Error("Attendance is already recorded for today.");
+        }
+
+        isAttendanceMarkedToday = true;
+        updateAttendanceUI();
+        updatePunchUI();
+        updateTaskLock();
+        showToast(`Punch-in recorded at ${punchTime}`);
+
+    } catch (error) {
+        console.error("PUNCH ERROR:", error);
+
+        let message = error.message || "Punch-in failed.";
+        if (error.code === 1) message = "GPS permission denied. Please allow location access.";
+        else if (error.code === 2) message = "GPS location unavailable.";
+        else if (error.code === 3) message = "GPS request timed out. Try again.";
+
+        showToast(message);
+
+    } finally {
+        punchBusy = false;
+        if (!isAttendanceMarkedToday) resetSlider();
     }
-
-
-    const now =
-        new Date();
-
-
-    const lastDay =
-        new Date(
-            now.getFullYear(),
-            now.getMonth()+1,
-            0
-        ).getDate();
-
-
-    const daysRemaining =
-        lastDay -
-        now.getDate();
-
-
-    db.ref(
-        `salaryRequests/${staffId}`
-    )
-    .once(
-        "value"
-    )
-    .then(
-        snap=>{
-
-            if (
-                snap.exists() &&
-                snap.val().status ===
-                "Pending"
-            ){
-
-                button.style.display =
-                    "block";
-
-                button.innerText =
-                    "REQUEST PENDING...";
-
-                button.disabled =
-                    true;
-
-                return;
-
-            }
-
-
-            if (
-                daysRemaining <= 0
-            ){
-
-                button.style.display =
-                    "block";
-
-                button.disabled =
-                    false;
-
-                button.innerText =
-                    "REQUEST PAYOUT";
-
-                return;
-
-            }
-
-
-            if (
-                now.getDate() >= 20
-            ){
-
-                button.style.display =
-                    "block";
-
-                button.disabled =
-                    false;
-
-                button.innerText =
-                    "REQUEST EMERGENCY ADVANCE";
-
-                return;
-
-            }
-
-
-            button.style.display =
-                "none";
-
-        }
-    );
-
 }
 
-
 /* =========================================================
-   DISTANCE
+   SLIDER EVENTS
 ========================================================= */
 
-function calculateDistance(
-    lat1,
-    lon1,
-    lat2,
-    lon2
-){
+function initSlider() {
+    const track = document.getElementById("sl-track-dock");
+    const handle = document.getElementById("sl-handle-dock");
+    const text = document.getElementById("sl-text-dock");
 
-    const R =
-        6371e3;
+    if (!track || !handle || !text) return;
 
+    let dragging = false;
+    let startX = 0;
+    let distance = 0;
+    let max = 0;
 
-    const p1 =
-        lat1 *
-        Math.PI /
-        180;
-
-
-    const p2 =
-        lat2 *
-        Math.PI /
-        180;
-
-
-    const dp =
-        (lat2-lat1) *
-        Math.PI /
-        180;
-
-
-    const dl =
-        (lon2-lon1) *
-        Math.PI /
-        180;
-
-
-    const a =
-        Math.sin(dp/2) *
-        Math.sin(dp/2)
-        +
-        Math.cos(p1) *
-        Math.cos(p2) *
-        Math.sin(dl/2) *
-        Math.sin(dl/2);
-
-
-    return (
-        R *
-        2 *
-        Math.atan2(
-            Math.sqrt(a),
-            Math.sqrt(1-a)
-        )
-    );
-
-}
-
-
-/* =========================================================
-   PUNCH
-========================================================= */
-
-function markAttendance(){
-
-    if (
-        punchBusy
-    ){
-
-        return;
-
+    function calculateMax() {
+        max = Math.max(track.clientWidth - handle.clientWidth - 12, 0);
     }
 
+    function getX(event) {
+        if (event.touches && event.touches.length) return event.touches[0].clientX;
+        return event.clientX;
+    }
 
-    punchBusy =
-        true;
+    function start(event) {
+        if (punchBusy || !punchEnabled || isAttendanceMarkedToday) return;
 
+        calculateMax();
+        dragging = true;
+        startX = getX(event);
+        distance = 0;
+        handle.style.transition = "none";
+        event.preventDefault();
+    }
 
-    db.ref(
-        `staff/${staffId}/punchEnabled`
-    )
-    .once(
-        "value"
-    )
-    .then(
-        snap=>{
+    function move(event) {
+        if (!dragging) return;
 
-            const allowed =
-                snap.exists()
-                ?
-                snap.val() !== false
-                :
-                true;
+        event.preventDefault();
+        distance = Math.max(0, Math.min(getX(event) - startX, max));
+        handle.style.transform = `translateX(${distance}px)`;
+        text.style.opacity = String(Math.max(0.05, 1 - distance / Math.max(max, 1)));
+    }
 
+    function end() {
+        if (!dragging) return;
+        dragging = false;
 
-            if (!allowed){
-
-                punchEnabled =
-                    false;
-
-                throw new Error(
-                    "Punch-in is disabled by Admin."
-                );
-
-            }
-
-
-            return getGPSAndPunch();
-
-        }
-    )
-    .catch(
-        error=>{
-
-            console.error(
-                "PUNCH ERROR:",
-                error
-            );
-
-
-            showToast(
-                error.message ||
-                "Punch-in failed."
-            );
-
-
+        if (max > 0 && distance >= max * 0.88) {
+            handle.style.transition = "all .2s ease";
+            handle.style.transform = `translateX(${max}px)`;
+            text.innerText = "LOCATING GPS...";
+            document.getElementById("sl-icon-dock").className = "fas fa-spinner fa-spin";
+            handle.style.pointerEvents = "none";
+            markAttendance();
+        } else {
             resetSlider();
-
         }
-    )
-    .finally(
-        ()=>{
-
-            punchBusy =
-                false;
-
-        }
-    );
-
-}
-
-
-function getGPSAndPunch(){
-
-    if (
-        !navigator.geolocation
-    ){
-
-        throw new Error(
-            "GPS is not supported."
-        );
-
     }
 
-
-    return new Promise(
-        (
-            resolve,
-            reject
-        )=>{
-
-            navigator.geolocation.getCurrentPosition(
-
-                position=>{
-
-                    const distance =
-                        calculateDistance(
-
-                            position.coords.latitude,
-
-                            position.coords.longitude,
-
-                            21.9403651,
-
-                            86.7376570
-
-                        );
-
-
-                    if (
-                        distance > 100
-                    ){
-
-                        reject(
-                            new Error(
-                                `You are ${Math.round(
-                                    distance
-                                )} meters away. Attendance requires you to be within 100 meters.`
-                            )
-                        );
-
-                        return;
-
-                    }
-
-
-                    const today =
-                        getLocalDate();
-
-
-                    const now =
-                        new Date();
-
-
-                    const punchTime =
-                        formatTime(
-                            now
-                        );
-
-
-                    const attendance = {
-
-                        time:
-                            punchTime,
-
-                        punchInTime:
-                            punchTime,
-
-                        timestamp:
-                            Date.now(),
-
-                        status:
-                            "Present",
-
-                        name:
-                            staffName,
-
-                        date:
-                            today,
-
-                        month:
-                            getMonthKey(),
-
-                        latitude:
-                            position.coords.latitude,
-
-                        longitude:
-                            position.coords.longitude,
-
-                        accuracy:
-                            position.coords.accuracy
-
-                    };
-
-
-                    db.ref(
-                        `attendance/${staffId}/${today}`
-                    )
-                    .set(
-                        attendance
-                    )
-                    .then(
-                        ()=>{
-
-                            isAttendanceMarkedToday =
-                                true;
-
-
-                            updatePunchUI();
-
-                            updateAttendanceUI();
-
-                            updateTaskLock();
-
-
-                            showToast(
-                                `Punch-in recorded at ${punchTime}`
-                            );
-
-
-                            resolve();
-
-                        }
-                    )
-                    .catch(
-                        reject
-                    );
-
-                },
-
-                error=>{
-
-                    let message =
-                        "Unable to get GPS location.";
-
-
-                    if (
-                        error.code ===
-                        error.PERMISSION_DENIED
-                    ){
-
-                        message =
-                            "GPS permission denied. Please allow location access.";
-
-                    }
-
-
-                    else if (
-                        error.code ===
-                        error.POSITION_UNAVAILABLE
-                    ){
-
-                        message =
-                            "GPS location unavailable.";
-
-                    }
-
-
-                    else if (
-                        error.code ===
-                        error.TIMEOUT
-                    ){
-
-                        message =
-                            "GPS request timed out.";
-
-                    }
-
-
-                    reject(
-                        new Error(
-                            message
-                        )
-                    );
-
-                },
-
-                {
-
-                    enableHighAccuracy:
-                        true,
-
-                    timeout:
-                        15000,
-
-                    maximumAge:
-                        0
-
-                }
-
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SLIDER
-========================================================= */
-
-function initSlider(){
-
-    const track =
-        document.getElementById(
-            "sl-track-dock"
-        );
-
-
-    const handle =
-        document.getElementById(
-            "sl-handle-dock"
-        );
-
-
-    const text =
-        document.getElementById(
-            "sl-text-dock"
-        );
-
-
-    if (
-        !track ||
-        !handle ||
-        !text
-    ){
-
-        return;
-
-    }
-
-
-    let dragging =
-        false;
-
-
-    let startX =
-        0;
-
-
-    let max =
-        0;
-
-
-    function calculateMax(){
-
-        max =
-            Math.max(
-                track.clientWidth -
-                handle.clientWidth -
-                12,
-                0
-            );
-
-    }
-
+    handle.addEventListener("mousedown", start);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", end);
+
+    handle.addEventListener("touchstart", start, {passive: false});
+    window.addEventListener("touchmove", move, {passive: false});
+    window.addEventListener("touchend", end);
+
+    window.addEventListener("resize", () => {
+        calculateMax();
+        if (isAttendanceMarkedToday) updatePunchUI();
+    });
 
     calculateMax();
-
-
-    window.addEventListener(
-        "resize",
-        calculateMax
-    );
-
-
-    function getX(
-        event
-    ){
-
-        if (
-            event.touches &&
-            event.touches.length
-        ){
-
-            return event.touches[0].clientX;
-
-        }
-
-
-        return event.clientX;
-
-    }
-
-
-    function start(
-        event
-    ){
-
-        if (
-            punchBusy ||
-            punchEnabled === false ||
-            isAttendanceMarkedToday
-        ){
-
-            return;
-
-        }
-
-
-        dragging =
-            true;
-
-
-        startX =
-            getX(
-                event
-            );
-
-
-        handle.style.transition =
-            "none";
-
-
-        event.preventDefault();
-
-    }
-
-
-    function move(
-        event
-    ){
-
-        if (!dragging){
-
-            return;
-
-        }
-
-
-        event.preventDefault();
-
-
-        let distance =
-            getX(
-                event
-            )
-            -
-            startX;
-
-
-        distance =
-            Math.max(
-                0,
-                Math.min(
-                    distance,
-                    max
-                )
-            );
-
-
-        handle.style.transform =
-            `translateX(${distance}px)`;
-
-
-        const ratio =
-            max > 0
-            ?
-            distance / max
-            :
-            0;
-
-
-        text.style.opacity =
-            Math.max(
-                0.05,
-                1-ratio
-            );
-
-    }
-
-
-    function end(){
-
-        if (!dragging){
-
-            return;
-
-        }
-
-
-        dragging =
-            false;
-
-
-        let finalX =
-            0;
-
-
-        try{
-
-            const transform =
-                getComputedStyle(
-                    handle
-                ).transform;
-
-
-            if (
-                transform &&
-                transform !==
-                "none"
-            ){
-
-                finalX =
-                    new DOMMatrix(
-                        transform
-                    ).m41;
-
-            }
-
-        }
-        catch(error){
-
-            finalX =
-                0;
-
-        }
-
-
-        if (
-            finalX >=
-            max * .88
-        ){
-
-            handle.style.transition =
-                "all .2s ease";
-
-
-            handle.style.transform =
-                `translateX(${max}px)`;
-
-
-            text.innerText =
-                "LOCATING GPS...";
-
-
-            document.getElementById(
-                "sl-icon-dock"
-            ).className =
-                "fas fa-spinner fa-spin";
-
-
-            handle.style.pointerEvents =
-                "none";
-
-
-            markAttendance();
-
-        }
-        else{
-
-            resetSlider();
-
-        }
-
-    }
-
-
-    handle.addEventListener(
-        "mousedown",
-        start
-    );
-
-
-    window.addEventListener(
-        "mousemove",
-        move
-    );
-
-
-    window.addEventListener(
-        "mouseup",
-        end
-    );
-
-
-    handle.addEventListener(
-        "touchstart",
-        start,
-        {
-            passive:false
-        }
-    );
-
-
-    window.addEventListener(
-        "touchmove",
-        move,
-        {
-            passive:false
-        }
-    );
-
-
-    window.addEventListener(
-        "touchend",
-        end
-    );
-
 }
 
+function resetSlider() {
+    const handle = document.getElementById("sl-handle-dock");
+    const text = document.getElementById("sl-text-dock");
+    const icon = document.getElementById("sl-icon-dock");
 
-function resetSlider(){
+    if (!handle || !text || !icon) return;
 
-    const handle =
-        document.getElementById(
-            "sl-handle-dock"
-        );
-
-
-    const text =
-        document.getElementById(
-            "sl-text-dock"
-        );
-
-
-    const icon =
-        document.getElementById(
-            "sl-icon-dock"
-        );
-
-
-    if (
-        !handle ||
-        !text ||
-        !icon
-    ){
-
-        return;
-
-    }
-
-
-    handle.style.transition =
-        "all .3s ease";
-
-
-    handle.style.transform =
-        "translateX(0px)";
-
-
-    handle.style.pointerEvents =
-        punchEnabled
-            ?
-            "auto"
-            :
-            "none";
-
-
-    text.style.opacity =
-        "1";
-
-
-    if (
-        punchEnabled
-    ){
-
-        text.innerText =
-            "SLIDE TO PUNCH IN";
-
-        text.style.color =
-            "#A8A8AE";
-
-        icon.className =
-            "fas fa-fingerprint";
-
-        icon.style.color =
-            "var(--blue)";
-
-    }
-    else{
-
-        text.innerText =
-            "PUNCH IN DISABLED BY ADMIN";
-
-        text.style.color =
-            "var(--red)";
-
-        icon.className =
-            "fas fa-lock";
-
-        icon.style.color =
-            "var(--red)";
-
-    }
-
-}
-
-
-/* =========================================================
-   INIT
-========================================================= */
-
-function initSystem(){
-
-    renderHeader();
-
-    testFirebase();
-
-    listenStaffData();
-
-    loadTodayAttendance();
-
-    listenSalaryActivity();
-
-    listenTasks();
-
-    listenPresentCount();
-
-    listenStrictDays();
-
-
-    const now =
-        new Date();
-
-
-    const lastDay =
-        new Date(
-            now.getFullYear(),
-            now.getMonth()+1,
-            0
-        ).getDate();
-
-
-    const remaining =
-        lastDay -
-        now.getDate();
-
-
-    const cycle =
-        document.getElementById(
-            "cycle-days"
-        );
-
-
-    if (cycle){
-
-        cycle.innerText =
-            `${remaining} days remaining`;
-
-    }
-
-
-    updateAttendanceUI();
+    handle.style.transition = "all .3s ease";
+    handle.style.transform = "translateX(0px)";
+    handle.style.background = "";
+    handle.style.pointerEvents = punchEnabled && !isAttendanceMarkedToday ? "auto" : "none";
+    text.style.opacity = "1";
 
     updatePunchUI();
-
-    updateTaskLock();
-
 }
 
-
 /* =========================================================
-   START
+   INITIALIZATION
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    ()=>{
+function initSystem() {
+    renderHeader();
 
-        initSlider();
+    db.ref(".info/connected").on("value", snap => {
+        console.log("Realtime Database connected:", snap.val());
+    });
 
-        initSystem();
+    listenStaffData();
+    loadTodayAttendance();
+    listenSalaryActivity();
+    listenTasks();
+    listenPresentCount();
+    listenStrictDays();
 
-    }
-);
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    document.getElementById("cycle-days").innerText =
+        `${lastDay - now.getDate()} days remaining`;
 
+    updateAttendanceUI();
+    updatePunchUI();
+    updateTaskLock();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    initSlider();
+    initSystem();
+});
 </script>
 
 </body>
-
 </html>
