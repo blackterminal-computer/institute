@@ -495,12 +495,35 @@ window.deleteCourse=async id=>{
 $("courseSearch").oninput=renderCourses;
 $("courseFilter").onchange=renderCourses;
 
-db.collection("courseFees").orderBy("order","asc").onSnapshot(snapshot=>{
- courses=snapshot.docs.map(d=>({id:d.id,...d.data()}));
- renderCourses();
-},error=>{
- console.error(error);
- $("courseList").innerHTML='<div class="empty">Could not load courses. Check Firestore permissions.</div>';
+
+db.collection("courseFees").onSnapshot(snapshot => {
+
+  courses = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  // Sort safely, even when order field is missing
+  courses.sort((a, b) =>
+    (Number(a.order) || 0) - (Number(b.order) || 0)
+  );
+
+  console.log("Courses loaded:", courses);
+
+  renderCourses();
+  renderStudentAssignments();
+
+}, error => {
+
+  console.error("Course loading error:", error);
+
+  $("courseList").innerHTML =
+    '<div class="empty">Course loading failed: ' +
+    esc(error.message) + '</div>';
+
+  $("studentCourseAssignments").innerHTML =
+    '<div class="empty">Unable to load courses. Check Firestore permissions.</div>';
+
 });
 
 // ---------------- STUDENT COURSE MANAGER ----------------
