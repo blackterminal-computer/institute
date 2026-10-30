@@ -97,6 +97,7 @@ button{font:inherit;cursor:pointer}
  margin:0 auto 15px;
  position:relative;
  z-index:1;
+ cursor:pointer;
 }
 .avatar{
  width:108px;height:108px;
@@ -106,18 +107,46 @@ button{font:inherit;cursor:pointer}
  display:grid;place-items:center;
  font-size:37px;font-weight:900;
  overflow:hidden;
+ position:relative;
 }
 .avatar img{
  width:100%;height:100%;
  object-fit:cover;
 }
-.online-dot{
+.avatar-camera{
  position:absolute;
- width:18px;height:18px;
- background:var(--green);
+ right:-5px;
+ bottom:-5px;
+ width:34px;
+ height:34px;
+ border-radius:12px;
+ display:grid;
+ place-items:center;
+ background:linear-gradient(135deg,#648cff,#35d6e8);
  border:3px solid #182b52;
- border-radius:50%;
- bottom:4px;right:3px;
+ color:white;
+ font-size:16px;
+ z-index:3;
+}
+.avatar-wrap:active{
+ transform:scale(.97);
+}
+.photo-hint{
+ font-size:10px;
+ color:#b4c4e5;
+ margin-top:-5px;
+ margin-bottom:12px;
+ position:relative;
+ z-index:2;
+}
+.photo-status{
+ display:none;
+ font-size:11px;
+ font-weight:700;
+ color:var(--cyan);
+ margin:8px 0 12px;
+ position:relative;
+ z-index:2;
 }
 .profile-name{
  font-size:22px;
@@ -253,6 +282,7 @@ button{font:inherit;cursor:pointer}
  width:0;
  background:linear-gradient(90deg,#648cff,#35d6e8);
  border-radius:20px;
+ transition:width .5s ease;
 }
 .progress-caption{
  font-size:10px;
@@ -341,6 +371,7 @@ button{font:inherit;cursor:pointer}
  display:none;
  z-index:30;
  max-width:90%;
+ text-align:center;
 }
 .loading{
  text-align:center;
@@ -377,17 +408,36 @@ button{font:inherit;cursor:pointer}
  <div id="profileContent" style="display:none">
 
   <section class="profile-hero">
-   <div class="avatar-wrap">
+
+   <div class="avatar-wrap" id="avatarWrap" title="Change profile photo">
+
     <div class="avatar" id="avatar">BT</div>
-    <div class="online-dot"></div>
+
+    <div class="avatar-camera">📷</div>
+
    </div>
 
+   <input
+    type="file"
+    id="profilePhotoInput"
+    accept="image/jpeg,image/png,image/webp"
+    hidden
+   >
+
+   <div class="photo-hint">Tap photo to change profile picture</div>
+
+   <div class="photo-status" id="photoStatus"></div>
+
    <h1 class="profile-name" id="studentName">Student Name</h1>
+
    <div class="profile-course" id="courseName">Student Course</div>
+
    <span class="member-tag">🎓 BLACKTERMINAL STUDENT</span>
+
   </section>
 
   <section class="stats">
+
    <div class="stat">
     <div class="stat-icon">⚡</div>
     <div class="stat-value" id="xpValue">0</div>
@@ -405,6 +455,7 @@ button{font:inherit;cursor:pointer}
     <div class="stat-value" id="streakValue">0</div>
     <div class="stat-label">DAY STREAK</div>
    </div>
+
   </section>
 
   <h2 class="section-title">Personal Information</h2>
@@ -584,10 +635,12 @@ import {
  doc,
  getDoc,
  collection,
- getDocs
+ getDocs,
+ updateDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
-/* EXISTING BLACKTERMINAL FIREBASE CONFIG */
+
+/* EXISTING FIREBASE CONFIG */
 
 const firebaseConfig = {
  apiKey: "AIzaSyCEfwZv2CkgcJ8Q9vNwRlRlXA2w_WpI",
@@ -619,16 +672,197 @@ if(!studentName){
  throw new Error("Login required");
 }
 
+let currentStudentDocId = null;
+
 const $ = id => document.getElementById(id);
+
+
+/* TOAST */
 
 function showToast(message){
  const toast = $("toast");
  toast.textContent = message;
  toast.style.display = "block";
- setTimeout(()=>toast.style.display="none",2500);
+
+ setTimeout(()=>{
+  toast.style.display="none";
+ },2500);
 }
 
+
+/* IMAGE COMPRESSION - SAME METHOD AS OLD PROFILE */
+
+function compressImage(file,maxWidth,maxHeight){
+
+ return new Promise((resolve,reject)=>{
+
+  const reader = new FileReader();
+
+  reader.onerror = ()=>{
+   reject(new Error("Unable to read image."));
+  };
+
+  reader.onload = (e)=>{
+
+   const img = new Image();
+
+   img.onerror = ()=>{
+    reject(new Error("Invalid image file."));
+   };
+
+   img.onload = ()=>{
+
+    const canvas = document.createElement("canvas");
+
+    let width = img.width;
+    let height = img.height;
+
+    if(width > height){
+
+     if(width > maxWidth){
+      height *= maxWidth / width;
+      width = maxWidth;
+     }
+
+    }else{
+
+     if(height > maxHeight){
+      width *= maxHeight / height;
+      height = maxHeight;
+     }
+
+    }
+
+    canvas.width = Math.round(width);
+    canvas.height = Math.round(height);
+
+    const ctx = canvas.getContext("2d");
+
+    if(!ctx){
+     reject(new Error("Image processing failed."));
+     return;
+    }
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.drawImage(
+     img,
+     0,
+     0,
+     canvas.width,
+     canvas.height
+    );
+
+    resolve(canvas.toDataURL("image/jpeg",0.7));
+
+   };
+
+   img.src = e.target.result;
+
+  };
+
+  reader.readAsDataURL(file);
+
+ });
+
+}
+
+
+/* PROFILE PHOTO UPLOAD */
+
+$("avatarWrap").addEventListener("click",()=>{
+ $("profilePhotoInput").click();
+});
+
+$("profilePhotoInput").addEventListener("change",async(e)=>{
+
+ const file = e.target.files[0];
+
+ if(!file) return;
+
+ const status = $("photoStatus");
+ const avatar = $("avatar");
+
+ if(!file.type.startsWith("image/")){
+  showToast("Please select a valid image.");
+  e.target.value = "";
+  return;
+ }
+
+ if(file.size > 10 * 1024 * 1024){
+  showToast("Image must be less than 10 MB.");
+  e.target.value = "";
+  return;
+ }
+
+ if(!currentStudentDocId){
+  showToast("Student profile is not ready.");
+  e.target.value = "";
+  return;
+ }
+
+ status.style.display = "block";
+ status.style.color = "var(--cyan)";
+ status.textContent = "Compressing photo...";
+
+ try{
+
+  const compressed = await compressImage(file,400,400);
+
+  // Approximate decoded image size
+  const estimatedBytes = Math.ceil(compressed.length * 0.75);
+
+  // Keep below Firestore document size limit
+  if(estimatedBytes > 700 * 1024){
+   throw new Error("Image is too large after compression. Please select another photo.");
+  }
+
+  status.textContent = "Saving profile photo...";
+
+  // Save in existing students collection
+  await updateDoc(
+   doc(db,"students",currentStudentDocId),
+   {
+    photo:compressed
+   }
+  );
+
+  // Show updated image immediately
+  const img = document.createElement("img");
+  img.src = compressed;
+  img.alt = "Student profile photo";
+
+  avatar.innerHTML = "";
+  avatar.appendChild(img);
+
+  status.style.color = "var(--green)";
+  status.textContent = "✓ Profile photo updated successfully!";
+
+  showToast("Profile photo updated!");
+
+ }catch(error){
+
+  console.error("Photo upload error:",error);
+
+  status.style.color = "var(--red)";
+  status.textContent = "Photo upload failed.";
+
+  showToast(error.message || "Photo upload failed.");
+
+ }finally{
+
+  e.target.value = "";
+
+ }
+
+});
+
+
+/* STUDENT DATA HELPERS */
+
 function getXP(data){
+
  const fields = [
   "xpPoints","xp","totalXP","totalXp","XP",
   "points","totalPoints","earnedXP","earnedXp",
@@ -636,36 +870,51 @@ function getXP(data){
  ];
 
  for(const field of fields){
+
   const value = Number(data?.[field]);
-  if(Number.isFinite(value) && value >= 0) return value;
+
+  if(Number.isFinite(value) && value >= 0){
+   return value;
+  }
+
  }
+
  return 0;
 }
 
 function getField(data,fields,fallback=""){
+
  for(const field of fields){
+
   const value = data?.[field];
 
   if(value !== undefined && value !== null && value !== ""){
    return value;
   }
+
  }
+
  return fallback;
 }
 
 function getName(data){
+
  return getField(data,[
   "name","studentName","fullName","displayName"
  ],studentName);
+
 }
 
 function getPhoto(data){
+
  return getField(data,[
   "photo","photoURL","profilePhoto","image","imageUrl"
  ],"");
+
 }
 
 function formatValue(value){
+
  if(!value) return "Not provided";
 
  if(value.toDate && typeof value.toDate === "function"){
@@ -674,30 +923,39 @@ function formatValue(value){
 
  if(value instanceof Date){
   return value.toLocaleDateString("en-IN",{
-   day:"2-digit",month:"short",year:"numeric"
+   day:"2-digit",
+   month:"short",
+   year:"numeric"
   });
  }
 
  return String(value);
+
 }
+
+
+/* FIND STUDENT */
 
 async function findStudent(){
 
- // Existing document ID lookup
  const directRef = doc(db,"students",studentName);
+
  const directSnap = await getDoc(directRef);
 
  if(directSnap.exists()){
+
   return {
    id:directSnap.id,
    ...directSnap.data()
   };
+
  }
 
- // Fallback: find student by name
+ // Fallback: find student using name fields
  const studentsSnap = await getDocs(collection(db,"students"));
 
  for(const studentDoc of studentsSnap.docs){
+
   const data = studentDoc.data();
 
   const possibleNames = [
@@ -714,15 +972,22 @@ async function findStudent(){
   );
 
   if(matched){
+
    return {
     id:studentDoc.id,
     ...data
    };
+
   }
+
  }
 
  return null;
+
 }
+
+
+/* LOAD PROFILE */
 
 async function loadProfile(){
 
@@ -731,17 +996,23 @@ async function loadProfile(){
   const student = await findStudent();
 
   if(!student){
+
    $("loading").textContent =
     "Student profile not found. Please contact the institute.";
+
    $("loading").classList.add("error");
+
    return;
+
   }
+
+  currentStudentDocId = student.id;
 
   const name = getName(student);
   const xp = getXP(student);
 
   const course = getField(student,[
-   "course","courseName","enrolledCourse","program"
+   "course","courseName","enrolledCourse","program","currentCourse"
   ],"BlackTerminal Student");
 
   const email = getField(student,[
@@ -758,25 +1029,61 @@ async function loadProfile(){
 
   const photo = getPhoto(student);
 
-  // Profile heading
+
+  // PROFILE DETAILS
+
   $("studentName").textContent = name;
   $("nameInfo").textContent = name;
   $("courseName").textContent = course;
   $("courseInfo").textContent = course;
 
-  // Contact details
   $("emailInfo").textContent = email;
   $("phoneInfo").textContent = phone;
   $("admissionInfo").textContent = formatValue(admission);
   $("studentIdInfo").textContent = student.id;
 
-  // XP
+
+  // PROFILE PHOTO
+
+  const initials = name.trim()
+   .split(/\s+/)
+   .map(word=>word[0])
+   .join("")
+   .substring(0,2)
+   .toUpperCase();
+
+  if(photo){
+
+   const img = document.createElement("img");
+
+   img.src = photo;
+   img.alt = "Student profile photo";
+
+   img.onerror = ()=>{
+    $("avatar").textContent = initials || "BT";
+   };
+
+   $("avatar").innerHTML = "";
+   $("avatar").appendChild(img);
+
+  }else{
+
+   $("avatar").textContent = initials || "BT";
+
+  }
+
+
+  // XP AND LEVEL
+
   const level = Math.floor(xp/1000)+1;
   const currentXP = xp%1000;
   const progress = currentXP/1000*100;
 
   $("xpValue").textContent = xp.toLocaleString("en-IN");
-  $("levelValue").textContent = String(level).padStart(2,"0");
+
+  $("levelValue").textContent =
+   String(level).padStart(2,"0");
+
   $("xpProgressText").textContent =
    currentXP.toLocaleString("en-IN")+" / 1000";
 
@@ -785,11 +1092,13 @@ async function loadProfile(){
   $("progressCaption").textContent =
    "You need "+(1000-currentXP)+" XP to reach the next level.";
 
-  // Account status
+
+  // ACCOUNT STATUS
+
   const inactive =
    student.isActive === false ||
    student.disabled === true ||
-   student.status === "inactive";
+   String(student.status || "").toLowerCase() === "inactive";
 
   $("accountStatus").textContent =
    inactive ? "INACTIVE" : "ACTIVE";
@@ -799,39 +1108,32 @@ async function loadProfile(){
    $("accountStatus").style.color="#ff6c7d";
   }
 
-  // Profile image
-  const initials = name.trim()
-   .split(/\s+/)
-   .map(word=>word[0])
-   .join("")
-   .substring(0,2)
-   .toUpperCase();
 
-  if(photo){
-   const img = document.createElement("img");
-   img.src = photo;
-   img.alt = "Student profile photo";
-   img.onerror = ()=>{
-    $("avatar").textContent = initials || "BT";
-   };
-   $("avatar").innerHTML = "";
-   $("avatar").appendChild(img);
-  }else{
-   $("avatar").textContent = initials || "BT";
-  }
+  // STREAK
 
-  // Existing dashboard streak value, if previously cached
   const cached = localStorage.getItem("FAST_V3");
 
   if(cached){
+
    try{
+
     const cacheData = JSON.parse(cached);
+
     $("streakValue").textContent =
      cacheData?.streak || 0;
+
    }catch(error){
+
     $("streakValue").textContent = "0";
+
    }
+
+  }else{
+
+   $("streakValue").textContent = student.streak || 0;
+
   }
+
 
   $("loading").style.display = "none";
   $("profileContent").style.display = "block";
@@ -844,8 +1146,13 @@ async function loadProfile(){
    "Unable to load your profile. Please check your internet connection.";
 
   $("loading").classList.add("error");
+
  }
+
 }
+
+
+/* LOGOUT */
 
 $("logoutBtn").addEventListener("click",()=>{
 
@@ -859,15 +1166,23 @@ $("logoutBtn").addEventListener("click",()=>{
  localStorage.removeItem("FAST_V3");
 
  location.replace("login.html");
+
 });
+
+
+/* INITIALIZE */
 
 loadProfile();
 
 if("serviceWorker" in navigator){
+
  window.addEventListener("load",()=>{
+
   navigator.serviceWorker.register("/sw.js")
    .catch(error=>console.log("Service worker:",error));
+
  });
+
 }
 
 </script>
