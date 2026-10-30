@@ -200,7 +200,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
  </div>
 </section>
 
-<!-- MULTIPLE STUDENT COURSE MANAGER -->
+<!-- STUDENT COURSE MANAGER -->
 <section id="students" class="tab-content hidden">
 
  <div class="notice">
@@ -215,7 +215,6 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
     <p class="muted">Search by student name or document ID</p>
    </div>
   </div>
-
   <div class="field">
    <label>Search Student</label>
    <input id="studentSearch" placeholder="Type student name...">
@@ -247,7 +246,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
   <div id="studentCourseAssignments"></div>
 
   <div class="notice">
-   <b>Note:</b> Saving will update the selected student's document. The first assigned course will also be copied to the legacy <code>currentCourse</code> field for compatibility with older pages.
+   <b>Note:</b> Saving updates the selected student's document. The first assigned course is also copied to the legacy <code>currentCourse</code> field for compatibility with older pages.
   </div>
 
   <div class="actions">
@@ -266,7 +265,6 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
    Each entry contains course name, duration, admission date and payment status.
   </p>
  </div>
-
 </section>
 
 <!-- OFFERS -->
@@ -356,8 +354,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 
 <script>
 // ----------------------------------------------------
-// FIREBASE CONFIGURATION
-// Kept as supplied in your existing admin code.
+// FIREBASE CONFIGURATION - PRESERVED FROM YOUR CODE
 // ----------------------------------------------------
 const firebaseConfig = {
  apiKey: "AIzaSyCEYfwZv2CkgcJ8Q9vNwRlRlXA2w_Wp",
@@ -375,14 +372,15 @@ const $ = id => document.getElementById(id);
 const esc = value => String(value ?? "").replace(/[&<>"']/g,c=>({
  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[c]));
+const serverTime=()=>firebase.firestore.FieldValue.serverTimestamp();
 
 let courses=[];
 let offers=[];
 let students=[];
 let selectedStudent=null;
 let selectedStudentData=null;
+let studentDraft=[];
 let syllabus=[];
-const serverTime=()=>firebase.firestore.FieldValue.serverTimestamp();
 
 // ---------------- TAB NAVIGATION ----------------
 document.querySelectorAll(".tab").forEach(button=>{
@@ -442,7 +440,11 @@ function renderCourses(){
  $("courseCount").textContent=filtered.length+" courses";
  $("statCourses").textContent=courses.length;
  $("statActiveCourses").textContent=courses.filter(c=>c.active!==false).length;
- if(!filtered.length){$("courseList").innerHTML='<div class="empty">No courses found</div>';return}
+
+ if(!filtered.length){
+  $("courseList").innerHTML='<div class="empty">No courses found</div>';
+  return;
+ }
 
  $("courseList").innerHTML=filtered.map(c=>`
  <div class="item">
@@ -453,9 +455,9 @@ function renderCourses(){
    <span class="pill ${c.active===false?"off":"on"}">${c.active===false?"INACTIVE":"ACTIVE"}</span>
   </div>
   <div class="actions">
-   <button class="btn secondary" onclick="editCourse('${c.id}')"><i class="ri-edit-line"></i> Edit</button>
-   <button class="btn ${c.active===false?"success":"warning"}" onclick="toggleCourse('${c.id}')">${c.active===false?"Enable":"Disable"}</button>
-   <button class="btn danger" onclick="deleteCourse('${c.id}')"><i class="ri-delete-bin-line"></i></button>
+   <button class="btn secondary" onclick="editCourse('${esc(c.id)}')"><i class="ri-edit-line"></i> Edit</button>
+   <button class="btn ${c.active===false?"success":"warning"}" onclick="toggleCourse('${esc(c.id)}')">${c.active===false?"Enable":"Disable"}</button>
+   <button class="btn danger" onclick="deleteCourse('${esc(c.id)}')"><i class="ri-delete-bin-line"></i></button>
   </div>
  </div>`).join("");
 }
@@ -473,29 +475,36 @@ window.editCourse=id=>{
  $("courseSave").innerHTML='<i class="ri-check-line"></i> Update Course';
  window.scrollTo({top:0,behavior:"smooth"});
 };
+
 window.toggleCourse=async id=>{
  const c=courses.find(x=>x.id===id);if(!c)return;
- try{await db.collection("courseFees").doc(id).update({active:c.active===false,updatedAt:serverTime()})}
- catch(e){alert(e.message)}
+ try{
+  await db.collection("courseFees").doc(id).update({
+   active:c.active===false,
+   updatedAt:serverTime()
+  });
+ }catch(e){alert(e.message)}
 };
+
 window.deleteCourse=async id=>{
  if(!confirm("Delete this course permanently?"))return;
  try{await db.collection("courseFees").doc(id).delete()}
  catch(e){alert(e.message)}
 };
+
 $("courseSearch").oninput=renderCourses;
 $("courseFilter").onchange=renderCourses;
 
 db.collection("courseFees").orderBy("order","asc").onSnapshot(snapshot=>{
  courses=snapshot.docs.map(d=>({id:d.id,...d.data()}));
  renderCourses();
- renderStudentAssignments();
 },error=>{
  console.error(error);
  $("courseList").innerHTML='<div class="empty">Could not load courses. Check Firestore permissions.</div>';
 });
 
 // ---------------- STUDENT COURSE MANAGER ----------------
+
 function getStudentName(data,id){
  return data.name||data.studentName||data.fullName||data.displayName||id;
 }
@@ -503,37 +512,56 @@ function getStudentName(data,id){
 function normalizeCourses(data){
  if(Array.isArray(data.enrolledCourses)){
   return data.enrolledCourses.map((c,index)=>({
-   id:c.id||("old_"+index),
+   id:c.id||("course_"+index),
    courseId:c.courseId||"",
    courseName:c.courseName||c.name||"",
    duration:c.duration||"",
-   admissionDate:c.admissionDate||"",
+   admissionDate:toDateInput(c.admissionDate),
    paymentStatus:c.paymentStatus||"Pending"
   }));
  }
- // Backward compatibility with existing single-course records
+
+ // Backward compatibility: old single-course student records
  if(data.currentCourse){
   return [{
    id:"legacy_0",
    courseId:"",
    courseName:data.currentCourse,
    duration:data.courseDuration||"",
-   admissionDate:data.admissionDate||"",
+   admissionDate:toDateInput(data.admissionDate||data.joinedAt),
    paymentStatus:data.paymentStatus||"Pending"
   }];
  }
+
  return [];
+}
+
+function toDateInput(value){
+ if(!value)return "";
+ if(value && typeof value.toDate==="function")value=value.toDate();
+
+ let d;
+ if(typeof value==="string" && /^\d{4}-\d{2}-\d{2}$/.test(value)){
+  return value;
+ }
+ if(typeof value==="number")d=new Date(value);
+ else d=new Date(value);
+
+ if(isNaN(d.getTime()))return "";
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
 
 function searchStudents(){
  const q=$("studentSearch").value.trim().toLowerCase();
+
  if(!q){
   $("studentSearchResults").innerHTML='<div class="empty">Enter a student name to search.</div>';
   return;
  }
+
  const found=students.filter(s=>{
-  const name=getStudentName(s.data,s.id).toLowerCase();
-  return name.includes(q)||s.id.toLowerCase().includes(q);
+  const name=String(getStudentName(s.data,s.id)).toLowerCase();
+  return name.includes(q)||String(s.id).toLowerCase().includes(q);
  }).slice(0,30);
 
  if(!found.length){
@@ -541,69 +569,122 @@ function searchStudents(){
   return;
  }
 
- $("studentSearchResults").innerHTML=found.map(s=>`
-  <div class="student-result" onclick="selectStudent('${s.id.replace(/\\/g,"\\\\").replace(/'/g,"\\'")}')">
+ $("studentSearchResults").innerHTML=found.map((s,index)=>`
+  <div class="student-result" data-student-id="${esc(s.id)}">
    <strong>${esc(getStudentName(s.data,s.id))}</strong>
    <small>Document ID: ${esc(s.id)} · ${normalizeCourses(s.data).length} course(s)</small>
   </div>`).join("");
+
+ document.querySelectorAll(".student-result").forEach(el=>{
+  el.onclick=()=>selectStudent(el.dataset.studentId);
+ });
 }
 
 $("studentSearch").addEventListener("input",searchStudents);
 
-window.selectStudent=id=>{
+function selectStudent(id){
  const student=students.find(s=>s.id===id);
  if(!student)return;
+
  selectedStudent=id;
- selectedStudentData=student.data;
+ selectedStudentData={...student.data};
+ studentDraft=normalizeCourses(student.data);
+
  $("studentEditor").classList.remove("hidden");
  $("selectedStudentName").textContent=getStudentName(student.data,id);
  $("selectedStudentId").textContent="Firestore Document ID: "+id;
+
  renderStudentAssignments();
  $("studentEditor").scrollIntoView({behavior:"smooth",block:"start"});
-};
+}
 
 $("clearStudent").onclick=()=>{
  selectedStudent=null;
  selectedStudentData=null;
+ studentDraft=[];
  $("studentEditor").classList.add("hidden");
  $("studentSearch").value="";
  $("studentSearchResults").innerHTML='<div class="empty">Enter a student name to search.</div>';
 };
 
+function captureStudentAssignments(){
+ const cards=[...document.querySelectorAll(".course-assignment")];
+
+ return cards.map((card,index)=>{
+  const select=card.querySelector(".assign-course");
+  const selectedCourse=courses.find(c=>c.id===select.value);
+  const selectedOption=select.options[select.selectedIndex];
+
+  let courseName="";
+  let courseId="";
+
+  if(selectedCourse){
+   courseName=selectedCourse.courseName||"";
+   courseId=selectedCourse.id;
+  }else if(select.value==="legacy" && selectedOption){
+   courseName=selectedOption.textContent.replace(" (Existing course)","").trim();
+  }
+
+  return {
+   id:studentDraft[index]?.id||("course_"+index),
+   courseId,
+   courseName,
+   duration:card.querySelector(".assign-duration").value.trim(),
+   admissionDate:card.querySelector(".assign-date").value,
+   paymentStatus:card.querySelector(".assign-payment").value
+  };
+ });
+}
+
 function renderStudentAssignments(){
- if(!selectedStudentData)return;
- const assigned=normalizeCourses(selectedStudentData);
- if(!assigned.length){
-  $("studentCourseAssignments").innerHTML='<div class="empty">No courses assigned yet. Click Add Another Course.</div>';
+ const container=$("studentCourseAssignments");
+
+ if(!selectedStudent){
+  container.innerHTML='<div class="empty">Select a student first.</div>';
   return;
  }
 
- $("studentCourseAssignments").innerHTML=assigned.map((c,i)=>`
+ if(!studentDraft.length){
+  container.innerHTML='<div class="empty">No courses assigned yet. Click Add Another Course.</div>';
+  return;
+ }
+
+ container.innerHTML=studentDraft.map((c,i)=>`
  <div class="course-assignment" data-index="${i}">
   <div class="assignment-head">
    <strong>Course ${i+1}</strong>
-   <button type="button" class="btn danger" onclick="removeStudentCourse(${i})"><i class="ri-delete-bin-line"></i> Remove</button>
+   <button type="button" class="btn danger remove-assignment" data-index="${i}">
+    <i class="ri-delete-bin-line"></i> Remove
+   </button>
   </div>
+
   <div class="grid">
    <div class="field full">
-    <label>Select Course</label>
-    <select class="assign-course" data-index="${i}">
+    <label>Select Course *</label>
+    <select class="assign-course">
      <option value="">Choose course</option>
-     ${courses.map(x=>`<option value="${esc(x.id)}" ${c.courseId===x.id?"selected":""}>${esc(x.courseName||"Unnamed Course")}${x.active===false?" (Inactive)":""}</option>`).join("")}
-     ${!c.courseId&&c.courseName?`<option value="legacy" selected>${esc(c.courseName)} (Existing course)</option>`:""}
+     ${courses.map(x=>`
+      <option value="${esc(x.id)}" ${c.courseId===x.id?"selected":""}>
+       ${esc(x.courseName||"Unnamed Course")}${x.active===false?" (Inactive)":""}
+      </option>`).join("")}
+     ${!c.courseId&&c.courseName?`
+      <option value="legacy" selected>${esc(c.courseName)} (Existing course)</option>`:""}
     </select>
    </div>
+
    <div class="field">
     <label>Course Duration</label>
-    <input class="assign-duration" data-index="${i}" value="${esc(c.duration)}" placeholder="e.g. 6 Months">
+    <input class="assign-duration" value="${esc(c.duration)}" placeholder="e.g. 6 Months">
    </div>
+
    <div class="field">
     <label>Admission Date</label>
-    <input class="assign-date" data-index="${i}" type="date" value="${esc(toDateInput(c.admissionDate))}">
+    <input class="assign-date" type="date" value="${esc(toDateInput(c.admissionDate))}">
    </div>
+
    <div class="field full">
     <label>Payment Status</label>
-    <select class="assign-payment" data-index="${i}">
+    <select class="assign-payment">
      <option value="Paid" ${c.paymentStatus==="Paid"?"selected":""}>Paid</option>
      <option value="Partial" ${c.paymentStatus==="Partial"?"selected":""}>Partial</option>
      <option value="Pending" ${c.paymentStatus==="Pending"?"selected":""}>Pending</option>
@@ -612,94 +693,63 @@ function renderStudentAssignments(){
   </div>
  </div>`).join("");
 
- // Preserve the data in the editable in-memory model
- assigned.forEach((c,i)=>{
-  const select=document.querySelector(`.assign-course[data-index="${i}"]`);
-  const duration=document.querySelector(`.assign-duration[data-index="${i}"]`);
-  const date=document.querySelector(`.assign-date[data-index="${i}"]`);
-  const payment=document.querySelector(`.assign-payment[data-index="${i}"]`);
-  if(select)select.onchange=()=>{
+ // Course selection updates the duration automatically.
+ container.querySelectorAll(".course-assignment").forEach((card,index)=>{
+  const select=card.querySelector(".assign-course");
+  const duration=card.querySelector(".assign-duration");
+
+  select.addEventListener("change",()=>{
    const course=courses.find(x=>x.id===select.value);
    if(course){
     duration.value=course.duration||"";
-    assigned[i].courseId=course.id;
-    assigned[i].courseName=course.courseName;
-    if(!duration.value)duration.value="";
-   }else if(select.value===""){
-    assigned[i].courseId="";
-    assigned[i].courseName="";
    }
-   studentDraft=assigned;
-  };
-  if(duration)duration.oninput=()=>{assigned[i].duration=duration.value;studentDraft=assigned};
-  if(date)date.onchange=()=>{assigned[i].admissionDate=date.value;studentDraft=assigned};
-  if(payment)payment.onchange=()=>{assigned[i].paymentStatus=payment.value;studentDraft=assigned};
+  });
+
+  card.querySelector(".remove-assignment").addEventListener("click",()=>{
+   studentDraft=captureStudentAssignments();
+   studentDraft.splice(index,1);
+   renderStudentAssignments();
+  });
  });
- studentDraft=assigned;
 }
-
-function toDateInput(value){
- if(!value)return "";
- if(value.toDate)value=value.toDate();
- const d=new Date(value);
- if(isNaN(d.getTime()))return "";
- return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-}
-
-let studentDraft=[];
 
 $("addStudentCourse").onclick=()=>{
  if(!selectedStudent)return;
- studentDraft=readAssignmentInputs();
+
+ // Keep all currently entered values before adding a new card.
+ if(document.querySelector(".course-assignment")){
+  studentDraft=captureStudentAssignments();
+ }
+
  studentDraft.push({
   id:"new_"+Date.now(),
   courseId:"",
   courseName:"",
   duration:"",
-  admissionDate:new Date().toISOString().slice(0,10),
+  admissionDate:new Date().toLocaleDateString("en-CA"),
   paymentStatus:"Pending"
  });
- renderStudentAssignmentsFromDraft();
-};
 
-function readAssignmentInputs(){
- const cards=[...document.querySelectorAll(".course-assignment")];
- return cards.map((card,i)=>{
-  const select=card.querySelector(".assign-course");
-  const selected=courses.find(c=>c.id===select.value);
-  return {
-   id:"course_"+i,
-   courseId:selected?.id||"",
-   courseName:selected?.courseName||(select.value==="legacy"?select.options[select.selectedIndex]?.text.replace(" (Existing course)",""):""),
-   duration:card.querySelector(".assign-duration").value,
-   admissionDate:card.querySelector(".assign-date").value,
-   paymentStatus:card.querySelector(".assign-payment").value
-  };
- });
-}
-
-function renderStudentAssignmentsFromDraft(){
- if(!selectedStudentData) return;
- selectedStudentData={...selectedStudentData,enrolledCourses:studentDraft};
  renderStudentAssignments();
-}
-
-window.removeStudentCourse=index=>{
- studentDraft=readAssignmentInputs();
- studentDraft.splice(index,1);
- renderStudentAssignmentsFromDraft();
 };
 
 $("saveStudentCourses").onclick=async()=>{
- if(!selectedStudent){alert("Please select a student first.");return}
- const assignments=readAssignmentInputs();
+ if(!selectedStudent){
+  alert("Please select a student first.");
+  return;
+ }
 
+ const assignments=captureStudentAssignments();
  const clean=[];
- for(const item of assignments){
-  if(!item.courseName||!item.courseName.trim()){
-   alert("Please select a course for every course entry.");
+
+ for(let i=0;i<assignments.length;i++){
+  const item=assignments[i];
+
+  if(!item.courseName || !item.courseName.trim()){
+   alert("Please select a course in Course "+(i+1)+".");
    return;
   }
+
   clean.push({
    courseId:item.courseId||"",
    courseName:item.courseName.trim(),
@@ -709,47 +759,85 @@ $("saveStudentCourses").onclick=async()=>{
   });
  }
 
- const names=clean.map(c=>c.courseName.toLowerCase());
+ // Prevent duplicate course assignments.
+ const names=clean.map(c=>c.courseName.toLowerCase().trim());
  if(new Set(names).size!==names.length){
   alert("Same course is selected more than once. Please remove duplicate courses.");
   return;
  }
 
  const first=clean[0]||null;
+
  const payload={
   enrolledCourses:clean,
+
+  // Legacy fields for older student pages.
   currentCourse:first?first.courseName:"",
   courseDuration:first?first.duration:"",
   admissionDate:first?first.admissionDate:"",
   paymentStatus:first?first.paymentStatus:"Not available",
+
   coursesUpdatedAt:serverTime(),
   updatedAt:serverTime()
  };
 
+ const saveButton=$("saveStudentCourses");
+
  try{
-  $("saveStudentCourses").disabled=true;
+  saveButton.disabled=true;
+  saveButton.innerHTML='<i class="ri-loader-4-line"></i> Saving...';
+
   await db.collection("students").doc(selectedStudent).set(payload,{merge:true});
-  selectedStudentData={...selectedStudentData,...payload,enrolledCourses:clean};
-  alert("Student courses saved successfully!");
+
+  selectedStudentData={
+   ...selectedStudentData,
+   ...payload,
+   enrolledCourses:clean
+  };
+
+  studentDraft=normalizeCourses(selectedStudentData);
+
+  const studentIndex=students.findIndex(s=>s.id===selectedStudent);
+  if(studentIndex!==-1){
+   students[studentIndex].data={
+    ...students[studentIndex].data,
+    ...payload,
+    enrolledCourses:clean
+   };
+  }
+
   renderStudentAssignments();
-  const index=students.findIndex(s=>s.id===selectedStudent);
-  if(index>=0)students[index].data={...students[index].data,...payload};
   searchStudents();
+
+  alert("Student courses saved successfully!");
  }catch(error){
   console.error("Student course save error:",error);
   alert("Unable to save student courses: "+error.message);
  }finally{
-  $("saveStudentCourses").disabled=false;
+  saveButton.disabled=false;
+  saveButton.innerHTML='<i class="ri-save-line"></i> Save Student Courses';
  }
 };
 
-// Load students
+// Load students from the existing students collection.
 db.collection("students").onSnapshot(snapshot=>{
- students=snapshot.docs.map(d=>({id:d.id,data:d.data()}));
+ students=snapshot.docs.map(d=>({
+  id:d.id,
+  data:d.data()
+ }));
+
+ // Refresh search results without overwriting the current unsaved form.
  searchStudents();
+
+ // Update selected student's latest saved data in memory.
+ if(selectedStudent){
+  const latest=students.find(s=>s.id===selectedStudent);
+  if(latest)selectedStudentData={...latest.data};
+ }
 },error=>{
  console.error("Student list error:",error);
- $("studentSearchResults").innerHTML='<div class="empty">Could not load students. Check Firestore permissions.</div>';
+ $("studentSearchResults").innerHTML=
+  '<div class="empty">Could not load students. Check Firestore read permissions.</div>';
 });
 
 // ---------------- SYLLABUS BUILDER ----------------
@@ -770,6 +858,7 @@ function renderSyllabus(){
    <button type="button" class="btn secondary" style="margin-top:10px" onclick="addTopic(${i})"><i class="ri-add-line"></i> Add Topic</button>
   </div>`).join("");
 }
+
 window.updateModuleTitle=(i,v)=>syllabus[i].title=v;
 window.updateTopic=(i,j,v)=>syllabus[i].topics[j]=v;
 window.removeModule=i=>{syllabus.splice(i,1);renderSyllabus()};
@@ -810,6 +899,7 @@ $("quickTimer").addEventListener("change",()=>{
 function getOfferFormData(){
  const quick=Number($("quickTimer").value);
  let expiry=$("expiryDate").value;
+
  if(quick)expiry=new Date(Date.now()+quick*3600000).toISOString();
  else if(expiry)expiry=new Date(expiry).toISOString();
 
@@ -843,30 +933,45 @@ $("offerForm").addEventListener("submit",async e=>{
  e.preventDefault();
  const id=$("offerId").value;
  const data=getOfferFormData();
+
  if(!data.name){alert("Enter offer name");return}
  if(data.newPrice<0||data.oldPrice<0){alert("Price cannot be negative");return}
+
  try{
   $("offerSave").disabled=true;
   if(id)await db.collection("offers").doc(id).update(data);
-  else{data.createdAt=serverTime();await db.collection("offers").add(data)}
+  else{
+   data.createdAt=serverTime();
+   await db.collection("offers").add(data);
+  }
   alert(id?"Offer updated successfully":"Offer created successfully");
   resetOffer();
- }catch(err){console.error(err);alert("Offer save failed: "+err.message)}
- finally{$("offerSave").disabled=false}
+ }catch(err){
+  console.error(err);
+  alert("Offer save failed: "+err.message);
+ }finally{
+  $("offerSave").disabled=false;
+ }
 });
 
 function renderOffers(){
  const search=$("offerSearch").value.toLowerCase();
  const filter=$("offerFilter").value;
+
  const filtered=offers.filter(o=>{
   const match=(o.name||"").toLowerCase().includes(search);
   const status=filter==="all"||(filter==="active"&&o.enabled!==false)||(filter==="inactive"&&o.enabled===false);
   return match&&status;
  });
+
  $("offerCount").textContent=filtered.length+" offers";
  $("statOffers").textContent=offers.length;
  $("statActiveOffers").textContent=offers.filter(o=>o.enabled!==false).length;
- if(!filtered.length){$("offerList").innerHTML='<div class="empty">No offers found</div>';return}
+
+ if(!filtered.length){
+  $("offerList").innerHTML='<div class="empty">No offers found</div>';
+  return;
+ }
 
  $("offerList").innerHTML=filtered.map(o=>`
   <div class="item">
@@ -879,15 +984,16 @@ function renderOffers(){
     ${o.expiryDate?`<small>Expiry: ${esc(new Date(o.expiryDate).toLocaleString())}</small>`:""}
    </div>
    <div class="actions">
-    <button class="btn secondary" onclick="editOffer('${o.id}')"><i class="ri-edit-line"></i> Edit</button>
-    <button class="btn ${o.enabled===false?"success":"warning"}" onclick="toggleOffer('${o.id}')">${o.enabled===false?"Enable":"Disable"}</button>
-    <button class="btn danger" onclick="deleteOffer('${o.id}')"><i class="ri-delete-bin-line"></i></button>
+    <button class="btn secondary" onclick="editOffer('${esc(o.id)}')"><i class="ri-edit-line"></i> Edit</button>
+    <button class="btn ${o.enabled===false?"success":"warning"}" onclick="toggleOffer('${esc(o.id)}')">${o.enabled===false?"Enable":"Disable"}</button>
+    <button class="btn danger" onclick="deleteOffer('${esc(o.id)}')"><i class="ri-delete-bin-line"></i></button>
    </div>
   </div>`).join("");
 }
 
 window.editOffer=id=>{
  const o=offers.find(x=>x.id===id);if(!o)return;
+
  $("offerId").value=id;
  $("offerName").value=o.name||"";
  $("offerCategory").value=o.category||"Computer Course";
@@ -903,6 +1009,7 @@ window.editOffer=id=>{
  $("offerEnabled").value=String(o.enabled!==false);
  $("quickTimer").value="";
  $("expiryDate").value="";
+
  if(o.expiryDate){
   const d=new Date(o.expiryDate);
   if(!isNaN(d.getTime())){
@@ -910,10 +1017,17 @@ window.editOffer=id=>{
    $("expiryDate").value=local.toISOString().slice(0,16);
   }
  }
- syllabus=Array.isArray(o.syllabus)?o.syllabus.map(m=>({title:m.title||"",topics:Array.isArray(m.topics)?[...m.topics]:[]})):[];
+
+ syllabus=Array.isArray(o.syllabus)
+  ?o.syllabus.map(m=>({title:m.title||"",topics:Array.isArray(m.topics)?[...m.topics]:[]}))
+  :[];
+
  renderSyllabus();
+
  const image=$("imagePreview");
- if(o.image){image.src=o.image;image.style.display="block"}else image.style.display="none";
+ if(o.image){image.src=o.image;image.style.display="block"}
+ else image.style.display="none";
+
  $("offerSave").innerHTML='<i class="ri-check-line"></i> Update Offer';
  document.querySelector('[data-tab="offers"]').click();
  window.scrollTo({top:0,behavior:"smooth"});
@@ -921,9 +1035,14 @@ window.editOffer=id=>{
 
 window.toggleOffer=async id=>{
  const o=offers.find(x=>x.id===id);if(!o)return;
- try{await db.collection("offers").doc(id).update({enabled:o.enabled===false,updatedAt:serverTime()})}
- catch(e){alert(e.message)}
+ try{
+  await db.collection("offers").doc(id).update({
+   enabled:o.enabled===false,
+   updatedAt:serverTime()
+  });
+ }catch(e){alert(e.message)}
 };
+
 window.deleteOffer=async id=>{
  if(!confirm("Delete this offer permanently?"))return;
  try{await db.collection("offers").doc(id).delete()}
@@ -952,15 +1071,20 @@ db.collection("settings").doc("announcement").onSnapshot(doc=>{
 
 $("announcementForm").addEventListener("submit",async e=>{
  e.preventDefault();
+
  const data={
   text:$("announcementText").value.trim(),
   show:$("announcementShow").value==="true",
   updatedAt:serverTime()
  };
+
  try{
   await db.collection("settings").doc("announcement").set(data,{merge:true});
   alert("Announcement saved successfully");
- }catch(err){console.error(err);alert("Announcement save failed: "+err.message)}
+ }catch(err){
+  console.error(err);
+  alert("Announcement save failed: "+err.message);
+ }
 });
 
 window.addEventListener("unhandledrejection",event=>{
