@@ -4005,6 +4005,154 @@ body:before{
 }
 
 
+
+
+/* =========================================
+   DAILY STREAKS — BLACK TERMINAL
+========================================= */
+
+
+/* =========================================
+   DAILY STREAKS — REFERENCE DESIGN
+========================================= */
+
+.daily-streak-card {
+    position: relative;
+    overflow: hidden;
+    margin: 18px 0 24px;
+    padding: 19px 17px;
+    border: 1px solid rgba(255,255,255,.055);
+    border-radius: 23px;
+    background: #191919;
+    box-shadow: 0 12px 30px rgba(0,0,0,.20);
+}
+
+.streak-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.streak-title {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.streak-title i {
+    margin-right: 5px;
+    color: #b78aff;
+}
+
+.streak-subtitle,
+.streak-total,
+.streak-footer {
+    display: none !important;
+}
+
+.streak-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 23px;
+}
+
+.streak-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.streak-day-name {
+    color: #eee;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.streak-day-badge {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 0;
+    box-shadow: none;
+}
+
+.streak-day-badge::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: #292929;
+    clip-path: polygon(
+        50% 0%, 63% 9%, 78% 5%, 86% 19%,
+        100% 27%, 94% 42%, 100% 55%,
+        90% 69%, 89% 84%, 72% 87%,
+        61% 100%, 47% 91%, 32% 100%,
+        23% 87%, 7% 83%, 9% 67%,
+        0% 54%, 7% 40%, 1% 26%,
+        17% 18%, 23% 5%, 38% 9%
+    );
+}
+
+.streak-day.completed .streak-day-badge::before {
+    background: linear-gradient(145deg, #9850e8, #7138b9);
+}
+
+.streak-day.completed .streak-day-badge i {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+    font-size: 19px;
+    font-weight: 900;
+}
+
+.streak-day:not(.completed) .streak-day-badge i {
+    display: none;
+}
+
+/* Reference design: no cyan selection outline */
+.streak-day.today .streak-day-name {
+    color: #eee;
+}
+
+.streak-day.today .streak-day-badge {
+    outline: none;
+}
+
+.streak-day.future .streak-day-badge {
+    opacity: 1;
+}
+
+@media (max-width: 380px) {
+    .daily-streak-card {
+        padding: 17px 12px;
+    }
+
+    .streak-week {
+        gap: 3px;
+    }
+
+    .streak-day-badge {
+        width: 34px;
+        height: 34px;
+    }
+
+    .streak-title {
+        font-size: 15px;
+    }
+}
+
+
+
 </style>
 
 </head>
@@ -4180,6 +4328,42 @@ body:before{
 
 </div>
 
+
+<!-- DAILY STREAKS -->
+<section class="daily-streak-card" id="dailyStreakCard">
+
+    <div class="streak-heading">
+        <div>
+            <div class="streak-title">
+                <i class="ri-calendar-check-fill"
+                   style="color:#b78aff"></i>
+                Daily Streaks
+            </div>
+
+            <div class="streak-subtitle" id="streakSubtitle">
+                Build your daily learning habit
+            </div>
+        </div>
+
+       <div class="streak-total">
+    <span id="streakCount">0</span>
+    <small>STREAKS</small>
+</div>
+    </div>
+
+    <div class="streak-week" id="streakWeek"></div>
+
+    <div class="streak-footer">
+        <div class="streak-footer-text" id="streakFooterText">
+            Complete your attendance to start a streak!
+        </div>
+
+        <div class="streak-progress">
+            <span id="streakProgressBar" style="width:0%"></span>
+        </div>
+    </div>
+
+</section>
 
 <!-- =====================================================
      ATTENDANCE
@@ -6107,6 +6291,10 @@ async function instantLoad(){
             renderAttendance(
                 cached.data.dashboard
             );
+            
+            renderDailyStreak(
+    cached.data.dashboard.attendance || []
+);
 
             renderNewStudents(
                 cached.data.dashboard.students||
@@ -6487,6 +6675,143 @@ function renderAttendance(
 }
 
 
+
+
+/* =========================================
+   DAILY STREAK LOGIC
+   Uses existing attendance document IDs:
+   studentName_YYYY-MM-DD
+========================================= */
+
+function renderDailyStreak(attendanceRecords = []) {
+    const weekEl = document.getElementById("streakWeek");
+    const countEl = document.getElementById("streakCount");
+    const subtitleEl = document.getElementById("streakSubtitle");
+    const footerEl = document.getElementById("streakFooterText");
+    const progressEl = document.getElementById("streakProgressBar");
+
+    if (!weekEl) return;
+
+    // Local date formatting avoids UTC date shifts.
+    const dateKey = date =>
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayKey = dateKey(today);
+    const attendedDates = new Set();
+
+    attendanceRecords.forEach(record => {
+        const id = String(record.id || "");
+        const separator = id.lastIndexOf("_");
+
+        if (separator < 0) return;
+
+        const recordStudent = id.slice(0, separator);
+        const recordDate = id.slice(separator + 1);
+
+        // Match the currently logged-in student.
+        if (
+    recordStudent.trim().toLowerCase() !==
+    String(student).trim().toLowerCase()
+) return;
+
+        // Accept only valid YYYY-MM-DD dates.
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(recordDate)) return;
+
+        const parsed = new Date(recordDate + "T12:00:00");
+
+if (
+    Number.isNaN(parsed.getTime()) ||
+    dateKey(parsed) !== recordDate ||
+    recordDate > todayKey
+) return;
+
+        attendedDates.add(recordDate);
+    });
+
+    // Calculate current streak. If today's attendance
+    // hasn't happened yet, allow yesterday's streak.
+    let streak = 0;
+    const cursor = new Date(today);
+
+    if (!attendedDates.has(todayKey)) {
+        cursor.setDate(cursor.getDate() - 1);
+    }
+
+    while (attendedDates.has(dateKey(cursor))) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+    }
+
+    countEl.textContent = streak;
+
+    subtitleEl.textContent = streak
+        ? "Keep your learning momentum going!"
+        : "Build your daily learning habit";
+
+    footerEl.innerHTML = streak
+        ? `<strong>${streak}-day streak!</strong> Keep showing up every day.`
+        : "Attend class to start your streak!";
+
+    // Monday to Sunday for the current week.
+    const monday = new Date(today);
+    const weekday = (today.getDay() + 6) % 7;
+    monday.setDate(today.getDate() - weekday);
+
+    const dayNames = ["M", "T", "W", "T", "F", "S", "S"];
+    weekEl.innerHTML = "";
+
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + i);
+
+        const key = dateKey(day);
+        const completed = attendedDates.has(key);
+        const isToday = key === todayKey;
+        const isFuture = day > today;
+
+        const item = document.createElement("div");
+        item.className = "streak-day";
+
+        if (completed) item.classList.add("completed");
+        if (isToday) item.classList.add("today");
+        if (isFuture) item.classList.add("future");
+
+        item.innerHTML = `
+            <span class="streak-day-name">${dayNames[i]}</span>
+            <span class="streak-day-badge">
+                <i class="${
+                    completed
+                        ? "ri-check-line"
+                        : isFuture
+                            ? "ri-lock-line"
+                            : "ri-circle-line"
+                }"></i>
+            </span>
+        `;
+
+        item.title = `${key}${completed ? " — Attendance recorded" : ""}`;
+        weekEl.appendChild(item);
+    }
+
+    // Weekly progress = attended days in this week / 7.
+    let weekCompleted = 0;
+
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + i);
+
+        if (attendedDates.has(dateKey(day))) {
+            weekCompleted++;
+        }
+    }
+
+    progressEl.style.width = `${Math.round(weekCompleted / 7 * 100)}%`;
+}
+
+
 /* =====================================================
    TOP ATTENDANCE
 ===================================================== */
@@ -6852,14 +7177,19 @@ async function loadHeavyData(){
            Render immediately after attendance arrives.
         */
 
-        renderAttendance(
-            dashboard
-        );
+        
+renderAttendance(
+    dashboard
+);
 
+renderDailyStreak(
+    dashboard.attendance || []
+);
 
-        renderNewStudents(
-            dashboard.students
-        );
+renderNewStudents(
+    dashboard.students
+);
+
 
 
         /*
@@ -8931,6 +9261,10 @@ async function backgroundRefresh(){
         renderNewStudents(
             dashboard.students
         );
+      
+      renderDailyStreak(
+    dashboard.attendance || []
+);
 
 
         /*
