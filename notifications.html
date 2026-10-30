@@ -1,1 +1,769 @@
-dd
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070b17">
+<title>Notifications | BlackTerminal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+:root{
+  --bg:#070b17;
+  --surface:#10182b;
+  --surface2:#16213a;
+  --border:#26334b;
+  --text:#f1f5ff;
+  --muted:#91a0ba;
+  --primary:#6b83ff;
+  --cyan:#22d3ee;
+  --green:#34d399;
+  --orange:#fb923c;
+  --red:#fb7185;
+  --radius:19px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+button,input{font:inherit}
+button{cursor:pointer}
+a{text-decoration:none;color:inherit}
+.container{
+  width:min(100%,960px);
+  margin:auto;
+  padding:20px 16px 110px;
+}
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:26px;
+}
+.back{
+  width:43px;height:43px;
+  border:1px solid var(--border);
+  border-radius:13px;
+  background:var(--surface);
+  display:grid;place-items:center;
+}
+.header-title{flex:1}
+.header-title h1{
+  font-size:21px;
+  margin:0 0 5px;
+  letter-spacing:-.6px;
+}
+.header-title p{
+  color:var(--muted);
+  font-size:12px;
+  margin:0;
+}
+.header-icon{
+  width:45px;height:45px;
+  display:grid;place-items:center;
+  border-radius:15px;
+  color:#a5b4fc;
+  background:#1b2550;
+}
+.hero{
+  padding:24px;
+  border:1px solid #34427c;
+  border-radius:24px;
+  background:linear-gradient(125deg,#202c65,#111b35 70%);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:22px;
+}
+.hero small{
+  color:#b8c7ff;
+  font-weight:700;
+  font-size:11px;
+  letter-spacing:1.2px;
+}
+.hero h2{
+  font-size:30px;
+  letter-spacing:-1px;
+  margin:9px 0 5px;
+}
+.hero p{
+  color:#bac6e4;
+  font-size:12px;
+  line-height:1.6;
+  margin:0;
+}
+.hero-art{
+  width:75px;height:75px;
+  border-radius:22px;
+  flex-shrink:0;
+  display:grid;place-items:center;
+  background:#ffffff15;
+  color:#b5c3ff;
+}
+.hero-art svg{width:38px;height:38px}
+.actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:16px;
+}
+.section-title{
+  font-size:15px;
+  font-weight:800;
+}
+.mark-all{
+  display:flex;align-items:center;
+  gap:7px;
+  background:transparent;
+  border:0;
+  color:#aabaff;
+  font-size:12px;
+  font-weight:700;
+  padding:8px 0;
+}
+.search{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:14px;
+  padding:0 14px;
+  height:49px;
+  margin-bottom:15px;
+  color:var(--muted);
+}
+.search input{
+  width:100%;
+  border:0;outline:0;
+  background:transparent;
+  color:white;
+  font-size:13px;
+}
+.search input::placeholder{color:#72829e}
+.filters{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding:2px 0 16px;
+  scrollbar-width:none;
+}
+.filters::-webkit-scrollbar{display:none}
+.filter{
+  white-space:nowrap;
+  border:1px solid var(--border);
+  border-radius:30px;
+  background:var(--surface);
+  color:#a7b5cf;
+  font-size:12px;
+  font-weight:700;
+  padding:10px 16px;
+}
+.filter.active{
+  color:#fff;
+  background:#465fd1;
+  border-color:#6177ec;
+}
+.notification-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.notification{
+  display:flex;
+  align-items:flex-start;
+  gap:13px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:17px;
+  transition:.2s;
+}
+.notification.unread{
+  background:linear-gradient(120deg,#17234a,#111a2f);
+  border-color:#4057a1;
+}
+.notification-icon{
+  width:43px;height:43px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+}
+.notification-icon.general{background:#29375f;color:#a5b4fc}
+.notification-icon.fees{background:#3b2c1e;color:#fdba74}
+.notification-icon.exam{background:#183c3d;color:#67e8f9}
+.notification-icon.attendance{background:#193a31;color:#6ee7b7}
+.notification-icon.important{background:#47212f;color:#fda4af}
+.notification-icon svg{width:20px;height:20px}
+.notification-body{flex:1;min-width:0}
+.notification-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+}
+.notification-title{
+  margin:1px 0 7px;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.5;
+}
+.notification-message{
+  margin:0;
+  font-size:12px;
+  color:#a2b0ca;
+  line-height:1.75;
+  overflow-wrap:anywhere;
+}
+.notification-meta{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-top:13px;
+  flex-wrap:wrap;
+}
+.time{
+  color:#7f90ae;
+  font-size:10px;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.tag{
+  font-size:10px;
+  font-weight:700;
+  padding:5px 9px;
+  border-radius:7px;
+  background:#27334e;
+  color:#b8c8e5;
+  text-transform:capitalize;
+}
+.dot{
+  width:8px;height:8px;
+  background:#7c96ff;
+  border-radius:50%;
+  flex-shrink:0;
+  margin-top:7px;
+}
+.read-button{
+  margin-top:12px;
+  border:1px solid #384875;
+  background:#26345b;
+  color:#b9c7ff;
+  padding:7px 11px;
+  border-radius:9px;
+  font-size:11px;
+  font-weight:700;
+}
+.empty{
+  text-align:center;
+  padding:65px 18px;
+  background:var(--surface);
+  border:1px dashed var(--border);
+  border-radius:20px;
+}
+.empty-icon{
+  width:65px;height:65px;
+  border-radius:20px;
+  margin:0 auto 17px;
+  background:#1c2946;
+  color:#91a8ff;
+  display:grid;place-items:center;
+}
+.empty h3{font-size:15px;margin:0 0 8px}
+.empty p{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.7;
+  margin:0;
+}
+.bottom-nav{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  display:flex;
+  justify-content:space-around;
+  padding:12px 8px calc(12px + env(safe-area-inset-bottom));
+  background:#10182bf5;
+  border-top:1px solid var(--border);
+  backdrop-filter:blur(15px);
+  z-index:20;
+}
+.nav-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  color:#8190ac;
+  font-size:10px;
+  font-weight:700;
+  min-width:56px;
+}
+.nav-item.active{color:#9baeff}
+.nav-item svg{width:21px;height:21px}
+@media(min-width:750px){
+  .container{padding-top:35px}
+  .hero{padding:30px}
+  .bottom-nav{
+    max-width:540px;
+    left:50%;
+    transform:translateX(-50%);
+    border:1px solid var(--border);
+    border-radius:20px 20px 0 0;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+  <a class="back" href="dashboard.html" aria-label="Back to dashboard">
+    <i data-lucide="arrow-left"></i>
+  </a>
+  <div class="header-title">
+    <h1>Notifications</h1>
+    <p>BlackTerminal Student Portal</p>
+  </div>
+  <div class="header-icon">
+    <i data-lucide="bell-ring"></i>
+  </div>
+</header>
+
+<section class="hero">
+  <div>
+    <small>YOUR INBOX</small>
+    <h2 id="unreadCount">0 Unread</h2>
+    <p id="heroMessage">Stay updated with your institute.</p>
+  </div>
+  <div class="hero-art">
+    <i data-lucide="bell"></i>
+  </div>
+</section>
+
+<div class="actions">
+  <span class="section-title">Recent Updates</span>
+  <button class="mark-all" id="markAllBtn" type="button">
+    <i data-lucide="check-check" width="16"></i>
+    Mark all read
+  </button>
+</div>
+
+<div class="search">
+  <i data-lucide="search" width="19"></i>
+  <input id="searchInput" placeholder="Search notifications..." autocomplete="off">
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter active" data-filter="all">All</button>
+  <button class="filter" data-filter="unread">Unread</button>
+  <button class="filter" data-filter="general">General</button>
+  <button class="filter" data-filter="fees">Fees</button>
+  <button class="filter" data-filter="exam">Exams</button>
+  <button class="filter" data-filter="attendance">Attendance</button>
+  <button class="filter" data-filter="important">Important</button>
+</div>
+
+<div class="notification-list" id="notificationList">
+  <div class="empty">
+    <div class="empty-icon"><i data-lucide="loader-circle"></i></div>
+    <h3>Loading notifications...</h3>
+    <p>Connecting to BlackTerminal.</p>
+  </div>
+</div>
+
+</div>
+
+<nav class="bottom-nav">
+  <a class="nav-item" href="dashboard.html">
+    <i data-lucide="house"></i>Home
+  </a>
+  <a class="nav-item" href="my-courses.html">
+    <i data-lucide="book-open"></i>Courses
+  </a>
+  <a class="nav-item" href="my-fees.html">
+    <i data-lucide="wallet"></i>Fees
+  </a>
+  <a class="nav-item active" href="notifications.html">
+    <i data-lucide="bell"></i>Alerts
+  </a>
+  <a class="nav-item" href="profile.html">
+    <i data-lucide="user-round"></i>Profile
+  </a>
+</nav>
+
+<script type="module">
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getFirestore,
+  collection,
+  onSnapshot
+} from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/*
+  IMPORTANT:
+  This is the Firebase config from the supplied
+  BlackTerminal project context.
+
+  Verify against your existing working page
+  before deploying.
+*/
+const firebaseConfig = {
+  apiKey: "AIzaSyCEYfwZv2CkgcJ8vJMBRlXA2w_WpI",
+  authDomain: "black-terminal-f2c91.firebaseapp.com",
+  projectId: "black-terminal-f2c91",
+  storageBucket: "black-terminal-f2c91.appspot.com",
+  messagingSenderId: "552489994197",
+  appId: "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/*
+  ASSUMED COLLECTION:
+  studentNotifications
+
+  Expected document:
+  {
+    title: "Exam Notice",
+    message: "Your exam starts tomorrow.",
+    type: "exam",
+    studentName: "STUDENT NAME",
+    createdAt: Firestore Timestamp
+  }
+
+  For announcements to every student:
+  studentName: "all"
+
+  Optional:
+  active: true
+
+  This schema must match the admin sender.
+  Do not create permissive Firestore rules
+  just to make this page work.
+*/
+
+const COLLECTION_NAME = "studentNotifications";
+
+const studentID = localStorage.getItem("studentName");
+
+if (!studentID) {
+  window.location.replace("login.html");
+}
+
+const listEl = document.getElementById("notificationList");
+const unreadEl = document.getElementById("unreadCount");
+const heroMessage = document.getElementById("heroMessage");
+const searchEl = document.getElementById("searchInput");
+const markAllBtn = document.getElementById("markAllBtn");
+
+let notifications = [];
+let currentFilter = "all";
+
+/*
+  Local-only read status.
+  No Firestore writes are performed.
+*/
+const readKey =
+  "bt_notification_read_" + encodeURIComponent(studentID || "");
+
+let readIDs = new Set();
+
+try {
+  const saved = JSON.parse(localStorage.getItem(readKey) || "[]");
+  if (Array.isArray(saved)) {
+    readIDs = new Set(saved.filter(x => typeof x === "string"));
+  }
+} catch(e) {
+  readIDs = new Set();
+}
+
+function saveRead() {
+  try {
+    localStorage.setItem(readKey, JSON.stringify([...readIDs]));
+  } catch(e) {
+    console.warn("Unable to save local read status.", e);
+  }
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[char]));
+}
+
+function normalizeType(value) {
+  const type = String(value || "general").toLowerCase().trim();
+
+  const aliases = {
+    examination: "exam",
+    exams: "exam",
+    payment: "fees",
+    fee: "fees",
+    alert: "important"
+  };
+
+  const normalized = aliases[type] || type;
+
+  return [
+    "general",
+    "fees",
+    "exam",
+    "attendance",
+    "important"
+  ].includes(normalized) ? normalized : "general";
+}
+
+function getIcon(type) {
+  return {
+    general: "megaphone",
+    fees: "wallet",
+    exam: "graduation-cap",
+    attendance: "calendar-check",
+    important: "alert-triangle"
+  }[type] || "bell";
+}
+
+function timestampMs(value) {
+  if (!value) return 0;
+
+  if (typeof value.toMillis === "function") {
+    return value.toMillis();
+  }
+
+  if (typeof value.seconds === "number") {
+    return value.seconds * 1000;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatDate(value) {
+  const ms = timestampMs(value);
+  if (!ms) return "Recently";
+
+  const date = new Date(ms);
+
+  return date.toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function isRead(item) {
+  return readIDs.has(item.id);
+}
+
+function markRead(id) {
+  readIDs.add(id);
+  saveRead();
+  render();
+}
+
+function renderEmpty(title, message, icon = "bell-off") {
+  listEl.innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">
+        <i data-lucide="${icon}"></i>
+      </div>
+      <h3>${escapeHTML(title)}</h3>
+      <p>${escapeHTML(message)}</p>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+function render() {
+  const unread = notifications.filter(n => !isRead(n)).length;
+
+  unreadEl.textContent = `${unread} Unread`;
+
+  heroMessage.textContent = unread
+    ? `You have ${unread} notification${unread === 1 ? "" : "s"} waiting.`
+    : "You're all caught up!";
+
+  markAllBtn.disabled = unread === 0;
+  markAllBtn.style.opacity = unread === 0 ? ".45" : "1";
+
+  const search = searchEl.value.toLowerCase().trim();
+
+  const filtered = notifications.filter(item => {
+    if (currentFilter === "unread" && isRead(item)) return false;
+
+    if (
+      currentFilter !== "all" &&
+      currentFilter !== "unread" &&
+      item.type !== currentFilter
+    ) return false;
+
+    const searchable =
+      `${item.title} ${item.message} ${item.type}`.toLowerCase();
+
+    return !search || searchable.includes(search);
+  });
+
+  if (!filtered.length) {
+    renderEmpty(
+      "No notifications found",
+      notifications.length
+        ? "Try another category or search term."
+        : "Your institute notifications will appear here."
+    );
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(item => {
+    const read = isRead(item);
+
+    return `
+      <article class="notification ${read ? "" : "unread"}">
+        <div class="notification-icon ${item.type}">
+          <i data-lucide="${getIcon(item.type)}"></i>
+        </div>
+
+        <div class="notification-body">
+          <div class="notification-top">
+            <h3 class="notification-title">
+              ${escapeHTML(item.title)}
+            </h3>
+            ${read ? "" : '<span class="dot"></span>'}
+          </div>
+
+          <p class="notification-message">
+            ${escapeHTML(item.message)}
+          </p>
+
+          <div class="notification-meta">
+            <span class="time">
+              <i data-lucide="clock-3" width="12"></i>
+              ${escapeHTML(formatDate(item.createdAt))}
+            </span>
+
+            <span class="tag">
+              ${escapeHTML(item.type)}
+            </span>
+          </div>
+
+          ${read ? "" : `
+            <button
+              class="read-button"
+              data-read-id="${escapeHTML(item.id)}"
+              type="button"
+            >
+              Mark as read
+            </button>
+          `}
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  lucide.createIcons();
+}
+
+document.getElementById("filters").addEventListener("click", e => {
+  const btn = e.target.closest("[data-filter]");
+  if (!btn) return;
+
+  currentFilter = btn.dataset.filter;
+
+  document.querySelectorAll(".filter").forEach(el => {
+    el.classList.toggle("active", el === btn);
+  });
+
+  render();
+});
+
+searchEl.addEventListener("input", render);
+
+listEl.addEventListener("click", e => {
+  const btn = e.target.closest("[data-read-id]");
+  if (btn) markRead(btn.dataset.readId);
+});
+
+markAllBtn.addEventListener("click", () => {
+  notifications.forEach(n => readIDs.add(n.id));
+  saveRead();
+  render();
+});
+
+if (studentID) {
+  onSnapshot(
+    collection(db, COLLECTION_NAME),
+    snapshot => {
+      const student = studentID.trim().toLowerCase();
+
+      notifications = snapshot.docs
+        .map(docSnap => {
+          const data = docSnap.data();
+
+          return {
+            id: docSnap.id,
+            title: data.title || "Institute Notification",
+            message: data.message || "",
+            type: normalizeType(data.type || data.category),
+            studentName: String(data.studentName || "").trim(),
+            active: data.active,
+            createdAt: data.createdAt || data.sentAt || null
+          };
+        })
+        .filter(item => {
+          if (item.active === false) return false;
+
+          const target = item.studentName.toLowerCase();
+
+          return target === student || target === "all";
+        })
+        .sort((a,b) =>
+          timestampMs(b.createdAt) - timestampMs(a.createdAt)
+        );
+
+      render();
+    },
+    error => {
+      console.error("Notifications error:", error);
+
+      unreadEl.textContent = "Unavailable";
+      heroMessage.textContent = "Unable to load notifications.";
+
+      renderEmpty(
+        "Unable to load notifications",
+        "Please check your Firebase permissions, collection name and internet connection.",
+        "wifi-off"
+      );
+    }
+  );
+}
+
+lucide.createIcons();
+</script>
+</body>
+</html>
