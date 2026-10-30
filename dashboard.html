@@ -1854,42 +1854,33 @@ async function loadNewStudents(){
 
   });
 
-  // Auto horizontal scrolling
-  if(newStudentsTimer){
-   clearInterval(newStudentsTimer);
-  }
+  
+ // Seamless infinite marquee
+ const cards=Array.from(track.children);
 
-  track.scrollLeft=0;
+ track.classList.remove("marquee-ready");
 
-  newStudentsTimer=setInterval(()=>{
+ // Duplicate all cards for seamless looping
+ cards.forEach(card=>{
+  track.appendChild(card.cloneNode(true));
+ });
 
-   if(
-    document.hidden||
-    track.matches(":hover")||
-    track.scrollWidth<=track.clientWidth
-   ){
-    return;
-   }
+ // Speed automatically based on number of students
+ const duration=Math.max(22,latest.length*3);
 
-   const maxScroll=track.scrollWidth-track.clientWidth;
+ track.style.setProperty(
+  "--marquee-duration",
+  duration+"s"
+ );
 
-   if(track.scrollLeft>=maxScroll-5){
+ // Restart animation cleanly
+ track.style.animation="none";
 
-    track.scrollTo({
-     left:0,
-     behavior:"smooth"
-    });
+ requestAnimationFrame(()=>{
+  track.style.animation="";
+  track.classList.add("marquee-ready");
+ });
 
-   }else{
-
-    track.scrollBy({
-     left:220,
-     behavior:"smooth"
-    });
-
-   }
-
-  },3000);
 
  }catch(error){
 
