@@ -19,13 +19,9 @@
     --input-bg:rgba(255,255,255,.06);
 }
 
-* {
-    box-sizing:border-box;
-}
+* { box-sizing:border-box; }
 
-html {
-    min-height:100%;
-}
+html { min-height:100%; }
 
 body {
     background:#000;
@@ -185,9 +181,7 @@ h1 {
     text-align:left;
 }
 
-.switch-container input {
-    display:none;
-}
+.switch-container input { display:none; }
 
 .ios-switch {
     position:relative;
@@ -243,43 +237,37 @@ h1 {
     height:22px;
 }
 
-.login-btn:active {
-    transform:scale(.97);
-}
+.login-btn:active { transform:scale(.97); }
 
 .login-btn:disabled {
     opacity:.55;
     cursor:not-allowed;
 }
 
-.error-msg {
+.error-msg,
+.success-msg {
     display:none;
     margin-top:17px;
     padding:15px;
     border-radius:13px;
-    color:#ff6961;
-    background:rgba(255,69,58,.12);
-    border:1px solid rgba(255,69,58,.25);
     font-size:13px;
     line-height:1.7;
     text-align:left;
     overflow-wrap:anywhere;
 }
 
-.error-msg.show {
-    display:block;
+.error-msg {
+    color:#ff6961;
+    background:rgba(255,69,58,.12);
+    border:1px solid rgba(255,69,58,.25);
 }
 
+.error-msg.show { display:block; }
+
 .success-msg {
-    display:none;
-    margin-top:17px;
-    padding:15px;
-    border-radius:13px;
     color:#6ee7b7;
     background:rgba(52,199,89,.1);
     border:1px solid rgba(52,199,89,.2);
-    font-size:13px;
-    line-height:1.6;
 }
 
 .footer-text {
@@ -296,22 +284,16 @@ h1 {
 }
 
 @media(max-width:500px) {
-    body {
-        padding:14px;
-    }
+    body { padding:14px; }
 
     .login-card {
         padding:36px 23px;
         border-radius:29px;
     }
 
-    h1 {
-        font-size:27px;
-    }
+    h1 { font-size:27px; }
 
-    .subtitle {
-        font-size:13px;
-    }
+    .subtitle { font-size:13px; }
 
     .input-group input {
         padding:17px 14px 17px 49px;
@@ -400,10 +382,6 @@ h1 {
 
 <script type="module">
 
-/* ======================================
-   FIREBASE IMPORTS
-====================================== */
-
 import { initializeApp } from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -418,13 +396,14 @@ import {
 } from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ======================================
+
+/* =====================================
    FIREBASE CONFIG
-   Existing project configuration
-====================================== */
+   Same project and configuration
+===================================== */
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCEfwZv2CkgcJ8v2uFLRvJkMBRlXA2w_WpI",
+    apiKey: "AIzaSyCEfwZv2CkgcJ8v2uFLRvJkMBRlXA2w_Wp",
     authDomain: "black-terminal-f2c91.firebaseapp.com",
     projectId: "black-terminal-f2c91",
     storageBucket: "black-terminal-f2c91.appspot.com",
@@ -432,16 +411,11 @@ const firebaseConfig = {
     appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-/* ======================================
-   INITIALIZE FIREBASE
-====================================== */
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ======================================
-   ELEMENTS
-====================================== */
+
+/* ELEMENTS */
 
 const form = document.getElementById("loginForm");
 const nameInput = document.getElementById("userName");
@@ -455,9 +429,8 @@ const successBox = document.getElementById("successMsg");
 document.getElementById("year").textContent =
     new Date().getFullYear();
 
-/* ======================================
-   NORMALIZE DATA
-====================================== */
+
+/* HELPERS */
 
 function normalizeName(value) {
     return String(value || "")
@@ -472,10 +445,6 @@ function normalizeMobile(value) {
         .slice(-10);
 }
 
-/* ======================================
-   ALERT FUNCTIONS
-====================================== */
-
 function showError(message) {
     successBox.style.display = "none";
     errorBox.textContent = message;
@@ -488,258 +457,165 @@ function showSuccess(message) {
     successBox.style.display = "block";
 }
 
-/* ======================================
-   LOADING BUTTON
-====================================== */
-
 function setLoading(loading) {
-
     loginBtn.disabled = loading;
 
-    if (loading) {
-        loginBtn.innerHTML = `
-            <i data-lucide="loader-circle"></i>
-            Verifying Student...
-        `;
-    } else {
-        loginBtn.innerHTML = `
-            <i data-lucide="log-in"></i>
-            Access Student Portal
-        `;
-    }
+    loginBtn.innerHTML = loading
+        ? '<i data-lucide="loader-circle"></i> Verifying Student...'
+        : '<i data-lucide="log-in"></i> Access Student Portal';
 
     if (window.lucide) {
         window.lucide.createIcons();
     }
 }
 
-/* ======================================
-   MOBILE INPUT
-====================================== */
+
+/* MOBILE INPUT */
 
 mobileInput.addEventListener("input", () => {
-
     mobileInput.value = mobileInput.value
         .replace(/\D/g, "")
         .slice(0, 10);
-
 });
 
-/* ======================================
-   ALREADY LOGGED IN
-====================================== */
 
-const existingStudent = localStorage.getItem("studentName");
-
-if (existingStudent && existingStudent !== "Guest") {
-    window.location.replace("dashboard.html");
-}
-
-/* ======================================
-   STEP 1: FIND BY DOCUMENT ID
-====================================== */
-
-async function findStudentByDocumentId(name) {
-
-    const studentRef = doc(db, "students", name);
-    const studentSnap = await getDoc(studentRef);
-
-    if (!studentSnap.exists()) {
-        return null;
-    }
-
-    return {
-        id: studentSnap.id,
-        data: studentSnap.data()
-    };
-}
-
-/* ======================================
-   STEP 2: SEARCH BY MOBILE
-
-   Supported existing fields:
-   phoneNumber
-   mobile
-====================================== */
-
-async function findStudentByMobile(mobile) {
-
-    const studentsRef = collection(db, "students");
-
-    const results = new Map();
-    const errors = [];
-
-    const fields = ["phoneNumber", "mobile"];
-
-    for (const field of fields) {
-
-        try {
-
-            const studentQuery = query(
-                studentsRef,
-                where(field, "==", mobile)
-            );
-
-            const snapshot = await getDocs(studentQuery);
-
-            snapshot.forEach(studentDoc => {
-
-                results.set(studentDoc.id, {
-                    id: studentDoc.id,
-                    data: studentDoc.data()
-                });
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Student mobile search error:",
-                field,
-                error
-            );
-
-            errors.push(error);
-        }
-    }
-
-    return {
-        students: [...results.values()],
-        errors
-    };
-}
-
-/* ======================================
-   STEP 3: VERIFY NAME AND MOBILE
-====================================== */
+/* =====================================
+   FIND STUDENT
+===================================== */
 
 async function verifyStudent(name, mobile) {
 
     const enteredName = normalizeName(name);
 
-    const candidates = new Map();
-
-    let directLookupError = null;
-
     /*
-       First try exact Firestore document ID.
+       FIRST: Direct document lookup.
+       Works when student document ID = student name.
     */
 
-    try {
+    const directSnap = await getDoc(
+        doc(db, "students", name)
+    );
 
-        const directStudent =
-            await findStudentByDocumentId(name);
+    if (directSnap.exists()) {
 
-        if (directStudent) {
-            candidates.set(
-                directStudent.id,
-                directStudent
-            );
-        }
+        const data = directSnap.data();
 
-    } catch (error) {
+        const possibleNames = [
+            directSnap.id,
+            data.name,
+            data.fullName,
+            data.studentName,
+            data.displayName
+        ].map(normalizeName);
 
-        directLookupError = error;
-
-        console.error(
-            "Direct student lookup failed:",
-            error
+        const registeredMobile = normalizeMobile(
+            data.phoneNumber || data.mobile || ""
         );
+
+        if (
+            registeredMobile === mobile &&
+            possibleNames.includes(enteredName)
+        ) {
+            return {
+                success: true,
+                studentId: directSnap.id
+            };
+        }
     }
 
-    /*
-       Then search registered mobile number.
-    */
-
-    const mobileResult =
-        await findStudentByMobile(mobile);
-
-    mobileResult.students.forEach(student => {
-        candidates.set(student.id, student);
-    });
-
-    let mobileFound = false;
 
     /*
-       Match name and mobile together.
+       SECOND: Search phoneNumber and mobile
+       simultaneously.
     */
 
-    for (const student of candidates.values()) {
+    const studentsRef = collection(db, "students");
 
-        const data = student.data;
+    const searchResults = await Promise.allSettled([
+
+        getDocs(query(
+            studentsRef,
+            where("phoneNumber", "==", mobile)
+        )),
+
+        getDocs(query(
+            studentsRef,
+            where("mobile", "==", mobile)
+        ))
+
+    ]);
+
+    const candidates = new Map();
+
+    let permissionDenied = false;
+
+    for (const result of searchResults) {
+
+        if (result.status === "rejected") {
+
+            if (result.reason?.code === "permission-denied") {
+                permissionDenied = true;
+            }
+
+            console.error("Mobile search error:", result.reason);
+            continue;
+        }
+
+        result.value.forEach(studentDoc => {
+            candidates.set(studentDoc.id, studentDoc);
+        });
+    }
+
+
+    /*
+       VERIFY NAME AND MOBILE
+    */
+
+    for (const [id, studentDoc] of candidates) {
+
+        const data = studentDoc.data();
 
         const registeredMobile = normalizeMobile(
             data.phoneNumber || data.mobile || ""
         );
 
         const possibleNames = [
-            student.id,
+            id,
             data.name,
             data.fullName,
-            data.studentName
-        ]
-        .map(normalizeName)
-        .filter(Boolean);
+            data.studentName,
+            data.displayName
+        ].map(normalizeName);
 
-        if (registeredMobile !== mobile) {
-            continue;
-        }
-
-        mobileFound = true;
-
-        if (possibleNames.includes(enteredName)) {
-
+        if (
+            registeredMobile === mobile &&
+            possibleNames.includes(enteredName)
+        ) {
             return {
                 success: true,
-                student: student
+                studentId: id
             };
         }
     }
 
-    /*
-       Return useful error messages.
-    */
-
-    const allPermissionDenied =
-        mobileResult.errors.length === 2 &&
-        mobileResult.errors.every(
-            error => error.code === "permission-denied"
-        );
-
-    if (
-        allPermissionDenied ||
-        (
-            directLookupError?.code === "permission-denied" &&
-            mobileResult.errors.length === 2
-        )
-    ) {
-
+    if (permissionDenied && candidates.size === 0) {
         return {
             success: false,
-            message:
-                "Firebase permission denied. Please check your Firestore Security Rules."
-        };
-    }
-
-    if (mobileFound) {
-
-        return {
-            success: false,
-            message:
-                "Mobile number is registered, but the student name does not match. Please enter your registered full name."
+            message: "Firebase permission denied. Please check Firestore Security Rules."
         };
     }
 
     return {
         success: false,
-        message:
-            "Student record not found. Please verify your registered name and mobile number or contact the institute."
+        message: "Student name or mobile number does not match our records. Please check your registered details."
     };
+
 }
 
-/* ======================================
+
+/* =====================================
    LOGIN SUBMISSION
-====================================== */
+===================================== */
 
 form.addEventListener("submit", async event => {
 
@@ -752,43 +628,22 @@ form.addEventListener("submit", async event => {
         .trim()
         .replace(/\s+/g, " ");
 
-    const mobile = normalizeMobile(
-        mobileInput.value
-    );
+    const mobile = normalizeMobile(mobileInput.value);
 
-    /*
-       TERMS CHECK
-    */
 
     if (!agreeCheck.checked) {
-
-        showError(
-            "Please agree to the terms and conditions."
-        );
-
+        showError("Please agree to the terms and conditions.");
         return;
     }
 
-    /*
-       INPUT VALIDATION
-    */
-
     if (!name) {
-
-        showError(
-            "Please enter your registered full name."
-        );
-
+        showError("Please enter your registered full name.");
         nameInput.focus();
         return;
     }
 
     if (!/^\d{10}$/.test(mobile)) {
-
-        showError(
-            "Please enter a valid 10-digit mobile number."
-        );
-
+        showError("Please enter a valid 10-digit mobile number.");
         mobileInput.focus();
         return;
     }
@@ -797,80 +652,70 @@ form.addEventListener("submit", async event => {
 
     try {
 
-        const result = await verifyStudent(
-            name,
-            mobile
-        );
+        const result = await verifyStudent(name, mobile);
 
         if (!result.success) {
-
             showError(result.message);
             return;
         }
 
         /*
-           SAVE VERIFIED STUDENT DOCUMENT ID
-
-           Other student pages use:
-           localStorage.studentName
+           SAVE ACTUAL FIRESTORE DOCUMENT ID
         */
 
         localStorage.setItem(
             "studentName",
-            result.student.id
+            result.studentId
         );
 
-        showSuccess(
-            "Student verified successfully. Opening your dashboard..."
-        );
+        showSuccess("Student verified successfully! Opening dashboard...");
 
-        setTimeout(() => {
-
-            window.location.replace(
-                "dashboard.html"
-            );
-
-        }, 700);
+        window.location.replace("dashboard.html");
 
     } catch (error) {
 
-        console.error(
-            "Student login error:",
-            error
-        );
+        console.error("Login error:", error);
 
         if (error.code === "permission-denied") {
 
-            showError(
-                "Firebase access denied. Please check Firestore Security Rules."
-            );
+            showError("Firebase access denied. Please check Firestore Security Rules.");
 
         } else if (
             error.code === "unavailable" ||
             error.code === "network-request-failed"
         ) {
 
-            showError(
-                "Internet or Firebase connection problem. Please try again."
-            );
+            showError("Internet or Firebase connection problem. Please try again.");
+
+        } else if (error.code === "invalid-api-key") {
+
+            showError("Firebase API key is invalid. Please verify your Firebase configuration.");
 
         } else {
 
-            showError(
-                "Unable to verify student. Please try again or contact the institute."
-            );
+            showError("Login failed: " + (error.message || "Please try again."));
+
         }
 
     } finally {
 
         setLoading(false);
+
     }
 
 });
 
-/* ======================================
-   ICONS
-====================================== */
+
+/* ALREADY LOGGED IN */
+
+const existingStudent = localStorage.getItem("studentName");
+
+if (existingStudent && existingStudent !== "Guest") {
+    window.location.replace("dashboard.html");
+}
+
+
+/* ICONS */
 
 if (window.lucide) {
     window.lucide.createIcons();
