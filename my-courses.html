@@ -215,7 +215,7 @@ a{text-decoration:none;color:inherit}
     width:19px;
 }
 
-/* MULTIPLE COURSE CARDS */
+/* COURSE CARDS */
 
 .courses-grid{
     display:grid;
@@ -350,6 +350,22 @@ a{text-decoration:none;color:inherit}
     font-size:12px;
     font-weight:800;
     overflow-wrap:anywhere;
+}
+
+/* COURSE FEE */
+
+.fee-box{
+    background:rgba(49,214,154,.09);
+    border-color:rgba(49,214,154,.2);
+}
+
+.fee-box .detail-label{
+    color:#8feac6;
+}
+
+.fee-value{
+    color:#6ff0c0;
+    font-size:16px;
 }
 
 /* PAYMENT STATUS */
@@ -581,7 +597,7 @@ a{text-decoration:none;color:inherit}
 <section class="page-heading">
     <div class="eyebrow">Learning Center</div>
     <h1>My Courses</h1>
-    <p>All your enrolled courses in one place.</p>
+    <p>All your enrolled courses and course fees in one place.</p>
 </section>
 
 <div class="student-strip">
@@ -707,15 +723,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
     getFirestore,
     doc,
+    collection,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* FIREBASE CONFIG
-   Keep this matching your working student portal config.
-*/
+/* FIREBASE CONFIG - PRESERVED */
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCEYfwZv2CkgcJ8vJMBRlXA2w_WpI",
+    apiKey: "AIzaSYCEYfwZv2CkgcJ8vJMBRlXA2w_WpI",
     authDomain: "black-terminal-f2c91.firebaseapp.com",
     projectId: "black-terminal-f2c91",
     storageBucket: "black-terminal-f2c91.appspot.com",
@@ -735,6 +750,40 @@ const emptyBox = document.getElementById("emptyBox");
 const coursesGrid = document.getElementById("coursesGrid");
 
 const studentID = localStorage.getItem("studentName");
+
+/* DATA */
+
+let currentStudentData = null;
+let courseFees = {};
+
+/* SAFE HTML */
+
+function escapeHTML(value){
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+    })[character]);
+}
+
+/* CURRENCY FORMAT */
+
+function formatMoney(value){
+
+    if(value === null || value === undefined || value === ""){
+        return "Fee Not Available";
+    }
+
+    const amount = Number(value);
+
+    if(!Number.isFinite(amount)){
+        return "Fee Not Available";
+    }
+
+    return "₹" + amount.toLocaleString("en-IN");
+}
 
 /* DATE FORMAT */
 
@@ -826,7 +875,14 @@ function getEnrolledCourses(data){
                 courseName: course.courseName || course.name || "",
                 duration: course.duration || "",
                 admissionDate: course.admissionDate || "",
-                paymentStatus: course.paymentStatus || "Pending"
+                paymentStatus: course.paymentStatus || "Pending",
+
+                // Optional fee saved at admission time
+                courseFee:
+                    course.courseFee ??
+                    course.fee ??
+                    course.price ??
+                    null
             }));
     }
 
@@ -838,11 +894,44 @@ function getEnrolledCourses(data){
             courseName: data.currentCourse,
             duration: data.courseDuration || "",
             admissionDate: data.admissionDate || "",
-            paymentStatus: data.paymentStatus || "Not available"
+            paymentStatus: data.paymentStatus || "Not available",
+
+            courseFee:
+                data.courseFee ??
+                data.fee ??
+                data.coursePrice ??
+                null
         }];
     }
 
     return [];
+}
+
+/* GET MATCHED COURSE FEE */
+
+function getCourseFee(course){
+
+    // Prefer the fee saved with the student's enrollment.
+    // This preserves the admission-time price if available.
+
+    if(course.courseFee !== null &&
+       course.courseFee !== undefined &&
+       course.courseFee !== ""){
+
+        return course.courseFee;
+    }
+
+    // Otherwise use the current price from offers collection.
+
+    const key = String(course.courseName || "")
+        .trim()
+        .toLowerCase();
+
+    if(Object.prototype.hasOwnProperty.call(courseFees,key)){
+        return courseFees[key];
+    }
+
+    return null;
 }
 
 /* RENDER ALL COURSES */
@@ -854,7 +943,9 @@ function renderCourses(data){
     document.getElementById("totalCourses").textContent = enrolled.length;
 
     document.getElementById("paidCourses").textContent =
-        enrolled.filter(c => String(c.paymentStatus).toLowerCase() === "paid").length;
+        enrolled.filter(c =>
+            String(c.paymentStatus).toLowerCase() === "paid"
+        ).length;
 
     if(!enrolled.length){
 
@@ -869,6 +960,7 @@ function renderCourses(data){
     coursesGrid.innerHTML = enrolled.map((course,index)=>{
 
         const payment = course.paymentStatus || "Pending";
+        const fee = getCourseFee(course);
 
         return `
         <section class="course-card">
@@ -915,6 +1007,13 @@ function renderCourses(data){
                     </div>
                 </div>
 
+                <div class="detail-box fee-box">
+                    <div class="detail-label">COURSE FEES</div>
+                    <div class="detail-value fee-value">
+                        ${escapeHTML(formatMoney(fee))}
+                    </div>
+                </div>
+
             </div>
 
             <div class="payment-row">
@@ -931,19 +1030,6 @@ function renderCourses(data){
     if(window.lucide){
         window.lucide.createIcons();
     }
-}
-
-/* SAFE HTML TEXT */
-
-function escapeHTML(value){
-
-    return String(value ?? "").replace(/[&<>"']/g, character => ({
-        "&":"&amp;",
-        "<":"&lt;",
-        ">":"&gt;",
-        '"':"&quot;",
-        "'":"&#39;"
-    })[character]);
 }
 
 /* LOGIN CHECK */
@@ -963,7 +1049,42 @@ if(!studentID){
     document.getElementById("studentAvatar").textContent =
         studentID.trim().charAt(0).toUpperCase();
 
-    /* REAL-TIME FIRESTORE STUDENT DATA */
+    /* REAL-TIME COURSE FEE FETCHING */
+
+    const offersRef = collection(db,"offers");
+
+    onSnapshot(offersRef,(snapshot)=>{
+
+        courseFees = {};
+
+        snapshot.forEach((docSnap)=>{
+
+            const offer = docSnap.data();
+
+            if(!offer.name) return;
+
+            const key = String(offer.name).trim().toLowerCase();
+
+            courseFees[key] = offer.newPrice ?? null;
+
+        });
+
+        // Update cards when offer prices change.
+
+        if(currentStudentData){
+            renderCourses(currentStudentData);
+        }
+
+    },(error)=>{
+
+        console.error("Course fees loading error:",error);
+
+        // Student courses will still display.
+        // Fee will show as Fee Not Available if no saved fee exists.
+
+    });
+
+    /* REAL-TIME STUDENT DATA */
 
     const studentRef = doc(db,"students",studentID);
 
@@ -981,6 +1102,8 @@ if(!studentID){
         }
 
         const data = snapshot.data();
+
+        currentStudentData = data;
 
         const displayName =
             data.name ||
@@ -1019,8 +1142,6 @@ if(!studentID){
             avatar.textContent =
                 displayName.trim().charAt(0).toUpperCase();
         }
-
-        /* DISPLAY ALL ASSIGNED COURSES */
 
         renderCourses(data);
 
