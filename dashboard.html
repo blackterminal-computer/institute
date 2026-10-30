@@ -903,6 +903,167 @@ button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
   animation:none!important;
  }
 }
+
+
+
+/* NEW STUDENTS HORIZONTAL SECTION */
+
+.new-students-card{
+ background:
+  radial-gradient(circle at 100% 0%,rgba(169,138,255,.10),transparent 45%),
+  linear-gradient(120deg,#101d2c,#111321 65%,#171426);
+ border:1px solid rgba(53,214,232,.17);
+ border-radius:23px;
+ margin:25px 0;
+ overflow:hidden;
+ box-shadow:0 12px 30px rgba(0,0,0,.16);
+}
+
+.new-students-heading{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:17px 16px;
+ gap:10px;
+}
+
+.new-students-heading-left{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ min-width:0;
+}
+
+.new-students-icon{
+ width:42px;
+ height:42px;
+ border-radius:14px;
+ display:grid;
+ place-items:center;
+ color:var(--cyan);
+ background:rgba(53,214,232,.12);
+ border:1px solid rgba(53,214,232,.16);
+ flex-shrink:0;
+}
+
+.new-students-icon svg{
+ width:21px;
+ height:21px;
+}
+
+.new-students-title{
+ font-size:11px;
+ font-weight:900;
+ letter-spacing:1px;
+}
+
+.new-students-live{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ color:#69edc0;
+ font-size:9px;
+ font-weight:900;
+ letter-spacing:.7px;
+ white-space:nowrap;
+}
+
+.new-students-live span{
+ width:7px;
+ height:7px;
+ border-radius:50%;
+ background:#38e6ad;
+ box-shadow:0 0 10px #38e6ad;
+}
+
+.new-students-track{
+ display:flex;
+ gap:10px;
+ overflow-x:auto;
+ padding:0 12px 15px;
+ scrollbar-width:none;
+ -webkit-overflow-scrolling:touch;
+ scroll-snap-type:x mandatory;
+}
+
+.new-students-track::-webkit-scrollbar{
+ display:none;
+}
+
+.new-student-item{
+ flex:0 0 210px;
+ min-width:0;
+ display:flex;
+ align-items:center;
+ gap:11px;
+ padding:11px;
+ border-radius:20px;
+ background:linear-gradient(145deg,#172333,#171725);
+ border:1px solid rgba(255,255,255,.09);
+ scroll-snap-align:start;
+}
+
+.new-student-photo{
+ width:68px;
+ height:68px;
+ border-radius:17px;
+ overflow:hidden;
+ flex-shrink:0;
+ display:grid;
+ place-items:center;
+ background:#26334a;
+ color:#b9c7df;
+ font-size:21px;
+ font-weight:900;
+}
+
+.new-student-photo img{
+ width:100%;
+ height:100%;
+ object-fit:cover;
+}
+
+.new-student-info{
+ min-width:0;
+ flex:1;
+}
+
+.new-student-name{
+ font-size:11px;
+ font-weight:900;
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ color:#f4f7ff;
+}
+
+.new-student-label{
+ display:flex;
+ align-items:center;
+ gap:6px;
+ margin-top:8px;
+ font-size:8px;
+ color:#8994ac;
+ font-weight:800;
+ white-space:nowrap;
+}
+
+.new-student-label span{
+ width:6px;
+ height:6px;
+ border-radius:50%;
+ background:#38d996;
+ box-shadow:0 0 7px #38d996;
+}
+
+.new-students-message{
+ flex:0 0 100%;
+ padding:20px 10px;
+ text-align:center;
+ color:var(--muted);
+ font-size:10px;
+}
+
 </style>
 </head>
 
@@ -1057,6 +1218,43 @@ button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
  </div>
 
 </section>
+
+
+<!-- NEW STUDENTS -->
+
+<section class="new-students-card">
+
+ <div class="new-students-heading">
+
+  <div class="new-students-heading-left">
+
+   <div class="new-students-icon">
+    <i data-lucide="user-plus"></i>
+   </div>
+
+   <div class="new-students-title">
+    NEW STUDENTS
+   </div>
+
+  </div>
+
+  <div class="new-students-live">
+   <span></span>
+   JUST JOINED
+  </div>
+
+ </div>
+
+ <div class="new-students-track" id="newStudentsTrack">
+
+  <div class="new-students-message">
+   Loading new students...
+  </div>
+
+ </div>
+
+</section>
+
 
 <!-- DAILY PRACTICE -->
 
@@ -1492,6 +1690,185 @@ async function loadStudent(){
   xp
  };
 }
+
+
+
+/* =====================================
+   NEW STUDENTS HORIZONTAL CAROUSEL
+===================================== */
+
+let newStudentsTimer = null;
+
+async function loadNewStudents(){
+
+ const track=document.getElementById("newStudentsTrack");
+
+ if(!track)return;
+
+ try{
+
+  const snapshot=await getDocs(collection(db,"students"));
+
+  const students=snapshot.docs.map(item=>{
+
+   const data=item.data();
+
+   return {
+    id:item.id,
+    name:
+     data.name||
+     data.studentName||
+     data.fullName||
+     data.displayName||
+     item.id,
+
+    photo:getStudentPhoto(data),
+
+    joinedAt:
+     data.createdAt||
+     data.admissionDate||
+     data.joinedAt||
+     data.registeredAt||
+     null
+   };
+
+  });
+
+  // Sort by admission/creation date, newest first.
+  function getTime(value){
+
+   if(value?.toDate)return value.toDate().getTime();
+
+   if(value instanceof Date)return value.getTime();
+
+   if(typeof value==="string"||typeof value==="number"){
+    const date=new Date(value);
+    if(!Number.isNaN(date.getTime()))return date.getTime();
+   }
+
+   return 0;
+  }
+
+  students.sort((a,b)=>
+   getTime(b.joinedAt)-getTime(a.joinedAt)
+  );
+
+  // Show latest 12 students
+  const latest=students.slice(0,12);
+
+  track.innerHTML="";
+
+  if(!latest.length){
+
+   track.innerHTML=
+    '<div class="new-students-message">No student records available.</div>';
+
+   return;
+  }
+
+  latest.forEach(student=>{
+
+   const card=document.createElement("div");
+   card.className="new-student-item";
+
+   const photo=document.createElement("div");
+   photo.className="new-student-photo";
+
+   const initials=String(student.name)
+    .trim()
+    .split(/\s+/)
+    .map(word=>word[0])
+    .join("")
+    .substring(0,2)
+    .toUpperCase();
+
+   if(student.photo){
+
+    const img=document.createElement("img");
+
+    img.src=student.photo;
+    img.alt=student.name;
+    img.loading="lazy";
+
+    img.onerror=()=>{
+     photo.textContent=initials||"BT";
+    };
+
+    photo.appendChild(img);
+
+   }else{
+
+    photo.textContent=initials||"BT";
+
+   }
+
+   const info=document.createElement("div");
+   info.className="new-student-info";
+
+   const name=document.createElement("div");
+   name.className="new-student-name";
+   name.textContent=student.name;
+
+   const label=document.createElement("div");
+   label.className="new-student-label";
+
+   const dot=document.createElement("span");
+   label.append(dot,"NEW STUDENT");
+
+   info.append(name,label);
+   card.append(photo,info);
+   track.appendChild(card);
+
+  });
+
+  // Auto horizontal scrolling
+  if(newStudentsTimer){
+   clearInterval(newStudentsTimer);
+  }
+
+  track.scrollLeft=0;
+
+  newStudentsTimer=setInterval(()=>{
+
+   if(
+    document.hidden||
+    track.matches(":hover")||
+    track.scrollWidth<=track.clientWidth
+   ){
+    return;
+   }
+
+   const maxScroll=track.scrollWidth-track.clientWidth;
+
+   if(track.scrollLeft>=maxScroll-5){
+
+    track.scrollTo({
+     left:0,
+     behavior:"smooth"
+    });
+
+   }else{
+
+    track.scrollBy({
+     left:220,
+     behavior:"smooth"
+    });
+
+   }
+
+  },3000);
+
+ }catch(error){
+
+  console.error("New students loading error:",error);
+
+  track.innerHTML=
+   '<div class="new-students-message">Unable to load new students.</div>';
+
+ }
+
+}
+
 
 /* =====================================
    ATTENDANCE - LAST 365 DAYS
@@ -2318,6 +2695,7 @@ async function loadDashboard(){
   const student=await loadStudent();
 
   if(!student)return;
+  loadNewStudents();
 
   startNotificationSync(student.id);
 
