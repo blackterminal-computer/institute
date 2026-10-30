@@ -44,6 +44,7 @@ h2{font-size:16px;margin:0}
 label{font-size:12px;color:#aab5c8;font-weight:bold}
 input,select,textarea{width:100%;background:#090f1c;border:1px solid var(--line);border-radius:10px;padding:12px;color:white;outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+select option{background:#111827;color:white}
 textarea{min-height:75px;resize:vertical}
 .btn{border:0;border-radius:9px;padding:10px 13px;font-size:12px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .primary{background:var(--blue);color:white}
@@ -68,6 +69,7 @@ textarea{min-height:75px;resize:vertical}
 .empty{text-align:center;color:var(--muted);padding:30px;font-size:13px}
 .hidden{display:none!important}
 hr{border:0;border-top:1px solid var(--line);margin:17px 0}
+#courseLoadMessage{font-size:11px;color:var(--muted);margin-top:5px}
 @media(max-width:700px){
  .app{padding:12px}
  .stats{grid-template-columns:repeat(2,1fr)}
@@ -116,7 +118,6 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
     <h2><i class="ri-inbox-line"></i> Admission Requests</h2>
     <p class="muted">Website enquiry requests</p>
    </div>
-   <button class="btn secondary" onclick="loadRequests()"><i class="ri-refresh-line"></i> Refresh</button>
   </div>
   <div class="toolbar">
    <input id="requestSearch" placeholder="Search student / mobile...">
@@ -144,40 +145,50 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
 
   <form id="admissionForm">
    <div class="grid">
+
     <div class="field">
      <label>Student Full Name *</label>
      <input id="studentName" required placeholder="Student name">
     </div>
+
     <div class="field">
      <label>Mobile Number *</label>
      <input id="studentPhone" required type="tel" maxlength="15" placeholder="10 digit mobile">
     </div>
+
     <div class="field">
      <label>Email</label>
      <input id="studentEmail" type="email" placeholder="Email address">
     </div>
+
     <div class="field">
      <label>Course *</label>
      <select id="studentCourse" required>
-      <option value="">Select course</option>
+      <option value="">Loading courses...</option>
      </select>
+     <div id="courseLoadMessage">Connecting to courseFees...</div>
     </div>
+
     <div class="field">
      <label>Total Course Fees (₹) *</label>
      <input id="totalFee" type="number" min="0" required placeholder="5000">
     </div>
+
     <div class="field">
      <label>Course Duration</label>
      <input id="studentDuration" placeholder="6 Months">
     </div>
+
     <div class="field">
      <label>Amount Received (₹)</label>
      <input id="paidAmount" type="number" min="0" value="0">
     </div>
+
     <div class="field">
      <label>Admission Date *</label>
      <input id="admissionDate" type="date" required>
     </div>
+
     <div class="field">
      <label>Payment Status</label>
      <select id="paymentStatus">
@@ -186,6 +197,7 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
       <option value="partial">Partial</option>
      </select>
     </div>
+
     <div class="field">
      <label>Student Status</label>
      <select id="studentStatus">
@@ -193,14 +205,20 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
       <option value="inactive">Inactive</option>
      </select>
     </div>
+
     <div class="field full">
      <label>Address / Notes</label>
      <textarea id="studentBio" placeholder="Address or additional information"></textarea>
     </div>
+
    </div>
+
    <hr>
+
    <div class="actions">
-    <button type="submit" class="btn primary" id="admissionSave"><i class="ri-user-add-line"></i> Register Student</button>
+    <button type="submit" class="btn primary" id="admissionSave">
+     <i class="ri-user-add-line"></i> Register Student
+    </button>
    </div>
   </form>
  </div>
@@ -214,7 +232,6 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
     <h2><i class="ri-graduation-cap-line"></i> Registered Students</h2>
     <p class="muted">Students stored in the students collection</p>
    </div>
-   <button class="btn secondary" onclick="loadStudents()"><i class="ri-refresh-line"></i> Refresh</button>
   </div>
   <div class="toolbar">
    <input id="studentSearch" placeholder="Search name / mobile / course...">
@@ -229,7 +246,9 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-// Use the exact Firebase config from your working admin page.
+// IMPORTANT:
+// Use the exact Firebase configuration from your working admin page.
+// Verify the API key before publishing.
 const firebaseConfig = {
  apiKey: "AIzaSyCEYfwZv2Ckpg-uFLRvJJKMBRlXA2w_Wp",
  authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -239,7 +258,10 @@ const firebaseConfig = {
  appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+ firebase.initializeApp(firebaseConfig);
+}
+
 const db = firebase.firestore();
 const $ = id => document.getElementById(id);
 const serverTime = () => firebase.firestore.FieldValue.serverTimestamp();
@@ -249,21 +271,30 @@ let students = [];
 let courseFees = [];
 
 const safe = value => String(value ?? "").replace(/[&<>"']/g,c=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ "&":"&amp;",
+ "<":"&lt;",
+ ">":"&gt;",
+ '"':"&quot;",
+ "'":"&#39;"
 }[c]));
 
 function normalizePhone(value){
  return String(value||"").replace(/\D/g,"");
 }
+
 function formatMoney(value){
  return "₹"+Number(value||0).toLocaleString("en-IN");
 }
+
 function setDefaultDate(){
- $("admissionDate").value=new Date().toISOString().slice(0,10);
+ const now=new Date();
+ const local=new Date(now.getTime()-now.getTimezoneOffset()*60000);
+ $("admissionDate").value=local.toISOString().slice(0,10);
 }
 setDefaultDate();
 
-// TABS
+// ---------------- TAB NAVIGATION ----------------
+
 document.querySelectorAll(".tab").forEach(btn=>{
  btn.addEventListener("click",()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -273,55 +304,133 @@ document.querySelectorAll(".tab").forEach(btn=>{
  });
 });
 
-// COURSE OPTIONS
-db.collection("courseFees").onSnapshot(snapshot=>{
- courseFees=snapshot.docs.map(d=>({id:d.id,...d.data()}));
+// ---------------- COURSE DROPDOWN ----------------
+
+// Read the entire collection without orderBy.
+// This also supports older documents without an order field.
+
+function loadCourseDropdown(){
  const select=$("studentCourse");
- const selected=select.value;
- select.innerHTML='<option value="">Select course</option>'+
- courseFees.filter(c=>c.active!==false).map(c=>
-  `<option value="${safe(c.courseName)}" data-fee="${Number(c.fee||0)}" data-duration="${safe(c.duration||"")}">${safe(c.courseName)}</option>`
- ).join("");
- if(selected)select.value=selected;
-},error=>console.error("Course list:",error));
+ const message=$("courseLoadMessage");
 
-$("studentCourse").addEventListener("change",()=>{
- const option=$("studentCourse").selectedOptions[0];
- if(option){
-  $("totalFee").value=option.dataset.fee||"";
-  $("studentDuration").value=option.dataset.duration||"";
- }
-});
+ select.innerHTML='<option value="">Loading courses...</option>';
+ message.textContent="Connecting to Firebase...";
 
-// REQUESTS
-function loadRequests(){
- // Real-time listener is initialized below.
+ db.collection("courseFees").onSnapshot(snapshot=>{
+
+  courseFees=snapshot.docs.map(doc=>({
+   id:doc.id,
+   ...doc.data()
+  }));
+
+  const previousValue=select.value;
+
+  select.innerHTML='<option value="">Select Course</option>';
+
+  const activeCourses=courseFees.filter(course=>{
+   return course.active!==false && course.active!=="false";
+  });
+
+  activeCourses.forEach(course=>{
+
+   const courseName=String(
+    course.courseName ||
+    course.name ||
+    course.title ||
+    ""
+   ).trim();
+
+   if(!courseName)return;
+
+   const option=document.createElement("option");
+   option.value=courseName;
+   option.textContent=courseName;
+   option.dataset.fee=Number(course.fee||0);
+   option.dataset.duration=course.duration||"";
+
+   select.appendChild(option);
+  });
+
+  if(previousValue){
+   select.value=previousValue;
+  }
+
+  if(activeCourses.length===0){
+   select.innerHTML+='<option value="" disabled>No active courses found</option>';
+   message.textContent="No active courses found in courseFees.";
+  }else{
+   message.textContent=activeCourses.length+" active course(s) loaded successfully.";
+  }
+
+ },error=>{
+
+  console.error("COURSE DROPDOWN ERROR:",error);
+
+  select.innerHTML='<option value="">Unable to load courses</option>';
+  message.textContent="Firebase error: "+error.message;
+
+ });
 }
-db.collection("enquiries").onSnapshot(snapshot=>{
- requests=snapshot.docs.map(d=>({id:d.id,...d.data()}));
- renderRequests();
-},error=>{
- console.error(error);
- $("requestList").innerHTML='<div class="empty">Unable to load enquiries. Check Firestore permissions.</div>';
+
+loadCourseDropdown();
+
+// Automatically fill fees and duration when a course is selected.
+
+$("studentCourse").addEventListener("change",function(){
+
+ const option=this.selectedOptions[0];
+
+ if(!option || !option.value)return;
+
+ $("totalFee").value=option.dataset.fee||"";
+ $("studentDuration").value=option.dataset.duration||"";
+
 });
+
+// ---------------- ADMISSION REQUESTS ----------------
 
 function requestStatus(r){
  return String(r.status||"new").toLowerCase();
 }
 
+db.collection("enquiries").onSnapshot(snapshot=>{
+
+ requests=snapshot.docs.map(d=>({
+  id:d.id,
+  ...d.data()
+ }));
+
+ renderRequests();
+
+},error=>{
+
+ console.error("ENQUIRY ERROR:",error);
+ $("requestList").innerHTML='<div class="empty">Unable to load enquiries: '+safe(error.message)+'</div>';
+
+});
+
 function renderRequests(){
+
  const search=$("requestSearch").value.toLowerCase();
  const filter=$("requestFilter").value;
 
  const filtered=requests.filter(r=>{
+
   const text=[r.name,r.phone,r.email,r.course].join(" ").toLowerCase();
   const status=requestStatus(r);
+
   return text.includes(search)&&(filter==="all"||status===filter);
  });
 
  $("totalRequests").textContent=requests.length;
- $("newRequests").textContent=requests.filter(r=>requestStatus(r)==="new"||requestStatus(r)==="pending").length;
- $("approvedRequests").textContent=requests.filter(r=>requestStatus(r)==="approved").length;
+
+ $("newRequests").textContent=requests.filter(r=>
+  requestStatus(r)==="new"||requestStatus(r)==="pending"
+ ).length;
+
+ $("approvedRequests").textContent=requests.filter(r=>
+  requestStatus(r)==="approved"
+ ).length;
 
  if(!filtered.length){
   $("requestList").innerHTML='<div class="empty">No admission requests found</div>';
@@ -329,8 +438,10 @@ function renderRequests(){
  }
 
  $("requestList").innerHTML=filtered.map(r=>{
+
   const status=requestStatus(r);
   const statusClass=status==="approved"?"approved":status==="rejected"?"rejected":"new";
+
   return `
   <div class="item">
    <div class="item-top">
@@ -340,23 +451,29 @@ function renderRequests(){
     </div>
     <span class="muted">${safe(r.course||"Course not selected")}</span>
    </div>
+
    <div class="details">
     <span><i class="ri-phone-line"></i> ${safe(r.phone||"Not provided")}</span>
     <span><i class="ri-mail-line"></i> ${safe(r.email||"Not provided")}</span>
     <span><i class="ri-graduation-cap-line"></i> ${safe(r.qualification||"")}</span>
     <span><i class="ri-calendar-line"></i> ${safe(r.preferredMode||"")}</span>
    </div>
+
    ${r.message?`<p class="muted">${safe(r.message)}</p>`:""}
+
    <div class="actions">
     <button class="btn success" onclick="approveRequest('${r.id}')" ${status==="approved"?"disabled":""}>
      <i class="ri-check-line"></i> Approve & Register
     </button>
+
     <button class="btn danger" onclick="rejectRequest('${r.id}')" ${status==="rejected"?"disabled":""}>
      <i class="ri-close-line"></i> Reject
     </button>
+
     ${r.phone?`<button class="btn secondary" onclick="contactWhatsApp('${safe(r.phone)}','${safe(r.name||"")}')"><i class="ri-whatsapp-line"></i> WhatsApp</button>`:""}
    </div>
   </div>`;
+
  }).join("");
 }
 
@@ -364,17 +481,22 @@ $("requestSearch").oninput=renderRequests;
 $("requestFilter").onchange=renderRequests;
 
 window.approveRequest=async id=>{
+
  const r=requests.find(x=>x.id===id);
  if(!r)return;
+
  if(requestStatus(r)==="approved"){
-  alert("This enquiry is already approved.");return;
+  alert("This enquiry is already approved.");
+  return;
  }
+
  if(!confirm("Approve this enquiry and register the student?"))return;
 
  const name=String(r.name||"").trim();
  const phone=String(r.phone||"").trim();
+
  if(!name||!phone){
-  alert("Student name and phone number are required. Please use Direct Admission to register this student.");
+  alert("Student name and phone are required.");
   return;
  }
 
@@ -391,182 +513,278 @@ window.approveRequest=async id=>{
  };
 
  try{
+
   const studentRef=db.collection("students").doc(name);
   const existing=await studentRef.get();
+
   if(existing.exists){
-   if(!confirm("A student with this name already exists. Update their enquiry details?"))return;
-   await studentRef.set(studentData,{merge:true});
-  }else{
-   await studentRef.set(studentData,{merge:true});
+   alert("A student with this name already exists. Please check the Students section before approving.");
+   return;
   }
+
+  await studentRef.set(studentData);
+
   await db.collection("enquiries").doc(id).update({
    status:"approved",
    approvedAt:serverTime(),
    registeredStudent:name
   });
+
   alert("Admission approved and student registered.");
+
  }catch(e){
+
   console.error(e);
   alert("Approval failed: "+e.message);
+
  }
 };
 
 window.rejectRequest=async id=>{
+
  if(!confirm("Reject this admission request?"))return;
+
  try{
+
   await db.collection("enquiries").doc(id).update({
    status:"rejected",
    rejectedAt:serverTime()
   });
- }catch(e){alert("Unable to reject: "+e.message)}
+
+ }catch(e){
+
+  alert("Unable to reject: "+e.message);
+
+ }
 };
 
-window.contactWhatsApp=(phone,name)=>{
- const number=normalizePhone(phone);
- if(!number){alert("Invalid mobile number");return}
- const finalNumber=number.length===10?"91"+number:number;
- const message=encodeURIComponent("Hello "+name+", thank you for contacting BlackTerminal Computer Institute. We are following up regarding your admission enquiry.");
- window.open("https://wa.me/"+finalNumber+"?text="+message,"_blank");
-};
+// ---------------- DIRECT ADMISSION ----------------
 
-// DIRECT ADMISSION
 function resetAdmission(){
  $("admissionForm").reset();
  setDefaultDate();
  $("paidAmount").value=0;
+ $("paymentStatus").value="pending";
 }
+
 window.resetAdmission=resetAdmission;
 
 $("admissionForm").addEventListener("submit",async e=>{
+
  e.preventDefault();
 
  const name=$("studentName").value.trim();
  const phone=$("studentPhone").value.trim();
  const mobile=normalizePhone(phone);
+ const course=$("studentCourse").value;
  const total=Number($("totalFee").value);
  const paid=Number($("paidAmount").value)||0;
 
- if(!name||!phone||!$("studentCourse").value){
-  alert("Please fill all required fields.");return;
- }
- if(mobile.length<10||mobile.length>15){
-  alert("Please enter a valid mobile number.");return;
- }
- if(total<0||paid<0||paid>total){
-  alert("Please check the fee and paid amount.");return;
+ if(!name||!phone||!course){
+  alert("Please fill all required fields.");
+  return;
  }
 
- const pending=total-paid;
+ if(mobile.length<10||mobile.length>15){
+  alert("Please enter a valid mobile number.");
+  return;
+ }
+
+ if(total<0||paid<0||paid>total){
+  alert("Please check the fee and paid amount.");
+  return;
+ }
+
+ if(!Number.isFinite(total)||!Number.isFinite(paid)){
+  alert("Invalid fee amount.");
+  return;
+ }
+
  let paymentStatus="pending";
- if(paid>=total&&total>0)paymentStatus="paid";
- else if(paid>0)paymentStatus="partial";
+
+ if(paid>=total&&total>0){
+  paymentStatus="paid";
+ }else if(paid>0){
+  paymentStatus="partial";
+ }
 
  const data={
+
   phoneNumber:phone,
   mobile:phone,
   email:$("studentEmail").value.trim(),
-  currentCourse:$("studentCourse").value,
+
+  currentCourse:course,
   courseDuration:$("studentDuration").value.trim(),
+
   admissionDate:$("admissionDate").value,
   joinedAt:serverTime(),
+
   paymentStatus:paymentStatus,
+
   totalFees:total,
   paidFees:paid,
-  pendingFees:pending,
+  pendingFees:total-paid,
+
   bio:$("studentBio").value.trim(),
   status:$("studentStatus").value,
+
   admissionSource:"admin_direct"
+
  };
 
  try{
+
   $("admissionSave").disabled=true;
 
-  // Existing student document IDs are student names.
+  // Existing database uses student name as document ID.
   const ref=db.collection("students").doc(name);
   const existing=await ref.get();
 
   if(existing.exists){
-   if(!confirm("A student with this exact name already exists. Update that record?"))return;
-   await ref.set(data,{merge:true});
-  }else{
-   await ref.set(data,{merge:true});
+   if(!confirm("A student with this exact name already exists. Update that record?")){
+    return;
+   }
   }
 
-  // Record the initial payment in the existing payment history field.
+  await ref.set(data,{merge:true});
+
   if(paid>0){
+
    const latest=await ref.get();
    const oldHistory=latest.data()?.paymentHistory||[];
    const history=Array.isArray(oldHistory)?oldHistory:[];
+
    history.push({
     amount:paid,
     date:$("admissionDate").value,
     method:"Admin Entry",
     note:"Admission payment"
    });
-   await ref.update({paymentHistory:history});
+
+   await ref.update({
+    paymentHistory:history
+   });
+
   }
 
   alert("Student admission saved successfully.");
+
   resetAdmission();
+
   document.querySelector('[data-tab="students"]').click();
 
  }catch(err){
+
   console.error(err);
   alert("Admission failed: "+err.message);
+
  }finally{
+
   $("admissionSave").disabled=false;
+
  }
+
 });
 
-// STUDENTS LIST
+// ---------------- STUDENTS LIST ----------------
+
 db.collection("students").onSnapshot(snapshot=>{
- students=snapshot.docs.map(d=>({id:d.id,...d.data()}));
+
+ students=snapshot.docs.map(d=>({
+  id:d.id,
+  ...d.data()
+ }));
+
  $("totalStudents").textContent=students.length;
+
  renderStudents();
+
 },error=>{
- console.error(error);
- $("studentList").innerHTML='<div class="empty">Unable to load students. Check Firestore permissions.</div>';
+
+ console.error("STUDENT LIST ERROR:",error);
+
+ $("studentList").innerHTML='<div class="empty">Unable to load students: '+safe(error.message)+'</div>';
+
 });
 
 function renderStudents(){
+
  const search=$("studentSearch").value.toLowerCase();
+
  const filtered=students.filter(s=>
-  [s.id,s.phoneNumber,s.mobile,s.currentCourse].join(" ").toLowerCase().includes(search)
+  [s.id,s.phoneNumber,s.mobile,s.currentCourse]
+   .join(" ")
+   .toLowerCase()
+   .includes(search)
  );
 
  if(!filtered.length){
-  $("studentList").innerHTML='<div class="empty">No students found</div>';return;
+  $("studentList").innerHTML='<div class="empty">No students found</div>';
+  return;
  }
 
  $("studentList").innerHTML=filtered.map(s=>{
+
   const phone=s.phoneNumber||s.mobile||"";
+
   return `
-   <div class="item">
-    <div class="item-top">
-     <div>
-      <h3>${safe(s.id)}</h3>
-      <span class="pill ${s.paymentStatus==="paid"?"approved":"new"}">${safe((s.paymentStatus||"pending").toUpperCase())}</span>
-     </div>
-     <span class="muted">${safe(s.currentCourse||"Course not set")}</span>
+  <div class="item">
+
+   <div class="item-top">
+    <div>
+     <h3>${safe(s.id)}</h3>
+     <span class="pill ${s.paymentStatus==="paid"?"approved":"new"}">
+      ${safe((s.paymentStatus||"pending").toUpperCase())}
+     </span>
     </div>
-    <div class="details">
-     <span><i class="ri-phone-line"></i> ${safe(phone)}</span>
-     <span><i class="ri-calendar-line"></i> ${safe(s.admissionDate||"")}</span>
-     <span>Fees: ${formatMoney(s.totalFees)}</span>
-     <span>Paid: ${formatMoney(s.paidFees)}</span>
-     <span>Pending: ${formatMoney(s.pendingFees)}</span>
-     <span>Duration: ${safe(s.courseDuration||"")}</span>
-    </div>
-    <div class="actions">
-     ${phone?`<button class="btn secondary" onclick="contactWhatsApp('${safe(phone)}','${safe(s.id)}')"><i class="ri-whatsapp-line"></i> WhatsApp</button>`:""}
-    </div>
-   </div>`;
+
+    <span class="muted">${safe(s.currentCourse||"Course not set")}</span>
+   </div>
+
+   <div class="details">
+    <span><i class="ri-phone-line"></i> ${safe(phone)}</span>
+    <span><i class="ri-calendar-line"></i> ${safe(s.admissionDate||"")}</span>
+    <span>Fees: ${formatMoney(s.totalFees)}</span>
+    <span>Paid: ${formatMoney(s.paidFees)}</span>
+    <span>Pending: ${formatMoney(s.pendingFees)}</span>
+    <span>Duration: ${safe(s.courseDuration||"")}</span>
+   </div>
+
+   <div class="actions">
+    ${phone?`<button class="btn secondary" onclick="contactWhatsApp('${safe(phone)}','${safe(s.id)}')"><i class="ri-whatsapp-line"></i> WhatsApp</button>`:""}
+   </div>
+
+  </div>`;
+
  }).join("");
 }
 
 $("studentSearch").oninput=renderStudents;
 
-window.loadStudents=()=>renderStudents();
+// ---------------- WHATSAPP ----------------
+
+window.contactWhatsApp=(phone,name)=>{
+
+ const number=normalizePhone(phone);
+
+ if(!number){
+  alert("Invalid mobile number");
+  return;
+ }
+
+ const finalNumber=number.length===10?"91"+number:number;
+
+ const message=encodeURIComponent(
+  "Hello "+name+", thank you for contacting BlackTerminal Computer Institute. We are following up regarding your admission."
+ );
+
+ window.open(
+  "https://wa.me/"+finalNumber+"?text="+message,
+  "_blank"
+ );
+
+};
 
 </script>
 </body>
