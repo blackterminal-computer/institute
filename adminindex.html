@@ -37,6 +37,83 @@ a{text-decoration:none;color:inherit}
 button{cursor:pointer}
 .layout{min-height:100vh;display:flex}
 
+/* PIN LOCK */
+.pin-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:
+    radial-gradient(circle at 20% 15%,#26346b55,transparent 35%),
+    radial-gradient(circle at 90% 85%,#164e6350,transparent 35%),
+    #080d1b;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.pin-card{
+  width:100%;
+  max-width:370px;
+  padding:30px 24px;
+  text-align:center;
+  background:#111a2d;
+  border:1px solid #283650;
+  border-radius:23px;
+  box-shadow:0 25px 80px #0008;
+}
+.pin-logo{
+  width:65px;
+  height:65px;
+  display:grid;
+  place-items:center;
+  margin:0 auto 18px;
+  border-radius:19px;
+  background:linear-gradient(135deg,#7187ff,#394cbd);
+  color:white;
+}
+.pin-logo svg{width:30px;height:30px}
+.pin-card h2{font-size:21px;margin:0 0 8px}
+.pin-card p{
+  font-size:11px;
+  color:#91a0ba;
+  margin:0 0 23px;
+  line-height:1.7;
+}
+.pin-input{
+  width:100%;
+  height:55px;
+  border:1px solid #34466a;
+  border-radius:12px;
+  background:#080d1b;
+  color:white;
+  text-align:center;
+  font-size:25px;
+  font-weight:800;
+  letter-spacing:12px;
+  padding-left:20px;
+  outline:none;
+}
+.pin-input:focus{border-color:#7187ff}
+.pin-submit{
+  width:100%;
+  height:49px;
+  margin-top:16px;
+  border:0;
+  border-radius:12px;
+  background:#586fe2;
+  color:white;
+  font-weight:800;
+  font-size:12px;
+}
+.pin-submit:disabled{opacity:.5}
+.pin-error{
+  color:#fb7185;
+  font-size:11px;
+  margin-top:13px;
+  min-height:16px;
+}
+.pin-hidden{display:none!important}
+
 /* Sidebar */
 .sidebar{
   width:250px;
@@ -349,6 +426,36 @@ button{cursor:pointer}
 
 <body>
 
+<!-- ADMIN PIN LOCK -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-card">
+    <div class="pin-logo">
+      <i data-lucide="shield-lock"></i>
+    </div>
+    <h2>Admin Security Lock</h2>
+    <p>Enter your 4-digit security PIN to access dashboard.</p>
+
+    <form id="pinForm">
+      <input
+        type="password"
+        id="adminPin"
+        class="pin-input"
+        maxlength="4"
+        inputmode="numeric"
+        pattern="[0-9]{4}"
+        placeholder="••••"
+        autocomplete="off"
+        required
+      >
+      <button class="pin-submit" id="pinSubmit" type="submit">
+        Unlock Dashboard
+      </button>
+    </form>
+
+    <div class="pin-error" id="pinError" aria-live="polite"></div>
+  </div>
+</div>
+
 <div class="overlay" id="overlay"></div>
 
 <div class="layout">
@@ -607,7 +714,6 @@ import {
 } from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* Use the same Firebase project as your other pages. */
 const firebaseConfig = {
   apiKey: "AIzaSyCEYfwZv2CkgcJ8vJMBRlXA2w_WpI",
   authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -622,6 +728,58 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const $ = id => document.getElementById(id);
+
+/* =====================================
+   ADMIN PIN SYSTEM
+   ===================================== */
+
+const ADMIN_PIN = "7788";
+
+const pinOverlay = $("pinOverlay");
+const pinForm = $("pinForm");
+const pinInput = $("adminPin");
+const pinError = $("pinError");
+
+let pinUnlocked = false;
+
+function lockDashboard(){
+  pinUnlocked = false;
+  sessionStorage.removeItem("bt_admin_pin_verified");
+  pinOverlay.classList.remove("pin-hidden");
+  pinInput.value = "";
+  pinError.textContent = "";
+}
+
+function unlockDashboard(){
+  pinUnlocked = true;
+  sessionStorage.setItem("bt_admin_pin_verified","true");
+  pinOverlay.classList.add("pin-hidden");
+  pinError.textContent = "";
+  pinInput.value = "";
+}
+
+pinForm.addEventListener("submit",e=>{
+  e.preventDefault();
+
+  const entered = pinInput.value.trim();
+
+  if(entered === ADMIN_PIN){
+    unlockDashboard();
+  }else{
+    pinError.textContent = "Incorrect PIN. Please try again.";
+    pinInput.value = "";
+    pinInput.focus();
+  }
+});
+
+/* Restore PIN verification only within this tab session */
+if(sessionStorage.getItem("bt_admin_pin_verified") === "true"){
+  unlockDashboard();
+}
+
+/* =====================================
+   DASHBOARD
+   ===================================== */
 
 $("todayDate").textContent = new Date().toLocaleDateString("en-IN",{
   weekday:"long",
@@ -647,11 +805,12 @@ $("logoutBtn").addEventListener("click",async()=>{
   if(!confirm("Are you sure you want to logout?")) return;
 
   try{
+    lockDashboard();
     await signOut(auth);
     window.location.replace("login.html");
   }catch(error){
-    alert("Logout failed. Please try again.");
     console.error(error);
+    alert("Logout failed. Please try again.");
   }
 });
 
@@ -662,12 +821,14 @@ function setCount(id,value){
 async function loadCount(collectionName,elementId,activeOnly=false){
   try{
     const ref = collection(db,collectionName);
+
     const targetQuery = activeOnly
       ? query(ref,where("active","==",true))
       : ref;
 
     const result = await getCountFromServer(targetQuery);
     setCount(elementId,result.data().count);
+
   }catch(error){
     console.error("Count error:",collectionName,error);
     $(elementId).textContent = "—";
@@ -740,13 +901,14 @@ async function loadRecentEnquiries(){
             <small>${safe(course)} • ${safe(phone)}</small>
             <small>${safe(formatDate(data.createdAt))}</small>
           </div>
-          <span class="status ${safe(status)}">${safe(status)}</span>
+          <span class="status">${safe(status)}</span>
         </div>
       `;
     }).join("");
 
   }catch(error){
     console.error("Enquiry loading error:",error);
+
     container.innerHTML =
       '<div class="empty error-text">Unable to load enquiries. Check Firestore permissions or index configuration.</div>';
   }
@@ -760,13 +922,13 @@ function loadDashboard(){
   loadRecentEnquiries();
 }
 
-/*
-  Admin access requires a trusted custom claim.
-  The frontend check is for navigation only.
-  Firestore Security Rules must also enforce admin access.
-*/
+/* =====================================
+   FIREBASE ADMIN AUTHENTICATION
+   ===================================== */
+
 onAuthStateChanged(auth,async user=>{
   if(!user){
+    lockDashboard();
     window.location.replace("login.html");
     return;
   }
@@ -775,20 +937,35 @@ onAuthStateChanged(auth,async user=>{
     const token = await user.getIdTokenResult(true);
 
     if(token.claims.admin !== true){
+      lockDashboard();
       await signOut(auth);
       window.location.replace("login.html");
       return;
     }
 
     $("adminEmail").textContent = user.email || "Administrator";
-    loadDashboard();
+
+    /* Load dashboard only after PIN unlock */
+    if(pinUnlocked){
+      loadDashboard();
+    }
 
   }catch(error){
     console.error("Admin verification failed:",error);
+    lockDashboard();
     await signOut(auth);
     window.location.replace("login.html");
   }
 });
+
+/* Load data if PIN was already unlocked in this tab */
+if(pinUnlocked && auth.currentUser){
+  auth.currentUser.getIdTokenResult(true).then(token=>{
+    if(token.claims.admin === true){
+      loadDashboard();
+    }
+  }).catch(console.error);
+}
 
 lucide.createIcons();
 </script>
