@@ -260,6 +260,26 @@ footer{
 }
 .syllabus-description{color:#aebbd0}
 .syllabus-empty{color:var(--muted)}
+.syllabus-loading{
+ text-align:center;color:var(--muted);padding:30px 10px;
+}
+.syllabus-module{
+ padding:13px;margin:12px 0;
+ background:#0b1422;border:1px solid var(--border);
+ border-radius:12px;
+}
+.syllabus-module-number{
+ display:inline-block;color:var(--cyan);
+ font-size:10px;font-weight:900;margin-bottom:6px;
+}
+.syllabus-module-title{
+ display:block;color:white;font-weight:800;
+ font-size:13px;margin-bottom:6px;
+}
+.syllabus-module-description{
+ color:#aebbd0;font-size:12px;line-height:1.7;
+ white-space:pre-wrap;
+}
 .video-frame{width:100%;aspect-ratio:16/9;border:0;border-radius:12px}
 
 @media(max-width:900px){
@@ -383,7 +403,9 @@ import { initializeApp }
 import {
  getFirestore,
  collection,
- getDocs
+ getDocs,
+ doc,
+ getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -404,6 +426,8 @@ let allCourses = [];
 let currentCategory = "All";
 let activeDemoCourse = null;
 let sliderIntervals = [];
+let roadmapConfigCache = null;
+let roadmapConfigPromise = null;
 
 const grid = document.getElementById("courseGrid");
 const searchInput = document.getElementById("searchInput");
@@ -502,6 +526,7 @@ function stopSliders(){
  sliderIntervals = [];
 }
 
+/* COURSE FILTERS */
 function renderFilters(){
 
  const categories = [
@@ -553,7 +578,6 @@ function createCourseCard(course){
  const category = course.category || "Professional";
  const duration = course.duration || "Flexible";
 
- /* ONLY ONE BADGE */
  const badgeText =
   course.customBadge ||
   course.tag ||
@@ -844,140 +868,241 @@ window.shareCourse = async function(id){
  }
 };
 
-/* SYLLABUS RENDERER */
-function renderSyllabus(data){
+/* GET REAL SYLLABUS FROM ROADMAP ADMIN */
+async function getRoadmapSyllabus(courseId){
 
- if(data === null || data === undefined || data === ""){
+ /*
+  * Read the same document written by roadmap-admin.html.
+  * This page does not read course.syllabus from offers.
+  */
+ if(!roadmapConfigCache){
+
+  if(!roadmapConfigPromise){
+   roadmapConfigPromise = getDoc(
+    doc(db,"settings","roadmapConfig")
+   ).then(snapshot=>{
+    roadmapConfigCache = snapshot.exists()
+     ? snapshot.data()
+     : {};
+    return roadmapConfigCache;
+   }).catch(error=>{
+    roadmapConfigPromise = null;
+    throw error;
+   });
+  }
+
+  await roadmapConfigPromise;
+ }
+
+ const config = roadmapConfigCache || {};
+ const courses = config.courses || {};
+
+ let courseConfig = courses[courseId];
+
+ /* Support older config formats */
+ if(!courseConfig){
+  const matchedKey = Object.keys(courses).find(key=>
+   key.trim().toLowerCase()===String(courseId).trim().toLowerCase()
+  );
+  if(matchedKey) courseConfig = courses[matchedKey];
+ }
+
+ if(Array.isArray(courseConfig)){
+  return courseConfig;
+ }
+
+ if(courseConfig && Array.isArray(courseConfig.modules)){
+  return courseConfig.modules;
+ }
+
+ if(courseConfig && Array.isArray(courseConfig.units)){
+  return courseConfig.units;
+ }
+
+ /* Legacy PGDCA format */
+ if(String(courseId).trim().toLowerCase()==="pgdca" &&
+    Array.isArray(config.modules)){
+  return config.modules;
+ }
+
+ return [];
+}
+
+/* RENDER REAL ROADMAP MODULES */
+function renderRoadmapSyllabus(modules){
+
+ if(!Array.isArray(modules) || !modules.length){
+  return `
+   <div class="syllabus-empty">
+    Syllabus has not been published for this course yet.
+   </div>
+  `;
+ }
+
+ return modules.map((module,index)=>{
+
+  let title = "";
+  let description = "";
+
+  if(typeof module==="string"){
+   title = module;
+  }else if(module && typeof module==="object"){
+
+   title = module.title ||
+    module.name ||
+    module.topic ||
+    module.module ||
+    module.heading ||
+    module.unit ||
+    "Module "+(index+1);
+
+   description = module.description ||
+    module.details ||
+    module.content ||
+    module.text ||
+    "";
+  }
+
+  let extraHTML = "";
+
+  if(module && typeof module==="object"){
+
+   const ignored = [
+    "id","moduleId","title","name","topic",
+    "module","heading","unit","description",
+    "details","content","text","order"
+   ];
+
+   Object.entries(module).forEach(([key,value])=>{
+
+    if(ignored.includes(key) ||
+       value===null || value===undefined || value===""){
+     return;
+    }
+
+    extraHTML += `
+     <div class="syllabus-group">
+      <span class="syllabus-group-title">${escapeHTML(key)}</span>
+      ${renderNestedSyllabus(value)}
+     </div>
+    `;
+   });
+  }
+
+  return `
+   <div class="syllabus-module">
+    <span class="syllabus-module-number">
+     MODULE ${index+1}
+    </span>
+
+    <span class="syllabus-module-title">
+     ${escapeHTML(title)}
+    </span>
+
+    ${description ? `
+     <div class="syllabus-module-description">
+      ${escapeHTML(typeof description==="string"
+       ? description : JSON.stringify(description))}
+     </div>
+    ` : ""}
+
+    ${extraHTML}
+   </div>
+  `;
+ }).join("");
+}
+
+/* SUPPORT NESTED TOPICS */
+function renderNestedSyllabus(data){
+
+ if(data===null || data===undefined || data===""){
   return "";
  }
 
- /* Array of strings or objects */
  if(Array.isArray(data)){
-
-  if(!data.length) return "";
-
   return `
    <ul class="syllabus-list">
     ${data.map(item=>`
-     <li>${renderSyllabus(item)}</li>
+     <li>${renderNestedSyllabus(item)}</li>
     `).join("")}
    </ul>
   `;
  }
 
- /* Object / nested object */
- if(typeof data === "object"){
+ if(typeof data==="object"){
 
-  const title =
-   data.title ||
-   data.name ||
-   data.topic ||
-   data.module ||
-   data.heading ||
-   data.unit ||
-   "";
+  let html="";
 
-  const description =
-   data.description ||
-   data.details ||
-   data.content ||
-   data.text ||
-   "";
-
-  const knownKeys = [
-   "title","name","topic","module","heading","unit",
-   "description","details","content","text"
-  ];
-
-  let html = "";
-
-  if(title){
-   html += `
-    <span class="syllabus-group-title">
-     ${escapeHTML(title)}
-    </span>
-   `;
-  }
-
-  if(description){
-   html += `
-    <div class="syllabus-description">
-     ${escapeHTML(description)}
-    </div>
-   `;
-  }
-
-  /* Render every remaining field recursively */
-  const remainingEntries = Object.entries(data)
-   .filter(([key,value])=>
-    !knownKeys.includes(key) &&
-    value !== null &&
-    value !== undefined &&
-    value !== ""
-   );
-
-  remainingEntries.forEach(([key,value])=>{
-
+  Object.entries(data).forEach(([key,value])=>{
    html += `
     <div class="syllabus-group">
-
-     <span class="syllabus-group-title">
-      ${escapeHTML(key)}
-     </span>
-
-     ${renderSyllabus(value)}
-
+     <span class="syllabus-group-title">${escapeHTML(key)}</span>
+     ${renderNestedSyllabus(value)}
     </div>
    `;
   });
 
-  return html || "";
+  return html;
  }
 
- /* Normal string or number */
  return escapeHTML(data);
 }
 
-window.openSyllabus = function(id){
+/* OPEN SYLLABUS MODAL */
+window.openSyllabus = async function(id){
 
  const course = allCourses.find(c=>c.id===id);
  if(!course) return;
 
- document.getElementById("syllabusTitle").textContent =
-  (course.name || "Course") + " - Syllabus";
-
+ const modal = document.getElementById("syllabusModal");
+ const title = document.getElementById("syllabusTitle");
  const container = document.getElementById("syllabusContent");
 
- let syllabus = course.syllabus;
+ title.textContent = (course.name || "Course")+" - Syllabus";
 
- if(syllabus === null || syllabus === undefined || syllabus === ""){
-  container.innerHTML = `
-   <div class="syllabus-empty">
-    Syllabus details will be available soon.
-   </div>
-  `;
- }else{
+ container.innerHTML = `
+  <div class="syllabus-loading">
+   <i data-lucide="loader-circle"></i><br>
+   Loading official course syllabus...
+  </div>
+ `;
 
-  /* Support JSON string format */
-  if(typeof syllabus === "string"){
+ modal.classList.add("show");
 
-   try{
-    syllabus = JSON.parse(syllabus);
-   }catch(e){
-    syllabus = syllabus.split(/\n/).filter(x=>x.trim());
-   }
+ if(window.lucide) lucide.createIcons();
+
+ try{
+
+  const modules = await getRoadmapSyllabus(course.id);
+
+  if(!modules.length){
+   container.innerHTML = `
+    <div class="syllabus-empty">
+     <strong>No syllabus published yet.</strong><br><br>
+     The administrator has not added modules for this course in
+     the Roadmap Admin panel.
+    </div>
+   `;
+   return;
   }
 
-  const html = renderSyllabus(syllabus);
+  container.innerHTML = `
+   <div style="margin-bottom:15px;color:#67e8f9;font-size:11px;font-weight:800">
+    OFFICIAL ROADMAP SYLLABUS · ${modules.length} MODULES
+   </div>
+   ${renderRoadmapSyllabus(modules)}
+  `;
 
-  container.innerHTML = html || `
+ }catch(error){
+
+  console.error("Roadmap syllabus error:",error);
+
+  container.innerHTML = `
    <div class="syllabus-empty">
-    Syllabus details will be available soon.
+    Unable to load syllabus. Please try again later.
    </div>
   `;
  }
-
- document.getElementById("syllabusModal").classList.add("show");
 };
 
 /* YOUTUBE PREVIEW */
