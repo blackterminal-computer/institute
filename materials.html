@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#080d18">
 <title>Study Materials | BlackTerminal</title>
 
@@ -64,8 +64,6 @@ button,input{font:inherit}
     background:linear-gradient(135deg,#3979ff,#28d3e4);
 }
 
-.brand-logo svg{width:22px}
-
 .brand-name{
     font-size:16px;
     font-weight:850;
@@ -87,8 +85,6 @@ button,input{font:inherit}
     display:grid;
     place-items:center;
 }
-
-.header-btn svg{width:19px}
 
 /* TITLE */
 
@@ -175,7 +171,7 @@ button,input{font:inherit}
     margin-bottom:17px;
 }
 
-.search-box svg{
+.search-box i{
     color:var(--muted);
     width:18px;
     flex-shrink:0;
@@ -295,7 +291,7 @@ button,input{font:inherit}
     color:#ffbe75;
 }
 
-.file-icon svg{
+.file-icon i{
     width:21px;
     height:21px;
 }
@@ -365,7 +361,7 @@ button,input{font:inherit}
     border-color:#5288ff;
 }
 
-.action-btn svg{
+.action-btn i{
     width:14px;
     height:14px;
 }
@@ -392,8 +388,6 @@ button,input{font:inherit}
     color:#80aaff;
 }
 
-.state-icon svg{width:25px}
-
 .state h3{
     font-size:15px;
     margin-bottom:8px;
@@ -403,7 +397,6 @@ button,input{font:inherit}
     color:var(--muted);
     font-size:11px;
     line-height:1.7;
-    overflow-wrap:anywhere;
 }
 
 .loader{
@@ -444,7 +437,7 @@ button,input{font:inherit}
     min-width:55px;
 }
 
-.nav-item svg{width:19px;height:19px}
+.nav-item i{width:19px;height:19px}
 .nav-item.active{color:#6da4ff}
 
 @media(min-width:650px){
@@ -563,12 +556,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 
 import {
     getFirestore,
+    doc,
     collection,
-    getDocs,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* FIREBASE CONFIGURATION - PRESERVED */
+/* EXISTING FIREBASE CONFIG */
 
 const firebaseConfig = {
     apiKey: "AIzaSyCEYfwZv2CkgcJ8vJMBRlXA2w_WpI",
@@ -576,17 +569,13 @@ const firebaseConfig = {
     projectId: "black-terminal-f2c91",
     storageBucket: "black-terminal-f2c91.appspot.com",
     messagingSenderId: "552489994197",
-    appId: "1:489994197:web:7662331264c334ffbadf5c"
+    appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* SESSION */
-
 const studentID = localStorage.getItem("studentName");
-
-/* ELEMENTS */
 
 const grid = document.getElementById("materialsGrid");
 const loadingState = document.getElementById("loadingState");
@@ -597,9 +586,6 @@ const searchInput = document.getElementById("searchInput");
 let studentCourse = "";
 let allMaterials = [];
 let activeFilter = "all";
-let studentDataLoaded = false;
-let materialsLoaded = false;
-let unsubscribeMaterials = null;
 
 /* LOGIN CHECK */
 
@@ -607,117 +593,7 @@ if(!studentID){
     window.location.replace("login.html");
 }
 
-/* SAFE TEXT */
-
-function safeText(value){
-    return value == null ? "" : String(value).trim();
-}
-
-/* SAFE URL */
-
-function safeUrl(value){
-
-    if(typeof value !== "string") return "";
-
-    try{
-        const url = new URL(value);
-
-        if(url.protocol === "https:" || url.protocol === "http:"){
-            return url.href;
-        }
-
-        return "";
-
-    }catch{
-        return "";
-    }
-}
-
-/* TYPE */
-
-function getType(item){
-
-    const type = safeText(
-        item.type || item.fileType || item.category
-    ).toLowerCase();
-
-    const url = safeText(
-        item.fileURL || item.fileUrl || item.url || item.link
-    ).toLowerCase();
-
-    if(
-        type.includes("video") ||
-        /\.(mp4|webm)(\?|$)/.test(url) ||
-        url.includes("youtube.com") ||
-        url.includes("youtu.be")
-    ){
-        return "video";
-    }
-
-    if(type.includes("note")){
-        return "notes";
-    }
-
-    if(
-        type.includes("doc") ||
-        type.includes("word")
-    ){
-        return "document";
-    }
-
-    if(
-        type.includes("pdf") ||
-        url.includes(".pdf")
-    ){
-        return "pdf";
-    }
-
-    return "document";
-}
-
-/* ICON */
-
-function getIcon(type){
-
-    if(type === "pdf") return "file-text";
-    if(type === "video") return "video";
-    if(type === "notes") return "notebook-pen";
-
-    return "file";
-}
-
-/* DATE */
-
-function formatDate(value){
-
-    if(!value) return "Recently added";
-
-    try{
-
-        let date;
-
-        if(typeof value.toDate === "function"){
-            date = value.toDate();
-        }else{
-            date = new Date(value);
-        }
-
-        if(isNaN(date.getTime())){
-            return "Recently added";
-        }
-
-        return date.toLocaleDateString("en-IN",{
-            day:"2-digit",
-            month:"short",
-            year:"numeric"
-        });
-
-    }catch{
-        return "Recently added";
-    }
-}
-
-/* STATES */
+/* HELPERS */
 
 function showState(type,message=""){
 
@@ -739,12 +615,80 @@ function showState(type,message=""){
     }
 }
 
-/* COURSE NORMALIZATION */
+function safeText(value){
+    return value == null ? "" : String(value);
+}
 
-function normalizeCourse(value){
-    return safeText(value)
-        .replace(/\s+/g," ")
-        .toLowerCase();
+function safeUrl(value){
+
+    if(typeof value !== "string") return "";
+
+    try{
+        const url = new URL(value);
+
+        if(url.protocol === "https:" || url.protocol === "http:"){
+            return url.href;
+        }
+
+        return "";
+
+    }catch{
+        return "";
+    }
+}
+
+function getType(item){
+
+    const type = safeText(item.type || item.fileType || item.category).toLowerCase();
+    const url = safeText(item.fileURL || item.fileUrl || item.url).toLowerCase();
+
+    if(type.includes("video") || /\.(mp4|webm|youtube|youtu\.be)/.test(url)){
+        return "video";
+    }
+
+    if(type.includes("note")){
+        return "notes";
+    }
+
+    if(type.includes("doc") || type.includes("word")){
+        return "document";
+    }
+
+    if(type.includes("pdf") || url.includes(".pdf")){
+        return "pdf";
+    }
+
+    return "document";
+}
+
+function getIcon(type){
+
+    if(type === "pdf") return "file-text";
+    if(type === "video") return "video";
+    if(type === "notes") return "notebook-pen";
+
+    return "file";
+}
+
+function formatDate(value){
+
+    if(!value) return "Recently added";
+
+    let date;
+
+    if(typeof value.toDate === "function"){
+        date = value.toDate();
+    }else{
+        date = new Date(value);
+    }
+
+    if(isNaN(date.getTime())) return "Recently added";
+
+    return date.toLocaleDateString("en-IN",{
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+    });
 }
 
 /* RENDER MATERIALS */
@@ -753,36 +697,9 @@ function renderMaterials(){
 
     grid.innerHTML = "";
 
-    if(!studentDataLoaded || !materialsLoaded){
-        showState("loading");
-        return;
-    }
-
-    if(!studentCourse){
-
-        document.getElementById("materialCount").textContent = "0 Materials";
-
-        showState(
-            "error",
-            "Your course is not assigned in your student profile. Please contact admin."
-        );
-
-        return;
-    }
-
     const keyword = searchInput.value.trim().toLowerCase();
 
     const filtered = allMaterials.filter(item=>{
-
-        // Only active materials
-        if(item.active !== true) return false;
-
-        // Match exact course (case-insensitive)
-        const materialCourse = normalizeCourse(item.course);
-
-        if(materialCourse !== normalizeCourse(studentCourse)){
-            return false;
-        }
 
         const title = safeText(item.title || item.name).toLowerCase();
         const description = safeText(item.description).toLowerCase();
@@ -802,9 +719,7 @@ function renderMaterials(){
         filtered.length + (filtered.length === 1 ? " Material" : " Materials");
 
     if(filtered.length === 0){
-
         showState("empty");
-
         return;
     }
 
@@ -812,56 +727,37 @@ function renderMaterials(){
 
     filtered.forEach(item=>{
 
-        const title = safeText(
-            item.title || item.name || "Untitled Material"
-        );
-
-        const description = safeText(
-            item.description || "Study resource uploaded by your instructor."
-        );
-
+        const title = safeText(item.title || item.name || "Untitled Material");
+        const description = safeText(item.description || "Study resource uploaded by your instructor.");
         const type = getType(item);
 
         const url = safeUrl(
             item.fileURL || item.fileUrl || item.url || item.link
         );
 
-        const date = formatDate(
-            item.createdAt || item.uploadedAt
-        );
+        const date = formatDate(item.createdAt || item.uploadedAt);
 
         const card = document.createElement("article");
         card.className = "material-card";
-
-        /* ICON */
 
         const iconBox = document.createElement("div");
         iconBox.className = "file-icon " + type;
 
         const icon = document.createElement("i");
         icon.setAttribute("data-lucide",getIcon(type));
-
         iconBox.appendChild(icon);
-
-        /* TYPE */
 
         const typeLabel = document.createElement("div");
         typeLabel.className = "material-type";
         typeLabel.textContent = type;
 
-        /* TITLE */
-
         const heading = document.createElement("h3");
         heading.className = "material-title";
         heading.textContent = title;
 
-        /* DESCRIPTION */
-
         const desc = document.createElement("p");
         desc.className = "material-description";
         desc.textContent = description;
-
-        /* META */
 
         const meta = document.createElement("div");
         meta.className = "material-meta";
@@ -874,15 +770,12 @@ function renderMaterials(){
 
         meta.append(course,dateLabel);
 
-        /* ACTIONS */
-
         const actions = document.createElement("div");
         actions.className = "material-actions";
 
         if(url){
 
             const open = document.createElement("a");
-
             open.className = "action-btn primary";
             open.href = url;
             open.target = "_blank";
@@ -891,46 +784,30 @@ function renderMaterials(){
             const openIcon = document.createElement("i");
             openIcon.setAttribute("data-lucide","external-link");
 
-            open.append(
-                openIcon,
-                document.createTextNode("Open")
-            );
+            open.append(openIcon,document.createTextNode("Open"));
 
-            const view = document.createElement("a");
+            const download = document.createElement("a");
+            download.className = "action-btn";
+            download.href = url;
+            download.target = "_blank";
+            download.rel = "noopener noreferrer";
 
-            view.className = "action-btn";
-            view.href = url;
-            view.target = "_blank";
-            view.rel = "noopener noreferrer";
+            const downloadIcon = document.createElement("i");
+            downloadIcon.setAttribute("data-lucide","download");
 
-            const viewIcon = document.createElement("i");
-            viewIcon.setAttribute("data-lucide","eye");
+            download.append(downloadIcon,document.createTextNode("View"));
 
-            view.append(
-                viewIcon,
-                document.createTextNode("View")
-            );
-
-            actions.append(open,view);
+            actions.append(open,download);
 
         }else{
 
             const unavailable = document.createElement("span");
             unavailable.className = "action-btn";
             unavailable.textContent = "Link unavailable";
-
             actions.appendChild(unavailable);
         }
 
-        card.append(
-            iconBox,
-            typeLabel,
-            heading,
-            desc,
-            meta,
-            actions
-        );
-
+        card.append(iconBox,typeLabel,heading,desc,meta,actions);
         grid.appendChild(card);
     });
 
@@ -957,156 +834,75 @@ document.querySelectorAll(".filter-btn").forEach(button=>{
     });
 });
 
-/* SEARCH */
-
 searchInput.addEventListener("input",renderMaterials);
 
-/* LOAD STUDENT PROFILE */
+/* STUDENT COURSE */
 
-async function loadStudent(){
+if(studentID){
 
-    if(!studentID) return;
+    onSnapshot(doc(db,"students",studentID),(snapshot)=>{
 
-    showState("loading");
-
-    try{
-
-        const snapshot = await getDocs(
-            collection(db,"students")
-        );
-
-        let studentDoc = null;
-
-        const sessionName = normalizeCourse(studentID);
-
-        // 1. Match by Firestore document ID
-        const directMatch = snapshot.docs.find(item=>
-            item.id === studentID
-        );
-
-        if(directMatch){
-
-            studentDoc = directMatch;
-
-        }else{
-
-            // 2. Match by stored student name
-            const nameMatch = snapshot.docs.find(item=>{
-
-                const data = item.data();
-
-                const names = [
-                    data.name,
-                    data.studentName,
-                    data.fullName,
-                    data.displayName
-                ];
-
-                return names.some(name=>
-                    normalizeCourse(name) === sessionName
-                );
-            });
-
-            if(nameMatch){
-                studentDoc = nameMatch;
-            }
-        }
-
-        if(!studentDoc){
-
-            studentDataLoaded = true;
-
-            showState(
-                "error",
-                "Student record not found. Please contact admin."
-            );
-
+        if(!snapshot.exists()){
+            showState("error","Student record was not found.");
             return;
         }
 
-        const data = studentDoc.data();
+        const data = snapshot.data();
 
-        studentCourse = safeText(
-            data.currentCourse ||
-            data.courseName ||
-            data.course ||
-            ""
-        );
-
-        // If currentCourse is stored as an object
-        if(typeof data.currentCourse === "object" && data.currentCourse !== null){
-            studentCourse = safeText(
-                data.currentCourse.courseName ||
-                data.currentCourse.name ||
-                ""
-            );
-        }
-
-        studentDataLoaded = true;
+        studentCourse = safeText(data.currentCourse);
 
         document.getElementById("courseName").textContent =
             studentCourse || "Course not assigned";
 
+        if(!studentCourse){
+            allMaterials = [];
+            renderMaterials();
+            return;
+        }
+
+    },error=>{
+
+        console.error(error);
+        showState("error","Unable to load student course information.");
+
+    });
+
+    /*
+       EXPECTED COLLECTION: studyMaterials
+
+       Expected fields:
+       title, description, course, type, fileURL,
+       active, createdAt
+
+       Match the collection and fields with your actual
+       admin upload page before production use.
+    */
+
+    onSnapshot(collection(db,"studyMaterials"),snapshot=>{
+
+        allMaterials = snapshot.docs
+            .map(document=>({
+                id:document.id,
+                ...document.data()
+            }))
+            .filter(item=>
+                item.active === true &&
+                safeText(item.course).trim().toLowerCase() ===
+                studentCourse.trim().toLowerCase()
+            );
+
         renderMaterials();
 
-    }catch(error){
+    },error=>{
 
-        console.error("Student loading error:",error);
-
-        studentDataLoaded = true;
+        console.error("Materials error:",error);
 
         showState(
             "error",
-            "Unable to load student profile: " + error.message
+            "Materials could not be loaded. Please check Firestore permissions and collection settings."
         );
-    }
-}
 
-/* LIVE STUDY MATERIALS */
-
-function loadStudentMaterials(){
-
-    if(unsubscribeMaterials){
-        unsubscribeMaterials();
-    }
-
-    unsubscribeMaterials = onSnapshot(
-        collection(db,"studyMaterials"),
-
-        snapshot=>{
-
-            allMaterials = snapshot.docs.map(document=>({
-                id:document.id,
-                ...document.data()
-            }));
-
-            materialsLoaded = true;
-
-            renderMaterials();
-
-        },
-
-        error=>{
-
-            console.error("Materials loading error:",error);
-
-            materialsLoaded = true;
-
-            showState(
-                "error",
-                "Materials could not be loaded: " + error.message
-            );
-        }
-    );
-}
-
-/* START */
-
-if(studentID){
-
-    loadStudent();
-
-    loadStudentMaterials();
+    });
 
 }
 
@@ -1118,3 +914,4 @@ if(window.lucide){
 
 </body>
 </html>
+ 
