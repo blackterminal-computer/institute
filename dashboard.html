@@ -2258,11 +2258,13 @@ async function loadGlobalRank(currentStudent){
 
 }
 
+
 /* =====================================
-   NOTIFICATIONS
+   SEPARATE BROADCAST & INDIVIDUAL NOTIFICATIONS
 ===================================== */
 
-let notificationItems=[];
+let broadcastItems=[];
+let individualItems=[];
 let readNotificationIds=new Set();
 
 let notificationUnsubscribe=null;
@@ -2275,63 +2277,40 @@ const notificationList=$("notificationList");
 const notificationBadge=$("notificationBadge");
 
 function openNotifications(){
-
  notificationOverlay.classList.add("open");
  document.body.style.overflow="hidden";
  renderNotifications();
-
 }
 
 function closeNotifications(){
-
  notificationOverlay.classList.remove("open");
  document.body.style.overflow="";
-
 }
 
 $("notificationBell").addEventListener("click",openNotifications);
 $("closeNotifications").addEventListener("click",closeNotifications);
 
 notificationOverlay.addEventListener("click",event=>{
-
- if(event.target===notificationOverlay){
-  closeNotifications();
- }
-
+ if(event.target===notificationOverlay)closeNotifications();
 });
 
 document.addEventListener("keydown",event=>{
-
- if(event.key==="Escape"){
-  closeNotifications();
- }
-
+ if(event.key==="Escape")closeNotifications();
 });
 
 function getNotificationDate(data){
-
  const value=data.createdAt||data.date||data.timestamp;
-
  if(value?.toDate)return value.toDate();
-
  if(value instanceof Date)return value;
-
  if(typeof value==="string"||typeof value==="number"){
-
   const date=new Date(value);
-
   if(!Number.isNaN(date.getTime()))return date;
-
  }
-
  return null;
-
 }
 
 function formatNotificationDate(data){
-
  const date=getNotificationDate(data);
-
  if(!date)return "Recently";
 
  return date.toLocaleString("en-IN",{
@@ -2341,22 +2320,33 @@ function formatNotificationDate(data){
   hour:"2-digit",
   minute:"2-digit"
  });
-
 }
 
-function isNotificationForStudent(data){
+/* CLASSIFY NOTIFICATION */
 
- if(data.active===false)return false;
-
+function isBroadcastNotification(data){
  const audience=String(data.audience||"").toLowerCase();
  const target=String(data.target||"").toLowerCase();
+ const targetType=String(data.targetType||"").toLowerCase();
 
- if(
+ return (
   ["all","everyone","broadcast"].includes(audience)||
-  ["all","everyone","broadcast"].includes(target)
- ){
-  return true;
- }
+  ["all","everyone","broadcast"].includes(target)||
+  ["all","everyone","broadcast"].includes(targetType)
+ );
+}
+
+function isIndividualNotification(data){
+ const audience=String(data.audience||"").toLowerCase();
+ const target=String(data.target||"").toLowerCase();
+ const targetType=String(data.targetType||"").toLowerCase();
+
+ const individualType=
+  audience==="individual"||
+  target==="individual"||
+  targetType==="individual";
+
+ if(!individualType)return false;
 
  const targetId=
   data.studentId||
@@ -2369,58 +2359,63 @@ function isNotificationForStudent(data){
   data.recipientName||
   "";
 
- if(
-  targetId&&
-  String(targetId)===currentNotificationStudentId
- ){
-  return true;
- }
+ const idMatch=
+  targetId &&
+  String(targetId)===currentNotificationStudentId;
 
- if(
-  targetName&&
+ const nameMatch=
+  targetName &&
   String(targetName).trim().toLowerCase()===
-  savedName.trim().toLowerCase()
- ){
-  return true;
- }
+  savedName.trim().toLowerCase();
 
- return false;
-
+ return Boolean(idMatch||nameMatch);
 }
+
+/* UPDATE SEPARATE COUNTERS */
 
 function updateNotificationBadge(){
 
- const unread=notificationItems.filter(item=>
+ // Bell: only broadcast unread
+ const broadcastUnread=broadcastItems.filter(item=>
   !readNotificationIds.has(item.id)
  ).length;
 
- notificationBadge.hidden=unread===0;
+ notificationBadge.hidden=broadcastUnread===0;
 
- if(unread>0){
-  notificationBadge.textContent=unread>99?"99+":unread;
+ if(broadcastUnread>0){
+  notificationBadge.textContent=
+   broadcastUnread>99?"99+":broadcastUnread;
  }
 
- // My Notifications card counter
- const cardCount=document.getElementById("myNotificationCount");
- const cardText=document.getElementById("myNotificationText");
+ // My Notifications card: only individual unread
+ const individualUnread=individualItems.filter(item=>
+  !readNotificationIds.has(item.id)
+ ).length;
+
+ const cardCount=$("myNotificationCount");
+ const cardText=$("myNotificationText");
 
  if(cardCount){
-  cardCount.textContent=unread>99?"99+":unread;
-  cardCount.classList.toggle("show",unread>0);
+  cardCount.textContent=
+   individualUnread>99?"99+":individualUnread;
+
+  cardCount.classList.toggle("show",individualUnread>0);
  }
 
  if(cardText){
-  cardText.textContent=unread>0
-   ? `${unread} unread notification${unread===1?"":"s"}`
-   : "You're all caught up! View institute updates";
+  cardText.textContent=individualUnread>0
+   ? `${individualUnread} individual unread notification${individualUnread===1?"":"s"}`
+   : "No individual notifications";
  }
 }
+
+/* BELL POPUP: BROADCAST ONLY */
 
 function renderNotifications(){
 
  notificationList.innerHTML="";
 
- if(!notificationItems.length){
+ if(!broadcastItems.length){
 
   const empty=document.createElement("div");
   empty.className="notification-empty";
@@ -2429,27 +2424,23 @@ function renderNotifications(){
   icon.setAttribute("data-lucide","bell-off");
 
   const title=document.createElement("strong");
-  title.textContent="No new notification";
+  title.textContent="No broadcast notifications";
 
   const message=document.createElement("div");
-  message.textContent="You're all caught up!";
+  message.textContent="Institute announcements will appear here.";
 
   empty.append(icon,title,message);
-
   notificationList.appendChild(empty);
 
   lucide.createIcons();
-
   return;
-
  }
 
- notificationItems.forEach(item=>{
+ broadcastItems.forEach(item=>{
 
   const isRead=readNotificationIds.has(item.id);
 
   const wrapper=document.createElement("div");
-
   wrapper.className=
    "notification-item"+(isRead?"":" unread");
 
@@ -2465,7 +2456,7 @@ function renderNotifications(){
   content.className="notification-item-content";
 
   const title=document.createElement("strong");
-  title.textContent=item.data.title||"Institute Notification";
+  title.textContent=item.data.title||"Institute Announcement";
 
   const message=document.createElement("p");
   message.textContent=item.data.message||"";
@@ -2477,12 +2468,9 @@ function renderNotifications(){
   wrapper.append(icon,content);
 
   if(!isRead){
-
    const dot=document.createElement("span");
    dot.className="notification-dot";
-
    wrapper.appendChild(dot);
-
   }
 
   wrapper.addEventListener("click",async()=>{
@@ -2492,9 +2480,7 @@ function renderNotifications(){
    const link=item.data.url||item.data.link;
 
    if(link){
-
     try{
-
      const destination=new URL(link,location.origin);
 
      if(
@@ -2503,33 +2489,26 @@ function renderNotifications(){
      ){
       location.href=destination.href;
      }
-
     }catch(error){
-
      console.error("Invalid notification link:",error);
-
     }
-
    }
-
   });
 
   notificationList.appendChild(wrapper);
-
  });
 
  lucide.createIcons();
-
 }
+
+/* MARK READ */
 
 async function markNotificationRead(notificationId){
 
  if(!currentNotificationStudentId)return;
-
  if(readNotificationIds.has(notificationId))return;
 
  try{
-
   await setDoc(
    doc(
     db,
@@ -2538,131 +2517,107 @@ async function markNotificationRead(notificationId){
    ),
    {
     studentId:currentNotificationStudentId,
-    notificationId:notificationId,
+    notificationId,
     readAt:serverTimestamp()
    },
    {merge:true}
   );
-
  }catch(error){
-
   console.error("Unable to mark notification read:",error);
-
   showToast("Unable to update notification");
-
  }
-
 }
 
-/* MARK ALL READ */
+/* MARK ALL BROADCAST READ */
 
 $("markAllRead").addEventListener("click",async()=>{
 
- const unreadItems=notificationItems.filter(item=>
+ const unreadItems=broadcastItems.filter(item=>
   !readNotificationIds.has(item.id)
  );
 
  if(!unreadItems.length){
-
-  showToast("All notifications are already read");
+  showToast("All broadcast notifications are read");
   return;
-
  }
 
  try{
-
-  await Promise.all(
-
-   unreadItems.map(item=>
-
-    setDoc(
-     doc(
-      db,
-      "notificationReads",
-      currentNotificationStudentId+"_"+encodeURIComponent(item.id)
-     ),
-     {
-      studentId:currentNotificationStudentId,
-      notificationId:item.id,
-      readAt:serverTimestamp()
-     },
-     {merge:true}
-    )
-
+  await Promise.all(unreadItems.map(item=>
+   setDoc(
+    doc(
+     db,
+     "notificationReads",
+     currentNotificationStudentId+"_"+encodeURIComponent(item.id)
+    ),
+    {
+     studentId:currentNotificationStudentId,
+     notificationId:item.id,
+     readAt:serverTimestamp()
+    },
+    {merge:true}
    )
+  ));
 
-  );
-
-  showToast("All notifications marked as read");
+  showToast("All broadcast notifications marked as read");
 
  }catch(error){
-
-  console.error("Mark all read error:",error);
-
+  console.error(error);
   showToast("Could not update notifications");
-
  }
-
 });
 
-/* REAL-TIME NOTIFICATION LISTENERS */
+/* REALTIME LISTENERS */
 
 function startNotificationSync(studentId){
 
  currentNotificationStudentId=studentId;
 
- if(notificationUnsubscribe){
-  notificationUnsubscribe();
-  notificationUnsubscribe=null;
- }
+ if(notificationUnsubscribe)notificationUnsubscribe();
+ if(readUnsubscribe)readUnsubscribe();
 
- if(readUnsubscribe){
-  readUnsubscribe();
-  readUnsubscribe=null;
- }
-
- notificationItems=[];
+ broadcastItems=[];
+ individualItems=[];
  readNotificationIds=new Set();
 
  updateNotificationBadge();
 
  notificationUnsubscribe=onSnapshot(
-
   collection(db,"notifications"),
-
   snapshot=>{
 
-   notificationItems=snapshot.docs
-    .map(item=>({
-     id:item.id,
-     data:item.data()
-    }))
-    .filter(item=>isNotificationForStudent(item.data))
-    .sort((a,b)=>{
+   const allItems=snapshot.docs.map(item=>({
+    id:item.id,
+    data:item.data()
+   }));
 
-     const dateA=getNotificationDate(a.data)?.getTime()||0;
-     const dateB=getNotificationDate(b.data)?.getTime()||0;
+   broadcastItems=allItems
+    .filter(item=>
+     item.data.active!==false&&
+     isBroadcastNotification(item.data)
+    )
+    .sort((a,b)=>
+     (getNotificationDate(b.data)?.getTime()||0)-
+     (getNotificationDate(a.data)?.getTime()||0)
+    );
 
-     return dateB-dateA;
-
-    });
+   individualItems=allItems
+    .filter(item=>
+     item.data.active!==false&&
+     isIndividualNotification(item.data)
+    )
+    .sort((a,b)=>
+     (getNotificationDate(b.data)?.getTime()||0)-
+     (getNotificationDate(a.data)?.getTime()||0)
+    );
 
    updateNotificationBadge();
    renderNotifications();
 
   },
-
   error=>{
-
    console.error("Notification listener error:",error);
-
-   notificationList.textContent=
-    "Unable to load notifications.";
-
-   showToast("Notification loading failed");
-
+   notificationList.textContent="Unable to load notifications.";
   }
-
  );
 
  const readQuery=query(
@@ -2671,9 +2626,7 @@ function startNotificationSync(studentId){
  );
 
  readUnsubscribe=onSnapshot(
-
   readQuery,
-
   snapshot=>{
 
    readNotificationIds=new Set(
@@ -2684,16 +2637,12 @@ function startNotificationSync(studentId){
    renderNotifications();
 
   },
-
   error=>{
-
    console.error("Notification read status error:",error);
-
   }
-
  );
-
 }
+
 
 /* =====================================
    LOAD DASHBOARD
