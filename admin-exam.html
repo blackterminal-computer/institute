@@ -213,6 +213,9 @@ td{color:#d8e1f1}
   <div class="section-head">
    <div><h2>Question Bank</h2><p>Import questions from Excel and manage your MCQs</p></div>
    <button class="btn btn-primary" onclick="openImport()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+  <button class="btn btn-danger" onclick="deleteAllBankQuestions()">
+  <i class="fa-solid fa-trash"></i> Delete All Questions
+</button>
   </div>
   <div class="stats" style="grid-template-columns:repeat(2,1fr)">
    <div class="stat"><h2 id="bankCount">0</h2><p>Total Bank Questions</p></div>
@@ -723,6 +726,65 @@ async function deleteBankQuestion(id){
   toast("Question deleted from bank");
   await loadBank();
  }catch(error){toast("Delete failed: "+error.message)}
+}
+
+async function deleteAllBankQuestions(){
+
+  if(!bankQuestions.length){
+    toast("Question Bank is already empty");
+    return;
+  }
+
+  const confirmDelete = confirm(
+    "WARNING!\n\nAre you sure you want to DELETE ALL "+
+    bankQuestions.length+
+    " questions from Question Bank?\n\nThis action cannot be undone."
+  );
+
+  if(!confirmDelete) return;
+
+  const finalConfirm = prompt(
+    'Type DELETE ALL to permanently delete all questions.'
+  );
+
+  if(finalConfirm !== "DELETE ALL"){
+    toast("Deletion cancelled");
+    return;
+  }
+
+  try{
+    toast("Deleting questions...");
+
+    const snap = await db.collection("questionBank").get();
+
+    // Firestore batch supports a maximum of 500 writes.
+    // Use 400 per batch for safe bulk deletion.
+    for(let i = 0; i < snap.docs.length; i += 400){
+
+      const batch = db.batch();
+      const docs = snap.docs.slice(i, i + 400);
+
+      docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+    }
+
+    bankQuestions = [];
+    selectedBankIds.clear();
+
+    $("bankCount").textContent = "0";
+    $("bankTopics").textContent = "0";
+
+    renderBank();
+
+    toast("All Question Bank questions deleted successfully!");
+
+  }catch(error){
+    console.error(error);
+    toast("Delete failed: " + error.message);
+  }
 }
 
 /* ---------------- EXCEL TEMPLATE ---------------- */
