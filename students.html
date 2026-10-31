@@ -236,14 +236,14 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-// Firebase configuration from the existing BlackTerminal admin project.
+// Firebase configuration preserved from your supplied code.
 const firebaseConfig = {
- apiKey: "AIzaSyCEfwZv2CkgcJ8Q9vNwRlRlXA2w_WpI",
+ apiKey: "AIzaSyCEfwZv2CkgcJ8Q9vNwRlXA2w_WpI",
  authDomain: "black-terminal-f2c91.firebaseapp.com",
  projectId: "black-terminal-f2c91",
  storageBucket: "black-terminal-f2c91.appspot.com",
  messagingSenderId: "552489994197",
- appId: "1:552489994197:web:7662331264c334ffbadf5c"
+ appId: "1:489994197:web:7662331264c334ffbadf5c"
 };
 
 if(!firebase.apps.length){
@@ -255,8 +255,10 @@ const $=id=>document.getElementById(id);
 const serverTime=()=>firebase.firestore.FieldValue.serverTimestamp();
 
 let students=[];
-let courses=[];
+let offerCourses=[];
+let offersLoaded=false;
 let studentUnsubscribe=null;
+let offersUnsubscribe=null;
 
 const money=value=>"₹"+Number(value||0).toLocaleString("en-IN",{
  maximumFractionDigits:2
@@ -354,30 +356,66 @@ studentUnsubscribe=db.collection("students").onSnapshot(snapshot=>{
   escapeHTML(error.message)+'</div>';
 });
 
-// ---------------- COURSE OPTIONS ----------------
+// ---------------- LOAD COURSES FROM OFFERS ----------------
 
-// Existing courseFees collection is read only.
-db.collection("courseFees").onSnapshot(snapshot=>{
+offersUnsubscribe=db.collection("offers").onSnapshot(snapshot=>{
 
- courses=snapshot.docs
-  .filter(doc=>doc.data().active!==false)
-  .map(doc=>doc.data().courseName)
-  .filter(Boolean);
+ const found=new Map();
+
+ snapshot.forEach(doc=>{
+
+  const data=doc.data();
+
+  // Exclude inactive offers
+  if(data.active===false)return;
+
+  const courseName=String(
+   data.name ||
+   data.courseName ||
+   data.title ||
+   ""
+  ).trim();
+
+  if(courseName){
+   found.set(courseName.toLowerCase(),courseName);
+  }
+
+ });
+
+ offerCourses=[...found.values()].sort((a,b)=>a.localeCompare(b));
+ offersLoaded=true;
 
  updateCourseOptions();
 
 },error=>{
- console.warn("Course list unavailable:",error);
+
+ console.error("Offers loading error:",error);
+
+ offersLoaded=false;
+
+ // Existing student courses remain available
+ updateCourseOptions();
+
 });
+
+// ---------------- UPDATE COURSE SUGGESTIONS ----------------
 
 function updateCourseOptions(){
 
- const uniqueCourses=[...new Set([
-  ...courses,
-  ...students.map(s=>s.currentCourse).filter(Boolean)
- ])].sort();
+ const studentCourses=students
+  .map(s=>String(s.currentCourse||"").trim())
+  .filter(Boolean);
 
- $("courseOptions").innerHTML=uniqueCourses.map(course=>
+ const uniqueCourses=[...new Map(
+  [...offerCourses,...studentCourses].map(name=>[
+   name.toLowerCase(),
+   name
+  ])
+ ).values()].sort((a,b)=>a.localeCompare(b));
+
+ const datalist=$("courseOptions");
+
+ datalist.innerHTML=uniqueCourses.map(course=>
   `<option value="${escapeHTML(course)}"></option>`
  ).join("");
 
