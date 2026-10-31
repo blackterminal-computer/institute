@@ -24,6 +24,9 @@
  --orange:#ffad5c;
  --red:#ff6878;
  --border:rgba(255,255,255,.09);
+ --purple:#b58aff;
+ --pink:#ff79b0;
+ --yellow:#ffd166;
 }
 *{box-sizing:border-box}
 body{
@@ -106,6 +109,7 @@ header{
  border-radius:9px;padding:9px 12px;
  font-size:10px;font-weight:900;
 }
+.mark-all:disabled{opacity:.5;cursor:not-allowed}
 
 .notification-list{
  display:flex;flex-direction:column;gap:11px;
@@ -140,14 +144,102 @@ header{
  width:8px;height:8px;border-radius:50%;
  background:var(--cyan);flex-shrink:0;margin-top:5px;
 }
+
+/* MESSAGE TEXT */
 .notification-message{
  font-size:12px;color:#b3c0d2;
  line-height:1.8;margin:9px 0;
  white-space:pre-wrap;overflow-wrap:anywhere;
 }
+
+/* DUOTONE MESSAGE LINES */
+.message-line{
+ display:flex;
+ align-items:flex-start;
+ gap:10px;
+ margin:9px 0;
+ line-height:1.85;
+ min-width:0;
+}
+.message-line:first-child{margin-top:3px}
+.message-line:last-child{margin-bottom:3px}
+
+.message-svg{
+ width:20px;
+ height:20px;
+ flex:0 0 20px;
+ display:inline-flex;
+ margin-top:3px;
+}
+.message-svg svg{
+ width:100%;
+ height:100%;
+ overflow:visible;
+ fill:none;
+ stroke:currentColor;
+ stroke-width:1.7;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
+.message-svg .tone-back{
+ fill:currentColor;
+ fill-opacity:.24;
+ stroke:currentColor;
+}
+.message-svg .tone-front{
+ fill:none;
+ stroke:var(--icon-second);
+ stroke-width:2;
+}
+.message-svg .tone-dot{
+ fill:var(--icon-second);
+ stroke:var(--icon-second);
+}
+.message-svg.education{color:#35d6e8;--icon-second:#477bff}
+.message-svg.price{color:#21c78a;--icon-second:#a3f7d4}
+.message-svg.duration{color:#a78bfa;--icon-second:#e0b8ff}
+.message-svg.offer{color:#ff9d42;--icon-second:#ff5268}
+.message-svg.contact{color:#477bff;--icon-second:#62d8ff}
+.message-svg.location{color:#ff79b0;--icon-second:#b58aff}
+.message-svg.action{color:#b58aff;--icon-second:#35d6e8}
+.message-svg.gold{color:#ffd166;--icon-second:#fff0a5}
+
+.message-text{
+ min-width:0;
+ overflow-wrap:anywhere;
+}
+.message-text.course{
+ color:#63e7f2;font-weight:800;
+}
+.message-text.price{
+ color:#57e5a8;font-weight:800;
+}
+.message-text.original{
+ color:#ff9b9b;
+}
+.message-text.duration{
+ color:#d5b6ff;
+}
+.message-text.seats{
+ color:#ffad61;font-weight:800;
+}
+.message-text.cta{
+ color:#b99bff;font-weight:800;
+}
+.message-text.brand-name{
+ color:#ffffff;font-weight:900;
+}
+.message-text.heading{
+ color:#ffd166;font-weight:900;
+}
+.message-text.normal{
+ color:#b3c0d2;
+}
+
 .notification-footer{
  display:flex;justify-content:space-between;
  align-items:center;gap:10px;flex-wrap:wrap;
+ margin-top:11px;
 }
 .notification-date{font-size:10px;color:var(--muted)}
 .type-label{
@@ -158,8 +250,10 @@ header{
 }
 .read-btn{
  background:transparent;color:var(--cyan);
- border:0;font-size:10px;font-weight:900;padding:5px 0;
+ border:0;font-size:10px;font-weight:900;padding:8px 0 2px;
 }
+.read-btn:disabled{opacity:.5;cursor:not-allowed}
+
 .empty{
  text-align:center;padding:55px 15px;
  background:var(--panel);
@@ -201,6 +295,8 @@ footer{
  .notification-icon i{width:17px;height:17px}
  .notification-title{font-size:12px}
  .notification-message{font-size:11px}
+ .message-line{gap:9px;margin:8px 0}
+ .message-svg{width:19px;height:19px;flex-basis:19px}
  .mark-all{font-size:9px}
 }
 </style>
@@ -285,7 +381,7 @@ import {
  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
-/* FIREBASE CONFIG */
+/* FIREBASE CONFIG - PRESERVED */
 
 const firebaseConfig = {
  apiKey: "AIzaSyCEfwZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
@@ -314,6 +410,138 @@ let readUnsubscribe=null;
 
 const $=id=>document.getElementById(id);
 
+/* ==========================================
+   DUOTONE SVG ICON LIBRARY
+   ========================================== */
+
+const messageIcons={
+
+ "🎓":{
+  color:"education",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="m2 9 10-5 10 5-10 5L2 9Z"/>
+   <path class="tone-front" d="M6 12v5c4 3 8 3 12 0v-5M22 9v7"/>
+  </svg>`
+ },
+
+ "📚":{
+  color:"education",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M4 5a3 3 0 0 1 3-3h13v17H7a3 3 0 0 0-3 3V5Z"/>
+   <path class="tone-front" d="M4 17a3 3 0 0 1 3-3h13M9 7h7M9 10h5"/>
+  </svg>`
+ },
+
+ "🎯":{
+  color:"action",
+  svg:`<svg viewBox="0 0 24 24">
+   <circle class="tone-back" cx="12" cy="12" r="9"/>
+   <circle class="tone-front" cx="12" cy="12" r="5"/>
+   <circle class="tone-dot" cx="12" cy="12" r="1.5"/>
+   <path class="tone-front" d="m16 8 5-5"/>
+  </svg>`
+ },
+
+ "💰":{
+  color:"price",
+  svg:`<svg viewBox="0 0 24 24">
+   <rect class="tone-back" x="2" y="5" width="20" height="14" rx="3"/>
+   <circle class="tone-front" cx="12" cy="12" r="3"/>
+   <path class="tone-front" d="M6 9h.01M18 15h.01"/>
+  </svg>`
+ },
+
+ "💵":{
+  color:"price",
+  svg:`<svg viewBox="0 0 24 24">
+   <rect class="tone-back" x="2" y="5" width="20" height="14" rx="2"/>
+   <circle class="tone-front" cx="12" cy="12" r="3"/>
+   <path class="tone-front" d="M6 9h.01M18 15h.01"/>
+  </svg>`
+ },
+
+ "💸":{
+  color:"price",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M3 7h18v12H3z"/>
+   <path class="tone-front" d="M12 10v6m2-4c0-1-1-2-2-2s-2 1-2 2 1 2 2 2 2 1 2 2-1 2-2 2"/>
+  </svg>`
+ },
+
+ "🏷️":{
+  color:"price",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/>
+   <circle class="tone-front" cx="7.5" cy="7.5" r="1.5"/>
+  </svg>`
+ },
+
+ "⏳":{
+  color:"duration",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M6 2h12M6 22h12M7 2c0 5 5 6 5 10s-5 5-5 10"/>
+   <path class="tone-front" d="M17 2c0 5-5 6-5 10s5 5 5 10M9 7h6M9 17h6"/>
+  </svg>`
+ },
+
+ "🔥":{
+  color:"offer",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M12 22c5 0 8-4 8-8 0-3-2-6-5-9 0 4-2 5-3 5 0-4-2-7-4-9 0 5-4 8-4 13 0 4 3 8 8 8Z"/>
+   <path class="tone-front" d="M12 22c-2 0-3-2-3-4s2-3 3-5c2 2 3 4 3 5s-1 4-3 4Z"/>
+  </svg>`
+ },
+
+ "📞":{
+  color:"contact",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3a2 2 0 0 1-.6 1.7L7.2 10"/>
+   <path class="tone-front" d="M7.2 10a16 16 0 0 0 6 6l1.6-1.8a2 2 0 0 1 1.7-.6l3 .5"/>
+  </svg>`
+ },
+
+ "📍":{
+  color:"location",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/>
+   <circle class="tone-front" cx="12" cy="10" r="2.5"/>
+  </svg>`
+ },
+
+ "🚀":{
+  color:"action",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M12 15 9 12c2-5 6-8 13-9 0 7-4 11-9 13Z"/>
+   <path class="tone-front" d="m9 12-5 1 4 4m4-2 1 5 4-4"/>
+   <circle class="tone-dot" cx="15.5" cy="8.5" r="1.5"/>
+  </svg>`
+ },
+
+ "✨":{
+  color:"gold",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/>
+   <path class="tone-front" d="m19 14 1.2 2.8L23 18l-2.8 1.2L19 22l-1.2-2.8L15 18l2.8-1.2L19 14Z"/>
+  </svg>`
+ },
+
+ "⚡":{
+  color:"offer",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M13 2 4 14h7l-1 8 10-13h-7l0-7Z"/>
+   <path class="tone-front" d="M13 2 4 14h7l-1 8"/>
+  </svg>`
+ },
+
+ "🔔":{
+  color:"education",
+  svg:`<svg viewBox="0 0 24 24">
+   <path class="tone-back" d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/>
+   <path class="tone-front" d="M10 21h4"/>
+  </svg>`
+ }
+};
+
 /* HELPERS */
 
 function normalize(value){
@@ -334,9 +562,11 @@ function getDate(value){
  if(!value)return null;
  if(value.toDate)return value.toDate();
  if(value instanceof Date)return value;
+
  if(typeof value==="object"&&value.seconds){
   return new Date(value.seconds*1000);
  }
+
  const date=new Date(value);
  return Number.isNaN(date.getTime())?null:date;
 }
@@ -360,7 +590,6 @@ async function loadStudentProfile(){
 
  if(!studentSessionName)return false;
 
- // First try document ID
  const directSnap=await getDoc(
   doc(db,"students",studentSessionName)
  );
@@ -371,7 +600,6 @@ async function loadStudentProfile(){
   return true;
  }
 
- // Otherwise find student by stored name
  const snapshot=await getDocs(collection(db,"students"));
 
  for(const item of snapshot.docs){
@@ -408,7 +636,6 @@ function isIndividualNotification(notification){
  const target=normalize(notification.target);
  const targetType=normalize(notification.targetType);
 
- // Never show broadcast notifications on this page
  const isBroadcast=
   ["all","everyone","broadcast"].includes(audience)||
   ["all","everyone","broadcast"].includes(target)||
@@ -416,7 +643,6 @@ function isIndividualNotification(notification){
 
  if(isBroadcast)return false;
 
- // Accept only explicitly marked individual messages
  const isIndividual=
   audience==="individual"||
   target==="individual"||
@@ -452,6 +678,104 @@ function isIndividualNotification(notification){
  const nameMatch=targetNames.some(name=>possibleNames.includes(name));
 
  return idMatch||nameMatch;
+}
+
+/* ==========================================
+   MESSAGE TYPE / COLOUR DETECTION
+   ========================================== */
+
+function getMessageTextClass(text){
+
+ const value=normalize(text);
+
+ if(/special fee|special price|offer price|admission offer|discount|₹/.test(value)){
+  return "price";
+ }
+
+ if(/regular price|mrp|original price/.test(value)){
+  return "original";
+ }
+
+ if(/duration|months|weeks|days/.test(value)){
+  return "duration";
+ }
+
+ if(/seats left|seat remaining|limited seat|limited admission|batch is full/.test(value)){
+  return "seats";
+ }
+
+ if(/enroll|contact us|visit our|secure your seat|admission details/.test(value)){
+  return "cta";
+ }
+
+ if(/blackterminal|institute/.test(value)){
+  return "brand-name";
+ }
+
+ if(/special admission offer|your future starts/.test(value)){
+  return "heading";
+ }
+
+ return "normal";
+}
+
+/* RENDER SAFE DUOTONE MESSAGE */
+
+function renderMessage(message){
+
+ const wrapper=document.createElement("div");
+ wrapper.className="notification-message";
+
+ const lines=String(message??"").split(/\r?\n/);
+
+ lines.forEach(line=>{
+
+  const row=document.createElement("div");
+  row.className="message-line";
+
+  if(!line.trim()){
+   row.style.height="5px";
+   wrapper.appendChild(row);
+   return;
+  }
+
+  /* Decorative separator */
+  if(/^[\s✨✦━─—\-═]+$/.test(line)){
+   const separator=document.createElement("div");
+   separator.className="promo-divider";
+   separator.textContent=line.replace(/✨/g,"✦");
+   wrapper.appendChild(separator);
+   return;
+  }
+
+  let iconData=null;
+  let text=line;
+
+  /* Detect emoji at the beginning of a line */
+  for(const [emoji,data] of Object.entries(messageIcons)){
+   if(text.startsWith(emoji)){
+    iconData=data;
+    text=text.slice(emoji.length).trim();
+    break;
+   }
+  }
+
+  if(iconData){
+   const iconHolder=document.createElement("span");
+   iconHolder.className="message-svg "+iconData.color;
+   iconHolder.innerHTML=iconData.svg;
+   row.appendChild(iconHolder);
+  }
+
+  const content=document.createElement("span");
+  content.className="message-text "+getMessageTextClass(text);
+  content.textContent=text;
+
+  row.appendChild(content);
+  wrapper.appendChild(row);
+ });
+
+ return wrapper;
 }
 
 /* FIRESTORE READ STATUS */
@@ -512,13 +836,11 @@ async function markAllRead(){
   alert("Unable to mark all notifications as read.");
 
  }finally{
-
   button.disabled=false;
-
  }
 }
 
-/* ICON BY TYPE */
+/* ICON BY NOTIFICATION TYPE */
 
 function getIcon(type){
  const value=normalize(type);
@@ -533,7 +855,7 @@ function getIcon(type){
  return "bell";
 }
 
-/* STATS */
+/* UPDATE STATS */
 
 function updateStats(){
 
@@ -551,7 +873,7 @@ function updateStats(){
  $("markAllBtn").style.display=unread?"inline-block":"none";
 }
 
-/* RENDER */
+/* RENDER NOTIFICATIONS */
 
 function renderNotifications(){
 
@@ -594,56 +916,75 @@ function renderNotifications(){
   return;
  }
 
- container.innerHTML=filtered.map(item=>{
+ container.innerHTML="";
+
+ filtered.forEach(item=>{
 
   const read=readNotificationIds.has(item.id);
   const type=item.type||item.notificationType||"Personal Message";
 
-  return `
-   <article class="notification ${read?"":"unread"}">
+  const article=document.createElement("article");
+  article.className="notification "+(read?"":"unread");
 
-    <div class="notification-icon">
-     <i data-lucide="${getIcon(type)}"></i>
-    </div>
+  const iconBox=document.createElement("div");
+  iconBox.className="notification-icon";
 
-    <div class="notification-content">
+  const iconName=getIcon(type);
+  const iconElement=document.createElement("i");
+  iconElement.setAttribute("data-lucide",iconName);
+  iconBox.appendChild(iconElement);
 
-     <div class="notification-top">
-      <h3 class="notification-title">
-       ${escapeHTML(item.title||"Notification")}
-      </h3>
-      ${read?"":'<span class="unread-dot"></span>'}
-     </div>
+  const content=document.createElement("div");
+  content.className="notification-content";
 
-     <div class="notification-message">
-      ${escapeHTML(item.message||"")}
-     </div>
+  const top=document.createElement("div");
+  top.className="notification-top";
 
-     <div class="notification-footer">
-      <span class="type-label">
-       ${escapeHTML(type)}
-      </span>
+  const heading=document.createElement("h3");
+  heading.className="notification-title";
+  heading.textContent=item.title||"Notification";
 
-      <span class="notification-date">
-       ${escapeHTML(formatDate(item.createdAt))}
-      </span>
-     </div>
+  top.appendChild(heading);
 
-     ${read?"":`
-      <button class="read-btn" data-read="${escapeHTML(item.id)}">
-       MARK AS READ
-      </button>
-     `}
+  if(!read){
+   const dot=document.createElement("span");
+   dot.className="unread-dot";
+   top.appendChild(dot);
+  }
 
-    </div>
-   </article>
-  `;
- }).join("");
+  const message=renderMessage(item.message||"");
 
- container.querySelectorAll("[data-read]").forEach(button=>{
-  button.addEventListener("click",()=>{
-   markRead(button.dataset.read);
-  });
+  const footer=document.createElement("div");
+  footer.className="notification-footer";
+
+  const typeLabel=document.createElement("span");
+  typeLabel.className="type-label";
+  typeLabel.textContent=type;
+
+  const date=document.createElement("span");
+  date.className="notification-date";
+  date.textContent=formatDate(item.createdAt);
+
+  footer.append(typeLabel,date);
+
+  content.append(top,message,footer);
+
+  if(!read){
+   const readButton=document.createElement("button");
+   readButton.className="read-btn";
+   readButton.type="button";
+   readButton.textContent="MARK AS READ";
+
+   readButton.addEventListener("click",()=>{
+    readButton.disabled=true;
+    markRead(item.id);
+   });
+
+   content.appendChild(readButton);
+  }
+
+  article.append(iconBox,content);
+  container.appendChild(article);
  });
 
  if(window.lucide)lucide.createIcons();
@@ -704,7 +1045,6 @@ function listenNotifications(){
      Please check your internet connection and Firestore permissions.
     </div>
    `;
-
   }
  );
 }
