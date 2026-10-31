@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#080d18">
 <meta name="description" content="Student notifications - BlackTerminal Computer Institute">
+<meta name="robots" content="noindex,nofollow">
 <title>My Notifications | BlackTerminal</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -26,9 +27,7 @@
 }
 *{box-sizing:border-box}
 body{
- margin:0;
- background:var(--bg);
- color:var(--text);
+ margin:0;background:var(--bg);color:var(--text);
  font-family:Inter,Arial,sans-serif;
 }
 button{font:inherit;cursor:pointer}
@@ -41,16 +40,15 @@ header{
  border-bottom:1px solid var(--border);
 }
 .nav{
- min-height:65px;
- display:flex;align-items:center;
+ min-height:65px;display:flex;align-items:center;
  justify-content:space-between;gap:12px;
 }
 .brand{font-size:18px;font-weight:900}
 .brand span{color:var(--cyan)}
 .back-btn{
  display:flex;align-items:center;gap:7px;
- background:var(--panel);
- color:white;border:1px solid var(--border);
+ background:var(--panel);color:white;
+ border:1px solid var(--border);
  border-radius:10px;padding:10px 13px;
  text-decoration:none;font-size:11px;font-weight:800;
 }
@@ -114,12 +112,10 @@ header{
  padding-bottom:35px;
 }
 .notification{
- position:relative;
- background:var(--panel);
+ position:relative;background:var(--panel);
  border:1px solid var(--border);
  border-radius:15px;padding:17px;
- display:flex;gap:13px;
- transition:.2s;
+ display:flex;gap:13px;transition:.2s;
 }
 .notification.unread{
  border-color:rgba(103,232,249,.3);
@@ -128,8 +124,7 @@ header{
 .notification-icon{
  width:42px;height:42px;flex-shrink:0;
  display:grid;place-items:center;
- background:#1b3043;border-radius:12px;
- color:var(--cyan);
+ background:#1b3043;border-radius:12px;color:var(--cyan);
 }
 .notification-icon i{width:20px;height:20px}
 .notification-content{flex:1;min-width:0}
@@ -143,8 +138,7 @@ header{
 }
 .unread-dot{
  width:8px;height:8px;border-radius:50%;
- background:var(--cyan);flex-shrink:0;
- margin-top:5px;
+ background:var(--cyan);flex-shrink:0;margin-top:5px;
 }
 .notification-message{
  font-size:12px;color:#b3c0d2;
@@ -155,20 +149,16 @@ header{
  display:flex;justify-content:space-between;
  align-items:center;gap:10px;flex-wrap:wrap;
 }
-.notification-date{
- font-size:10px;color:var(--muted);
-}
+.notification-date{font-size:10px;color:var(--muted)}
 .type-label{
  display:inline-flex;align-items:center;
  background:#202d41;color:#b9c8db;
  border-radius:6px;padding:5px 8px;
- font-size:9px;font-weight:900;
- text-transform:uppercase;
+ font-size:9px;font-weight:900;text-transform:uppercase;
 }
 .read-btn{
  background:transparent;color:var(--cyan);
- border:0;font-size:10px;font-weight:900;
- padding:5px 0;
+ border:0;font-size:10px;font-weight:900;padding:5px 0;
 }
 .empty{
  text-align:center;padding:55px 15px;
@@ -177,9 +167,8 @@ header{
  border-radius:16px;
 }
 .empty-icon{
- width:55px;height:55px;
- display:grid;place-items:center;
- margin:0 auto 15px;
+ width:55px;height:55px;display:grid;
+ place-items:center;margin:0 auto 15px;
  background:#1a293c;color:var(--cyan);
  border-radius:17px;
 }
@@ -201,7 +190,6 @@ footer{
  border-top:1px solid var(--border);
  color:var(--muted);font-size:10px;line-height:1.8;
 }
-
 @media(max-width:550px){
  .hero h1{font-size:23px}
  .summary{gap:7px}
@@ -237,8 +225,7 @@ footer{
    <span class="unread-pill" id="unreadBadge">0 UNREAD</span>
   </div>
   <p>
-   Stay updated with institute announcements, course updates,
-   important messages and personal notifications.
+   Your personal messages and important updates from BlackTerminal.
   </p>
  </section>
 
@@ -247,12 +234,10 @@ footer{
    <div class="summary-number" id="totalCount">0</div>
    <div class="summary-label">TOTAL MESSAGES</div>
   </div>
-
   <div class="summary-card">
    <div class="summary-number" id="unreadCount">0</div>
    <div class="summary-label">UNREAD</div>
   </div>
-
   <div class="summary-card">
    <div class="summary-number" id="readCount">0</div>
    <div class="summary-label">READ</div>
@@ -265,7 +250,6 @@ footer{
    <button class="tab" data-filter="unread">UNREAD</button>
    <button class="tab" data-filter="read">READ</button>
   </div>
-
   <button class="mark-all" id="markAllBtn">
    MARK ALL AS READ
   </button>
@@ -286,19 +270,25 @@ footer{
 <script type="module">
 
 import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 
 import {
  getFirestore,
  collection,
  doc,
  getDoc,
- onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+ getDocs,
+ onSnapshot,
+ query,
+ where,
+ setDoc,
+ serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 /* FIREBASE CONFIG */
+
 const firebaseConfig = {
- apiKey: "AIzaSyCEYfwZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
+ apiKey: "AIzaSyCEfwZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
  authDomain: "black-terminal-f2c91.firebaseapp.com",
  projectId: "black-terminal-f2c91",
  storageBucket: "black-terminal-f2c91.firebasestorage.app",
@@ -309,59 +299,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* STUDENT DETAILS */
-const studentId = localStorage.getItem("studentName");
+/* STUDENT SESSION */
 
-let studentData = {};
-let notifications = [];
-let currentFilter = "all";
-let unsubscribe = null;
+const studentSessionName=localStorage.getItem("studentName");
 
-/* LOCAL READ STORAGE */
-const readStorageKey =
- "BT_NOTIFICATION_READ_V1_" + String(studentId || "unknown");
+let studentData={};
+let studentDocumentId="";
+let notifications=[];
+let readNotificationIds=new Set();
+let currentFilter="all";
 
-function getReadIds(){
- try{
-  return JSON.parse(localStorage.getItem(readStorageKey) || "[]");
- }catch(e){
-  return [];
- }
-}
+let notificationUnsubscribe=null;
+let readUnsubscribe=null;
 
-function saveReadIds(ids){
- localStorage.setItem(readStorageKey,JSON.stringify([...new Set(ids)]));
-}
+const $=id=>document.getElementById(id);
 
-function isRead(notification){
- return getReadIds().includes(notification.id);
-}
+/* HELPERS */
 
-function markRead(id){
- const ids = getReadIds();
- if(!ids.includes(id)){
-  ids.push(id);
-  saveReadIds(ids);
- }
- renderNotifications();
-}
-
-function markAllRead(){
- const ids = notifications.map(item=>item.id);
- saveReadIds([...getReadIds(),...ids]);
- renderNotifications();
-}
-
-/* NORMALIZE */
 function normalize(value){
- return String(value ?? "")
-  .trim()
-  .toLowerCase()
-  .replace(/\s+/g," ");
+ return String(value??"").trim().toLowerCase().replace(/\s+/g," ");
 }
 
 function escapeHTML(value){
- return String(value ?? "").replace(/[&<>"']/g,char=>({
+ return String(value??"").replace(/[&<>"']/g,char=>({
   "&":"&amp;",
   "<":"&lt;",
   ">":"&gt;",
@@ -370,27 +330,20 @@ function escapeHTML(value){
  })[char]);
 }
 
-/* GET DATE */
 function getDate(value){
-
- if(!value) return null;
-
- if(value.toDate){
-  return value.toDate();
- }
-
- if(value.seconds){
+ if(!value)return null;
+ if(value.toDate)return value.toDate();
+ if(value instanceof Date)return value;
+ if(typeof value==="object"&&value.seconds){
   return new Date(value.seconds*1000);
  }
-
- const date = new Date(value);
- return Number.isNaN(date.getTime()) ? null : date;
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?null:date;
 }
 
 function formatDate(value){
-
- const date = getDate(value);
- if(!date) return "Date unavailable";
+ const date=getDate(value);
+ if(!date)return "Date unavailable";
 
  return date.toLocaleString("en-IN",{
   day:"2-digit",
@@ -401,151 +354,233 @@ function formatDate(value){
  });
 }
 
-/* GET STUDENT PROFILE */
+/* FIND STUDENT DOCUMENT */
+
 async function loadStudentProfile(){
 
- if(!studentId) return;
+ if(!studentSessionName)return false;
 
- try{
+ // First try document ID
+ const directSnap=await getDoc(
+  doc(db,"students",studentSessionName)
+ );
 
-  const snapshot = await getDoc(
-   doc(db,"students",studentId)
-  );
-
-  if(snapshot.exists()){
-   studentData = snapshot.data();
-  }else{
-   studentData = {};
-  }
-
- }catch(error){
-  console.error("Student profile error:",error);
- }
-}
-
-/* MATCH INDIVIDUAL NOTIFICATION */
-function matchesStudent(notification){
-
- const targetType = normalize(notification.targetType);
-
- if(targetType==="all"){
+ if(directSnap.exists()){
+  studentDocumentId=directSnap.id;
+  studentData=directSnap.data();
   return true;
  }
 
- if(targetType!=="individual"){
-  return false;
+ // Otherwise find student by stored name
+ const snapshot=await getDocs(collection(db,"students"));
+
+ for(const item of snapshot.docs){
+
+  const data=item.data();
+
+  const possibleNames=[
+   item.id,
+   data.name,
+   data.studentName,
+   data.fullName,
+   data.displayName
+  ];
+
+  if(possibleNames.some(value=>
+   normalize(value)===normalize(studentSessionName)
+  )){
+   studentDocumentId=item.id;
+   studentData=data;
+   return true;
+  }
  }
 
- const targets = [
-  studentId,
-  studentData.studentName,
-  studentData.name,
-  studentData.fullName,
-  studentData.displayName,
-  studentData.phoneNumber,
-  studentData.mobile
+ return false;
+}
+
+/* INDIVIDUAL NOTIFICATION ONLY */
+
+function isIndividualNotification(notification){
+
+ if(notification.active===false)return false;
+
+ const audience=normalize(notification.audience);
+ const target=normalize(notification.target);
+ const targetType=normalize(notification.targetType);
+
+ // Never show broadcast notifications on this page
+ const isBroadcast=
+  ["all","everyone","broadcast"].includes(audience)||
+  ["all","everyone","broadcast"].includes(target)||
+  ["all","everyone","broadcast"].includes(targetType);
+
+ if(isBroadcast)return false;
+
+ // Accept only explicitly marked individual messages
+ const isIndividual=
+  audience==="individual"||
+  target==="individual"||
+  targetType==="individual";
+
+ if(!isIndividual)return false;
+
+ const possibleIds=[
+  studentDocumentId,
+  studentSessionName
  ].filter(Boolean).map(normalize);
 
- const targetId = normalize(notification.targetStudentId);
+ const possibleNames=[
+  studentSessionName,
+  studentData.name,
+  studentData.studentName,
+  studentData.fullName,
+  studentData.displayName
+ ].filter(Boolean).map(normalize);
 
- return !!targetId && targets.includes(targetId);
+ const targetIds=[
+  notification.studentId,
+  notification.targetStudentId,
+  notification.recipientId
+ ].filter(Boolean).map(normalize);
+
+ const targetNames=[
+  notification.studentName,
+  notification.recipientName
+ ].filter(Boolean).map(normalize);
+
+ const idMatch=targetIds.some(id=>possibleIds.includes(id));
+ const nameMatch=targetNames.some(name=>possibleNames.includes(name));
+
+ return idMatch||nameMatch;
+}
+
+/* FIRESTORE READ STATUS */
+
+function readDocumentId(notificationId){
+ return studentDocumentId+"_"+encodeURIComponent(notificationId);
+}
+
+async function markRead(notificationId){
+
+ if(!studentDocumentId)return;
+ if(readNotificationIds.has(notificationId))return;
+
+ try{
+  await setDoc(
+   doc(db,"notificationReads",readDocumentId(notificationId)),
+   {
+    studentId:studentDocumentId,
+    notificationId,
+    readAt:serverTimestamp()
+   },
+   {merge:true}
+  );
+ }catch(error){
+  console.error("Mark read error:",error);
+  alert("Unable to update read status. Please try again.");
+ }
+}
+
+async function markAllRead(){
+
+ const unread=notifications.filter(item=>
+  !readNotificationIds.has(item.id)
+ );
+
+ if(!unread.length)return;
+
+ const button=$("markAllBtn");
+ button.disabled=true;
+
+ try{
+
+  await Promise.all(unread.map(item=>
+   setDoc(
+    doc(db,"notificationReads",readDocumentId(item.id)),
+    {
+     studentId:studentDocumentId,
+     notificationId:item.id,
+     readAt:serverTimestamp()
+    },
+    {merge:true}
+   )
+  ));
+
+ }catch(error){
+
+  console.error("Mark all read error:",error);
+  alert("Unable to mark all notifications as read.");
+
+ }finally{
+
+  button.disabled=false;
+
+ }
 }
 
 /* ICON BY TYPE */
+
 function getIcon(type){
+ const value=normalize(type);
 
- const value = normalize(type);
-
- if(value.includes("fee") || value.includes("payment")){
-  return "wallet";
- }
-
- if(value.includes("course") || value.includes("class")){
-  return "book-open";
- }
-
- if(value.includes("exam") || value.includes("test")){
-  return "graduation-cap";
- }
-
- if(value.includes("attendance")){
-  return "calendar-check";
- }
-
- if(value.includes("event")){
-  return "calendar-days";
- }
-
- if(value.includes("alert") || value.includes("urgent")){
-  return "alert-circle";
- }
+ if(value.includes("fee")||value.includes("payment"))return "wallet";
+ if(value.includes("course")||value.includes("class"))return "book-open";
+ if(value.includes("exam")||value.includes("test"))return "graduation-cap";
+ if(value.includes("attendance"))return "calendar-check";
+ if(value.includes("event"))return "calendar-days";
+ if(value.includes("alert")||value.includes("urgent"))return "alert-circle";
 
  return "bell";
 }
 
-/* FILTER AND SORT */
-function processNotifications(data){
+/* STATS */
 
- notifications = data
-  .filter(matchesStudent)
-  .sort((a,b)=>{
-   const dateA = getDate(a.createdAt)?.getTime() || 0;
-   const dateB = getDate(b.createdAt)?.getTime() || 0;
-   return dateB-dateA;
-  });
-
- renderNotifications();
-}
-
-/* COUNTS */
 function updateStats(){
 
- const unread = notifications.filter(item=>!isRead(item)).length;
- const read = notifications.length-unread;
+ const unread=notifications.filter(item=>
+  !readNotificationIds.has(item.id)
+ ).length;
 
- document.getElementById("totalCount").textContent =
-  notifications.length;
+ const read=notifications.length-unread;
 
- document.getElementById("unreadCount").textContent = unread;
- document.getElementById("readCount").textContent = read;
+ $("totalCount").textContent=notifications.length;
+ $("unreadCount").textContent=unread;
+ $("readCount").textContent=read;
+ $("unreadBadge").textContent=unread+" UNREAD";
 
- document.getElementById("unreadBadge").textContent =
-  unread+" UNREAD";
-
- document.getElementById("markAllBtn").style.display =
-  unread ? "inline-block" : "none";
+ $("markAllBtn").style.display=unread?"inline-block":"none";
 }
 
 /* RENDER */
+
 function renderNotifications(){
 
  updateStats();
 
- const container = document.getElementById("notificationList");
+ const container=$("notificationList");
 
- let filtered = notifications.filter(item=>{
+ const filtered=notifications.filter(item=>{
+  const read=readNotificationIds.has(item.id);
 
-  const read = isRead(item);
-
-  if(currentFilter==="unread") return !read;
-  if(currentFilter==="read") return read;
+  if(currentFilter==="unread")return !read;
+  if(currentFilter==="read")return read;
 
   return true;
  });
 
  if(!filtered.length){
 
-  let message = "You don't have any notifications yet.";
+  let message="You don't have any personal notifications yet.";
 
   if(currentFilter==="unread"){
-   message = "Great! You have no unread notifications.";
+   message="Great! You have no unread personal notifications.";
   }
 
   if(currentFilter==="read"){
-   message = "No read notifications found.";
+   message="No read personal notifications found.";
   }
 
-  container.innerHTML = `
+  container.innerHTML=`
    <div class="empty">
     <div class="empty-icon">
      <i data-lucide="bell-off"></i>
@@ -555,14 +590,14 @@ function renderNotifications(){
    </div>
   `;
 
-  if(window.lucide) lucide.createIcons();
+  if(window.lucide)lucide.createIcons();
   return;
  }
 
- container.innerHTML = filtered.map(item=>{
+ container.innerHTML=filtered.map(item=>{
 
-  const read = isRead(item);
-  const type = item.type || "Announcement";
+  const read=readNotificationIds.has(item.id);
+  const type=item.type||item.notificationType||"Personal Message";
 
   return `
    <article class="notification ${read?"":"unread"}">
@@ -575,18 +610,16 @@ function renderNotifications(){
 
      <div class="notification-top">
       <h3 class="notification-title">
-       ${escapeHTML(item.title || "Notification")}
+       ${escapeHTML(item.title||"Notification")}
       </h3>
-
-      ${read ? "" : '<span class="unread-dot"></span>'}
+      ${read?"":'<span class="unread-dot"></span>'}
      </div>
 
      <div class="notification-message">
-      ${escapeHTML(item.message || "")}
+      ${escapeHTML(item.message||"")}
      </div>
 
      <div class="notification-footer">
-
       <span class="type-label">
        ${escapeHTML(type)}
       </span>
@@ -594,10 +627,9 @@ function renderNotifications(){
       <span class="notification-date">
        ${escapeHTML(formatDate(item.createdAt))}
       </span>
-
      </div>
 
-     ${read ? "" : `
+     ${read?"":`
       <button class="read-btn" data-read="${escapeHTML(item.id)}">
        MARK AS READ
       </button>
@@ -608,21 +640,21 @@ function renderNotifications(){
   `;
  }).join("");
 
- document.querySelectorAll("[data-read]").forEach(button=>{
+ container.querySelectorAll("[data-read]").forEach(button=>{
   button.addEventListener("click",()=>{
    markRead(button.dataset.read);
   });
  });
 
- if(window.lucide) lucide.createIcons();
+ if(window.lucide)lucide.createIcons();
 }
 
 /* FILTER BUTTONS */
+
 document.querySelectorAll("[data-filter]").forEach(button=>{
 
  button.addEventListener("click",()=>{
-
-  currentFilter = button.dataset.filter;
+  currentFilter=button.dataset.filter;
 
   document.querySelectorAll("[data-filter]").forEach(item=>{
    item.classList.toggle("active",item===button);
@@ -630,50 +662,88 @@ document.querySelectorAll("[data-filter]").forEach(button=>{
 
   renderNotifications();
  });
+
 });
 
 /* MARK ALL */
-document.getElementById("markAllBtn").addEventListener(
- "click",markAllRead
-);
 
-/* REALTIME NOTIFICATIONS */
+$("markAllBtn").addEventListener("click",markAllRead);
+
+/* LISTEN TO INDIVIDUAL NOTIFICATIONS */
+
 function listenNotifications(){
 
- if(unsubscribe) unsubscribe();
+ if(notificationUnsubscribe)notificationUnsubscribe();
 
- unsubscribe = onSnapshot(
+ notificationUnsubscribe=onSnapshot(
   collection(db,"notifications"),
   snapshot=>{
 
-   const data = snapshot.docs.map(item=>({
-    id:item.id,
-    ...item.data()
-   }));
+   notifications=snapshot.docs
+    .map(item=>({
+     id:item.id,
+     ...item.data()
+    }))
+    .filter(isIndividualNotification)
+    .sort((a,b)=>{
+     const dateA=getDate(a.createdAt)?.getTime()||0;
+     const dateB=getDate(b.createdAt)?.getTime()||0;
+     return dateB-dateA;
+    });
 
-   processNotifications(data);
+   renderNotifications();
 
   },
   error=>{
 
    console.error("Notification listener error:",error);
 
-   document.getElementById("notificationList").innerHTML = `
+   $("notificationList").innerHTML=`
     <div class="error">
-     Unable to load notifications.<br>
+     Unable to load personal notifications.<br>
      Please check your internet connection and Firestore permissions.
     </div>
    `;
+
+  }
+ );
+}
+
+/* LISTEN TO FIRESTORE READ STATUS */
+
+function listenReadStatus(){
+
+ if(readUnsubscribe)readUnsubscribe();
+
+ const readQuery=query(
+  collection(db,"notificationReads"),
+  where("studentId","==",studentDocumentId)
+ );
+
+ readUnsubscribe=onSnapshot(
+  readQuery,
+  snapshot=>{
+
+   readNotificationIds=new Set(
+    snapshot.docs.map(item=>item.data().notificationId)
+   );
+
+   renderNotifications();
+
+  },
+  error=>{
+   console.error("Read status listener error:",error);
   }
  );
 }
 
 /* INITIALIZE */
+
 async function init(){
 
- if(!studentId){
+ if(!studentSessionName){
 
-  document.getElementById("notificationList").innerHTML = `
+  $("notificationList").innerHTML=`
    <div class="empty">
     <div class="empty-icon">
      <i data-lucide="user-x"></i>
@@ -683,35 +753,50 @@ async function init(){
    </div>
   `;
 
-  if(window.lucide) lucide.createIcons();
+  if(window.lucide)lucide.createIcons();
   return;
  }
 
  try{
 
-  await loadStudentProfile();
+  const found=await loadStudentProfile();
+
+  if(!found){
+
+   $("notificationList").innerHTML=`
+    <div class="error">
+     Student record not found. Please contact BlackTerminal.
+    </div>
+   `;
+   return;
+  }
 
   listenNotifications();
+  listenReadStatus();
 
  }catch(error){
 
-  console.error(error);
+  console.error("Initialization error:",error);
 
-  document.getElementById("notificationList").innerHTML = `
-   <div class="error">Unable to initialize notifications.</div>
+  $("notificationList").innerHTML=`
+   <div class="error">
+    Unable to initialize notifications. Please refresh the page.
+   </div>
   `;
  }
 }
 
 init();
 
-if(window.lucide) lucide.createIcons();
+/* CLEANUP */
 
-window.addEventListener("beforeunload",()=>{
- if(unsubscribe) unsubscribe();
+window.addEventListener("pagehide",()=>{
+ if(notificationUnsubscribe)notificationUnsubscribe();
+ if(readUnsubscribe)readUnsubscribe();
 });
 
-</script>
+if(window.lucide)lucide.createIcons();
 
+</script>
 </body>
 </html>
