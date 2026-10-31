@@ -161,9 +161,9 @@ select option{background:#111a2b}
 .meta{
  border-top:1px solid var(--border);padding-top:10px;
  margin-top:12px;font-size:9px;color:var(--muted);
- line-height:1.7;overflow-wrap:anywhere
+ line-height:1.7;overflow-wrap:anywhere;white-space:pre-line
 }
-.material-actions{display:flex;gap:7px;margin-top:12px}
+.material-actions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
 .material-actions button{flex:1;padding:9px 5px;font-size:10px}
 .empty{
  padding:35px 15px;text-align:center;border:1px dashed var(--border);
@@ -258,8 +258,9 @@ select option{background:#111a2b}
   <div class="form-grid">
    <div>
     <label for="course">Select Course *</label>
-    <input id="course" list="courseOptions" required placeholder="Select or type course">
-    <datalist id="courseOptions"></datalist>
+    <select id="course" required>
+     <option value="">Loading courses...</option>
+    </select>
    </div>
    <div>
     <label for="type">Material Type *</label>
@@ -365,7 +366,7 @@ import {
  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* FIREBASE CONFIGURATION - MATCHES YOUR MATERIALS PAGE */
+/* FIREBASE CONFIGURATION - PRESERVED */
 
 const firebaseConfig={
  apiKey:"AIzaSyCEYfwZv2CkgcJ8vJMBRlXA2w_WpI",
@@ -380,7 +381,7 @@ const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
 const materialsRef=collection(db,"studyMaterials");
-const studentsRef=collection(db,"students");
+const offersRef=collection(db,"offers");
 
 const $=id=>document.getElementById(id);
 
@@ -442,41 +443,77 @@ function formatDate(value){
  }catch{return "Recently added"}
 }
 
-/* LOAD COURSE NAMES FROM STUDENTS */
+/* LOAD COURSE NAMES FROM OFFERS COLLECTION */
 
 async function loadCourses(){
+ const select=$("course");
+ const previousValue=select.value;
+
+ select.innerHTML='<option value="">Loading courses...</option>';
+ select.disabled=true;
+
  try{
-  const snapshot=await getDocs(studentsRef);
-  const found=new Set();
+  const snapshot=await getDocs(offersRef);
+  const found=new Map();
 
   snapshot.forEach(item=>{
    const data=item.data();
 
-   if(data.currentCourse)found.add(String(data.currentCourse).trim());
+   // Inactive offers are excluded
+   if(data.active===false)return;
 
-   if(data.courseName)found.add(String(data.courseName).trim());
+   const name=
+    data.name||
+    data.courseName||
+    data.title||
+    "";
 
-   if(Array.isArray(data.enrolledCourses)){
-    data.enrolledCourses.forEach(course=>{
-     const name=typeof course==="string"
-      ?course
-      :(course?.courseName||course?.name||"");
-     if(name)found.add(String(name).trim());
-    });
+   const courseName=String(name).trim();
+
+   if(courseName){
+    found.set(courseName.toLowerCase(),courseName);
    }
   });
 
-  courses=[...found].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  courses=[...found.values()].sort((a,b)=>a.localeCompare(b));
 
-  $("courseOptions").innerHTML=courses.map(name=>
-   `<option value="${escapeHTML(name)}"></option>`
-  ).join("");
+  select.innerHTML='<option value="">Select Course</option>';
+
+  courses.forEach(name=>{
+   const option=document.createElement("option");
+   option.value=name;
+   option.textContent=name;
+   select.appendChild(option);
+  });
+
+  // Preserve existing course when editing
+  if(previousValue){
+   const exists=courses.some(
+    name=>name.toLowerCase()===previousValue.toLowerCase()
+   );
+
+   if(!exists){
+    const option=document.createElement("option");
+    option.value=previousValue;
+    option.textContent=previousValue+" (Not in Offers)";
+    select.appendChild(option);
+   }
+
+   select.value=previousValue;
+  }
 
   $("courseCount").textContent=courses.length;
 
+  if(!courses.length){
+   select.innerHTML='<option value="">No active courses found in Offers</option>';
+  }
+
  }catch(error){
-  console.error("Course loading error:",error);
-  toast("Could not load course names. You can type a course manually.");
+  console.error("Offer course loading error:",error);
+  select.innerHTML='<option value="">Unable to load courses</option>';
+  toast("Could not load courses from offers.");
+ }finally{
+  select.disabled=false;
  }
 }
 
@@ -737,6 +774,19 @@ function editMaterial(id){
  $("fileURL").value=item.fileURL||item.fileUrl||item.url||item.link||"";
  $("active").checked=item.active===true;
 
+ // Keep an old course available even if it is no longer in offers
+ const oldCourse=String(item.course||"").trim();
+ if(oldCourse&&!Array.from($("course").options).some(
+  option=>option.value.toLowerCase()===oldCourse.toLowerCase()
+ )){
+  const option=document.createElement("option");
+  option.value=oldCourse;
+  option.textContent=oldCourse+" (Not in Offers)";
+  $("course").appendChild(option);
+ }
+
+ $("course").value=oldCourse;
+
  $("formTitle").textContent="Edit Material";
  $("saveBtn").innerHTML='<i data-lucide="save"></i> Update Material';
  $("cancelEdit").style.display="inline-flex";
@@ -819,13 +869,17 @@ document.querySelectorAll(".filter").forEach(button=>{
  });
 });
 
+/* REFRESH COURSE LIST */
+
 $("refreshBtn").addEventListener("click",async()=>{
  const btn=$("refreshBtn");
  btn.disabled=true;
+
  try{
   await loadCourses();
-  toast("Course list refreshed.");
+  toast("Course list refreshed from Offers.");
  }catch(error){
+  console.error(error);
   toast("Refresh failed.");
  }finally{
   btn.disabled=false;
