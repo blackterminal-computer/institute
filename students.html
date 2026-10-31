@@ -36,7 +36,6 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
 .panel{background:var(--panel);border:1px solid var(--line);padding:18px;border-radius:16px;margin-bottom:18px}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 h2{font-size:16px;margin:0}
-h3{font-size:14px;margin:0 0 8px}
 .muted{font-size:12px;color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
 .field{display:flex;flex-direction:column;gap:7px}
@@ -72,6 +71,11 @@ textarea{min-height:75px;resize:vertical}
 .avatar{width:42px;height:42px;flex-shrink:0;border-radius:13px;background:#1c2d4c;color:#a9c4ff;display:grid;place-items:center;font-weight:bold;font-size:16px}
 .student-heading{display:flex;align-items:center;gap:11px}
 hr{border:0;border-top:1px solid var(--line);margin:17px 0}
+.monthly-box{padding:11px;margin:10px 0;background:#101b29;border:1px solid #29384b;border-radius:11px}
+.monthly-title{font-size:10px;color:var(--muted);margin-bottom:7px}
+.monthly-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.monthly-amount{font-size:13px;font-weight:bold}
+.sync-label{font-size:10px;color:var(--muted)}
 @media(max-width:700px){
  .app{padding:12px}
  .stats{grid-template-columns:repeat(2,1fr)}
@@ -110,18 +114,18 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
 
 <div class="stats">
  <div class="stat"><small>Total Students</small><strong id="statTotal">0</strong></div>
- <div class="stat"><small>Paid Students</small><strong id="statPaid">0</strong></div>
- <div class="stat"><small>Partial / Pending</small><strong id="statPartial">0</strong></div>
- <div class="stat"><small>Total Pending Fees</small><strong id="statPending">₹0</strong></div>
+ <div class="stat"><small>This Month Paid</small><strong id="statPaid">0</strong></div>
+ <div class="stat"><small>This Month Pending</small><strong id="statPartial">0</strong></div>
+ <div class="stat"><small>Course Fees Pending</small><strong id="statPending">₹0</strong></div>
 </div>
 
-<!-- STUDENT DIRECTORY -->
 <section id="directory" class="tab-content">
  <div class="panel">
   <div class="panel-head">
    <div>
     <h2><i class="ri-team-line"></i> Student Directory</h2>
     <p class="muted">Manage your institute students</p>
+    <p class="sync-label" id="paymentMonthLabel"></p>
    </div>
    <button class="btn primary" id="addStudentBtn">
     <i class="ri-add-line"></i> Add Student
@@ -134,9 +138,8 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
     <option value="all">All Courses</option>
    </select>
    <select id="paymentFilter">
-    <option value="all">All Payment Status</option>
+    <option value="all">All Monthly Payments</option>
     <option value="paid">Paid</option>
-    <option value="partial">Partial</option>
     <option value="pending">Pending</option>
    </select>
   </div>
@@ -147,9 +150,7 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
  </div>
 </section>
 
-<!-- ADD / EDIT STUDENT -->
 <section id="admission" class="tab-content hidden">
-
  <div class="panel">
   <div class="panel-head">
    <div>
@@ -159,15 +160,14 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
   </div>
 
   <div class="notice">
-   Existing student documents are updated without replacing unrelated fields.
-   Student document ID remains the student's name.
+   Monthly payment status is fetched separately from the fee ledger.
+   Admission course fees remain stored in the students collection.
   </div>
 
   <form id="studentForm">
    <input type="hidden" id="editingStudentId">
 
    <div class="grid">
-
     <div class="field">
      <label>Student Full Name *</label>
      <input id="studentName" required placeholder="Enter student name">
@@ -200,12 +200,12 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
     </div>
 
     <div class="field">
-     <label>Pending Fees (₹)</label>
+     <label>Course Fees Pending (₹)</label>
      <input id="pendingFees" type="number" readonly>
     </div>
 
     <div class="field">
-     <label>Payment Status</label>
+     <label>Course Fee Status</label>
      <input id="paymentStatus" readonly value="pending">
     </div>
 
@@ -213,7 +213,6 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
      <label>Student Bio / Notes</label>
      <textarea id="studentBio" placeholder="Optional student information..."></textarea>
     </div>
-
    </div>
 
    <hr>
@@ -236,7 +235,6 @@ hr{border:0;border-top:1px solid var(--line);margin:17px 0}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-// Firebase configuration preserved from your supplied code.
 const firebaseConfig = {
  apiKey: "AIzaSyCEfwZv2CkgcJ8Q9vNwRlXA2w_WpI",
  authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -256,13 +254,25 @@ const serverTime=()=>firebase.firestore.FieldValue.serverTimestamp();
 
 let students=[];
 let offerCourses=[];
-let offersLoaded=false;
+let monthlyPaymentData={};
+
 let studentUnsubscribe=null;
 let offersUnsubscribe=null;
+let paymentUnsubscribe=null;
 
-const money=value=>"₹"+Number(value||0).toLocaleString("en-IN",{
- maximumFractionDigits:2
+const currentMonth=new Date().toLocaleString("default",{
+ month:"long",
+ year:"numeric"
 });
+
+$("paymentMonthLabel").textContent=
+ "Monthly payment records: "+currentMonth;
+
+function money(value){
+ return "₹"+Number(value||0).toLocaleString("en-IN",{
+  maximumFractionDigits:2
+ });
+}
 
 function escapeHTML(value){
  return String(value??"").replace(/[&<>"']/g,c=>({
@@ -278,14 +288,10 @@ function studentPending(student){
  if(student.pendingFees!==undefined && student.pendingFees!==null){
   return Math.max(0,Number(student.pendingFees)||0);
  }
-
- return Math.max(
-  0,
-  Number(student.totalFees||0)-Number(student.paidFees||0)
- );
+ return Math.max(0,Number(student.totalFees||0)-Number(student.paidFees||0));
 }
 
-function paymentStatus(student){
+function courseFeeStatus(student){
  const total=Number(student.totalFees||0);
  const paid=Number(student.paidFees||0);
  const pending=studentPending(student);
@@ -293,6 +299,57 @@ function paymentStatus(student){
  if(total>0 && pending<=0)return "paid";
  if(paid>0)return "partial";
  return "pending";
+}
+
+/* MONTHLY PAYMENT STATUS FROM FEE.HTML */
+
+function getMonthlyPayment(student){
+ return monthlyPaymentData[student.id] || null;
+}
+
+function paymentStatus(student){
+ const payment=getMonthlyPayment(student);
+
+ if(payment && String(payment.status||"").toLowerCase()==="paid"){
+  return "paid";
+ }
+
+ return "pending";
+}
+
+function getMonthlyPaidAmount(student){
+ const payment=getMonthlyPayment(student);
+
+ if(!payment || String(payment.status||"").toLowerCase()!=="paid"){
+  return 0;
+ }
+
+ return Number(payment.amount||payment.paidAmount||0);
+}
+
+function getMonthlyPaymentDate(student){
+ const payment=getMonthlyPayment(student);
+ if(!payment)return "";
+
+ const value=payment.paidAt||payment.updatedAt;
+
+ if(!value)return "";
+
+ let date;
+
+ if(typeof value==="number"){
+  date=new Date(value);
+ }else if(value && typeof value.toDate==="function"){
+  date=value.toDate();
+ }else{
+  date=new Date(value);
+ }
+
+ if(isNaN(date.getTime()))return "";
+
+ return date.toLocaleDateString("en-IN",{
+  day:"2-digit",month:"short"
+ });
 }
 
 function today(){
@@ -316,7 +373,7 @@ function formatDate(value){
  });
 }
 
-// ---------------- TABS ----------------
+/* TABS */
 
 document.querySelectorAll(".tab").forEach(button=>{
  button.addEventListener("click",()=>{
@@ -333,7 +390,7 @@ $("addStudentBtn").addEventListener("click",()=>{
  document.querySelector('[data-tab="admission"]').click();
 });
 
-// ---------------- LOAD STUDENTS ----------------
+/* STUDENT LISTENER */
 
 studentUnsubscribe=db.collection("students").onSnapshot(snapshot=>{
 
@@ -350,55 +407,79 @@ studentUnsubscribe=db.collection("students").onSnapshot(snapshot=>{
 
 },error=>{
  console.error("Student loading error:",error);
-
  $("studentList").innerHTML=
-  '<div class="empty">Unable to load students: '+
-  escapeHTML(error.message)+'</div>';
+  '<div class="empty">Unable to load students: '+escapeHTML(error.message)+'</div>';
 });
 
-// ---------------- LOAD COURSES FROM OFFERS ----------------
+/* OFFERS COURSE LISTENER */
 
 offersUnsubscribe=db.collection("offers").onSnapshot(snapshot=>{
 
  const found=new Map();
 
  snapshot.forEach(doc=>{
-
   const data=doc.data();
 
-  // Exclude inactive offers
   if(data.active===false)return;
 
   const courseName=String(
-   data.name ||
-   data.courseName ||
-   data.title ||
-   ""
+   data.name||data.courseName||data.title||""
   ).trim();
 
   if(courseName){
    found.set(courseName.toLowerCase(),courseName);
   }
-
  });
 
  offerCourses=[...found.values()].sort((a,b)=>a.localeCompare(b));
- offersLoaded=true;
 
  updateCourseOptions();
 
 },error=>{
-
  console.error("Offers loading error:",error);
-
- offersLoaded=false;
-
- // Existing student courses remain available
  updateCourseOptions();
-
 });
 
-// ---------------- UPDATE COURSE SUGGESTIONS ----------------
+/* MONTHLY PAYMENT LISTENER */
+
+paymentUnsubscribe=db.collectionGroup("months")
+ .where("month","==",currentMonth)
+ .onSnapshot(snapshot=>{
+
+  monthlyPaymentData={};
+
+  snapshot.forEach(paymentDoc=>{
+
+   const studentDoc=paymentDoc.ref.parent.parent;
+
+   if(!studentDoc)return;
+
+   /*
+    * fee.html writes:
+    * payments/{studentName}/months/{currentMonth}
+    *
+    * Parent document ID is the student's exact name.
+    */
+
+   monthlyPaymentData[studentDoc.id]=paymentDoc.data();
+
+  });
+
+  renderStudents();
+  renderDashboard();
+
+ },error=>{
+
+  console.error("Monthly payment sync error:",error);
+
+  $("studentList").insertAdjacentHTML(
+   "afterbegin",
+   '<div class="notice">Monthly payment sync unavailable. Check Firestore collectionGroup read permission.</div>'
+  );
+
+ });
+
+/* COURSE SUGGESTIONS */
 
 function updateCourseOptions(){
 
@@ -408,39 +489,35 @@ function updateCourseOptions(){
 
  const uniqueCourses=[...new Map(
   [...offerCourses,...studentCourses].map(name=>[
-   name.toLowerCase(),
-   name
+   name.toLowerCase(),name
   ])
  ).values()].sort((a,b)=>a.localeCompare(b));
 
- const datalist=$("courseOptions");
-
- datalist.innerHTML=uniqueCourses.map(course=>
+ $("courseOptions").innerHTML=uniqueCourses.map(course=>
   `<option value="${escapeHTML(course)}"></option>`
  ).join("");
 
 }
 
-// ---------------- DASHBOARD ----------------
+/* DASHBOARD */
 
 function renderDashboard(){
 
  const paid=students.filter(s=>paymentStatus(s)==="paid").length;
+ const pending=students.length-paid;
 
- const partial=students.filter(s=>
-  paymentStatus(s)==="partial"||paymentStatus(s)==="pending"
- ).length;
-
- const pending=students.reduce((sum,s)=>sum+studentPending(s),0);
+ const coursePending=students.reduce(
+  (sum,s)=>sum+studentPending(s),0
+ );
 
  $("statTotal").textContent=students.length;
  $("statPaid").textContent=paid;
- $("statPartial").textContent=partial;
- $("statPending").textContent=money(pending);
+ $("statPartial").textContent=pending;
+ $("statPending").textContent=money(coursePending);
 
 }
 
-// ---------------- COURSE FILTER ----------------
+/* COURSE FILTER */
 
 function renderCourseFilters(){
 
@@ -467,7 +544,7 @@ function renderCourseFilters(){
  updateCourseOptions();
 }
 
-// ---------------- STUDENT LIST ----------------
+/* STUDENT DIRECTORY */
 
 function renderStudents(){
 
@@ -484,25 +561,25 @@ function renderStudents(){
   ].join(" ").toLowerCase();
 
   const searchMatch=searchable.includes(search);
-
   const courseMatch=course==="all"||student.currentCourse===course;
-
   const statusMatch=filter==="all"||paymentStatus(student)===filter;
 
   return searchMatch&&courseMatch&&statusMatch;
-
  });
 
  if(!filtered.length){
-  $("studentList").innerHTML=
-   '<div class="empty">No students found.</div>';
+  $("studentList").innerHTML='<div class="empty">No students found.</div>';
   return;
  }
 
  $("studentList").innerHTML=filtered.map(student=>{
 
   const status=paymentStatus(student);
-  const initials=student.id.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+  const monthlyAmount=getMonthlyPaidAmount(student);
+  const monthlyDate=getMonthlyPaymentDate(student);
+
+  const initials=student.id.trim().split(/\s+/)
+   .slice(0,2).map(x=>x[0]).join("").toUpperCase();
 
   const phone=studentPhone(student);
   const safeId=encodeURIComponent(student.id);
@@ -524,17 +601,28 @@ function renderStudents(){
      </span>
     </div>
 
+    <div class="monthly-box">
+     <div class="monthly-title">MONTHLY PAYMENT · ${escapeHTML(currentMonth)}</div>
+     <div class="monthly-row">
+      <span class="monthly-amount ${status==="paid"?"":"muted"}">
+       ${status==="paid"?"✓ Received "+money(monthlyAmount):"Payment Pending"}
+      </span>
+      <span class="sync-label">
+       ${status==="paid"?(monthlyDate?"Paid: "+escapeHTML(monthlyDate):"Payment recorded"):"No paid record for this month"}
+      </span>
+     </div>
+    </div>
+
     <div class="details">
      <span><b>Mobile:</b> ${escapeHTML(phone||"Not provided")}</span>
      <span><b>Admission:</b> ${escapeHTML(formatDate(student.admissionDate||student.joinedAt))}</span>
-     <span><b>Total Fees:</b> ${money(student.totalFees)}</span>
-     <span><b>Paid Fees:</b> ${money(student.paidFees)}</span>
-     <span><b>Pending Fees:</b> ${money(studentPending(student))}</span>
-     <span><b>XP:</b> ${Number(student.xp||0)}</span>
+     <span><b>Total Course Fees:</b> ${money(student.totalFees)}</span>
+     <span><b>Course Fees Paid:</b> ${money(student.paidFees)}</span>
+     <span><b>Course Fees Pending:</b> ${money(studentPending(student))}</span>
+     <span><b>Course Fee Status:</b> ${courseFeeStatus(student).toUpperCase()}</span>
     </div>
 
     <div class="actions">
-
      <button class="btn primary" data-edit="${escapeHTML(safeId)}">
       <i class="ri-edit-line"></i> Edit
      </button>
@@ -548,7 +636,6 @@ function renderStudents(){
      <button class="btn secondary" data-fees="${escapeHTML(safeId)}">
       <i class="ri-wallet-3-line"></i> Fees
      </button>
-
     </div>
 
    </div>
@@ -562,7 +649,7 @@ $("searchStudent").addEventListener("input",renderStudents);
 $("courseFilter").addEventListener("change",renderStudents);
 $("paymentFilter").addEventListener("change",renderStudents);
 
-// ---------------- STUDENT ACTIONS ----------------
+/* STUDENT ACTIONS */
 
 $("studentList").addEventListener("click",event=>{
 
@@ -585,18 +672,12 @@ $("studentList").addEventListener("click",event=>{
  }
 
  if(feesButton){
-  const student=students.find(s=>
-   s.id===decodeURIComponent(feesButton.dataset.fees)
-  );
-
-  if(student){
-   window.location.href="payments.html";
-  }
+  window.location.href="fee.html";
  }
 
 });
 
-// ---------------- EDIT STUDENT ----------------
+/* EDIT STUDENT */
 
 function editStudent(id){
 
@@ -604,16 +685,12 @@ function editStudent(id){
  if(!student)return;
 
  $("editingStudentId").value=student.id;
-
  $("studentName").value=student.id;
  $("studentMobile").value=studentPhone(student);
  $("studentCourse").value=student.currentCourse||"";
-
  $("admissionDate").value=String(student.admissionDate||"").slice(0,10);
-
  $("totalFees").value=Number(student.totalFees||0);
  $("paidFees").value=Number(student.paidFees||0);
-
  $("studentBio").value=student.bio||"";
 
  calculateFees();
@@ -626,13 +703,12 @@ function editStudent(id){
 
 }
 
-// ---------------- FEE CALCULATION ----------------
+/* COURSE FEE CALCULATION */
 
 function calculateFees(){
 
  const total=Math.max(0,Number($("totalFees").value||0));
  const paid=Math.max(0,Number($("paidFees").value||0));
-
  const pending=Math.max(0,total-paid);
 
  let status="pending";
@@ -651,23 +727,20 @@ function calculateFees(){
 $("totalFees").addEventListener("input",calculateFees);
 $("paidFees").addEventListener("input",calculateFees);
 
-// ---------------- SAVE STUDENT ----------------
+/* SAVE STUDENT */
 
 $("studentForm").addEventListener("submit",async event=>{
 
  event.preventDefault();
 
  const editingId=$("editingStudentId").value;
-
  const name=$("studentName").value.trim();
  const mobile=$("studentMobile").value.trim();
  const course=$("studentCourse").value.trim();
-
  const admissionDate=$("admissionDate").value||today();
 
  const totalFees=Number($("totalFees").value||0);
  const paidFees=Number($("paidFees").value||0);
-
  const bio=$("studentBio").value.trim();
 
  if(!name||!mobile||!course){
@@ -694,7 +767,6 @@ $("studentForm").addEventListener("submit",async event=>{
  const pendingFees=Math.max(0,totalFees-paidFees);
 
  let status="pending";
-
  if(totalFees>0 && pendingFees<=0){
   status="paid";
  }else if(paidFees>0){
@@ -702,24 +774,16 @@ $("studentForm").addEventListener("submit",async event=>{
  }
 
  const data={
-
   phoneNumber:mobile,
   mobile:mobile,
-
   currentCourse:course,
-
   admissionDate:admissionDate,
-
   totalFees:totalFees,
   paidFees:paidFees,
   pendingFees:pendingFees,
-
   paymentStatus:status,
-
   bio:bio,
-
   updatedAt:serverTime()
-
  };
 
  try{
@@ -730,14 +794,11 @@ $("studentForm").addEventListener("submit",async event=>{
   if(editingId){
 
    if(name!==editingId){
-    alert("Student name is also the Firestore document ID. To avoid breaking existing payment and attendance records, rename is disabled. Keep the original name.");
+    alert("Student name is also the Firestore document ID. To avoid breaking existing payment and attendance records, rename is disabled.");
     return;
    }
 
-   await db.collection("students")
-    .doc(editingId)
-    .update(data);
-
+   await db.collection("students").doc(editingId).update(data);
    alert("Student updated successfully.");
 
   }else{
@@ -751,7 +812,6 @@ $("studentForm").addEventListener("submit",async event=>{
    }
 
    data.joinedAt=serverTime();
-
    await studentRef.set(data);
 
    alert("Student admission saved successfully.");
@@ -769,13 +829,17 @@ $("studentForm").addEventListener("submit",async event=>{
  }finally{
 
   $("saveStudent").disabled=false;
-  $("saveStudent").innerHTML='<i class="ri-save-line"></i> Save Student';
+
+  $("saveStudent").innerHTML=
+   editingId
+    ? '<i class="ri-save-line"></i> Update Student'
+    : '<i class="ri-save-line"></i> Save Student';
 
  }
 
 });
 
-// ---------------- WHATSAPP ----------------
+/* WHATSAPP */
 
 function sendWhatsApp(student){
 
@@ -789,25 +853,26 @@ function sendWhatsApp(student){
  const number=phone.length===10?"91"+phone:phone;
 
  const message=encodeURIComponent(
-  "Hello "+student.id+
-  ", greetings from BlackTerminal Computer Institute."
+  "Hello "+student.id+", greetings from BlackTerminal Computer Institute."
  );
 
  window.open("https://wa.me/"+number+"?text="+message,"_blank");
 
 }
 
-// ---------------- RESET FORM ----------------
+/* RESET FORM */
 
 function resetForm(){
 
  $("studentForm").reset();
-
  $("editingStudentId").value="";
  $("admissionDate").value=today();
 
- $("formTitle").innerHTML='<i class="ri-user-add-line"></i> New Student Admission';
- $("saveStudent").innerHTML='<i class="ri-save-line"></i> Save Student';
+ $("formTitle").innerHTML=
+  '<i class="ri-user-add-line"></i> New Student Admission';
+
+ $("saveStudent").innerHTML=
+  '<i class="ri-save-line"></i> Save Student';
 
  calculateFees();
 
@@ -815,7 +880,7 @@ function resetForm(){
 
 $("resetForm").addEventListener("click",resetForm);
 
-// ---------------- INITIALIZE ----------------
+/* INITIALIZE */
 
 resetForm();
 
