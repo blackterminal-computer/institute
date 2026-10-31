@@ -1,0 +1,717 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#080d18">
+<meta name="description" content="Student notifications - BlackTerminal Computer Institute">
+<title>My Notifications | BlackTerminal</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+:root{
+ --bg:#080d18;
+ --panel:#101827;
+ --panel2:#141f30;
+ --text:#f4f7fb;
+ --muted:#91a0b5;
+ --cyan:#67e8f9;
+ --green:#20d69b;
+ --orange:#ffad5c;
+ --red:#ff6878;
+ --border:rgba(255,255,255,.09);
+}
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--text);
+ font-family:Inter,Arial,sans-serif;
+}
+button{font:inherit;cursor:pointer}
+.container{width:min(850px,92%);margin:auto}
+
+header{
+ position:sticky;top:0;z-index:30;
+ background:rgba(8,13,24,.95);
+ backdrop-filter:blur(15px);
+ border-bottom:1px solid var(--border);
+}
+.nav{
+ min-height:65px;
+ display:flex;align-items:center;
+ justify-content:space-between;gap:12px;
+}
+.brand{font-size:18px;font-weight:900}
+.brand span{color:var(--cyan)}
+.back-btn{
+ display:flex;align-items:center;gap:7px;
+ background:var(--panel);
+ color:white;border:1px solid var(--border);
+ border-radius:10px;padding:10px 13px;
+ text-decoration:none;font-size:11px;font-weight:800;
+}
+.back-btn i{width:15px;height:15px}
+
+.hero{padding:30px 0 20px}
+.hero-top{
+ display:flex;align-items:center;
+ justify-content:space-between;gap:12px;
+}
+.hero h1{font-size:27px;margin:0}
+.hero p{
+ font-size:12px;color:var(--muted);
+ line-height:1.7;margin:9px 0 0;
+}
+.unread-pill{
+ background:rgba(103,232,249,.1);
+ border:1px solid rgba(103,232,249,.25);
+ color:var(--cyan);border-radius:30px;
+ padding:8px 12px;font-size:11px;font-weight:900;
+ white-space:nowrap;
+}
+
+.summary{
+ display:grid;grid-template-columns:repeat(3,1fr);
+ gap:10px;margin:18px 0;
+}
+.summary-card{
+ background:var(--panel);
+ border:1px solid var(--border);
+ border-radius:13px;padding:15px;
+}
+.summary-number{font-size:24px;font-weight:900}
+.summary-label{font-size:10px;color:var(--muted);margin-top:5px}
+
+.toolbar{
+ display:flex;align-items:center;
+ justify-content:space-between;gap:10px;
+ flex-wrap:wrap;margin:24px 0 15px;
+}
+.tabs{display:flex;gap:7px;flex-wrap:wrap}
+.tab{
+ background:var(--panel);color:var(--muted);
+ border:1px solid var(--border);
+ border-radius:30px;padding:9px 13px;
+ font-size:10px;font-weight:900;
+}
+.tab.active{
+ background:var(--cyan);color:#06121b;
+ border-color:var(--cyan);
+}
+.mark-all{
+ background:transparent;color:var(--cyan);
+ border:1px solid rgba(103,232,249,.3);
+ border-radius:9px;padding:9px 12px;
+ font-size:10px;font-weight:900;
+}
+
+.notification-list{
+ display:flex;flex-direction:column;gap:11px;
+ padding-bottom:35px;
+}
+.notification{
+ position:relative;
+ background:var(--panel);
+ border:1px solid var(--border);
+ border-radius:15px;padding:17px;
+ display:flex;gap:13px;
+ transition:.2s;
+}
+.notification.unread{
+ border-color:rgba(103,232,249,.3);
+ background:linear-gradient(120deg,#142438,#101827);
+}
+.notification-icon{
+ width:42px;height:42px;flex-shrink:0;
+ display:grid;place-items:center;
+ background:#1b3043;border-radius:12px;
+ color:var(--cyan);
+}
+.notification-icon i{width:20px;height:20px}
+.notification-content{flex:1;min-width:0}
+.notification-top{
+ display:flex;justify-content:space-between;
+ align-items:flex-start;gap:8px;
+}
+.notification-title{
+ font-size:13px;font-weight:900;
+ line-height:1.5;margin:0;
+}
+.unread-dot{
+ width:8px;height:8px;border-radius:50%;
+ background:var(--cyan);flex-shrink:0;
+ margin-top:5px;
+}
+.notification-message{
+ font-size:12px;color:#b3c0d2;
+ line-height:1.8;margin:9px 0;
+ white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.notification-footer{
+ display:flex;justify-content:space-between;
+ align-items:center;gap:10px;flex-wrap:wrap;
+}
+.notification-date{
+ font-size:10px;color:var(--muted);
+}
+.type-label{
+ display:inline-flex;align-items:center;
+ background:#202d41;color:#b9c8db;
+ border-radius:6px;padding:5px 8px;
+ font-size:9px;font-weight:900;
+ text-transform:uppercase;
+}
+.read-btn{
+ background:transparent;color:var(--cyan);
+ border:0;font-size:10px;font-weight:900;
+ padding:5px 0;
+}
+.empty{
+ text-align:center;padding:55px 15px;
+ background:var(--panel);
+ border:1px dashed var(--border);
+ border-radius:16px;
+}
+.empty-icon{
+ width:55px;height:55px;
+ display:grid;place-items:center;
+ margin:0 auto 15px;
+ background:#1a293c;color:var(--cyan);
+ border-radius:17px;
+}
+.empty-icon i{width:25px;height:25px}
+.empty h3{font-size:15px;margin:0 0 8px}
+.empty p{font-size:11px;color:var(--muted);line-height:1.7}
+.loading{
+ text-align:center;padding:45px 10px;
+ color:var(--muted);font-size:12px;
+}
+.error{
+ padding:15px;background:rgba(255,104,120,.08);
+ border:1px solid rgba(255,104,120,.2);
+ color:#ff9aa5;border-radius:12px;
+ font-size:11px;line-height:1.7;
+}
+footer{
+ text-align:center;padding:25px 10px;
+ border-top:1px solid var(--border);
+ color:var(--muted);font-size:10px;line-height:1.8;
+}
+
+@media(max-width:550px){
+ .hero h1{font-size:23px}
+ .summary{gap:7px}
+ .summary-card{padding:12px 9px}
+ .summary-number{font-size:21px}
+ .summary-label{font-size:9px}
+ .notification{padding:13px;gap:10px}
+ .notification-icon{width:36px;height:36px}
+ .notification-icon i{width:17px;height:17px}
+ .notification-title{font-size:12px}
+ .notification-message{font-size:11px}
+ .mark-all{font-size:9px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="container nav">
+  <div class="brand">BLACK<span>TERMINAL</span></div>
+  <a class="back-btn" href="index.html">
+   <i data-lucide="arrow-left"></i> BACK HOME
+  </a>
+ </div>
+</header>
+
+<main class="container">
+
+ <section class="hero">
+  <div class="hero-top">
+   <h1>My Notifications</h1>
+   <span class="unread-pill" id="unreadBadge">0 UNREAD</span>
+  </div>
+  <p>
+   Stay updated with institute announcements, course updates,
+   important messages and personal notifications.
+  </p>
+ </section>
+
+ <section class="summary">
+  <div class="summary-card">
+   <div class="summary-number" id="totalCount">0</div>
+   <div class="summary-label">TOTAL MESSAGES</div>
+  </div>
+
+  <div class="summary-card">
+   <div class="summary-number" id="unreadCount">0</div>
+   <div class="summary-label">UNREAD</div>
+  </div>
+
+  <div class="summary-card">
+   <div class="summary-number" id="readCount">0</div>
+   <div class="summary-label">READ</div>
+  </div>
+ </section>
+
+ <div class="toolbar">
+  <div class="tabs">
+   <button class="tab active" data-filter="all">ALL</button>
+   <button class="tab" data-filter="unread">UNREAD</button>
+   <button class="tab" data-filter="read">READ</button>
+  </div>
+
+  <button class="mark-all" id="markAllBtn">
+   MARK ALL AS READ
+  </button>
+ </div>
+
+ <div id="notificationList" class="notification-list">
+  <div class="loading">Loading your notifications...</div>
+ </div>
+
+</main>
+
+<footer>
+ <strong>BLACKTERMINAL COMPUTER INSTITUTE</strong><br>
+ Baripada, Odisha<br>
+ Learn Today. Lead Tomorrow.
+</footer>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+ getFirestore,
+ collection,
+ doc,
+ getDoc,
+ onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+ apiKey: "AIzaSyCEYfwZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
+ authDomain: "black-terminal-f2c91.firebaseapp.com",
+ projectId: "black-terminal-f2c91",
+ storageBucket: "black-terminal-f2c91.firebasestorage.app",
+ messagingSenderId: "552489994197",
+ appId: "1:552489994197:web:7662331264c334ffbadf5c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* STUDENT DETAILS */
+const studentId = localStorage.getItem("studentName");
+
+let studentData = {};
+let notifications = [];
+let currentFilter = "all";
+let unsubscribe = null;
+
+/* LOCAL READ STORAGE */
+const readStorageKey =
+ "BT_NOTIFICATION_READ_V1_" + String(studentId || "unknown");
+
+function getReadIds(){
+ try{
+  return JSON.parse(localStorage.getItem(readStorageKey) || "[]");
+ }catch(e){
+  return [];
+ }
+}
+
+function saveReadIds(ids){
+ localStorage.setItem(readStorageKey,JSON.stringify([...new Set(ids)]));
+}
+
+function isRead(notification){
+ return getReadIds().includes(notification.id);
+}
+
+function markRead(id){
+ const ids = getReadIds();
+ if(!ids.includes(id)){
+  ids.push(id);
+  saveReadIds(ids);
+ }
+ renderNotifications();
+}
+
+function markAllRead(){
+ const ids = notifications.map(item=>item.id);
+ saveReadIds([...getReadIds(),...ids]);
+ renderNotifications();
+}
+
+/* NORMALIZE */
+function normalize(value){
+ return String(value ?? "")
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g," ");
+}
+
+function escapeHTML(value){
+ return String(value ?? "").replace(/[&<>"']/g,char=>({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#039;"
+ })[char]);
+}
+
+/* GET DATE */
+function getDate(value){
+
+ if(!value) return null;
+
+ if(value.toDate){
+  return value.toDate();
+ }
+
+ if(value.seconds){
+  return new Date(value.seconds*1000);
+ }
+
+ const date = new Date(value);
+ return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value){
+
+ const date = getDate(value);
+ if(!date) return "Date unavailable";
+
+ return date.toLocaleString("en-IN",{
+  day:"2-digit",
+  month:"short",
+  year:"numeric",
+  hour:"2-digit",
+  minute:"2-digit"
+ });
+}
+
+/* GET STUDENT PROFILE */
+async function loadStudentProfile(){
+
+ if(!studentId) return;
+
+ try{
+
+  const snapshot = await getDoc(
+   doc(db,"students",studentId)
+  );
+
+  if(snapshot.exists()){
+   studentData = snapshot.data();
+  }else{
+   studentData = {};
+  }
+
+ }catch(error){
+  console.error("Student profile error:",error);
+ }
+}
+
+/* MATCH INDIVIDUAL NOTIFICATION */
+function matchesStudent(notification){
+
+ const targetType = normalize(notification.targetType);
+
+ if(targetType==="all"){
+  return true;
+ }
+
+ if(targetType!=="individual"){
+  return false;
+ }
+
+ const targets = [
+  studentId,
+  studentData.studentName,
+  studentData.name,
+  studentData.fullName,
+  studentData.displayName,
+  studentData.phoneNumber,
+  studentData.mobile
+ ].filter(Boolean).map(normalize);
+
+ const targetId = normalize(notification.targetStudentId);
+
+ return !!targetId && targets.includes(targetId);
+}
+
+/* ICON BY TYPE */
+function getIcon(type){
+
+ const value = normalize(type);
+
+ if(value.includes("fee") || value.includes("payment")){
+  return "wallet";
+ }
+
+ if(value.includes("course") || value.includes("class")){
+  return "book-open";
+ }
+
+ if(value.includes("exam") || value.includes("test")){
+  return "graduation-cap";
+ }
+
+ if(value.includes("attendance")){
+  return "calendar-check";
+ }
+
+ if(value.includes("event")){
+  return "calendar-days";
+ }
+
+ if(value.includes("alert") || value.includes("urgent")){
+  return "alert-circle";
+ }
+
+ return "bell";
+}
+
+/* FILTER AND SORT */
+function processNotifications(data){
+
+ notifications = data
+  .filter(matchesStudent)
+  .sort((a,b)=>{
+   const dateA = getDate(a.createdAt)?.getTime() || 0;
+   const dateB = getDate(b.createdAt)?.getTime() || 0;
+   return dateB-dateA;
+  });
+
+ renderNotifications();
+}
+
+/* COUNTS */
+function updateStats(){
+
+ const unread = notifications.filter(item=>!isRead(item)).length;
+ const read = notifications.length-unread;
+
+ document.getElementById("totalCount").textContent =
+  notifications.length;
+
+ document.getElementById("unreadCount").textContent = unread;
+ document.getElementById("readCount").textContent = read;
+
+ document.getElementById("unreadBadge").textContent =
+  unread+" UNREAD";
+
+ document.getElementById("markAllBtn").style.display =
+  unread ? "inline-block" : "none";
+}
+
+/* RENDER */
+function renderNotifications(){
+
+ updateStats();
+
+ const container = document.getElementById("notificationList");
+
+ let filtered = notifications.filter(item=>{
+
+  const read = isRead(item);
+
+  if(currentFilter==="unread") return !read;
+  if(currentFilter==="read") return read;
+
+  return true;
+ });
+
+ if(!filtered.length){
+
+  let message = "You don't have any notifications yet.";
+
+  if(currentFilter==="unread"){
+   message = "Great! You have no unread notifications.";
+  }
+
+  if(currentFilter==="read"){
+   message = "No read notifications found.";
+  }
+
+  container.innerHTML = `
+   <div class="empty">
+    <div class="empty-icon">
+     <i data-lucide="bell-off"></i>
+    </div>
+    <h3>All caught up!</h3>
+    <p>${escapeHTML(message)}</p>
+   </div>
+  `;
+
+  if(window.lucide) lucide.createIcons();
+  return;
+ }
+
+ container.innerHTML = filtered.map(item=>{
+
+  const read = isRead(item);
+  const type = item.type || "Announcement";
+
+  return `
+   <article class="notification ${read?"":"unread"}">
+
+    <div class="notification-icon">
+     <i data-lucide="${getIcon(type)}"></i>
+    </div>
+
+    <div class="notification-content">
+
+     <div class="notification-top">
+      <h3 class="notification-title">
+       ${escapeHTML(item.title || "Notification")}
+      </h3>
+
+      ${read ? "" : '<span class="unread-dot"></span>'}
+     </div>
+
+     <div class="notification-message">
+      ${escapeHTML(item.message || "")}
+     </div>
+
+     <div class="notification-footer">
+
+      <span class="type-label">
+       ${escapeHTML(type)}
+      </span>
+
+      <span class="notification-date">
+       ${escapeHTML(formatDate(item.createdAt))}
+      </span>
+
+     </div>
+
+     ${read ? "" : `
+      <button class="read-btn" data-read="${escapeHTML(item.id)}">
+       MARK AS READ
+      </button>
+     `}
+
+    </div>
+   </article>
+  `;
+ }).join("");
+
+ document.querySelectorAll("[data-read]").forEach(button=>{
+  button.addEventListener("click",()=>{
+   markRead(button.dataset.read);
+  });
+ });
+
+ if(window.lucide) lucide.createIcons();
+}
+
+/* FILTER BUTTONS */
+document.querySelectorAll("[data-filter]").forEach(button=>{
+
+ button.addEventListener("click",()=>{
+
+  currentFilter = button.dataset.filter;
+
+  document.querySelectorAll("[data-filter]").forEach(item=>{
+   item.classList.toggle("active",item===button);
+  });
+
+  renderNotifications();
+ });
+});
+
+/* MARK ALL */
+document.getElementById("markAllBtn").addEventListener(
+ "click",markAllRead
+);
+
+/* REALTIME NOTIFICATIONS */
+function listenNotifications(){
+
+ if(unsubscribe) unsubscribe();
+
+ unsubscribe = onSnapshot(
+  collection(db,"notifications"),
+  snapshot=>{
+
+   const data = snapshot.docs.map(item=>({
+    id:item.id,
+    ...item.data()
+   }));
+
+   processNotifications(data);
+
+  },
+  error=>{
+
+   console.error("Notification listener error:",error);
+
+   document.getElementById("notificationList").innerHTML = `
+    <div class="error">
+     Unable to load notifications.<br>
+     Please check your internet connection and Firestore permissions.
+    </div>
+   `;
+  }
+ );
+}
+
+/* INITIALIZE */
+async function init(){
+
+ if(!studentId){
+
+  document.getElementById("notificationList").innerHTML = `
+   <div class="empty">
+    <div class="empty-icon">
+     <i data-lucide="user-x"></i>
+    </div>
+    <h3>Student session not found</h3>
+    <p>Please login to your student account first.</p>
+   </div>
+  `;
+
+  if(window.lucide) lucide.createIcons();
+  return;
+ }
+
+ try{
+
+  await loadStudentProfile();
+
+  listenNotifications();
+
+ }catch(error){
+
+  console.error(error);
+
+  document.getElementById("notificationList").innerHTML = `
+   <div class="error">Unable to initialize notifications.</div>
+  `;
+ }
+}
+
+init();
+
+if(window.lucide) lucide.createIcons();
+
+window.addEventListener("beforeunload",()=>{
+ if(unsubscribe) unsubscribe();
+});
+
+</script>
+
+</body>
+</html>
