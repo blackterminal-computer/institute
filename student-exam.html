@@ -3,398 +3,568 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#07070a">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08090e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>BT Exam | BlackTerminal</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css" rel="stylesheet">
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <style>
 :root{
---bg:#060608;--panel:#0d0d12;--panel2:#121217;--line:#252530;
---text:#f5f5f7;--muted:#777784;--purple:#8b5cf6;
---purple2:#c4b5fd;--blue:#38bdf8;--green:#22c55e;
---orange:#f59e0b;--red:#ef4444;
+ --bg:#08090e;
+ --surface:#10121b;
+ --surface2:#151824;
+ --surface3:#1b2030;
+ --line:#272b3b;
+ --text:#f5f6fc;
+ --muted:#858da3;
+ --purple:#9872ff;
+ --purple2:#c7b5ff;
+ --blue:#54a6ff;
+ --green:#36d69a;
+ --red:#ff657d;
+ --orange:#ffbd59;
+ --radius:18px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,sans-serif;overflow-x:hidden}
-body{background:radial-gradient(500px 300px at 50% -100px,#261b42,transparent 70%),var(--bg)}
-button{font-family:inherit;cursor:pointer}
-.hidden{display:none!important}
+html{scroll-behavior:smooth}
+body{
+ background:var(--bg);color:var(--text);font-family:Inter,sans-serif;
+ min-height:100vh;overflow-x:hidden;
+ background-image:radial-gradient(ellipse at 50% -180px,#30204d 0,transparent 65%);
+}
+button{font:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
-.app-inner,.page-inner,.exam-container,.result-container{width:100%;max-width:560px;margin:auto}
-.app-inner{min-height:100vh;background:#07070a;padding-bottom:90px}
-.header{height:72px;padding:12px 17px;display:flex;align-items:center;justify-content:space-between;background:#09090dee;backdrop-filter:blur(20px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.hidden{display:none!important}
+button:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
+svg{width:20px;height:20px;display:block;flex-shrink:0}
+.shell{width:100%;max-width:600px;min-height:100vh;margin:auto;background:#090a10;padding-bottom:100px}
+.header{
+ height:72px;position:sticky;top:0;z-index:30;
+ display:flex;align-items:center;justify-content:space-between;
+ padding:0 18px;background:#090a10ed;backdrop-filter:blur(18px);
+ border-bottom:1px solid var(--line)
+}
 .brand{display:flex;align-items:center;gap:11px}
-.logo{width:41px;height:41px;border-radius:13px;background:linear-gradient(135deg,#fff,#ddd6fe);display:grid;place-items:center;color:#111;font-weight:900}
-.brand-title{font-size:14px;font-weight:900}
-.brand-sub{font-size:8px;color:var(--purple2);letter-spacing:1.5px;margin-top:4px}
-.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#191621;border:1px solid #62449a;color:var(--purple2);font-weight:900}
-.main{padding:20px 17px 30px}
-.small{font-size:9px;color:var(--muted)}
-.greeting{font-size:27px;font-weight:900;letter-spacing:-1px;margin-top:7px}
+.logo{
+ width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+ color:#0b0b12;background:linear-gradient(140deg,#fff,#c7b5ff);
+ font-size:15px;font-weight:1000;box-shadow:0 6px 25px #9872ff28
+}
+.brand-name{font-size:14px;font-weight:900;letter-spacing:-.3px}
+.brand-sub{font-size:8px;letter-spacing:1.7px;color:var(--purple2);margin-top:4px}
+.profile{
+ width:39px;height:39px;border-radius:13px;display:grid;place-items:center;
+ border:1px solid #55417d;background:#1d1830;color:var(--purple2);font-weight:900
+}
+.content{padding:22px 17px 35px}
+.eyebrow{font-size:9px;letter-spacing:1.7px;font-weight:800;color:var(--muted)}
+.greeting{font-size:27px;font-weight:900;letter-spacing:-1.3px;margin-top:7px}
 .greeting span{color:var(--purple2)}
-.notice{margin-top:18px;padding:14px;border:1px solid #382957;border-radius:14px;background:#151020;color:#b9a5e9;font-size:9px;overflow:hidden}
+.subline{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.7}
+.announcement{
+ margin-top:19px;padding:14px;border:1px solid #40315f;border-radius:14px;
+ background:linear-gradient(110deg,#1b1429,#11121d);
+ display:flex;gap:11px;align-items:flex-start
+}
+.announcement svg{color:var(--purple2);margin-top:1px}
+.announcement p{font-size:10px;line-height:1.7;color:#c5b7e8}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:17px}
-.stat,.card,.summary,.result-box,.question-card,.palette-section{background:linear-gradient(145deg,#13131a,#09090d);border:1px solid var(--line);border-radius:17px}
-.stat{padding:13px;min-width:0}
-.stat strong{display:block;font-size:19px;margin-top:7px}
-.stat span{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
-.section{margin-top:26px}
-.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.section-head strong{font-size:13px}
-.section-head span{font-size:9px;color:var(--muted)}
-.card{padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
-.card-top{display:flex;justify-content:space-between;align-items:center}
-.card-icon{width:42px;height:42px;border-radius:13px;background:#211934;border:1px solid #4a3472;color:var(--purple2);display:grid;place-items:center;font-size:19px}
-.badge{padding:7px 10px;border-radius:30px;font-size:7px;font-weight:900;letter-spacing:.8px;background:#191920;color:#aaa;border:1px solid #333}
-.badge.upcoming{color:#fbbf24;border-color:#76551e;background:#251b0b}
-.badge.completed{color:#4ade80;border-color:#245c39;background:#102318}
-.card h3{font-size:16px;margin-top:14px;line-height:1.4}
-.card p{font-size:9px;color:#777;margin-top:6px;line-height:1.6}
-.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:14px}
-.info{padding:10px 7px;border-radius:10px;background:#0b0b10;border:1px solid #202027}
-.info span{display:block;color:#777;font-size:7px;text-transform:uppercase}
-.info strong{display:block;font-size:10px;margin-top:5px}
-.action,.primary{width:100%;min-height:45px;margin-top:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#fff,#ddd6fe);color:#09090b;font-size:10px;font-weight:900}
-.action.lock{background:#211316;color:#fb7185;border:1px solid #71333c}
-.action.disabled{background:#17171d;color:#777;border:1px solid #333}
-.empty{text-align:center;padding:35px 15px;border:1px dashed #333;border-radius:17px;color:#777;font-size:10px}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;height:75px;padding:8px 20px;display:flex;justify-content:space-around;background:#08080cf2;backdrop-filter:blur(20px);border-top:1px solid var(--line);z-index:20}
-.bottom-nav button{background:none;border:0;color:#777;font-size:8px;display:flex;flex-direction:column;align-items:center;gap:5px}
-.bottom-nav i{font-size:19px}
+.stat{
+ padding:14px 12px;border:1px solid var(--line);border-radius:15px;
+ background:linear-gradient(145deg,#171a27,#10121a);min-width:0
+}
+.stat-icon{
+ width:31px;height:31px;border-radius:10px;background:#27203b;
+ display:grid;place-items:center;color:var(--purple2)
+}
+.stat-icon svg{width:16px;height:16px}
+.stat strong{display:block;font-size:22px;margin-top:12px;letter-spacing:-.8px}
+.stat span{display:block;font-size:8px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.8px}
+.section{margin-top:27px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.section-head h2{font-size:14px;font-weight:800}
+.section-head p{font-size:9px;color:var(--muted);margin-top:5px}
+.section-count{font-size:9px;color:var(--muted)}
+.filter-row{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 12px;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.filter{
+ flex-shrink:0;border:1px solid var(--line);border-radius:30px;
+ padding:9px 13px;background:#12141d;color:#9299ab;font-size:9px;font-weight:700
+}
+.filter.active{background:#2a2041;border-color:#7756bd;color:#e1d6ff}
+.exam-card{
+ padding:16px;margin-bottom:11px;border:1px solid var(--line);
+ border-radius:17px;background:linear-gradient(145deg,#171a27,#10121a);
+ position:relative;overflow:hidden
+}
+.exam-card:before{
+ content:"";position:absolute;width:130px;height:130px;right:-65px;top:-75px;
+ background:#9872ff0c;border-radius:50%
+}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.exam-icon{
+ width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
+ background:#27203c;border:1px solid #48376d;color:var(--purple2)
+}
+.exam-icon svg{width:20px;height:20px}
+.badge{
+ padding:7px 10px;border-radius:30px;border:1px solid #373b49;
+ background:#1c1e28;color:#aab0c0;font-size:8px;font-weight:900;letter-spacing:.7px
+}
+.badge.available{color:var(--green);background:#10251d;border-color:#285a43}
+.badge.upcoming{color:var(--orange);background:#2a2111;border-color:#6a5026}
+.badge.completed{color:#a9c7ff;background:#172238;border-color:#304b79}
+.badge.closed{color:var(--red);background:#29151b;border-color:#66313e}
+.exam-card h3{font-size:15px;line-height:1.45;margin-top:14px;overflow-wrap:anywhere}
+.exam-desc{font-size:9px;line-height:1.7;color:var(--muted);margin-top:6px}
+.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:14px}
+.meta{
+ padding:10px 8px;background:#0b0d14;border:1px solid #252938;border-radius:10px
+}
+.meta span{display:block;font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.meta strong{display:block;font-size:10px;margin-top:6px}
+.card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px}
+.card-date{font-size:8px;color:var(--muted);line-height:1.6}
+.btn{
+ min-height:43px;border:0;border-radius:11px;padding:0 15px;
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ font-size:9px;font-weight:900;transition:.2s
+}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:linear-gradient(120deg,#fff,#d8ccff);color:#11101a}
+.btn-secondary{background:#202333;color:#d6d8e6;border:1px solid #363b4d}
+.btn-danger{background:#2a151d;color:#ff8294;border:1px solid #683341}
+.btn-block{width:100%}
+.btn-small{min-height:36px;padding:0 11px}
+.btn:active{transform:scale(.98)}
+.empty{
+ text-align:center;padding:34px 15px;border:1px dashed #33394b;
+ border-radius:16px;color:var(--muted);font-size:10px;line-height:1.8
+}
+.empty svg{width:30px;height:30px;margin:0 auto 12px;color:#7f70a5}
+.bottom-nav{
+ position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+ width:100%;max-width:600px;height:76px;z-index:35;
+ padding:8px 18px calc(8px + env(safe-area-inset-bottom));
+ display:flex;align-items:center;justify-content:space-around;
+ background:#0b0c12f5;backdrop-filter:blur(20px);border-top:1px solid var(--line)
+}
+.bottom-nav button{
+ background:none;border:0;color:#727a8f;display:flex;align-items:center;
+ flex-direction:column;gap:5px;font-size:8px;font-weight:700;min-width:60px
+}
+.bottom-nav svg{width:19px;height:19px}
 .bottom-nav button.active{color:var(--purple2)}
-.page,.exam-app,.result-page{position:fixed;inset:0;background:#050507;z-index:100;overflow-y:auto;overscroll-behavior:contain}
-.page-inner{padding:0 17px 40px}
-.page-header{height:65px;display:flex;align-items:center;gap:12px;position:sticky;top:0;background:#050507ee;backdrop-filter:blur(18px);z-index:5;border-bottom:1px solid var(--line)}
-.back{width:38px;height:38px;border:1px solid #333;border-radius:11px;background:#111;color:#ccc}
-.page-heading{font-size:14px;font-weight:900}
-.instruction-hero{padding:24px 0}
-.instruction-icon{width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,#fff,#ddd6fe);color:#111;display:grid;place-items:center;font-size:23px}
-.instruction-hero h1{font-size:24px;margin-top:14px;overflow-wrap:anywhere}
-.instruction-hero p{font-size:9px;color:#777;line-height:1.7;margin-top:7px}
+/* PAGE OVERLAYS */
+.overlay{
+ position:fixed;inset:0;z-index:100;background:#08090e;
+ overflow-y:auto;overscroll-behavior:contain
+}
+.overlay-inner{width:100%;max-width:600px;margin:auto;min-height:100%;padding:0 17px 35px}
+.page-header{
+ position:sticky;top:0;z-index:5;height:65px;display:flex;align-items:center;
+ gap:12px;background:#08090ef0;backdrop-filter:blur(15px);border-bottom:1px solid var(--line)
+}
+.back-btn{
+ width:38px;height:38px;border:1px solid #343849;border-radius:11px;
+ background:#171a24;color:#e6e5f0;display:grid;place-items:center
+}
+.back-btn svg{width:18px;height:18px}
+.page-heading{font-size:13px;font-weight:900}
+.hero{padding:23px 0 18px}
+.hero-icon{
+ width:51px;height:51px;border-radius:16px;display:grid;place-items:center;
+ background:linear-gradient(135deg,#fff,#cdbdff);color:#15111e
+}
+.hero-icon svg{width:24px;height:24px}
+.hero h1{font-size:23px;line-height:1.35;letter-spacing:-.7px;margin-top:15px;overflow-wrap:anywhere}
+.hero p{font-size:10px;line-height:1.8;color:var(--muted);margin-top:8px}
 .summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-.summary{padding:14px}
-.summary i{color:var(--purple2);font-size:18px}
-.summary span{display:block;color:#777;font-size:8px;margin-top:9px}
-.summary strong{display:block;font-size:13px;margin-top:4px}
+.summary{
+ padding:14px;border:1px solid var(--line);border-radius:14px;background:#12141e
+}
+.summary svg{color:var(--purple2);width:19px;height:19px}
+.summary span{display:block;font-size:8px;color:var(--muted);margin-top:10px}
+.summary strong{display:block;font-size:14px;margin-top:5px}
 .block-title{font-size:12px;font-weight:900;margin-top:23px}
-.instruction-content{font-size:10px;color:#aaa;line-height:1.9;margin-top:10px;white-space:pre-wrap}
-.terms{margin-top:18px;padding:14px;background:#101015;border:1px solid var(--line);border-radius:13px}
-.terms strong{font-size:9px;color:#fbbf24}
-.terms p{font-size:9px;color:#777;line-height:1.7;margin-top:7px}
-.agreement{display:flex;gap:9px;align-items:flex-start;margin-top:18px}
-.agreement input{width:18px;height:18px;accent-color:var(--purple)}
-.agreement label{font-size:9px;color:#aaa;line-height:1.6}
-.payment-lock{margin-top:20px;padding:16px;border:1px solid #71333c;background:#1b1014;border-radius:15px}
-.payment-lock h3{font-size:13px;color:#fb7185}
-.payment-lock p{font-size:9px;color:#aaa;line-height:1.7;margin-top:8px}
-.resume-box{margin-top:15px;padding:13px;border:1px solid #285b3d;border-radius:13px;background:#0c1c13}
-.resume-box p{font-size:9px;color:#8ee5a8;line-height:1.6}
-.resume-box button{width:100%;padding:12px;border:0;border-radius:10px;background:#1b6939;color:#fff;font-size:10px;font-weight:900;margin-top:10px}
-.exam-container{padding-bottom:25px}
-.exam-topbar{height:70px;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#08080cf5;position:sticky;top:0;z-index:10;border-bottom:1px solid var(--line)}
-.exam-name{min-width:0;flex:1}
-.exam-name small{font-size:7px;color:var(--purple2);letter-spacing:1px}
-.exam-name strong{display:block;font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.timer{min-width:90px;padding:11px;border:1px solid #60439a;border-radius:11px;text-align:center;color:var(--purple2);font-size:14px;font-weight:900;font-variant-numeric:tabular-nums;background:#1a1228}
-.timer.warning{color:#fbbf24;border-color:#8b641e;background:#241a0c}
-.timer.danger{color:#fb7185;border-color:#8a343e;background:#271014}
-.progress{height:4px;background:#1a1a22}
-.progress div{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--blue));transition:.2s}
-.exam-tools{display:flex;align-items:center;justify-content:space-between;margin:12px 15px;padding:10px 12px;border:1px solid #292333;border-radius:12px;background:#121019}
-.exam-tools span{font-size:8px;color:#4ade80}
-.exam-tools button{background:#211934;border:1px solid #513b77;color:#c4b5fd;border-radius:8px;padding:8px;font-size:8px}
-.question-wrap{padding:15px}
-.question-card{padding:18px}
-.question-head{display:flex;justify-content:space-between;align-items:center}
-.question-count{font-size:9px;color:#888}
-.question-count b{color:var(--purple2)}
-.review{padding:8px 10px;background:#17171d;color:#999;border:1px solid #333;border-radius:8px;font-size:8px}
-.review.active{color:#fbbf24;border-color:#8b641e}
-.question-text{font-size:16px;line-height:1.65;font-weight:700;margin-top:20px;overflow-wrap:anywhere}
+.instruction-text{font-size:10px;color:#a7adbd;line-height:2;margin-top:10px;white-space:pre-wrap}
+.terms-box{padding:14px;border:1px solid #59451f;border-radius:13px;background:#211b10;margin-top:17px}
+.terms-box strong{font-size:9px;color:var(--orange)}
+.terms-box p{font-size:9px;color:#c3b99f;line-height:1.8;margin-top:7px;white-space:pre-wrap}
+.agreement{display:flex;gap:10px;align-items:flex-start;margin-top:18px}
+.agreement input{width:18px;height:18px;accent-color:var(--purple);flex-shrink:0}
+.agreement label{font-size:9px;color:#aeb3c1;line-height:1.8}
+.payment-lock{padding:16px;margin-top:20px;border:1px solid #733847;background:#25141b;border-radius:14px}
+.payment-lock h3{font-size:13px;color:var(--red)}
+.payment-lock p{font-size:9px;color:#c1aab0;line-height:1.8;margin-top:7px}
+.resume-box{padding:14px;margin-top:15px;border:1px solid #286347;border-radius:13px;background:#102219}
+.resume-box p{font-size:9px;color:#9ae5b8;line-height:1.7}
+.resume-box button{margin-top:10px;width:100%;height:42px;background:#1b6741;color:#fff;border:0;border-radius:10px;font-size:9px;font-weight:900}
+.sticky-start{position:sticky;bottom:0;padding:13px 0 calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#08090e 20%)}
+.sticky-start .btn{height:49px}
+/* EXAM SCREEN */
+.exam-overlay{position:fixed;inset:0;z-index:150;background:#08090e;overflow-y:auto;overscroll-behavior:contain}
+.exam-shell{width:100%;max-width:600px;min-height:100%;margin:auto;padding-bottom:90px}
+.exam-top{
+ position:sticky;top:0;z-index:10;min-height:69px;padding:10px 15px;
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ background:#0b0c13f5;backdrop-filter:blur(15px);border-bottom:1px solid var(--line)
+}
+.exam-title{min-width:0;flex:1}
+.exam-title small{font-size:7px;color:var(--purple2);letter-spacing:1.5px;font-weight:800}
+.exam-title strong{display:block;font-size:11px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timer{
+ min-width:88px;text-align:center;padding:10px;border:1px solid #55417d;
+ border-radius:11px;background:#211936;color:#d5c7ff;font-size:14px;
+ font-weight:900;font-variant-numeric:tabular-nums
+}
+.timer.warning{color:var(--orange);border-color:#80602a;background:#2a2112}
+.timer.danger{color:#ff8294;border-color:#773642;background:#2b151b;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.65}}
+.progress-track{height:4px;background:#1b1d29}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--blue));transition:width .2s}
+.exam-status{display:flex;align-items:center;justify-content:space-between;margin:12px 14px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#12141d}
+.save-indicator{font-size:8px;color:var(--green);font-weight:800}
+.exam-status button{padding:8px 10px;border:1px solid #4c3a70;background:#211934;color:#d2c1ff;border-radius:8px;font-size:8px;font-weight:800}
+.question-area{padding:13px}
+.question-card{padding:17px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,#171a26,#10121a)}
+.question-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.question-number{font-size:9px;color:var(--muted);font-weight:800;letter-spacing:.6px}
+.question-number b{color:var(--purple2)}
+.review-btn{padding:8px 10px;background:#1a1d28;color:#aab0c0;border:1px solid #353a4c;border-radius:9px;font-size:8px;font-weight:800}
+.review-btn.active{background:#302414;border-color:#80602a;color:var(--orange)}
+.question-text{font-size:15px;line-height:1.75;font-weight:700;margin-top:21px;overflow-wrap:anywhere}
 .options{display:grid;gap:9px;margin-top:19px}
-.option{width:100%;min-height:51px;display:flex;align-items:center;gap:10px;text-align:left;padding:10px;border:1px solid #292930;border-radius:12px;background:#0d0d12;color:#bbb}
-.option.selected{border-color:var(--purple);background:#211934;color:#fff}
-.option-letter{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border:1px solid #444;border-radius:8px;font-size:9px;font-weight:900}
-.option.selected .option-letter{color:var(--purple2);border-color:var(--purple)}
-.option-text{font-size:10px;line-height:1.5;overflow-wrap:anywhere}
-.palette-section{padding:15px;margin-top:13px}
-.palette-header{display:flex;justify-content:space-between;font-size:10px}
-.palette-header span{color:#777}
-.palette{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;margin-top:13px}
-.palette-button{aspect-ratio:1;border:1px solid #333;border-radius:8px;background:#15151b;color:#999;font-size:8px;font-weight:900}
-.palette-button.answered{background:#12301f;color:#4ade80;border-color:#28643d}
-.palette-button.review{box-shadow:inset 0 -3px #f59e0b}
-.palette-button.current{outline:2px solid var(--purple);outline-offset:1px}
-.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:13px;font-size:7px;color:#888}
-.legend i{display:inline-block;width:8px;height:8px;border-radius:3px;background:#333;margin-right:4px}
-.legend .green{background:#22c55e}.legend .yellow{background:#f59e0b}.legend .purple{background:#8b5cf6}
-.counts{display:flex;justify-content:space-between;margin-top:12px;font-size:8px;color:#888}
-.counts b{color:var(--purple2)}
-.exam-actions{position:sticky;bottom:0;display:flex;gap:7px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#08080cf5;border-top:1px solid var(--line)}
-.exam-btn{height:44px;border-radius:11px;border:1px solid #333;background:#17171e;color:#bbb;font-size:9px;font-weight:900}
-.exam-btn.prev{width:75px}.exam-btn.next{flex:1;background:linear-gradient(135deg,#fff,#ddd6fe);color:#111;border:0}.exam-btn.finish{width:70px;color:#fb7185;border-color:#71333c}
-.result-container{padding:35px 17px 70px}
-.result-hero{text-align:center;padding:25px 0}
-.result-circle{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;margin:auto;background:#211934;color:var(--purple2);font-size:29px;border:1px solid #60439a}
-.result-title{font-size:24px;font-weight:900;margin-top:18px}
-.result-sub{font-size:9px;color:#777;margin-top:8px}
-.result-score{font-size:50px;font-weight:900;color:var(--purple2);margin-top:20px}
-.result-label{font-size:8px;color:#777;letter-spacing:1px}
-.result-status{display:inline-block;margin-top:13px;padding:8px 14px;border:1px solid #444;border-radius:30px;font-size:8px;font-weight:900}
-.result-status.pass{color:#4ade80;border-color:#28643d;background:#102318}
-.result-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-.result-box{text-align:center;padding:17px}
-.result-box strong{font-size:22px}
-.result-box span{display:block;font-size:8px;color:#777;margin-top:6px}
-.result-home{width:100%;height:48px;margin-top:17px;border:0;border-radius:12px;background:linear-gradient(135deg,#fff,#ddd6fe);font-size:10px;font-weight:900}
-.modal{position:fixed;inset:0;z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:18px;background:#000c}
-.modal-card{width:100%;max-width:520px;padding:22px;border:1px solid #383344;border-radius:22px;background:#15151c}
-.modal-card h3{font-size:17px}
-.modal-card p{font-size:10px;color:#999;line-height:1.7;margin-top:9px}
-.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
-.modal-actions button{height:44px;border:1px solid #333;border-radius:10px;background:#222;color:#ccc;font-size:9px;font-weight:900}
-.modal-actions .confirm{background:linear-gradient(135deg,#fff,#ddd6fe);color:#111;border:0}
-.toast{position:fixed;z-index:900;bottom:90px;left:50%;transform:translate(-50%,100px);padding:12px 16px;border:1px solid #60439a;border-radius:12px;background:#17121f;color:#ddd;font-size:9px;transition:.3s;max-width:90%;text-align:center}
+.option{
+ width:100%;min-height:52px;display:flex;align-items:center;gap:11px;
+ padding:10px 12px;border:1px solid #303443;border-radius:12px;
+ background:#11141d;color:#c4c9d7;text-align:left
+}
+.option.selected{border-color:#8967db;background:#241c36;color:#fff;box-shadow:0 0 0 1px #8967db33}
+.option-letter{
+ width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;
+ border:1px solid #454b5e;border-radius:8px;font-size:9px;font-weight:900
+}
+.option.selected .option-letter{border-color:var(--purple);background:#4b347b;color:#fff}
+.option-text{font-size:10px;line-height:1.6;overflow-wrap:anywhere}
+.palette-card{padding:15px;margin-top:12px;border:1px solid var(--line);border-radius:15px;background:#11131c}
+.palette-head{display:flex;justify-content:space-between;font-size:10px;font-weight:800}
+.palette-head span{color:var(--muted);font-weight:500}
+.palette{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:14px}
+.palette-btn{
+ aspect-ratio:1;border:1px solid #363b4a;border-radius:9px;
+ background:#1a1d27;color:#9ba2b5;font-size:9px;font-weight:900
+}
+.palette-btn.answered{background:#123323;border-color:#286b47;color:#62e4a4}
+.palette-btn.review{box-shadow:inset 0 -3px var(--orange)}
+.palette-btn.current{outline:2px solid var(--purple);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;font-size:8px;color:var(--muted)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:3px;background:#444;margin-right:5px}
+.legend .lg-green{background:var(--green)}.legend .lg-orange{background:var(--orange)}.legend .lg-purple{background:var(--purple)}
+.question-counts{font-size:8px;color:var(--muted);margin-top:13px;line-height:1.8}
+.question-counts b{color:#e0d7ff}
+.exam-footer{
+ position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+ width:100%;max-width:600px;z-index:12;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+ display:flex;gap:8px;background:#0b0c13f5;backdrop-filter:blur(15px);border-top:1px solid var(--line)
+}
+.exam-footer button{height:45px;border-radius:11px;font-size:9px;font-weight:900}
+.prev-btn{width:76px;background:#202333;border:1px solid #363b4c;color:#d1d5e1}
+.next-btn{flex:1;background:linear-gradient(120deg,#fff,#d8ccff);border:0;color:#111}
+.finish-btn{width:77px;background:#29151d;border:1px solid #713747;color:#ff8c9e}
+/* RESULT */
+.result-overlay{position:fixed;inset:0;z-index:180;background:#08090e;overflow-y:auto}
+.result-shell{width:100%;max-width:600px;margin:auto;padding:30px 17px 55px}
+.result-hero{text-align:center;padding:24px 0}
+.result-icon{width:78px;height:78px;margin:auto;border-radius:25px;display:grid;place-items:center;background:#29203e;border:1px solid #624c92;color:#d4c5ff}
+.result-icon svg{width:34px;height:34px}
+.result-title{font-size:23px;font-weight:900;margin-top:18px}
+.result-sub{font-size:9px;color:var(--muted);margin-top:8px;line-height:1.7}
+.score{font-size:49px;font-weight:900;letter-spacing:-2px;color:var(--purple2);margin-top:22px}
+.score-label{font-size:8px;color:var(--muted);letter-spacing:1.7px}
+.result-status{display:inline-block;padding:8px 15px;border:1px solid #454a5b;border-radius:30px;margin-top:14px;font-size:8px;font-weight:900;color:#b5bfd4}
+.result-status.pass{color:var(--green);border-color:#286b47;background:#10271c}
+.result-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:15px}
+.result-box{text-align:center;padding:17px;border:1px solid var(--line);border-radius:15px;background:#131620}
+.result-box strong{font-size:24px}
+.result-box span{display:block;font-size:8px;color:var(--muted);margin-top:6px}
+.result-home{width:100%;height:49px;margin-top:20px;border:0;border-radius:12px;background:linear-gradient(120deg,#fff,#d8ccff);color:#111;font-size:9px;font-weight:900}
+/* MODALS */
+.modal{
+ position:fixed;inset:0;z-index:300;background:#000c;
+ display:flex;align-items:flex-end;justify-content:center;padding:15px
+}
+.modal-card{
+ width:100%;max-width:500px;padding:21px;border:1px solid #3b4051;
+ border-radius:22px;background:#171a25;box-shadow:0 20px 80px #0009
+}
+.modal-card h3{font-size:16px}
+.modal-card p{font-size:10px;color:#a0a7b8;line-height:1.8;margin-top:9px}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:19px}
+.modal-actions button{height:44px;border:1px solid #3b4051;border-radius:10px;background:#242837;color:#d7dbea;font-size:9px;font-weight:900}
+.modal-actions .confirm{background:linear-gradient(120deg,#fff,#d8ccff);color:#111;border:0}
+.toast{
+ position:fixed;z-index:999;bottom:95px;left:50%;
+ transform:translate(-50%,100px);padding:12px 17px;
+ border:1px solid #55417d;border-radius:12px;background:#1b1730;
+ color:#e3dcf8;font-size:9px;text-align:center;max-width:90%;transition:.3s
+}
 .toast.show{transform:translate(-50%,0)}
-.loader{position:fixed;inset:0;z-index:999;background:#050507;display:grid;place-items:center;text-align:center}
-.loader-logo{width:55px;height:55px;border-radius:16px;background:linear-gradient(135deg,#fff,#ddd6fe);color:#111;display:grid;place-items:center;margin:auto;font-weight:900}
-.loader p{font-size:8px;color:var(--purple2);letter-spacing:2px;margin-top:13px}
-.spinner{width:20px;height:20px;border:2px solid #333;border-top-color:#c4b5fd;border-radius:50%;margin:15px auto;animation:spin .7s linear infinite}
+.loader{
+ position:fixed;inset:0;z-index:1000;background:#08090e;
+ display:grid;place-items:center;text-align:center
+}
+.loader-logo{width:55px;height:55px;margin:auto;border-radius:17px;display:grid;place-items:center;background:linear-gradient(140deg,#fff,#c7b5ff);color:#111;font-weight:1000;font-size:18px}
+.loader p{font-size:8px;color:var(--purple2);letter-spacing:2px;margin-top:14px}
+.spinner{width:21px;height:21px;border:2px solid #343244;border-top-color:var(--purple2);border-radius:50%;margin:15px auto;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:360px){.palette{grid-template-columns:repeat(7,1fr)}.main{padding-left:13px;padding-right:13px}.question-wrap{padding:10px}.exam-btn.prev{width:65px}.exam-btn.finish{width:60px}}
+@media(min-width:700px){
+ body{padding:20px 0}
+ .shell{border:1px solid #202331;border-radius:24px;overflow:hidden;min-height:calc(100vh - 40px);box-shadow:0 20px 100px #0007}
+ .header{position:relative}
+ .bottom-nav{bottom:20px;border:1px solid var(--line);border-radius:0 0 24px 24px}
+}
+@media(max-width:370px){
+ .content{padding-left:13px;padding-right:13px}
+ .palette{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+ .question-area{padding:10px}
+ .prev-btn{width:63px}.finish-btn{width:65px}
+}
 </style>
 </head>
 
 <body>
 
+<!-- SVG ICON LIBRARY -->
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden">
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7M8 14h8M8 18h8"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H3v2a4 4 0 0 0 4 4M17 6h4v2a4 4 0 0 1-4 4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M19 12H5m7 7-7-7 7-7"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5zM4 17.5A2.5 2.5 0 0 1 6.5 15H20"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="m8.2 13-1 8 4.8-3 4.8 3-1-8"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+<symbol id="i-full" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m18 6-12 12M6 6l12 12"/></symbol>
+</svg>
+
 <div class="loader" id="loader">
-    <div>
-        <div class="loader-logo">BT</div>
-        <p>LOADING EXAMINATION</p>
-        <div class="spinner"></div>
-    </div>
+ <div><div class="loader-logo">BT</div><p>PREPARING YOUR EXAMINATION</p><div class="spinner"></div></div>
 </div>
 
-<!-- HOME -->
-<div class="app-inner" id="homeApp">
-    <header class="header">
-        <div class="brand">
-            <div class="logo">BT</div>
-            <div>
-                <div class="brand-title">BlackTerminal</div>
-                <div class="brand-sub">EXAMINATION PORTAL</div>
-            </div>
-        </div>
-        <div class="avatar" id="profileAvatar">S</div>
-    </header>
+<!-- HOME DASHBOARD -->
+<div class="shell" id="homeApp">
+ <header class="header">
+  <div class="brand">
+   <div class="logo">BT</div>
+   <div><div class="brand-name">BlackTerminal</div><div class="brand-sub">STUDENT EXAM PORTAL</div></div>
+  </div>
+  <div class="profile" id="profileAvatar">S</div>
+ </header>
 
-    <main class="main">
-        <div class="small">WELCOME BACK</div>
-        <div class="greeting">Hello, <span id="studentName">Student</span></div>
+ <main class="content">
+  <div class="eyebrow">STUDENT DASHBOARD</div>
+  <div class="greeting">Hello, <span id="studentName">Student</span></div>
+  <p class="subline">Your learning journey continues. Stay focused and do your best.</p>
 
-        <div class="notice" id="noticeText">
-            Welcome to BlackTerminal Examination Portal
-        </div>
+  <div class="announcement">
+   <svg><use href="#i-bell"/></svg>
+   <p id="noticeText">Welcome to BlackTerminal Examination Portal.</p>
+  </div>
 
-        <div class="stats">
-            <div class="stat"><span>Total Exams</span><strong id="totalExamStat">0</strong></div>
-            <div class="stat"><span>Available</span><strong id="availableExamStat">0</strong></div>
-            <div class="stat"><span>Completed</span><strong id="completedExamStat">0</strong></div>
-        </div>
+  <div class="stats">
+   <div class="stat"><div class="stat-icon"><svg><use href="#i-file"/></svg></div><strong id="totalExamStat">0</strong><span>Total Exams</span></div>
+   <div class="stat"><div class="stat-icon"><svg><use href="#i-play"/></svg></div><strong id="availableExamStat">0</strong><span>Available</span></div>
+   <div class="stat"><div class="stat-icon"><svg><use href="#i-award"/></svg></div><strong id="completedExamStat">0</strong><span>Completed</span></div>
+  </div>
 
-        <section class="section" id="availableSection">
-            <div class="section-head"><strong>Available Exams</strong><span id="availableCount">0 exams</span></div>
-            <div id="availableList"></div>
-        </section>
+  <section class="section">
+   <div class="section-head"><div><h2>My Examinations</h2><p>Explore your examination schedule</p></div><span class="section-count" id="allExamCount">0 exams</span></div>
+   <div class="filter-row">
+    <button class="filter active" onclick="setFilter('all',this)">All Exams</button>
+    <button class="filter" onclick="setFilter('available',this)">Available</button>
+    <button class="filter" onclick="setFilter('upcoming',this)">Upcoming</button>
+    <button class="filter" onclick="setFilter('completed',this)">Completed</button>
+    <button class="filter" onclick="setFilter('closed',this)">Closed</button>
+   </div>
+   <div id="examList"></div>
+  </section>
 
-        <section class="section" id="upcomingSection">
-            <div class="section-head"><strong>Upcoming</strong><span id="upcomingCount">0 exams</span></div>
-            <div id="upcomingList"></div>
-        </section>
+  <div class="empty hidden" id="emptyState">
+   <svg><use href="#i-file"/></svg>
+   No examinations found.<br>New exams will appear here when assigned.
+  </div>
+ </main>
 
-        <section class="section" id="completedSection">
-            <div class="section-head"><strong>Completed</strong><span id="completedCount">0 exams</span></div>
-            <div id="completedList"></div>
-        </section>
-
-        <div class="empty hidden" id="emptyState">
-            <i class="ri-file-list-3-line" style="font-size:28px"></i>
-            <p style="margin-top:10px">No examination found.</p>
-        </div>
-    </main>
-
-    <nav class="bottom-nav">
-        <button class="active" onclick="scrollHome()"><i class="ri-home-5-line"></i>Home</button>
-        <button onclick="focusAvailable()"><i class="ri-file-list-3-line"></i>Exams</button>
-        <button onclick="focusCompleted()"><i class="ri-medal-line"></i>Results</button>
-    </nav>
+ <nav class="bottom-nav">
+  <button class="active" onclick="scrollHome(this)"><svg><use href="#i-home"/></svg>Home</button>
+  <button onclick="setFilter('available',null,true)"><svg><use href="#i-file"/></svg>Exams</button>
+  <button onclick="setFilter('completed',null,true)"><svg><use href="#i-award"/></svg>Results</button>
+ </nav>
 </div>
 
 <!-- INSTRUCTIONS -->
-<div class="page hidden" id="instructionPage">
-    <div class="page-inner">
-        <div class="page-header">
-            <button class="back" onclick="closeInstructions()"><i class="ri-arrow-left-line"></i></button>
-            <div class="page-heading">Examination Details</div>
-        </div>
+<div class="overlay hidden" id="instructionPage">
+ <div class="overlay-inner">
+  <div class="page-header">
+   <button class="back-btn" onclick="closeInstructions()"><svg><use href="#i-arrow"/></svg></button>
+   <div class="page-heading">Examination Details</div>
+  </div>
 
-        <div class="instruction-hero">
-            <div class="instruction-icon"><i class="ri-file-text-line"></i></div>
-            <h1 id="instructionTitle">Examination</h1>
-            <p id="instructionDescription"></p>
-        </div>
+  <div class="hero">
+   <div class="hero-icon"><svg><use href="#i-book"/></svg></div>
+   <h1 id="instructionTitle">Examination</h1>
+   <p id="instructionDescription"></p>
+  </div>
 
-        <div class="summary-grid" id="summaryGrid"></div>
+  <div class="summary-grid" id="summaryGrid"></div>
+  <div class="block-title">Examination Instructions</div>
+  <div class="instruction-text" id="instructionContent"></div>
 
-        <div class="block-title">Instructions</div>
-        <div class="instruction-content" id="instructionContent"></div>
+  <div class="terms-box">
+   <strong>TERMS & CONDITIONS</strong>
+   <p id="termsText"></p>
+  </div>
 
-        <div class="terms">
-            <strong>TERMS & CONDITIONS</strong>
-            <p id="termsText"></p>
-        </div>
+  <div class="payment-lock hidden" id="instructionPaymentLock">
+   <h3><svg style="display:inline;width:15px;height:15px;vertical-align:middle"><use href="#i-lock"/></svg> Examination Locked</h3>
+   <p>Your current month fee payment is not marked as paid. Please complete your payment to unlock this examination.</p>
+   <p id="instructionPaymentMonth"></p>
+  </div>
 
-        <div class="payment-lock hidden" id="instructionPaymentLock">
-            <h3><i class="ri-lock-line"></i> Examination Locked</h3>
-            <p>Your current month fee payment is not marked as paid. Please complete your payment to unlock this examination.</p>
-            <p id="instructionPaymentMonth"></p>
-        </div>
+  <div class="agreement" id="agreementBox">
+   <input type="checkbox" id="agree">
+   <label for="agree">I have read and understood the examination instructions and agree to follow all examination rules.</label>
+  </div>
 
-        <div class="agreement" id="agreementBox">
-            <input type="checkbox" id="agree">
-            <label for="agree">I have read and understood the examination instructions and agree to follow all rules.</label>
-        </div>
-
-        <button class="primary" id="startExamButton" onclick="startExam()">START EXAMINATION</button>
-        <div id="resumeBox"></div>
-    </div>
+  <div class="sticky-start">
+   <button class="btn btn-primary btn-block" id="startExamButton" onclick="startExam()">START EXAMINATION</button>
+  </div>
+  <div id="resumeBox"></div>
+ </div>
 </div>
 
 <!-- LIVE EXAM -->
-<div class="exam-app hidden" id="examApp">
-    <div class="exam-container">
-        <div class="exam-topbar">
-            <div class="exam-name">
-                <small>LIVE EXAMINATION</small>
-                <strong id="liveExamName">Examination</strong>
-            </div>
-            <div class="timer" id="liveTimer"><span id="timerText">00:00</span></div>
-        </div>
+<div class="exam-overlay hidden" id="examApp">
+ <div class="exam-shell">
+  <header class="exam-top">
+   <div class="exam-title"><small>LIVE EXAMINATION</small><strong id="liveExamName">Examination</strong></div>
+   <div class="timer" id="liveTimer"><span id="timerText">00:00</span></div>
+  </header>
+  <div class="progress-track"><div class="progress-fill" id="examProgress"></div></div>
 
-        <div class="progress"><div id="examProgress"></div></div>
+  <div class="exam-status">
+   <span class="save-indicator" id="saveStatus">● AUTO SAVE READY</span>
+   <button onclick="toggleFullscreen()"><svg style="width:13px;height:13px;display:inline"><use href="#i-full"/></svg> FULLSCREEN</button>
+  </div>
 
-        <div class="exam-tools">
-            <span id="saveStatus">● AUTO SAVE READY</span>
-            <button onclick="toggleFullscreen()"><i class="ri-fullscreen-line"></i> FULLSCREEN</button>
-        </div>
-
-        <div class="question-wrap">
-            <div class="question-card">
-                <div class="question-head">
-                    <div class="question-count">QUESTION <b id="questionNumber">1</b> / <span id="questionTotal">1</span></div>
-                    <button class="review" id="reviewButton" onclick="toggleReview()">☆ Review</button>
-                </div>
-                <div class="question-text" id="questionText"></div>
-                <div class="options" id="options"></div>
-            </div>
-
-            <div class="palette-section">
-                <div class="palette-header"><strong>Question Palette</strong><span id="paletteCount">0 / 0</span></div>
-                <div class="palette" id="palette"></div>
-                <div class="legend">
-                    <span><i class="green"></i>Answered</span>
-                    <span><i class="yellow"></i>Review</span>
-                    <span><i class="purple"></i>Current</span>
-                    <span><i></i>Unanswered</span>
-                </div>
-                <div class="counts" id="questionCounts"></div>
-            </div>
-        </div>
-
-        <div class="exam-actions">
-            <button class="exam-btn prev" onclick="previousQuestion()">PREV</button>
-            <button class="exam-btn next" onclick="nextQuestion()">SAVE & NEXT</button>
-            <button class="exam-btn finish" onclick="openSubmitModal()">FINISH</button>
-        </div>
+  <div class="question-area">
+   <div class="question-card">
+    <div class="question-top">
+     <div class="question-number">QUESTION <b id="questionNumber">1</b> / <span id="questionTotal">1</span></div>
+     <button class="review-btn" id="reviewButton" onclick="toggleReview()">☆ MARK REVIEW</button>
     </div>
+    <div class="question-text" id="questionText"></div>
+    <div class="options" id="options"></div>
+   </div>
+
+   <div class="palette-card">
+    <div class="palette-head"><strong>Question Navigator</strong><span id="paletteCount">0 / 0 Answered</span></div>
+    <div class="palette" id="palette"></div>
+    <div class="legend">
+     <span><i class="lg-green"></i>Answered</span>
+     <span><i class="lg-orange"></i>Review</span>
+     <span><i class="lg-purple"></i>Current</span>
+     <span><i></i>Unanswered</span>
+    </div>
+    <div class="question-counts" id="questionCounts"></div>
+   </div>
+  </div>
+ </div>
+
+ <div class="exam-footer">
+  <button class="prev-btn" onclick="previousQuestion()">PREVIOUS</button>
+  <button class="next-btn" onclick="nextQuestion()">SAVE & NEXT</button>
+  <button class="finish-btn" onclick="openSubmitModal()">FINISH</button>
+ </div>
 </div>
 
 <!-- RESULT -->
-<div class="result-page hidden" id="resultPage">
-    <div class="result-container">
-        <div class="result-hero">
-            <div class="result-circle" id="resultCircle"><i class="ri-trophy-line"></i></div>
-            <div class="result-title" id="resultTitle">Examination Completed</div>
-            <div class="result-sub" id="resultExam"></div>
-            <div class="result-score" id="resultScore">0</div>
-            <div class="result-label">YOUR SCORE</div>
-            <div class="result-status" id="resultStatus">COMPLETED</div>
-        </div>
-
-        <div class="result-grid">
-            <div class="result-box"><strong id="resultCorrect" style="color:#4ade80">0</strong><span>Correct</span></div>
-            <div class="result-box"><strong id="resultWrong" style="color:#fb7185">0</strong><span>Wrong</span></div>
-            <div class="result-box"><strong id="resultSkipped" style="color:#fbbf24">0</strong><span>Skipped</span></div>
-            <div class="result-box"><strong id="resultPercentage" style="color:#38bdf8">0%</strong><span>Percentage</span></div>
-        </div>
-
-        <button class="result-home" onclick="closeResult()">BACK TO EXAMINATION HOME</button>
-    </div>
+<div class="result-overlay hidden" id="resultPage">
+ <div class="result-shell">
+  <div class="result-hero">
+   <div class="result-icon" id="resultCircle"><svg><use href="#i-trophy"/></svg></div>
+   <div class="result-title" id="resultTitle">Examination Completed</div>
+   <div class="result-sub" id="resultExam"></div>
+   <div class="score" id="resultScore">0</div>
+   <div class="score-label">YOUR SCORE</div>
+   <div class="result-status" id="resultStatus">COMPLETED</div>
+  </div>
+  <div class="result-grid">
+   <div class="result-box"><strong id="resultCorrect" style="color:var(--green)">0</strong><span>Correct Answers</span></div>
+   <div class="result-box"><strong id="resultWrong" style="color:var(--red)">0</strong><span>Wrong Answers</span></div>
+   <div class="result-box"><strong id="resultSkipped" style="color:var(--orange)">0</strong><span>Skipped Questions</span></div>
+   <div class="result-box"><strong id="resultPercentage" style="color:var(--blue)">0%</strong><span>Percentage</span></div>
+  </div>
+  <button class="result-home" onclick="closeResult()">BACK TO EXAM DASHBOARD</button>
+ </div>
 </div>
 
 <!-- SUBMIT MODAL -->
 <div class="modal hidden" id="submitModal">
-    <div class="modal-card">
-        <h3>Submit Examination?</h3>
-        <p id="submitText">Are you sure you want to submit?</p>
-        <div class="modal-actions">
-            <button onclick="closeSubmitModal()">CONTINUE</button>
-            <button class="confirm" onclick="submitExam(false)">SUBMIT NOW</button>
-        </div>
-    </div>
+ <div class="modal-card">
+  <h3>Submit Examination?</h3>
+  <p id="submitText">Are you sure you want to submit?</p>
+  <div class="modal-actions">
+   <button onclick="closeSubmitModal()">CONTINUE EXAM</button>
+   <button class="confirm" onclick="submitExam(false)">SUBMIT NOW</button>
+  </div>
+ </div>
 </div>
 
 <!-- PAYMENT MODAL -->
 <div class="modal hidden" id="paymentLockModal">
-    <div class="modal-card">
-        <h3 style="color:#fb7185">Examination Locked</h3>
-        <p id="paymentLockText">Your current month fee payment is unpaid.</p>
-        <div class="modal-actions">
-            <button class="confirm" style="grid-column:1/-1" onclick="closePaymentLock()">OKAY</button>
-        </div>
-    </div>
+ <div class="modal-card">
+  <h3 style="color:var(--red)">Examination Locked</h3>
+  <p id="paymentLockText">Your current month fee payment is unpaid.</p>
+  <div class="modal-actions">
+   <button class="confirm" style="grid-column:1/-1" onclick="closePaymentLock()">UNDERSTOOD</button>
+  </div>
+ </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* =========================================================
- FIREBASE CONFIGURATION - PRESERVED
-========================================================= */
+/* FIREBASE CONFIGURATION - PRESERVED */
 const firebaseConfig={
-    apiKey:"AIzaSyCEYfwfZv2Ck2pg-UFLRvJkMBRlXA2w_WpI",
-    authDomain:"black-terminal-f2c91.firebaseapp.com",
-    projectId:"black-terminal-f2c91",
-    storageBucket:"black-terminal-f2c91.appspot.com",
-    messagingSenderId:"552489994197",
-    appId:"1:552489994197:web:7662331264c334ffbadf5c"
+ apiKey:"AIzaSyCEYfwfZv2Ck2pg-UFLRvJkMBRlXA2w_WpI",
+ authDomain:"black-terminal-f2c91.firebaseapp.com",
+ projectId:"black-terminal-f2c91",
+ storageBucket:"black-terminal-f2c91.appspot.com",
+ messagingSenderId:"552489994197",
+ appId:"1:552489994197:web:7662331264c334ffbadf5c"
 };
-
-if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
 
-/* =========================================================
- STATE
-========================================================= */
+/* STATE */
 let student={id:"",name:"Student",phone:""};
 let exams=[];
 let currentExam=null;
@@ -406,911 +576,561 @@ let timer=null;
 let remainingSeconds=0;
 let examRunning=false;
 let paymentStatus="unpaid";
-let paymentAmount=0;
 let paymentChecked=false;
 let violationCount=0;
 let submitting=false;
 let attemptStartedAt=null;
+let activeFilter="all";
 
+const $=id=>document.getElementById(id);
 const currentPaymentMonth=new Date().toLocaleString("default",{month:"long",year:"numeric"});
-const DRAFT_PREFIX="BT_EXAM_DRAFT_V3_";
 
-function $(id){return document.getElementById(id)}
 function first(...values){
-    for(const value of values){
-        if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;
-    }
-    return "";
+ for(const v of values)if(v!==undefined&&v!==null&&String(v).trim()!=="")return v;
+ return "";
 }
 function normalize(v){return String(v||"").trim().toLowerCase().replace(/\s+/g," ")}
 function escapeHtml(v){
-    return String(v??"").replace(/[&<>"']/g,c=>({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    })[c]);
+ return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 }
 function local(keys){
-    for(const key of keys){
-        const value=localStorage.getItem(key);
-        if(value&&value!=="null"&&value!=="undefined")return value;
-    }
-    return "";
+ for(const key of keys){
+  const value=localStorage.getItem(key);
+  if(value&&value!=="null"&&value!=="undefined")return value;
+ }
+ return "";
 }
 function toast(message){
-    $("toast").textContent=message;
-    $("toast").classList.add("show");
-    clearTimeout(window.btToastTimer);
-    window.btToastTimer=setTimeout(()=>$("toast").classList.remove("show"),2800);
+ $("toast").textContent=message;
+ $("toast").classList.add("show");
+ clearTimeout(window.btToastTimer);
+ window.btToastTimer=setTimeout(()=>$("toast").classList.remove("show"),2800);
 }
 
-/* =========================================================
- STUDENT IDENTITY
-========================================================= */
+/* STUDENT IDENTITY */
 function loadStudent(){
-    let saved=null;
-    try{saved=JSON.parse(localStorage.getItem("student")||"null")}catch(e){}
-    const params=new URLSearchParams(location.search);
+ let saved=null;
+ try{saved=JSON.parse(localStorage.getItem("student")||"null")}catch(e){}
+ const params=new URLSearchParams(location.search);
 
-    student.id=first(
-        params.get("studentId"),saved?.id,saved?.studentId,
-        saved?.studentID,saved?.userId,
-        local(["studentId","student_id","userId","userID","studentID","BT_STUDENT_ID"])
-    );
+ student.id=first(params.get("studentId"),saved?.id,saved?.studentId,saved?.studentID,saved?.userId,
+  local(["studentId","student_id","userId","userID","studentID","BT_STUDENT_ID"]));
 
-    student.name=first(
-        params.get("studentName"),saved?.name,saved?.studentName,
-        saved?.student_name,saved?.fullName,
-        local(["studentName","student_name","userName","username","fullName","BT_STUDENT_NAME"]),
-        "Student"
-    );
+ student.name=first(params.get("studentName"),saved?.name,saved?.studentName,saved?.student_name,saved?.fullName,
+  local(["studentName","student_name","userName","username","fullName","BT_STUDENT_NAME"]),"Student");
 
-    student.phone=first(
-        params.get("phone"),saved?.phone,saved?.mobile,saved?.studentPhone,
-        local(["studentPhone","student_phone","phone","mobile","phoneNumber","BT_STUDENT_PHONE"])
-    );
+ student.phone=first(params.get("phone"),saved?.phone,saved?.mobile,saved?.studentPhone,
+  local(["studentPhone","student_phone","phone","mobile","phoneNumber","BT_STUDENT_PHONE"]));
 
-    $("studentName").textContent=student.name;
-    $("profileAvatar").textContent=student.name.trim().charAt(0).toUpperCase()||"S";
+ $("studentName").textContent=student.name;
+ $("profileAvatar").textContent=student.name.trim().charAt(0).toUpperCase()||"S";
 }
 
-/* =========================================================
- PAYMENT VERIFICATION - ORIGINAL STRUCTURE
-========================================================= */
+/* PAYMENT VERIFICATION */
 async function checkStudentPayment(){
-    paymentChecked=false;
-    paymentStatus="unpaid";
-    paymentAmount=0;
-
-    try{
-        const studentName=String(student.name||"").trim();
-        if(!studentName||studentName==="Student"){
-            paymentChecked=true;
-            return false;
-        }
-
-        const ref=db.collection("payments")
-            .doc(studentName)
-            .collection("months")
-            .doc(currentPaymentMonth);
-
-        const snap=await ref.get();
-
-        if(snap.exists){
-            const data=snap.data()||{};
-            paymentStatus=String(data.status||"unpaid").trim().toLowerCase();
-            paymentAmount=Number(data.amount??data.paidAmount??0);
-        }
-
-        paymentChecked=true;
-        return paymentStatus==="paid";
-
-    }catch(error){
-        console.error("Payment verification:",error);
-        paymentStatus="unpaid";
-        paymentChecked=true;
-        return false;
-    }
+ paymentChecked=false;
+ paymentStatus="unpaid";
+ try{
+  const name=String(student.name||"").trim();
+  if(!name||name==="Student"){paymentChecked=true;return false}
+  const ref=db.collection("payments").doc(name).collection("months").doc(currentPaymentMonth);
+  const snap=await ref.get();
+  if(snap.exists){
+   const data=snap.data()||{};
+   paymentStatus=String(data.status||"unpaid").trim().toLowerCase();
+  }
+  paymentChecked=true;
+  return paymentStatus==="paid";
+ }catch(error){
+  console.error("Payment verification:",error);
+  paymentStatus="unpaid";
+  paymentChecked=true;
+  return false;
+ }
 }
 function isPaymentPaid(){return paymentStatus==="paid"}
 function showPaymentLock(message=""){
-    $("paymentLockText").textContent=message||
-        `Your ${currentPaymentMonth} fee payment is not marked as paid. Please complete your fee payment to unlock this examination.`;
-    $("paymentLockModal").classList.remove("hidden");
+ $("paymentLockText").textContent=message||`Your ${currentPaymentMonth} fee payment is not marked as paid. Please contact the institute to unlock this examination.`;
+ $("paymentLockModal").classList.remove("hidden");
 }
 function closePaymentLock(){$("paymentLockModal").classList.add("hidden")}
 function updatePaymentUI(){
-    const paid=isPaymentPaid();
-    $("instructionPaymentLock").classList.toggle("hidden",paid);
-    $("agreementBox").classList.toggle("hidden",!paid);
-    $("startExamButton").disabled=!paid;
-    $("startExamButton").classList.toggle("disabled",!paid);
-    $("startExamButton").textContent=paid?"START EXAMINATION":"PAYMENT REQUIRED";
-    if(!paid)$("instructionPaymentMonth").textContent=currentPaymentMonth.toUpperCase()+" • PAYMENT REQUIRED";
+ const paid=isPaymentPaid();
+ $("instructionPaymentLock").classList.toggle("hidden",paid);
+ $("agreementBox").classList.toggle("hidden",!paid);
+ $("startExamButton").disabled=!paid;
+ $("startExamButton").textContent=paid?"START EXAMINATION":"PAYMENT REQUIRED";
+ $("instructionPaymentMonth").textContent=currentPaymentMonth.toUpperCase()+" • PAYMENT REQUIRED";
 }
 
-/* =========================================================
- DATE / STATUS
-========================================================= */
+/* DATE HELPERS */
 function dateValue(value){
-    if(!value)return null;
-    if(typeof value.toDate==="function")return value.toDate();
-    if(typeof value==="object"&&typeof value.seconds==="number")return new Date(value.seconds*1000);
-    const d=new Date(value);
-    return isNaN(d.getTime())?null:d;
+ if(!value)return null;
+ if(typeof value.toDate==="function")return value.toDate();
+ if(typeof value==="object"&&typeof value.seconds==="number")return new Date(value.seconds*1000);
+ const d=new Date(value);
+ return isNaN(d.getTime())?null:d;
 }
 function formatDate(value){
-    const d=dateValue(value);
-    return d?d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Not scheduled";
+ const d=dateValue(value);
+ return d?d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Not scheduled";
 }
 function getStatus(exam){
-    const now=new Date();
-    const start=dateValue(exam.startAt);
-    const end=dateValue(exam.endAt);
-    if(end&&now>end)return "closed";
-    if(start&&now<start)return "upcoming";
-    return "available";
+ const now=new Date();
+ const start=dateValue(exam.startAt);
+ const end=dateValue(exam.endAt);
+ if(end&&now>end)return "closed";
+ if(start&&now<start)return "upcoming";
+ return "available";
 }
 
-/* =========================================================
- ASSIGNMENTS
-========================================================= */
+/* ASSIGNMENT MATCH */
 function assignmentMatches(data){
-    if(!data)return false;
-    const ids=[data.studentId,data.studentID,data.userId,data.userID,data.id].filter(Boolean).map(normalize);
-    const names=[data.studentName,data.student_name,data.displayStudentName,data.name,data.fullName].filter(Boolean).map(normalize);
-    const phones=[data.phone,data.mobile,data.studentPhone,data.student_phone,data.phoneNumber]
-        .filter(Boolean).map(v=>String(v).replace(/\D/g,""));
-
-    if(student.id&&ids.includes(normalize(student.id)))return true;
-    if(student.name&&names.includes(normalize(student.name)))return true;
-    const phone=String(student.phone||"").replace(/\D/g,"");
-    return !!phone&&phones.includes(phone);
+ if(!data)return false;
+ const ids=[data.studentId,data.studentID,data.userId,data.userID,data.id].filter(Boolean).map(normalize);
+ const names=[data.studentName,data.student_name,data.displayStudentName,data.name,data.fullName].filter(Boolean).map(normalize);
+ const phones=[data.phone,data.mobile,data.studentPhone,data.student_phone,data.phoneNumber].filter(Boolean).map(v=>String(v).replace(/\D/g,""));
+ if(student.id&&ids.includes(normalize(student.id)))return true;
+ if(student.name&&names.includes(normalize(student.name)))return true;
+ const phone=String(student.phone||"").replace(/\D/g,"");
+ return !!phone&&phones.includes(phone);
 }
 
-/* =========================================================
- LOAD EXAMS AND RESULTS
-========================================================= */
+/* LOAD EXAMS */
 async function loadExams(){
-    try{
-        const [examSnap,assignmentSnap]=await Promise.all([
-            db.collection("exams").where("status","==","published").get(),
-            db.collection("examAssignments").get()
-        ]);
-
-        const assigned=new Set();
-
-        assignmentSnap.forEach(doc=>{
-            const data=doc.data()||{};
-            if(assignmentMatches(data)&&data.examId)assigned.add(String(data.examId));
-        });
-
-        exams=[];
-        examSnap.forEach(doc=>{
-            const exam={id:doc.id,...doc.data()};
-            if(exam.openToAll===true||exam.public===true||assigned.has(doc.id))exams.push(exam);
-        });
-
-        await loadResults();
-        renderHome();
-
-    }catch(error){
-        console.error("Exam loading:",error);
-        toast("Unable to load examinations. Check Firestore permissions.");
-        renderHome();
-    }
+ try{
+  const [examSnap,assignmentSnap]=await Promise.all([
+   db.collection("exams").where("status","==","published").get(),
+   db.collection("examAssignments").get()
+  ]);
+  const assigned=new Set();
+  assignmentSnap.forEach(doc=>{
+   const data=doc.data()||{};
+   if(assignmentMatches(data)&&data.examId)assigned.add(String(data.examId));
+  });
+  exams=[];
+  examSnap.forEach(doc=>{
+   const exam={id:doc.id,...doc.data()};
+   if(exam.openToAll===true||exam.public===true||assigned.has(doc.id))exams.push(exam);
+  });
+  await loadResults();
+  renderHome();
+ }catch(error){
+  console.error("Exam loading:",error);
+  toast("Unable to load examinations. Check Firestore permissions.");
+  renderHome();
+ }
 }
 
+/* RESULTS LOOKUP */
 async function loadResults(){
-    if(!student.id||!exams.length)return;
-
-    await Promise.all(exams.map(async exam=>{
-        try{
-            const directId=`${exam.id}__${student.id}`;
-            const direct=await db.collection("examResults").doc(directId).get();
-
-            if(direct.exists){
-                exam.result=direct.data();
-                return;
-            }
-
-            const snap=await db.collection("examResults")
-                .where("examId","==",exam.id)
-                .where("studentId","==",student.id)
-                .limit(1).get();
-
-            if(!snap.empty)exam.result=snap.docs[0].data();
-
-        }catch(error){
-            console.warn("Result lookup:",error);
-        }
-    }));
+ if(!student.id||!exams.length)return;
+ await Promise.all(exams.map(async exam=>{
+  try{
+   const direct=await db.collection("examResults").doc(`${exam.id}__${student.id}`).get();
+   if(direct.exists){exam.result=direct.data();return}
+   const snap=await db.collection("examResults").where("examId","==",exam.id).where("studentId","==",student.id).limit(1).get();
+   if(!snap.empty)exam.result=snap.docs[0].data();
+  }catch(error){console.warn("Result lookup:",error)}
+ }));
 }
 
-/* =========================================================
- HOME CARDS
-========================================================= */
-function examCard(exam,type){
-    const count=Number(exam.totalQuestions||(exam.questions||[]).length||0);
-    const duration=Number(exam.duration||0);
-    const marks=Number(exam.totalMarks||0);
-    const result=exam.result;
-    const completed=!!result;
+/* FILTERING AND CARDS */
+function setFilter(filter,button,scroll=false){
+ activeFilter=filter;
+ document.querySelectorAll(".filter").forEach(b=>b.classList.remove("active"));
+ if(button)button.classList.add("active");
+ else{
+  const match=[...document.querySelectorAll(".filter")].find(b=>normalize(b.textContent).includes(filter==="all"?"all exams":filter));
+  if(match)match.classList.add("active");
+ }
+ renderHome();
+ if(scroll)$("examList").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function scrollHome(button){
+ document.querySelectorAll(".bottom-nav button").forEach(b=>b.classList.remove("active"));
+ if(button)button.classList.add("active");
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function examCard(exam){
+ const status=getStatus(exam);
+ const completed=!!exam.result;
+ const count=Number(exam.totalQuestions||(exam.questions||[]).length||0);
+ const duration=Number(exam.duration||0);
+ const marks=Number(exam.totalMarks||0);
 
-    let badge=type==="upcoming"?"UPCOMING":completed?"COMPLETED":"AVAILABLE";
-    let badgeClass=type==="upcoming"?"upcoming":completed?"completed":"";
+ let badge=status.toUpperCase();
+ let badgeClass=status;
+ let action="";
 
-    let button="";
-    if(!isPaymentPaid()){
-        button=`<button class="action lock" onclick="showPaymentLock()">PAYMENT REQUIRED</button>`;
-    }else if(completed){
-        button=`<button class="action" onclick="openRetake('${escapeHtml(exam.id)}')">VIEW / RETAKE EXAM</button>`;
-    }else if(type==="available"){
-        button=`<button class="action" onclick="openInstructions('${escapeHtml(exam.id)}')">START EXAM</button>`;
-    }else{
-        button=`<button class="action disabled" disabled>STARTS SOON</button>`;
-    }
+ if(completed){badge="COMPLETED";badgeClass="completed"}
+ if(!isPaymentPaid()){
+  action=`<button class="btn btn-danger btn-small" onclick="showPaymentLock()">PAYMENT REQUIRED</button>`;
+ }else if(completed){
+  action=`<button class="btn btn-secondary btn-small" onclick="openRetake('${escapeHtml(exam.id)}')">VIEW RESULT</button>`;
+ }else if(status==="available"){
+  action=`<button class="btn btn-primary btn-small" onclick="openInstructions('${escapeHtml(exam.id)}')">START EXAM</button>`;
+ }else if(status==="upcoming"){
+  action=`<button class="btn btn-secondary btn-small" disabled>STARTS SOON</button>`;
+ }else{
+  action=`<button class="btn btn-secondary btn-small" disabled>EXAM CLOSED</button>`;
+ }
 
-    const resultHtml=completed?`
-        <div class="info-grid">
-            <div class="info"><span>Score</span><strong>${Number(result.score||0)}</strong></div>
-            <div class="info"><span>Percentage</span><strong>${Number(result.percentage||0)}%</strong></div>
-            <div class="info"><span>Status</span><strong>${result.passed?"PASS":"FAIL"}</strong></div>
-        </div>`:"";
-
-    return `
-    <article class="card">
-        <div class="card-top">
-            <div class="card-icon"><i class="ri-file-text-line"></i></div>
-            <div class="badge ${badgeClass}">${badge}</div>
-        </div>
-        <h3>${escapeHtml(first(exam.title,exam.name,"Online Examination"))}</h3>
-        <p>${escapeHtml(first(exam.description,"Complete this examination within the allotted time."))}</p>
-        <div class="info-grid">
-            <div class="info"><span>Questions</span><strong>${count}</strong></div>
-            <div class="info"><span>Duration</span><strong>${duration} Min</strong></div>
-            <div class="info"><span>Total Marks</span><strong>${marks}</strong></div>
-        </div>
-        ${type==="upcoming"?`<p>Starts: ${escapeHtml(formatDate(exam.startAt))}</p>`:""}
-        ${resultHtml}
-        ${button}
-    </article>`;
+ return `<article class="exam-card">
+  <div class="card-top">
+   <div class="exam-icon"><svg><use href="#i-file"/></svg></div>
+   <span class="badge ${badgeClass}">${badge}</span>
+  </div>
+  <h3>${escapeHtml(first(exam.title,exam.name,"Online Examination"))}</h3>
+  <p class="exam-desc">${escapeHtml(first(exam.description,"Complete this examination within the allotted time."))}</p>
+  <div class="meta-grid">
+   <div class="meta"><span>Questions</span><strong>${count}</strong></div>
+   <div class="meta"><span>Duration</span><strong>${duration} Min</strong></div>
+   <div class="meta"><span>Total Marks</span><strong>${marks}</strong></div>
+  </div>
+  <div class="card-footer">
+   <div class="card-date">${status==="upcoming"?"Starts: "+escapeHtml(formatDate(exam.startAt)):status==="closed"?"Ended: "+escapeHtml(formatDate(exam.endAt)):completed?"Score: "+Number(exam.result.score||0)+" / "+Number(exam.result.totalMarks||0):"Ready when you are"}</div>
+   ${action}
+  </div>
+ </article>`;
 }
 
 function renderHome(){
-    const available=exams.filter(e=>getStatus(e)==="available"&&!e.result);
-    const upcoming=exams.filter(e=>getStatus(e)==="upcoming"&&!e.result);
-    const completed=exams.filter(e=>!!e.result);
+ const completed=exams.filter(e=>!!e.result);
+ const available=exams.filter(e=>!e.result&&getStatus(e)==="available");
+ const upcoming=exams.filter(e=>!e.result&&getStatus(e)==="upcoming");
+ const closed=exams.filter(e=>!e.result&&getStatus(e)==="closed");
 
-    $("totalExamStat").textContent=exams.length;
-    $("availableExamStat").textContent=available.length;
-    $("completedExamStat").textContent=completed.length;
+ $("totalExamStat").textContent=exams.length;
+ $("availableExamStat").textContent=available.length;
+ $("completedExamStat").textContent=completed.length;
+ $("allExamCount").textContent=exams.length+" examinations";
 
-    $("availableCount").textContent=available.length+" exams";
-    $("upcomingCount").textContent=upcoming.length+" exams";
-    $("completedCount").textContent=completed.length+" exams";
+ let list=exams;
+ if(activeFilter==="available")list=available;
+ if(activeFilter==="upcoming")list=upcoming;
+ if(activeFilter==="completed")list=completed;
+ if(activeFilter==="closed")list=closed;
 
-    $("availableList").innerHTML=available.map(e=>examCard(e,"available")).join("");
-    $("upcomingList").innerHTML=upcoming.map(e=>examCard(e,"upcoming")).join("");
-    $("completedList").innerHTML=completed.map(e=>examCard(e,"completed")).join("");
-
-    $("availableSection").classList.toggle("hidden",!available.length);
-    $("upcomingSection").classList.toggle("hidden",!upcoming.length);
-    $("completedSection").classList.toggle("hidden",!completed.length);
-    $("emptyState").classList.toggle("hidden",exams.length!==0);
-
-    const notice=exams.map(e=>e.marqueeText).find(Boolean);
-    if(notice)$("noticeText").textContent=notice;
+ $("examList").innerHTML=list.map(examCard).join("");
+ $("emptyState").classList.toggle("hidden",list.length>0);
+ const notice=exams.map(e=>e.marqueeText).find(Boolean);
+ if(notice)$("noticeText").textContent=notice;
 }
 
-/* =========================================================
- DRAFT / AUTO SAVE
-========================================================= */
-function draftKey(examId){
-    return "BT_EXAM_DRAFT_V3_"+String(student.id||student.name)+"_"+examId;
+/* DRAFT STORAGE */
+function draftKey(id){return "BT_EXAM_DRAFT_V3_"+String(student.id||student.name)+"_"+id}
+function getDraft(id){
+ try{return JSON.parse(localStorage.getItem(draftKey(id))||"null")}catch(e){return null}
 }
-function getDraft(examId){
-    try{
-        const raw=localStorage.getItem(draftKey(examId));
-        return raw?JSON.parse(raw):null;
-    }catch(e){return null}
-}
-function deleteDraft(examId){
-    try{localStorage.removeItem(draftKey(examId))}catch(e){}
-}
+function deleteDraft(id){try{localStorage.removeItem(draftKey(id))}catch(e){}}
 function saveProgress(){
-    if(!examRunning||!currentExam)return;
-
-    const draft={
-        version:3,
-        examId:currentExam.id,
-        studentId:student.id||"",
-        studentName:student.name,
-        questions,
-        answers,
-        review,
-        questionIndex,
-        remainingSeconds,
-        violationCount,
-        savedAt:Date.now(),
-        startedAt:attemptStartedAt
-    };
-
-    try{
-        localStorage.setItem(draftKey(currentExam.id),JSON.stringify(draft));
-        $("saveStatus").textContent="● PROGRESS SAVED";
-    }catch(error){
-        $("saveStatus").textContent="SAVE FAILED";
-        console.error(error);
-    }
+ if(!examRunning||!currentExam)return;
+ const draft={
+  version:3,examId:currentExam.id,studentId:student.id||"",
+  questions,answers,review,questionIndex,remainingSeconds,
+  violationCount,savedAt:Date.now(),startedAt:attemptStartedAt
+ };
+ try{
+  localStorage.setItem(draftKey(currentExam.id),JSON.stringify(draft));
+  $("saveStatus").textContent="● PROGRESS SAVED";
+ }catch(error){
+  $("saveStatus").textContent="SAVE FAILED";
+  console.error(error);
+ }
 }
-function clearDraft(examId){deleteDraft(examId)}
 
-/* =========================================================
- INSTRUCTIONS
-========================================================= */
+/* INSTRUCTIONS */
 async function openInstructions(id){
-    if(!await checkStudentPayment()){
-        showPaymentLock();
-        return;
-    }
-
-    const exam=exams.find(e=>e.id===id);
-    if(!exam)return toast("Examination not found.");
-    if(getStatus(exam)!=="available")return toast("This examination is not available.");
-
-    currentExam=exam;
-    showInstructionPage(exam,false);
+ if(!await checkStudentPayment()){showPaymentLock();return}
+ const exam=exams.find(e=>e.id===id);
+ if(!exam)return toast("Examination not found.");
+ if(getStatus(exam)!=="available")return toast("This examination is not available.");
+ currentExam=exam;
+ showInstructionPage(exam);
 }
-
 async function openRetake(id){
-    if(!await checkStudentPayment()){
-        showPaymentLock();
-        return;
-    }
-
-    const exam=exams.find(e=>e.id===id);
-    if(!exam)return toast("Examination not found.");
-
-    currentExam=exam;
-    showInstructionPage(exam,true);
+ if(!await checkStudentPayment()){showPaymentLock();return}
+ const exam=exams.find(e=>e.id===id);
+ if(!exam)return toast("Examination not found.");
+ currentExam=exam;
+ showInstructionPage(exam);
 }
-
-function showInstructionPage(exam,isRetake){
-    $("homeApp").classList.add("hidden");
-    $("instructionPage").classList.remove("hidden");
-
-    $("instructionTitle").textContent=first(exam.title,exam.name,"Online Examination");
-    $("instructionDescription").textContent=first(exam.description,"Read all instructions carefully before starting.");
-
-    const count=Number(exam.totalQuestions||(exam.questions||[]).length||0);
-
-    $("summaryGrid").innerHTML=`
-        <div class="summary"><i class="ri-question-line"></i><span>QUESTIONS</span><strong>${count}</strong></div>
-        <div class="summary"><i class="ri-time-line"></i><span>DURATION</span><strong>${Number(exam.duration||0)} Min</strong></div>
-        <div class="summary"><i class="ri-medal-line"></i><span>TOTAL MARKS</span><strong>${Number(exam.totalMarks||0)}</strong></div>
-        <div class="summary"><i class="ri-close-circle-line"></i><span>NEGATIVE MARK</span><strong>${Number(exam.negativeMark||0)}</strong></div>
-    `;
-
-    const instructions=first(exam.instructions,exam.examInstructions);
-    $("instructionContent").textContent=instructions||
-        "1. Read every question carefully.\n2. Select the most appropriate answer.\n3. Use Save & Next to move forward.\n4. You can mark questions for review.\n5. The timer will automatically submit the exam when time expires.\n6. Do not refresh or close the browser during the examination.";
-
-    $("termsText").textContent=first(exam.termsConditions,exam.terms,"By starting the examination, you agree to follow all examination rules.");
-    $("agree").checked=false;
-
-    updatePaymentUI();
-
-    $("resumeBox").innerHTML="";
-    const draft=getDraft(exam.id);
-
-    if(
-        draft&&
-        draft.studentId===(student.id||"")&&
-        Array.isArray(draft.questions)&&
-        draft.questions.length&&
-        Number(draft.remainingSeconds)>0
-    ){
-        $("resumeBox").innerHTML=`
-            <div class="resume-box">
-                <p><i class="ri-history-line"></i> Saved examination progress found on this device.</p>
-                <button onclick="resumeExam('${escapeHtml(exam.id)}')">RESUME SAVED EXAM</button>
-            </div>`;
-    }
-
-    window.scrollTo(0,0);
+function showInstructionPage(exam){
+ $("homeApp").classList.add("hidden");
+ $("instructionPage").classList.remove("hidden");
+ $("instructionTitle").textContent=first(exam.title,exam.name,"Online Examination");
+ $("instructionDescription").textContent=first(exam.description,"Read all instructions carefully before starting.");
+ const count=Number(exam.totalQuestions||(exam.questions||[]).length||0);
+ $("summaryGrid").innerHTML=`
+  <div class="summary"><svg><use href="#i-list"/></svg><span>QUESTIONS</span><strong>${count}</strong></div>
+  <div class="summary"><svg><use href="#i-clock"/></svg><span>DURATION</span><strong>${Number(exam.duration||0)} Minutes</strong></div>
+  <div class="summary"><svg><use href="#i-award"/></svg><span>TOTAL MARKS</span><strong>${Number(exam.totalMarks||0)}</strong></div>
+  <div class="summary"><svg><use href="#i-info"/></svg><span>NEGATIVE MARK</span><strong>${Number(exam.negativeMark||0)}</strong></div>`;
+ $("instructionContent").textContent=first(exam.instructions,exam.examInstructions,
+  "1. Read every question carefully.\n2. Select the most appropriate answer.\n3. Use Save & Next to move forward.\n4. Mark questions for review if needed.\n5. The timer automatically submits the examination when time expires.\n6. Do not refresh or close the browser during the examination.");
+ $("termsText").textContent=first(exam.termsConditions,exam.terms,"By starting the examination, you agree to follow all examination rules.");
+ $("agree").checked=false;
+ updatePaymentUI();
+ $("resumeBox").innerHTML="";
+ const draft=getDraft(exam.id);
+ if(draft&&draft.studentId===(student.id||"")&&Array.isArray(draft.questions)&&draft.questions.length&&Number(draft.remainingSeconds)>0){
+  $("resumeBox").innerHTML=`<div class="resume-box"><p>Saved examination progress found on this device.</p><button onclick="resumeExam('${escapeHtml(exam.id)}')">RESUME SAVED EXAMINATION</button></div>`;
+ }
 }
-
 function closeInstructions(){
-    $("instructionPage").classList.add("hidden");
-    $("homeApp").classList.remove("hidden");
-    currentExam=null;
+ $("instructionPage").classList.add("hidden");
+ $("homeApp").classList.remove("hidden");
+ currentExam=null;
 }
 
-/* =========================================================
- START / RESUME
-========================================================= */
+/* START AND RESUME */
 function shuffle(array){
-    for(let i=array.length-1;i>0;i--){
-        const j=Math.floor(Math.random()*(i+1));
-        [array[i],array[j]]=[array[j],array[i]];
-    }
+ for(let i=array.length-1;i>0;i--){
+  const j=Math.floor(Math.random()*(i+1));
+  [array[i],array[j]]=[array[j],array[i]];
+ }
 }
-
 async function startExam(){
-    if(!await checkStudentPayment()){
-        showPaymentLock();
-        updatePaymentUI();
-        return;
-    }
-
-    if(!$("agree").checked){
-        toast("Please accept the examination instructions.");
-        return;
-    }
-
-    if(!currentExam)return toast("No examination selected.");
-
-    const oldDraft=getDraft(currentExam.id);
-    if(oldDraft){
-        if(!confirm("A saved attempt exists. Start a NEW attempt and delete saved progress? Cancel to keep the saved attempt."))return;
-        deleteDraft(currentExam.id);
-    }
-
-    const source=Array.isArray(currentExam.questions)?currentExam.questions:[];
-    if(!source.length)return toast("This examination has no questions.");
-
-    questions=[...source];
-    if(currentExam.shuffleQuestions!==false)shuffle(questions);
-
-    answers={};
-    review={};
-    questionIndex=0;
-    violationCount=0;
-    attemptStartedAt=Date.now();
-
-    launchExam(Number(currentExam.duration||30)*60);
+ if(!await checkStudentPayment()){showPaymentLock();updatePaymentUI();return}
+ if(!$("agree").checked)return toast("Please accept the examination instructions.");
+ if(!currentExam)return toast("No examination selected.");
+ const oldDraft=getDraft(currentExam.id);
+ if(oldDraft){
+  if(!confirm("A saved attempt exists. Start a NEW attempt and delete saved progress? Cancel to keep the saved attempt."))return;
+  deleteDraft(currentExam.id);
+ }
+ const source=Array.isArray(currentExam.questions)?currentExam.questions:[];
+ if(!source.length)return toast("This examination has no questions.");
+ questions=[...source];
+ if(currentExam.shuffleQuestions===true)shuffle(questions);
+ answers={};review={};questionIndex=0;violationCount=0;attemptStartedAt=Date.now();
+ launchExam(Number(currentExam.duration||30)*60);
 }
-
-async function resumeExam(examId){
-    if(!await checkStudentPayment()){
-        showPaymentLock();
-        return;
-    }
-
-    const draft=getDraft(examId);
-    const exam=exams.find(e=>e.id===examId);
-
-    if(!draft||!exam)return toast("Saved progress not found.");
-    if(draft.studentId!==(student.id||""))return toast("This saved attempt belongs to another student.");
-    if(!Array.isArray(draft.questions)||!draft.questions.length||Number(draft.remainingSeconds)<=0){
-        deleteDraft(examId);
-        return toast("Saved attempt has expired.");
-    }
-
-    if(!confirm("Resume your saved examination?"))return;
-
-    currentExam=exam;
-    questions=draft.questions;
-    answers=draft.answers||{};
-    review=draft.review||{};
-    questionIndex=Math.min(Math.max(0,Number(draft.questionIndex||0)),questions.length-1);
-    violationCount=Number(draft.violationCount||0);
-    attemptStartedAt=draft.startedAt||Date.now();
-
-    launchExam(Number(draft.remainingSeconds));
+async function resumeExam(id){
+ if(!await checkStudentPayment()){showPaymentLock();return}
+ const draft=getDraft(id),exam=exams.find(e=>e.id===id);
+ if(!draft||!exam)return toast("Saved progress not found.");
+ if(draft.studentId!==(student.id||""))return toast("This saved attempt belongs to another student.");
+ if(!Array.isArray(draft.questions)||!draft.questions.length||Number(draft.remainingSeconds)<=0){
+  deleteDraft(id);return toast("Saved attempt has expired.");
+ }
+ if(!confirm("Resume your saved examination?"))return;
+ currentExam=exam;questions=draft.questions;answers=draft.answers||{};review=draft.review||{};
+ questionIndex=Math.min(Math.max(0,Number(draft.questionIndex||0)),questions.length-1);
+ violationCount=Number(draft.violationCount||0);attemptStartedAt=draft.startedAt||Date.now();
+ launchExam(Number(draft.remainingSeconds));
 }
-
 function launchExam(seconds){
-    examRunning=true;
-    submitting=false;
-    remainingSeconds=Math.max(1,Math.floor(seconds));
-
-    $("instructionPage").classList.add("hidden");
-    $("homeApp").classList.add("hidden");
-    $("examApp").classList.remove("hidden");
-    $("resultPage").classList.add("hidden");
-
-    $("liveExamName").textContent=first(currentExam.title,currentExam.name,"Examination");
-    $("questionTotal").textContent=questions.length;
-
-    buildPalette();
-    renderQuestion();
-    startTimer();
-    saveProgress();
-
-    try{
-        if(document.documentElement.requestFullscreen){
-            document.documentElement.requestFullscreen().catch(()=>{});
-        }
-    }catch(e){}
-
-    window.scrollTo(0,0);
+ examRunning=true;submitting=false;remainingSeconds=Math.max(1,Math.floor(seconds));
+ $("instructionPage").classList.add("hidden");
+ $("homeApp").classList.add("hidden");
+ $("examApp").classList.remove("hidden");
+ $("resultPage").classList.add("hidden");
+ $("liveExamName").textContent=first(currentExam.title,currentExam.name,"Examination");
+ $("questionTotal").textContent=questions.length;
+ buildPalette();renderQuestion();startTimer();saveProgress();
+ window.scrollTo(0,0);
 }
 
-/* =========================================================
- QUESTION RENDERING
-========================================================= */
+/* QUESTION DISPLAY */
 function renderQuestion(){
-    const q=questions[questionIndex];
-    if(!q)return;
-
-    $("questionNumber").textContent=questionIndex+1;
-    $("questionText").textContent=first(q.question,q.questionText,"Question");
-
-    $("options").innerHTML="";
-    const options=Array.isArray(q.options)?q.options:[];
-
-    options.forEach((option,index)=>{
-        const button=document.createElement("button");
-        button.type="button";
-        button.className="option"+(answers[questionIndex]===index?" selected":"");
-
-        const letter=document.createElement("span");
-        letter.className="option-letter";
-        letter.textContent=String.fromCharCode(65+index);
-
-        const text=document.createElement("span");
-        text.className="option-text";
-        text.textContent=String(option);
-
-        button.append(letter,text);
-        button.addEventListener("click",()=>selectAnswer(index));
-        $("options").appendChild(button);
-    });
-
-    const marked=!!review[questionIndex];
-    $("reviewButton").classList.toggle("active",marked);
-    $("reviewButton").textContent=marked?"★ Reviewed":"☆ Review";
-
-    updateProgress();
-    updatePalette();
+ const q=questions[questionIndex];if(!q)return;
+ $("questionNumber").textContent=questionIndex+1;
+ $("questionText").textContent=first(q.question,q.questionText,"Question");
+ $("options").innerHTML="";
+ (Array.isArray(q.options)?q.options:[]).forEach((option,index)=>{
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="option"+(answers[questionIndex]===index?" selected":"");
+  const letter=document.createElement("span");letter.className="option-letter";letter.textContent=String.fromCharCode(65+index);
+  const text=document.createElement("span");text.className="option-text";text.textContent=String(option);
+  button.append(letter,text);button.addEventListener("click",()=>selectAnswer(index));
+  $("options").appendChild(button);
+ });
+ const marked=!!review[questionIndex];
+ $("reviewButton").classList.toggle("active",marked);
+ $("reviewButton").textContent=marked?"★ MARKED FOR REVIEW":"☆ MARK REVIEW";
+ updateProgress();updatePalette();
 }
-
-function selectAnswer(index){
-    answers[questionIndex]=index;
-    renderQuestion();
-    saveProgress();
-}
+function selectAnswer(index){answers[questionIndex]=index;renderQuestion();saveProgress()}
 function toggleReview(){
-    if(review[questionIndex])delete review[questionIndex];
-    else review[questionIndex]=true;
-    renderQuestion();
-    saveProgress();
+ if(review[questionIndex])delete review[questionIndex];else review[questionIndex]=true;
+ renderQuestion();saveProgress();
 }
 function nextQuestion(){
-    if(questionIndex<questions.length-1){
-        questionIndex++;
-        renderQuestion();
-        saveProgress();
-    }else{
-        openSubmitModal();
-    }
+ if(questionIndex<questions.length-1){questionIndex++;renderQuestion();saveProgress()}
+ else openSubmitModal();
 }
 function previousQuestion(){
-    if(questionIndex>0){
-        questionIndex--;
-        renderQuestion();
-        saveProgress();
-    }
+ if(questionIndex>0){questionIndex--;renderQuestion();saveProgress()}
 }
 
-/* =========================================================
- PROGRESS / PALETTE
-========================================================= */
+/* QUESTION PALETTE */
 function updateProgress(){
-    const total=questions.length;
-    const answered=Object.keys(answers).length;
-    const percentage=total?(answered/total)*100:0;
-
-    $("examProgress").style.width=percentage+"%";
-    $("paletteCount").textContent=answered+" / "+total;
-
-    const marked=Object.keys(review).filter(k=>review[k]).length;
-    $("questionCounts").innerHTML=
-        `Answered <b>${answered}</b> &nbsp; Unanswered <b>${total-answered}</b> &nbsp; Review <b>${marked}</b>`;
+ const total=questions.length,answered=Object.keys(answers).length;
+ $("examProgress").style.width=(total?answered/total*100:0)+"%";
+ $("paletteCount").textContent=answered+" / "+total+" Answered";
+ const marked=Object.keys(review).filter(k=>review[k]).length;
+ $("questionCounts").innerHTML=`Answered <b>${answered}</b> &nbsp; Unanswered <b>${total-answered}</b> &nbsp; Review <b>${marked}</b>`;
 }
 function buildPalette(){
-    $("palette").innerHTML="";
-    questions.forEach((q,index)=>{
-        const button=document.createElement("button");
-        button.type="button";
-        button.className="palette-button";
-        button.textContent=index+1;
-        button.addEventListener("click",()=>{
-            questionIndex=index;
-            renderQuestion();
-            saveProgress();
-        });
-        $("palette").appendChild(button);
-    });
-    updatePalette();
+ $("palette").innerHTML="";
+ questions.forEach((q,index)=>{
+  const button=document.createElement("button");button.type="button";button.className="palette-btn";button.textContent=index+1;
+  button.addEventListener("click",()=>{questionIndex=index;renderQuestion();saveProgress()});
+  $("palette").appendChild(button);
+ });
+ updatePalette();
 }
 function updatePalette(){
-    document.querySelectorAll(".palette-button").forEach((button,index)=>{
-        button.classList.toggle("answered",answers[index]!==undefined);
-        button.classList.toggle("review",!!review[index]);
-        button.classList.toggle("current",index===questionIndex);
-    });
+ document.querySelectorAll(".palette-btn").forEach((button,index)=>{
+  button.classList.toggle("answered",answers[index]!==undefined);
+  button.classList.toggle("review",!!review[index]);
+  button.classList.toggle("current",index===questionIndex);
+ });
 }
 
-/* =========================================================
- TIMER
-========================================================= */
+/* TIMER */
 function startTimer(){
-    clearInterval(timer);
-    updateTimer();
-
-    timer=setInterval(()=>{
-        if(!examRunning){
-            clearInterval(timer);
-            return;
-        }
-
-        remainingSeconds--;
-        updateTimer();
-
-        if(remainingSeconds%5===0)saveProgress();
-
-        if(remainingSeconds<=0){
-            clearInterval(timer);
-            submitExam(true);
-        }
-    },1000);
+ clearInterval(timer);updateTimer();
+ timer=setInterval(()=>{
+  if(!examRunning){clearInterval(timer);return}
+  remainingSeconds--;updateTimer();
+  if(remainingSeconds%5===0)saveProgress();
+  if(remainingSeconds<=0){clearInterval(timer);submitExam(true)}
+ },1000);
 }
 function updateTimer(){
-    const min=Math.floor(remainingSeconds/60);
-    const sec=remainingSeconds%60;
-    $("timerText").textContent=
-        String(min).padStart(2,"0")+":"+String(sec).padStart(2,"0");
-
-    $("liveTimer").classList.remove("warning","danger");
-
-    if(remainingSeconds<=300)$("liveTimer").classList.add("warning");
-    if(remainingSeconds<=60){
-        $("liveTimer").classList.remove("warning");
-        $("liveTimer").classList.add("danger");
-    }
+ const min=Math.floor(remainingSeconds/60),sec=remainingSeconds%60;
+ $("timerText").textContent=String(min).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+ $("liveTimer").classList.remove("warning","danger");
+ if(remainingSeconds<=300)$("liveTimer").classList.add("warning");
+ if(remainingSeconds<=60){$("liveTimer").classList.remove("warning");$("liveTimer").classList.add("danger")}
 }
 function toggleFullscreen(){
-    if(!document.fullscreenElement){
-        document.documentElement.requestFullscreen?.().catch(()=>toast("Fullscreen unavailable."));
-    }else{
-        document.exitFullscreen?.().catch(()=>{});
-    }
+ if(!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>toast("Fullscreen unavailable."));
+ else document.exitFullscreen?.().catch(()=>{});
 }
 
-/* =========================================================
- TAB SWITCH WARNING
-========================================================= */
+/* TAB SWITCH WARNING */
 document.addEventListener("visibilitychange",()=>{
-    if(!examRunning)return;
-
-    if(document.hidden){
-        violationCount++;
-        saveProgress();
-        toast("Warning: Tab switch detected. Count: "+violationCount);
-    }else{
-        toast("Please continue your examination.");
-    }
+ if(!examRunning)return;
+ if(document.hidden){
+  violationCount++;saveProgress();
+  toast("Warning: Tab switch detected. Count: "+violationCount);
+ }else toast("Please continue your examination.");
 });
 
-/* =========================================================
- SUBMIT MODAL
-========================================================= */
+/* SUBMIT CONFIRMATION */
 function openSubmitModal(){
-    const answered=Object.keys(answers).length;
-    const total=questions.length;
-    const marked=Object.keys(review).filter(k=>review[k]).length;
-
-    $("submitText").textContent=
-        `Answered: ${answered}/${total}. Unanswered: ${total-answered}. Marked for review: ${marked}. Are you sure you want to submit?`;
-
-    $("submitModal").classList.remove("hidden");
+ const answered=Object.keys(answers).length,total=questions.length;
+ const marked=Object.keys(review).filter(k=>review[k]).length;
+ $("submitText").textContent=`Answered: ${answered}/${total}. Unanswered: ${total-answered}. Marked for review: ${marked}. Are you sure you want to submit?`;
+ $("submitModal").classList.remove("hidden");
 }
-function closeSubmitModal(){
-    $("submitModal").classList.add("hidden");
-}
+function closeSubmitModal(){$("submitModal").classList.add("hidden")}
 
-/* =========================================================
- ANSWER KEY SUPPORT
-========================================================= */
+/* ANSWER KEY */
 function getCorrectIndex(q){
-    const options=Array.isArray(q.options)?q.options:[];
-
-    if(q.correctIndex!==undefined&&q.correctIndex!==null){
-        const n=Number(q.correctIndex);
-        if(Number.isInteger(n)&&n>=0&&n<options.length)return n;
-    }
-
-    const answer=first(q.correctAnswer,q.answer);
-
-    if(answer!==""){
-        const n=Number(answer);
-        if(Number.isInteger(n)&&n>=0&&n<options.length)return n;
-
-        const normalized=normalize(answer);
-        const index=options.findIndex(o=>normalize(o)===normalized);
-        if(index>=0)return index;
-
-        const letter=normalized.toUpperCase();
-        if(/^[A-D]$/.test(letter)){
-            const i=letter.charCodeAt(0)-65;
-            if(i<options.length)return i;
-        }
-    }
-
-    return -1;
+ const options=Array.isArray(q.options)?q.options:[];
+ if(q.correctIndex!==undefined&&q.correctIndex!==null){
+  const n=Number(q.correctIndex);
+  if(Number.isInteger(n)&&n>=0&&n<options.length)return n;
+ }
+ const answer=first(q.correctAnswer,q.answer);
+ if(answer!==""){
+  const n=Number(answer);
+  if(Number.isInteger(n)&&n>=0&&n<options.length)return n;
+  const normalized=normalize(answer);
+  const index=options.findIndex(o=>normalize(o)===normalized);
+  if(index>=0)return index;
+  const letter=normalized.toUpperCase();
+  if(/^[A-D]$/.test(letter)){const i=letter.charCodeAt(0)-65;if(i<options.length)return i}
+ }
+ return -1;
 }
 
-/* =========================================================
- SUBMIT EXAMINATION
-========================================================= */
+/* SUBMIT EXAM */
 async function submitExam(autoSubmitted=false){
-    if(!currentExam||!examRunning||submitting)return;
+ if(!currentExam||!examRunning||submitting)return;
+ submitting=true;closeSubmitModal();clearInterval(timer);saveProgress();examRunning=false;
 
-    submitting=true;
-    closeSubmitModal();
-    clearInterval(timer);
-    saveProgress();
-    examRunning=false;
-
-    let correct=0,wrong=0,skipped=0,score=0;
-    const savedAnswers={};
-
-    questions.forEach((q,index)=>{
-        const selected=answers[index];
-
-        if(selected===undefined){
-            skipped++;
-            savedAnswers[index]=null;
-            return;
-        }
-
-        savedAnswers[index]=selected;
-
-        const right=getCorrectIndex(q);
-
-        if(right>=0&&selected===right){
-            correct++;
-            score+=Number(q.marks??1);
-        }else{
-            wrong++;
-            const negative=Number(q.negativeMark??currentExam.negativeMark??0);
-            if(negative>0)score-=negative;
-        }
-    });
-
-    const totalMarks=Number(
-        currentExam.totalMarks||
-        questions.reduce((sum,q)=>sum+Number(q.marks??1),0)
-    );
-
-    const percentage=totalMarks>0?Math.max(0,(score/totalMarks)*100):0;
-    const passingMarks=Number(currentExam.passingMarks??0);
-    const passed=score>=passingMarks;
-
-    const result={
-        examId:currentExam.id,
-        examTitle:first(currentExam.title,currentExam.name,"Online Examination"),
-        studentId:student.id,
-        studentName:student.name,
-        phone:student.phone||"",
-        answers:savedAnswers,
-        correct,
-        wrong,
-        skipped,
-        score:Number(score.toFixed(2)),
-        totalMarks,
-        percentage:Number(percentage.toFixed(2)),
-        passingMarks,
-        passed,
-        totalQuestions:questions.length,
-        autoSubmitted,
-        tabSwitchCount:violationCount,
-        attemptStartedAt:attemptStartedAt,
-        submittedAt:firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    try{
-        const resultId=`${currentExam.id}__${student.id||Date.now()}`;
-
-        await db.collection("examResults")
-            .doc(resultId)
-            .set(result,{merge:true});
-
-        currentExam.result=result;
-        deleteDraft(currentExam.id);
-
-        showResult(result);
-
-    }catch(error){
-        console.error("Result save error:",error);
-        toast("Result could not be saved. Please contact the institute.");
-        examRunning=false;
-        showResult(result);
-    }
+ let correct=0,wrong=0,skipped=0,score=0;
+ const savedAnswers={};
+ questions.forEach((q,index)=>{
+  const selected=answers[index];
+  if(selected===undefined){skipped++;savedAnswers[index]=null;return}
+  savedAnswers[index]=selected;
+  const right=getCorrectIndex(q);
+  if(right>=0&&selected===right){correct++;score+=Number(q.marks??1)}
+  else{wrong++;const negative=Number(q.negativeMark??currentExam.negativeMark??0);if(negative>0)score-=negative}
+ });
+ const totalMarks=Number(currentExam.totalMarks||questions.reduce((sum,q)=>sum+Number(q.marks??1),0));
+ const percentage=totalMarks>0?Math.max(0,score/totalMarks*100):0;
+ const passingMarks=Number(currentExam.passingMarks??0);
+ const passed=score>=passingMarks;
+ const result={
+  examId:currentExam.id,
+  examTitle:first(currentExam.title,currentExam.name,"Online Examination"),
+  studentId:student.id,studentName:student.name,phone:student.phone||"",
+  answers:savedAnswers,correct,wrong,skipped,
+  score:Number(score.toFixed(2)),totalMarks,
+  percentage:Number(percentage.toFixed(2)),passingMarks,passed,
+  totalQuestions:questions.length,autoSubmitted,
+  tabSwitchCount:violationCount,attemptStartedAt,
+  submittedAt:firebase.firestore.FieldValue.serverTimestamp()
+ };
+ try{
+  const resultId=`${currentExam.id}__${student.id||Date.now()}`;
+  await db.collection("examResults").doc(resultId).set(result,{merge:true});
+  currentExam.result=result;deleteDraft(currentExam.id);
+  showResult(result);
+ }catch(error){
+  console.error("Result save error:",error);
+  toast("Result could not be saved. Please contact the institute.");
+  showResult(result);
+ }
 }
 
-/* =========================================================
- RESULT SCREEN
-========================================================= */
+/* RESULT SCREEN */
 function showResult(result){
-    $("examApp").classList.add("hidden");
-    $("resultPage").classList.remove("hidden");
-
-    $("resultExam").textContent=result.examTitle;
-    $("resultScore").textContent=result.score;
-    $("resultCorrect").textContent=result.correct;
-    $("resultWrong").textContent=result.wrong;
-    $("resultSkipped").textContent=result.skipped;
-    $("resultPercentage").textContent=result.percentage+"%";
-
-    $("resultTitle").textContent=result.passed?"Congratulations!":"Examination Completed";
-    $("resultStatus").textContent=result.passed?"PASSED":"NOT PASSED";
-    $("resultStatus").classList.toggle("pass",!!result.passed);
-
-    $("resultCircle").innerHTML=result.passed?
-        '<i class="ri-trophy-line"></i>':
-        '<i class="ri-check-double-line"></i>';
-
-    window.scrollTo(0,0);
+ $("examApp").classList.add("hidden");$("resultPage").classList.remove("hidden");
+ $("resultExam").textContent=result.examTitle;
+ $("resultScore").textContent=result.score;
+ $("resultCorrect").textContent=result.correct;
+ $("resultWrong").textContent=result.wrong;
+ $("resultSkipped").textContent=result.skipped;
+ $("resultPercentage").textContent=result.percentage+"%";
+ $("resultTitle").textContent=result.passed?"Congratulations!":"Examination Completed";
+ $("resultStatus").textContent=result.passed?"PASSED":"NOT PASSED";
+ $("resultStatus").classList.toggle("pass",!!result.passed);
+ $("resultCircle").innerHTML=result.passed?'<svg><use href="#i-trophy"/></svg>':'<svg><use href="#i-check"/></svg>';
+ window.scrollTo(0,0);
 }
-
 async function closeResult(){
-    $("resultPage").classList.add("hidden");
-    $("homeApp").classList.remove("hidden");
-
-    clearInterval(timer);
-    currentExam=null;
-    questions=[];
-    answers={};
-    review={};
-    submitting=false;
-
-    await checkStudentPayment();
-    await loadExams();
-    window.scrollTo(0,0);
+ $("resultPage").classList.add("hidden");$("homeApp").classList.remove("hidden");
+ clearInterval(timer);currentExam=null;questions=[];answers={};review={};submitting=false;
+ await checkStudentPayment();await loadExams();window.scrollTo(0,0);
 }
 
-/* =========================================================
- HOME NAVIGATION
-========================================================= */
-function scrollHome(){
-    window.scrollTo({top:0,behavior:"smooth"});
-}
-function focusAvailable(){
-    $("availableSection").scrollIntoView({behavior:"smooth",block:"start"});
-}
-function focusCompleted(){
-    $("completedSection").scrollIntoView({behavior:"smooth",block:"start"});
-}
-
-/* =========================================================
- REFRESH / EXIT RECOVERY
-========================================================= */
+/* EXIT / REFRESH RECOVERY */
 window.addEventListener("beforeunload",event=>{
-    if(examRunning){
-        saveProgress();
-        event.preventDefault();
-        event.returnValue="";
-    }
+ if(examRunning){saveProgress();event.preventDefault();event.returnValue=""}
 });
 
-/* =========================================================
- INITIALIZE
-========================================================= */
+/* INITIALIZE */
 async function init(){
-    try{
-        loadStudent();
-        await checkStudentPayment();
-        await loadExams();
-    }catch(error){
-        console.error("Initialization:",error);
-        toast("Unable to initialize examination.");
-    }
-
-    $("loader").classList.add("hidden");
+ try{
+  loadStudent();
+  await checkStudentPayment();
+  await loadExams();
+ }catch(error){
+  console.error("Initialization:",error);
+  toast("Unable to initialize examination.");
+ }
+ $("loader").classList.add("hidden");
 }
-
 init();
 </script>
 </body>
