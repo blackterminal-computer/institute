@@ -902,1381 +902,1234 @@ td{
 
 <script type="module">
 
-
 /* FIREBASE */
 
 import {
-  initializeApp
+ initializeApp
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 
 import {
-  initializeFirestore,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  setDoc,
-  updateDoc
+ initializeFirestore,
+ collection,
+ doc,
+ getDoc,
+ getDocs,
+ query,
+ where,
+ setDoc,
+ updateDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey:"AIzaSyCEyfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
-  authDomain:"black-terminal-f2c91.firebaseapp.com",
-  databaseURL:"https://black-terminal-f2c91-default-rtdb.firebaseio.com",
-  projectId:"black-terminal-f2c91",
-  storageBucket:"black-terminal-f2c91.firebasestorage.app",
-  messagingSenderId:"552489994197",
-  appId:"1:552489994197:web:7662331264c334ffbadf5c"
+
+ apiKey:"AIzaSyCEyfwfZv2Ckpg-uFLRvJJKMBRlXA2w_WpI",
+ authDomain:"black-terminal-f2c91.firebaseapp.com",
+ databaseURL:"https://black-terminal-f2c91-default-rtdb.firebaseio.com",
+ projectId:"black-terminal-f2c91",
+ storageBucket:"black-terminal-f2c91.firebasestorage.app",
+ messagingSenderId:"552489994197",
+ appId:"1:552489994197:web:7662331264c334ffbadf5c"
+
 };
 
-const app = initializeApp(firebaseConfig);
+const app=initializeApp(firebaseConfig);
 
-const db = initializeFirestore(app,{
-  experimentalForceLongPolling:true
-});
-
+const db=initializeFirestore(
+ app,
+ {
+   experimentalForceLongPolling:true
+ }
+);
 
 /* LOGIN */
 
-const facultyMobile = localStorage.getItem("facultyMobile");
-const loggedIn = localStorage.getItem("facultyLoggedIn");
+const facultyMobile=localStorage.getItem("facultyMobile");
+const loggedIn=localStorage.getItem("facultyLoggedIn");
 
-if(!facultyMobile || loggedIn !== "true"){
-  window.location.href="./faculty-login.html";
+if(!facultyMobile || loggedIn!=="true"){
+ window.location.href="./faculty-login.html";
 }
-
 
 /* VARIABLES */
 
-let faculty = null;
-let attendanceList = [];
-let todaySessions = [];
-let schedules = [];
-let currentSession = null;
-let currentSchedule = null;
-let selectedFilter = "month";
-let attendanceLoading = false;
-
+let faculty=null;
+let attendanceList=[];
+let todaySessions=[];
+let schedules=[];
+let currentSession=null;
+let currentSchedule=null;
+let selectedFilter="month";
 
 /* ELEMENTS */
 
-const facultyNameEl = document.getElementById("facultyName");
-const facultyMobileEl = document.getElementById("facultyMobile");
-const facultyStatusEl = document.getElementById("facultyStatus");
-const avatarEl = document.getElementById("avatar");
-
-const hourlyRateEl = document.getElementById("hourlyRate");
-const todayHoursEl = document.getElementById("todayHours");
-const todayEarningEl = document.getElementById("todayEarning");
-const monthEarningEl = document.getElementById("monthEarning");
-const workDaysEl = document.getElementById("workDays");
-
-const totalHoursEl = document.getElementById("totalHours");
-const totalMinutesEl = document.getElementById("totalMinutes");
-const totalEarningsEl = document.getElementById("totalEarnings");
-const avgHoursEl = document.getElementById("avgHours");
-
-const checkInTimeEl = document.getElementById("checkInTime");
-const checkOutTimeEl = document.getElementById("checkOutTime");
-
-const checkInBtn = document.getElementById("checkInBtn");
-const checkOutBtn = document.getElementById("checkOutBtn");
-
-const messageEl = document.getElementById("message");
-
+const facultyNameEl=document.getElementById("facultyName");
+const facultyMobileEl=document.getElementById("facultyMobile");
+const facultyStatusEl=document.getElementById("facultyStatus");
+const avatarEl=document.getElementById("avatar");
+const hourlyRateEl=document.getElementById("hourlyRate");
+const todayHoursEl=document.getElementById("todayHours");
+const todayEarningEl=document.getElementById("todayEarning");
+const monthEarningEl=document.getElementById("monthEarning");
+const workDaysEl=document.getElementById("workDays");
+const totalHoursEl=document.getElementById("totalHours");
+const totalMinutesEl=document.getElementById("totalMinutes");
+const totalEarningsEl=document.getElementById("totalEarnings");
+const avgHoursEl=document.getElementById("avgHours");
+const checkInTimeEl=document.getElementById("checkInTime");
+const checkOutTimeEl=document.getElementById("checkOutTime");
+const checkInBtn=document.getElementById("checkInBtn");
+const checkOutBtn=document.getElementById("checkOutBtn");
+const messageEl=document.getElementById("message");
 
 /* DATE HELPERS */
 
 function todayKey(){
 
-  const d = new Date();
+ const d=new Date();
 
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
+ const y=d.getFullYear();
+ const m=String(d.getMonth()+1).padStart(2,"0");
+ const day=String(d.getDate()).padStart(2,"0");
 
-  return `${y}-${m}-${day}`;
+ return `${y}-${m}-${day}`;
+
 }
 
 function dateLabel(){
 
-  return new Date().toLocaleDateString("en-IN",{
-    weekday:"long",
-    day:"numeric",
-    month:"long",
-    year:"numeric"
-  });
-}
+ return new Date().toLocaleDateString(
+   "en-IN",
+   {
+     weekday:"long",
+     day:"numeric",
+     month:"long",
+     year:"numeric"
+   }
+ );
 
+}
 
 /* MONEY */
 
 function money(value){
 
-  return "₹"+Math.round(Number(value||0)).toLocaleString("en-IN");
-}
+ return "₹"+
+ Math.round(Number(value||0)).toLocaleString("en-IN");
 
+}
 
 /* DURATION */
 
 function minutesToHours(minutes){
 
-  minutes = Number(minutes||0);
+ minutes=Number(minutes||0);
 
-  const h = Math.floor(minutes/60);
-  const m = minutes%60;
+ const h=Math.floor(minutes/60);
+ const m=minutes%60;
 
-  return `${h}h ${m}m`;
+ return `${h}h ${m}m`;
+
 }
-
 
 /* DATE VALUE */
 
 function getDateValue(value){
 
-  if(!value)return null;
+ if(!value)return null;
 
-  if(typeof value.toDate==="function"){
-    return value.toDate();
-  }
+ if(typeof value.toDate==="function"){
+   return value.toDate();
+ }
 
-  const d = new Date(value);
+ const d=new Date(value);
 
-  return isNaN(d.getTime()) ? null : d;
+ return isNaN(d.getTime())?null:d;
+
 }
-
 
 /* TIME */
 
 function formatTime(value){
 
-  const d = getDateValue(value);
+ const d=getDateValue(value);
 
-  if(!d)return "--:--";
+ if(!d)return "--:--";
 
-  return d.toLocaleTimeString([],{
-    hour:"2-digit",
-    minute:"2-digit"
-  });
+ return d.toLocaleTimeString(
+   [],
+   {
+     hour:"2-digit",
+     minute:"2-digit"
+   }
+ );
+
 }
-
-
-function timeToMinutes(time){
-
-  if(!time)return 0;
-
-  const parts = String(time).split(":");
-
-  if(parts.length<2)return 0;
-
-  return Number(parts[0])*60+Number(parts[1]);
-}
-
-
-function formatScheduleTime(time){
-
-  if(!time)return "--:--";
-
-  const parts = String(time).split(":");
-
-  if(parts.length<2)return time;
-
-  let hour = Number(parts[0]);
-  const minute = parts[1];
-
-  const ampm = hour>=12 ? "PM" : "AM";
-
-  hour = hour%12;
-
-  if(hour===0)hour=12;
-
-  return `${hour}:${minute} ${ampm}`;
-}
-
-
-/* SCHEDULED END PROTECTION */
-
-/*
-  Every attendance record already saves:
-  scheduledStart
-  scheduledEnd
-  date
-
-  The schedule's end time is the maximum payable
-  end time. Earlier manual checkout is allowed.
-*/
-
-function getScheduledEndDate(item){
-
-  const date = String(item.date||"");
-  const endTime = String(item.scheduledEnd||"");
-
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return null;
-  if(!/^\d{2}:\d{2}$/.test(endTime))return null;
-
-  const [year,month,day] = date.split("-").map(Number);
-  const [hour,minute] = endTime.split(":").map(Number);
-
-  const endDate = new Date(
-    year,
-    month-1,
-    day,
-    hour,
-    minute,
-    0,
-    0
-  );
-
-  if(isNaN(endDate.getTime()))return null;
-
-  return endDate;
-}
-
-
-/* MAXIMUM COUNTED MINUTES */
-
-function getSessionMinutes(item,now=new Date()){
-
-  const start = getDateValue(item.checkIn);
-
-  if(!start)return 0;
-
-  const scheduledEnd = getScheduledEndDate(item);
-
-  let end = now;
-
-  // If manually ended, use actual checkout time.
-  if(item.checkOut){
-
-    end = getDateValue(item.checkOut)||now;
-
-  }
-
-  // Never count beyond scheduled end.
-  if(scheduledEnd && end>scheduledEnd){
-
-    end = scheduledEnd;
-
-  }
-
-  return Math.max(
-    0,
-    Math.floor((end.getTime()-start.getTime())/60000)
-  );
-}
-
-
-/* CALCULATE EARNING */
-
-function calculateSessionEarning(item,minutes){
-
-  const rate = Number(
-    item.hourlyRate||faculty?.hourlyRate||0
-  );
-
-  return Number(
-    ((Number(minutes||0)/60)*rate).toFixed(2)
-  );
-}
-
 
 /* MESSAGE */
 
 function showMessage(text,type="success"){
 
-  messageEl.textContent = text;
-  messageEl.className = "message show "+type;
+ messageEl.textContent=text;
+ messageEl.className="message show "+type;
 
-  setTimeout(()=>{
-    messageEl.className = "message";
-  },5000);
+ setTimeout(()=>{
+   messageEl.className="message";
+ },5000);
+
 }
-
 
 /* LOAD FACULTY */
 
 async function loadFaculty(){
 
-  try{
+ try{
 
-    const ref = doc(db,"faculty",facultyMobile);
-    const snap = await getDoc(ref);
+   const ref=doc(db,"faculty",facultyMobile);
+   const snap=await getDoc(ref);
 
-    if(!snap.exists()){
+   if(!snap.exists()){
 
-      facultyNameEl.textContent = "Faculty Not Found";
-      facultyMobileEl.textContent = "Faculty ID: "+facultyMobile;
+     facultyNameEl.textContent="Faculty Not Found";
+     facultyMobileEl.textContent="Faculty ID: "+facultyMobile;
+     facultyStatusEl.textContent="CONTACT ADMIN";
+     facultyStatusEl.className="badge red";
+     checkInBtn.disabled=true;
 
-      facultyStatusEl.textContent = "CONTACT ADMIN";
-      facultyStatusEl.className = "badge red";
+     return;
 
-      checkInBtn.disabled = true;
+   }
 
-      return;
-    }
+   faculty={
+     id:snap.id,
+     ...snap.data()
+   };
 
-    faculty = {
-      id:snap.id,
-      ...snap.data()
-    };
+   facultyNameEl.textContent=faculty.name||"Faculty";
+   facultyMobileEl.textContent="Faculty ID: "+facultyMobile;
 
-    facultyNameEl.textContent = faculty.name||"Faculty";
-    facultyMobileEl.textContent = "Faculty ID: "+facultyMobile;
+   if(faculty.active===false){
 
-    if(faculty.active===false){
+     facultyStatusEl.textContent="INACTIVE";
+     facultyStatusEl.className="badge red";
 
-      facultyStatusEl.textContent = "INACTIVE";
-      facultyStatusEl.className = "badge red";
+   }else{
 
-    }else{
+     facultyStatusEl.textContent="ACTIVE";
+     facultyStatusEl.className="badge green";
 
-      facultyStatusEl.textContent = "ACTIVE";
-      facultyStatusEl.className = "badge green";
+   }
 
-    }
+   hourlyRateEl.textContent=money(faculty.hourlyRate)+"/hr";
 
-    hourlyRateEl.textContent = money(faculty.hourlyRate)+"/hr";
+   if(faculty.photo){
 
-    if(faculty.photo){
+     avatarEl.innerHTML=
+     `<img src="${escapeHtml(faculty.photo)}" alt="Faculty">`;
 
-      avatarEl.innerHTML =
-      `<img src="${escapeHtml(faculty.photo)}" alt="Faculty">`;
+   }else{
 
-    }else{
+     avatarEl.textContent=
+     String(faculty.name||"F").charAt(0).toUpperCase();
 
-      avatarEl.textContent =
-      String(faculty.name||"F").charAt(0).toUpperCase();
+   }
 
-    }
+ }catch(error){
 
-  }catch(error){
+   console.error(error);
 
-    console.error(error);
+   showMessage(
+     "Faculty information could not be loaded.",
+     "error"
+   );
 
-    showMessage(
-      "Faculty information could not be loaded.",
-      "error"
-    );
-  }
+ }
+
 }
-
 
 /* LOAD TODAY SCHEDULE */
 
 async function loadTodaySchedule(){
 
-  const scheduleList = document.getElementById("scheduleList");
-  const scheduleEmpty = document.getElementById("scheduleEmpty");
-  const scheduleCount = document.getElementById("scheduleCount");
+ const scheduleList=document.getElementById("scheduleList");
+ const scheduleEmpty=document.getElementById("scheduleEmpty");
+ const scheduleCount=document.getElementById("scheduleCount");
 
-  document.getElementById("scheduleDateLabel").textContent = dateLabel();
+ document.getElementById("scheduleDateLabel").textContent=dateLabel();
 
-  scheduleList.innerHTML =
-  `<div class="loading">Loading today's schedule...</div>`;
+ scheduleList.innerHTML=
+ `<div class="loading">Loading today's schedule...</div>`;
 
-  try{
+ try{
 
-    const q = query(
-      collection(db,"facultySchedules"),
-      where("facultyId","==",facultyMobile),
-      where("date","==",todayKey())
-    );
+   const q=query(
+     collection(db,"facultySchedules"),
+     where("facultyId","==",facultyMobile),
+     where("date","==",todayKey())
+   );
 
-    const snap = await getDocs(q);
+   const snap=await getDocs(q);
 
-    schedules = snap.docs.map(d=>({
-      id:d.id,
-      ...d.data()
-    })).sort((a,b)=>
-      String(a.startTime||"").localeCompare(String(b.startTime||""))
-    );
+   schedules=snap.docs
+   .map(d=>({
+     id:d.id,
+     ...d.data()
+   }))
+   .sort((a,b)=>
+     String(a.startTime||"").localeCompare(String(b.startTime||""))
+   );
 
-    renderSchedule();
+   renderSchedule();
 
-  }catch(error){
+ }catch(error){
 
-    console.error("Schedule error:",error);
+   console.error("Schedule error:",error);
 
-    scheduleList.innerHTML = "";
-    scheduleEmpty.style.display = "block";
+   scheduleList.innerHTML="";
+   scheduleEmpty.style.display="block";
 
-    scheduleEmpty.querySelector("h3").textContent = "SCHEDULE UNAVAILABLE";
+   scheduleEmpty.querySelector("h3").textContent="SCHEDULE UNAVAILABLE";
 
-    scheduleEmpty.querySelector("p").textContent =
-    "Unable to load today's class schedule.";
+   scheduleEmpty.querySelector("p").textContent=
+   "Unable to load today's class schedule.";
 
-    scheduleCount.textContent = "ERROR";
-  }
+   scheduleCount.textContent="ERROR";
+
+ }
+
 }
-
 
 /* RENDER SCHEDULE */
 
 function renderSchedule(){
 
-  const list = document.getElementById("scheduleList");
-  const empty = document.getElementById("scheduleEmpty");
-  const count = document.getElementById("scheduleCount");
+ const list=document.getElementById("scheduleList");
+ const empty=document.getElementById("scheduleEmpty");
+ const count=document.getElementById("scheduleCount");
 
-  list.innerHTML = "";
+ list.innerHTML="";
 
-  if(!schedules.length){
+ if(!schedules.length){
 
-    empty.style.display = "block";
-    count.textContent = "NO CLASS";
-    count.className = "badge red";
+   empty.style.display="block";
+   count.textContent="NO CLASS";
+   count.className="badge red";
 
-    return;
-  }
+   return;
 
-  empty.style.display = "none";
+ }
 
-  count.textContent = schedules.length+
-  (schedules.length===1 ? " SESSION" : " SESSIONS");
+ empty.style.display="none";
 
-  count.className = "badge green";
+ count.textContent=schedules.length+
+ (schedules.length===1?" SESSION":" SESSIONS");
 
-  schedules.forEach(schedule=>{
+ count.className="badge green";
 
-    const attendance = todaySessions.find(
-      item=>item.scheduleId===schedule.id
-    );
+ schedules.forEach(schedule=>{
 
-    const running = attendance&&!attendance.checkOut;
-    const completed = attendance&&attendance.checkOut;
+   const attendance=todaySessions.find(
+     item=>item.scheduleId===schedule.id
+   );
 
-    let statusText = "WAITING";
-    let statusClass = "status-wait";
+   const running=attendance&&!attendance.checkOut;
+   const completed=attendance&&attendance.checkOut;
 
-    if(schedule.allowed===false){
+   let statusText="WAITING";
+   let statusClass="status-wait";
 
-      statusText = "BLOCKED";
-      statusClass = "status-blocked";
+   if(schedule.allowed===false){
 
-    }else if(completed){
+     statusText="BLOCKED";
+     statusClass="status-blocked";
 
-      statusText = "COMPLETED";
-      statusClass = "status-done";
+   }else if(completed){
 
-    }else if(running){
+     statusText="COMPLETED";
+     statusClass="status-done";
 
-      statusText = "RUNNING";
-      statusClass = "status-ready";
+   }else if(running){
 
-    }else{
+     statusText="RUNNING";
+     statusClass="status-ready";
 
-      statusText = "AVAILABLE";
-      statusClass = "status-ready";
+   }else{
 
-    }
+     statusText="AVAILABLE";
+     statusClass="status-ready";
 
-    const item = document.createElement("div");
+   }
 
-    item.className = "schedule-item";
+   const item=document.createElement("div");
 
-    item.innerHTML = `
+   item.className="schedule-item";
 
-      <div class="schedule-icon">
-        <i class="ri-time-line"></i>
-      </div>
+   item.innerHTML=`
 
-      <div>
+     <div class="schedule-icon">
+       <i class="ri-time-line"></i>
+     </div>
 
-        <div class="schedule-name">
-          ${escapeHtml(schedule.sessionName||"Class Session")}
-        </div>
+     <div>
 
-        <div class="schedule-time">
-          ${formatScheduleTime(schedule.startTime)}
-          →
-          ${formatScheduleTime(schedule.endTime)}
-        </div>
+       <div class="schedule-name">
+         ${escapeHtml(schedule.sessionName||"Class Session")}
+       </div>
 
-      </div>
+       <div class="schedule-time">
+         ${formatScheduleTime(schedule.startTime)}
+         →
+         ${formatScheduleTime(schedule.endTime)}
+       </div>
 
-      <div class="schedule-status ${statusClass}">
-        ${statusText}
-      </div>
+     </div>
 
-    `;
+     <div class="schedule-status ${statusClass}">
+       ${statusText}
+     </div>
 
-    list.appendChild(item);
+   `;
 
-  });
+   list.appendChild(item);
+
+ });
+
 }
 
+/* SCHEDULE TIME FORMAT */
+
+function formatScheduleTime(time){
+
+ if(!time)return "--:--";
+
+ const parts=time.split(":");
+
+ if(parts.length<2)return time;
+
+ let hour=Number(parts[0]);
+ const minute=parts[1];
+
+ const ampm=hour>=12?"PM":"AM";
+
+ hour=hour%12;
+
+ if(hour===0)hour=12;
+
+ return `${hour}:${minute} ${ampm}`;
+
+}
 
 /* FIND CURRENT SESSION */
 
 function findCurrentSession(){
 
-  currentSession = todaySessions
-  .filter(item=>!item.checkOut)
-  .sort((a,b)=>{
+ currentSession=todaySessions
+ .filter(item=>!item.checkOut)
+ .sort((a,b)=>{
 
-    const da = getDateValue(a.checkIn)?.getTime()||0;
-    const dbb = getDateValue(b.checkIn)?.getTime()||0;
+   const da=getDateValue(a.checkIn)?.getTime()||0;
+   const dbb=getDateValue(b.checkIn)?.getTime()||0;
 
-    return dbb-da;
+   return dbb-da;
 
-  })[0]||null;
+ })[0]||null;
 
-  if(currentSession){
+ if(currentSession){
 
-    currentSchedule = schedules.find(
-      s=>s.id===currentSession.scheduleId
-    )||null;
+   currentSchedule=schedules.find(
+     s=>s.id===currentSession.scheduleId
+   )||null;
 
-  }else{
+ }else{
 
-    currentSchedule = null;
+   currentSchedule=null;
 
-  }
+ }
+
 }
 
-
-/* FIND AVAILABLE SCHEDULE */
+/* CHECK SESSION AVAILABILITY */
 
 function getAvailableSession(){
 
-  const now = new Date();
+ const now=new Date();
 
-  const currentMinutes =
-  now.getHours()*60+now.getMinutes();
+ const currentMinutes=
+ now.getHours()*60+now.getMinutes();
 
-  const available = schedules
-  .filter(schedule=>schedule.allowed!==false)
-  .filter(schedule=>{
+ const available=schedules
+ .filter(schedule=>schedule.allowed!==false)
+ .filter(schedule=>{
 
-    const used = todaySessions.some(
-      attendance=>attendance.scheduleId===schedule.id
-    );
+   const used=todaySessions.some(
+     attendance=>attendance.scheduleId===schedule.id
+   );
 
-    if(used)return false;
+   if(used)return false;
 
-    if(!schedule.startTime||!schedule.endTime)return false;
+   if(!schedule.startTime||!schedule.endTime)return false;
 
-    const start = timeToMinutes(schedule.startTime);
-    const end = timeToMinutes(schedule.endTime);
+   const start=timeToMinutes(schedule.startTime);
+   const end=timeToMinutes(schedule.endTime);
 
-    // Class can start only inside its scheduled window.
-    return currentMinutes>=start&&currentMinutes<end;
+   return currentMinutes>=start&&currentMinutes<=end;
 
-  })[0]||null;
+ })[0]||null;
 
-  return available;
+ return available;
+
 }
 
+/* TIME TO MINUTES */
+
+function timeToMinutes(time){
+
+ const parts=time.split(":");
+
+ return Number(parts[0])*60+Number(parts[1]);
+
+}
 
 /* RENDER ATTENDANCE BUTTONS */
 
 function renderCurrentSession(){
 
-  if(currentSession){
+ if(currentSession){
 
-    checkInTimeEl.textContent = formatTime(currentSession.checkIn);
-    checkOutTimeEl.textContent = "RUNNING";
+   checkInTimeEl.textContent=formatTime(currentSession.checkIn);
+   checkOutTimeEl.textContent="RUNNING";
 
-    checkOutTimeEl.classList.add("running");
+   checkOutTimeEl.classList.add("running");
 
-    checkInBtn.disabled = true;
-    checkOutBtn.disabled = false;
+   checkInBtn.disabled=true;
+   checkOutBtn.disabled=false;
 
-    return;
-  }
+   return;
 
-  checkInTimeEl.textContent = "--:--";
-  checkOutTimeEl.textContent = "--:--";
+ }
 
-  checkOutTimeEl.classList.remove("running");
+ checkInTimeEl.textContent="--:--";
+ checkOutTimeEl.textContent="--:--";
 
-  checkOutBtn.disabled = true;
+ checkOutTimeEl.classList.remove("running");
 
-  const available = getAvailableSession();
+ checkOutBtn.disabled=true;
 
-  checkInBtn.disabled = !available;
+ const available=getAvailableSession();
+
+ checkInBtn.disabled=!available;
+
 }
-
-
-/* AUTOMATICALLY CLOSE EXPIRED SESSIONS */
-
-async function autoCloseExpiredSessions(){
-
-  const now = new Date();
-
-  for(const item of attendanceList){
-
-    if(item.checkOut)continue;
-
-    const scheduledEnd = getScheduledEndDate(item);
-
-    if(!scheduledEnd)continue;
-
-    if(now.getTime()<scheduledEnd.getTime())continue;
-
-    const start = getDateValue(item.checkIn);
-
-    if(!start)continue;
-
-    const totalMinutes = Math.max(
-      0,
-      Math.floor(
-        (scheduledEnd.getTime()-start.getTime())/60000
-      )
-    );
-
-    const earning = calculateSessionEarning(
-      item,
-      totalMinutes
-    );
-
-    try{
-
-      await updateDoc(
-        doc(db,"facultyAttendance",item.id),
-        {
-          checkOut:scheduledEnd,
-          totalMinutes,
-          earning,
-          autoClosed:true,
-          autoClosedAt:now,
-          updatedAt:now
-        }
-      );
-
-      // Update local copy immediately.
-      item.checkOut = scheduledEnd;
-      item.totalMinutes = totalMinutes;
-      item.earning = earning;
-      item.autoClosed = true;
-
-    }catch(error){
-
-      console.error("Automatic close failed:",error);
-
-    }
-  }
-}
-
 
 /* LOAD ATTENDANCE */
 
 async function loadAttendance(){
 
-  if(attendanceLoading)return;
+ try{
 
-  attendanceLoading = true;
+   const q=query(
+     collection(db,"facultyAttendance"),
+     where("facultyId","==",facultyMobile)
+   );
 
-  try{
+   const snap=await getDocs(q);
 
-    const q = query(
-      collection(db,"facultyAttendance"),
-      where("facultyId","==",facultyMobile)
-    );
+   attendanceList=snap.docs.map(d=>({
+     id:d.id,
+     ...d.data()
+   }));
 
-    const snap = await getDocs(q);
+   attendanceList.sort((a,b)=>{
 
-    attendanceList = snap.docs.map(d=>({
-      id:d.id,
-      ...d.data()
-    }));
+     const da=getDateValue(a.checkIn)?.getTime()||0;
+     const dbb=getDateValue(b.checkIn)?.getTime()||0;
 
-    // Close expired sessions before calculating earnings.
-    await autoCloseExpiredSessions();
+     return dbb-da;
 
-    attendanceList.sort((a,b)=>{
+   });
 
-      const da = getDateValue(a.checkIn)?.getTime()||0;
-      const dbb = getDateValue(b.checkIn)?.getTime()||0;
+   todaySessions=attendanceList.filter(
+     item=>item.date===todayKey()
+   );
 
-      return dbb-da;
+   findCurrentSession();
 
-    });
+   renderCurrentSession();
+   renderSchedule();
+   renderTodaySessions();
+   renderHistory();
+   updateTodayStats();
+   updateMonthlyStats();
 
-    todaySessions = attendanceList.filter(
-      item=>item.date===todayKey()
-    );
+   // NEW: MONTHLY PAYMENT HISTORY
+   updateMonthlyPaymentHistory();
 
-    findCurrentSession();
+ }catch(error){
 
-    renderCurrentSession();
-    renderSchedule();
-    renderTodaySessions();
-    renderHistory();
+   console.error("Attendance error:",error);
 
-    updateTodayStats();
-    updateMonthlyStats();
-    updateMonthlyPaymentHistory();
+   showMessage(
+     "Attendance could not be loaded.",
+     "error"
+   );
 
-  }catch(error){
+ }
 
-    console.error("Attendance error:",error);
-
-    showMessage(
-      "Attendance could not be loaded.",
-      "error"
-    );
-
-  }finally{
-
-    attendanceLoading = false;
-
-  }
 }
-
 
 /* START CLASS */
 
 checkInBtn.addEventListener("click",async()=>{
 
-  if(!faculty)return;
+ if(!faculty)return;
 
-  if(faculty.active===false){
+ if(faculty.active===false){
 
-    showMessage(
-      "Your faculty account is inactive.",
-      "error"
-    );
+   showMessage(
+     "Your faculty account is inactive.",
+     "error"
+   );
 
-    return;
-  }
+   return;
 
-  if(currentSession){
+ }
 
-    showMessage(
-      "A class is already running.",
-      "error"
-    );
+ if(currentSession){
 
-    return;
-  }
+   showMessage(
+     "A class is already running.",
+     "error"
+   );
 
-  const schedule = getAvailableSession();
+   return;
 
-  if(!schedule){
+ }
 
-    showMessage(
-      "No class is currently available. Please check your schedule time.",
-      "error"
-    );
+ const schedule=getAvailableSession();
 
-    renderCurrentSession();
+ if(!schedule){
 
-    return;
-  }
+   showMessage(
+     "No class is currently available. Attendance is controlled by Admin.",
+     "error"
+   );
 
-  checkInBtn.disabled = true;
+   renderCurrentSession();
 
-  try{
+   return;
 
-    const now = new Date();
+ }
 
-    const rate = Number(faculty.hourlyRate||0);
+ checkInBtn.disabled=true;
 
-    const sessionRef = doc(
-      collection(db,"facultyAttendance")
-    );
+ try{
 
-    await setDoc(sessionRef,{
+   const now=new Date();
 
-      facultyId:facultyMobile,
-      facultyName:faculty.name||"",
+   const rate=Number(faculty.hourlyRate||0);
 
-      date:todayKey(),
+   const sessionRef=doc(
+     collection(db,"facultyAttendance")
+   );
 
-      scheduleId:schedule.id,
-      sessionName:schedule.sessionName||"Class",
+   await setDoc(sessionRef,{
 
-      scheduledStart:schedule.startTime||"",
-      scheduledEnd:schedule.endTime||"",
+     facultyId:facultyMobile,
+     facultyName:faculty.name||"",
+     date:todayKey(),
+     scheduleId:schedule.id,
+     sessionName:schedule.sessionName||"Class",
+     scheduledStart:schedule.startTime||"",
+     scheduledEnd:schedule.endTime||"",
+     checkIn:now,
+     checkOut:null,
+     totalMinutes:0,
+     hourlyRate:rate,
+     earning:0,
+     sessionType:"class",
+     createdAt:now,
+     updatedAt:now
 
-      checkIn:now,
-      checkOut:null,
+   });
 
-      totalMinutes:0,
-      hourlyRate:rate,
-      earning:0,
+   showMessage(
+     `${schedule.sessionName||"Class"} started successfully.`,
+     "success"
+   );
 
-      sessionType:"class",
+   await loadAttendance();
 
-      createdAt:now,
-      updatedAt:now
+ }catch(error){
 
-    });
+   console.error("Start class error:",error);
 
-    showMessage(
-      `${schedule.sessionName||"Class"} started successfully.`,
-      "success"
-    );
+   showMessage(
+     "Class start failed: "+error.message,
+     "error"
+   );
 
-    await loadAttendance();
+   checkInBtn.disabled=false;
 
-  }catch(error){
-
-    console.error("Start class error:",error);
-
-    showMessage(
-      "Class start failed: "+error.message,
-      "error"
-    );
-
-    checkInBtn.disabled = false;
-
-  }
+ }
 
 });
 
-
-/* END CLASS — EARLY END ALLOWED, LATE END BLOCKED */
+/* END CLASS */
 
 checkOutBtn.addEventListener("click",async()=>{
 
-  if(!currentSession)return;
+ if(!currentSession)return;
 
-  checkOutBtn.disabled = true;
+ checkOutBtn.disabled=true;
 
-  try{
+ try{
 
-    const start = getDateValue(currentSession.checkIn);
+   const start=getDateValue(currentSession.checkIn);
 
-    if(!start){
-      throw new Error("Invalid check-in time.");
-    }
+   if(!start){
+     throw new Error("Invalid check-in time.");
+   }
 
-    const now = new Date();
+   const now=new Date();
 
-    const scheduledEnd = getScheduledEndDate(currentSession);
+   const totalMinutes=Math.max(
+     0,
+     Math.floor((now.getTime()-start.getTime())/60000)
+   );
 
-    /*
-      If faculty ends early:
-      Count actual checkout time.
+   const rate=Number(
+     currentSession.hourlyRate||
+     faculty?.hourlyRate||
+     0
+   );
 
-      If faculty ends late:
-      Count only until scheduled end.
-    */
+   const earning=(totalMinutes/60)*rate;
 
-    let effectiveEnd = now;
+   await updateDoc(
+     doc(db,"facultyAttendance",currentSession.id),
+     {
+       checkOut:now,
+       totalMinutes:totalMinutes,
+       earning:Number(earning.toFixed(2)),
+       updatedAt:now
+     }
+   );
 
-    if(scheduledEnd && now>scheduledEnd){
+   showMessage(
+     `Class completed • ${minutesToHours(totalMinutes)} • ${money(earning)}`,
+     "success"
+   );
 
-      effectiveEnd = scheduledEnd;
+   await loadAttendance();
 
-    }
+ }catch(error){
 
-    const totalMinutes = Math.max(
-      0,
-      Math.floor(
-        (effectiveEnd.getTime()-start.getTime())/60000
-      )
-    );
+   console.error("End class error:",error);
 
-    const rate = Number(
-      currentSession.hourlyRate||
-      faculty?.hourlyRate||
-      0
-    );
+   showMessage(
+     "Class end failed: "+error.message,
+     "error"
+   );
 
-    const earning = Number(
-      ((totalMinutes/60)*rate).toFixed(2)
-    );
+   checkOutBtn.disabled=false;
 
-    const autoEnded = Boolean(
-      scheduledEnd && now>=scheduledEnd
-    );
-
-    await updateDoc(
-      doc(db,"facultyAttendance",currentSession.id),
-      {
-        checkOut:effectiveEnd,
-        totalMinutes,
-        earning,
-        autoClosed:autoEnded,
-        updatedAt:now
-      }
-    );
-
-    showMessage(
-      `Class completed • ${minutesToHours(totalMinutes)} • ${money(earning)}`,
-      "success"
-    );
-
-    await loadAttendance();
-
-  }catch(error){
-
-    console.error("End class error:",error);
-
-    showMessage(
-      "Class end failed: "+error.message,
-      "error"
-    );
-
-    checkOutBtn.disabled = false;
-
-  }
+ }
 
 });
-
 
 /* TODAY SESSION TABLE */
 
 function renderTodaySessions(){
 
-  const body = document.getElementById("todaySessionBody");
-  const empty = document.getElementById("todaySessionEmpty");
+ const body=document.getElementById("todaySessionBody");
+ const empty=document.getElementById("todaySessionEmpty");
 
-  body.innerHTML = "";
+ body.innerHTML="";
 
-  const data = [...todaySessions].sort((a,b)=>{
+ const data=[...todaySessions].sort((a,b)=>{
 
-    const da = getDateValue(a.checkIn)?.getTime()||0;
-    const dbb = getDateValue(b.checkIn)?.getTime()||0;
+   const da=getDateValue(a.checkIn)?.getTime()||0;
+   const dbb=getDateValue(b.checkIn)?.getTime()||0;
 
-    return da-dbb;
+   return da-dbb;
 
-  });
+ });
 
-  if(!data.length){
+ if(!data.length){
 
-    empty.style.display = "block";
+   empty.style.display="block";
 
-    return;
-  }
+   return;
 
-  empty.style.display = "none";
+ }
 
-  data.forEach((item,index)=>{
+ empty.style.display="none";
 
-    const minutes = getSessionMinutes(item);
+ data.forEach((item,index)=>{
 
-    const earning = item.checkOut
-      ? Number(item.earning||0)
-      : calculateSessionEarning(item,minutes);
+   let minutes=Number(item.totalMinutes||0);
 
-    const tr = document.createElement("tr");
+   if(!item.checkOut&&item.checkIn){
 
-    tr.innerHTML = `
+     const start=getDateValue(item.checkIn);
 
-      <td>${escapeHtml(item.sessionName||"Session "+(index+1))}</td>
+     if(start){
 
-      <td>${formatTime(item.checkIn)}</td>
+       minutes=Math.max(
+         0,
+         Math.floor((new Date().getTime()-start.getTime())/60000)
+       );
 
-      <td>
-        ${
-          item.checkOut
-          ? formatTime(item.checkOut)
-          : `<span class="running">RUNNING</span>`
-        }
-      </td>
+     }
 
-      <td>${minutesToHours(minutes)}</td>
+   }
 
-      <td class="rate">${money(item.hourlyRate)}/hr</td>
+   let earning=Number(item.earning||0);
 
-      <td class="earning">${money(earning)}</td>
+   if(!item.checkOut){
 
-    `;
+     earning=(minutes/60)*Number(
+       item.hourlyRate||faculty?.hourlyRate||0
+     );
 
-    body.appendChild(tr);
+   }
 
-  });
+   const tr=document.createElement("tr");
+
+   tr.innerHTML=`
+
+     <td>${escapeHtml(item.sessionName||"Session "+(index+1))}</td>
+
+     <td>${formatTime(item.checkIn)}</td>
+
+     <td>
+       ${
+         item.checkOut
+         ? formatTime(item.checkOut)
+         : `<span class="running">RUNNING</span>`
+       }
+     </td>
+
+     <td>${minutesToHours(minutes)}</td>
+
+     <td class="rate">${money(item.hourlyRate)}/hr</td>
+
+     <td class="earning">${money(earning)}</td>
+
+   `;
+
+   body.appendChild(tr);
+
+ });
+
 }
-
 
 /* TODAY STATS */
 
 function updateTodayStats(){
 
-  let totalMinutes = 0;
-  let totalEarning = 0;
+ let totalMinutes=0;
+ let totalEarning=0;
 
-  todaySessions.forEach(item=>{
+ todaySessions.forEach(item=>{
 
-    const minutes = getSessionMinutes(item);
+   let minutes=Number(item.totalMinutes||0);
 
-    totalMinutes += minutes;
+   if(!item.checkOut&&item.checkIn){
 
-    if(item.checkOut){
+     const start=getDateValue(item.checkIn);
 
-      totalEarning += Number(item.earning||0);
+     if(start){
 
-    }else{
+       minutes=Math.max(
+         0,
+         Math.floor((new Date().getTime()-start.getTime())/60000)
+       );
 
-      totalEarning += calculateSessionEarning(item,minutes);
+     }
 
-    }
+   }
 
-  });
+   totalMinutes+=minutes;
 
-  todayHoursEl.textContent = minutesToHours(totalMinutes);
-  todayEarningEl.textContent = money(totalEarning);
+   if(item.checkOut){
+
+     totalEarning+=Number(item.earning||0);
+
+   }else{
+
+     totalEarning+=(minutes/60)*Number(
+       item.hourlyRate||faculty?.hourlyRate||0
+     );
+
+   }
+
+ });
+
+ todayHoursEl.textContent=minutesToHours(totalMinutes);
+ todayEarningEl.textContent=money(totalEarning);
+
 }
-
 
 /* FILTER HISTORY */
 
 function getFilteredHistory(){
 
-  const now = new Date();
+ const now=new Date();
 
-  const year = now.getFullYear();
-  const month = now.getMonth();
+ const year=now.getFullYear();
+ const month=now.getMonth();
 
-  return attendanceList.filter(item=>{
+ return attendanceList.filter(item=>{
 
-    const date = new Date(item.date+"T00:00:00");
+   const date=new Date(item.date+"T00:00:00");
 
-    if(selectedFilter==="month"){
+   if(selectedFilter==="month"){
 
-      return date.getFullYear()===year&&date.getMonth()===month;
+     return date.getFullYear()===year&&date.getMonth()===month;
 
-    }
+   }
 
-    if(selectedFilter==="lastMonth"){
+   if(selectedFilter==="lastMonth"){
 
-      const last = new Date(year,month-1,1);
+     const last=new Date(year,month-1,1);
 
-      return date.getFullYear()===last.getFullYear()&&
-             date.getMonth()===last.getMonth();
+     return date.getFullYear()===last.getFullYear()&&
+            date.getMonth()===last.getMonth();
 
-    }
+   }
 
-    if(selectedFilter==="week"){
+   if(selectedFilter==="week"){
 
-      const day = now.getDay();
+     const day=now.getDay();
 
-      const difference = day===0 ? 6 : day-1;
+     const difference=day===0?6:day-1;
 
-      const start = new Date(now);
+     const start=new Date(now);
 
-      start.setHours(0,0,0,0);
-      start.setDate(now.getDate()-difference);
+     start.setHours(0,0,0,0);
 
-      const end = new Date(start);
+     start.setDate(now.getDate()-difference);
 
-      end.setDate(start.getDate()+7);
+     const end=new Date(start);
 
-      return date>=start&&date<end;
+     end.setDate(start.getDate()+7);
 
-    }
+     return date>=start&&date<end;
 
-    return true;
+   }
 
-  });
+   return true;
+
+ });
+
 }
-
 
 /* HISTORY */
 
 function renderHistory(){
 
-  const body = document.getElementById("historyBody");
-  const table = document.getElementById("historyTable");
-  const loading = document.getElementById("historyLoading");
-  const empty = document.getElementById("emptyHistory");
+ const body=document.getElementById("historyBody");
+ const table=document.getElementById("historyTable");
+ const loading=document.getElementById("historyLoading");
+ const empty=document.getElementById("emptyHistory");
 
-  loading.style.display = "none";
+ loading.style.display="none";
 
-  body.innerHTML = "";
+ body.innerHTML="";
 
-  const data = getFilteredHistory();
+ const data=getFilteredHistory();
 
-  if(!data.length){
+ if(!data.length){
 
-    table.style.display = "none";
-    empty.style.display = "block";
+   table.style.display="none";
+   empty.style.display="block";
 
-    return;
-  }
+   return;
 
-  table.style.display = "table";
-  empty.style.display = "none";
+ }
 
-  const grouped = {};
+ table.style.display="table";
+ empty.style.display="none";
 
-  data.forEach(item=>{
+ const grouped={};
 
-    if(!grouped[item.date]){
-      grouped[item.date] = [];
-    }
+ data.forEach(item=>{
 
-    grouped[item.date].push(item);
+   if(!grouped[item.date]){
+     grouped[item.date]=[];
+   }
 
-  });
+   grouped[item.date].push(item);
 
-  Object.keys(grouped)
-  .sort()
-  .reverse()
-  .forEach(date=>{
+ });
 
-    grouped[date]
-    .sort((a,b)=>{
+ Object.keys(grouped)
+ .sort()
+ .reverse()
+ .forEach(date=>{
 
-      const da = getDateValue(a.checkIn)?.getTime()||0;
-      const dbb = getDateValue(b.checkIn)?.getTime()||0;
+   grouped[date]
+   .sort((a,b)=>{
 
-      return da-dbb;
+     const da=getDateValue(a.checkIn)?.getTime()||0;
+     const dbb=getDateValue(b.checkIn)?.getTime()||0;
 
-    })
-    .forEach((item,index)=>{
+     return da-dbb;
 
-      const minutes = getSessionMinutes(item);
+   })
+   .forEach((item,index)=>{
 
-      const earning = item.checkOut
-        ? Number(item.earning||0)
-        : calculateSessionEarning(item,minutes);
+     const tr=document.createElement("tr");
 
-      const tr = document.createElement("tr");
+     tr.innerHTML=`
 
-      tr.innerHTML = `
+       <td>${item.date}</td>
 
-        <td>${escapeHtml(item.date)}</td>
+       <td>${escapeHtml(item.sessionName||"Session "+(index+1))}</td>
 
-        <td>${escapeHtml(item.sessionName||"Session "+(index+1))}</td>
+       <td>${formatTime(item.checkIn)}</td>
 
-        <td>${formatTime(item.checkIn)}</td>
+       <td>
+         ${
+           item.checkOut
+           ? formatTime(item.checkOut)
+           : `<span class="running">RUNNING</span>`
+         }
+       </td>
 
-        <td>
-          ${
-            item.checkOut
-            ? formatTime(item.checkOut)
-            : `<span class="running">RUNNING</span>`
-          }
-        </td>
+       <td>${minutesToHours(item.totalMinutes)}</td>
 
-        <td>${minutesToHours(minutes)}</td>
+       <td class="earning">${money(item.earning)}</td>
 
-        <td class="earning">${money(earning)}</td>
+     `;
 
-      `;
+     body.appendChild(tr);
 
-      body.appendChild(tr);
+   });
 
-    });
+ });
 
-  });
 }
-
 
 /* MONTHLY STATS */
 
 function updateMonthlyStats(){
 
-  const now = new Date();
+ const now=new Date();
 
-  const year = now.getFullYear();
-  const month = now.getMonth();
+ const year=now.getFullYear();
+ const month=now.getMonth();
 
-  const monthData = attendanceList.filter(item=>{
+ const monthData=attendanceList.filter(item=>{
 
-    const date = new Date(item.date+"T00:00:00");
+   const date=new Date(item.date+"T00:00:00");
 
-    return date.getFullYear()===year&&date.getMonth()===month;
+   return date.getFullYear()===year&&date.getMonth()===month;
 
-  });
+ });
 
-  let totalMinutes = 0;
-  let totalEarnings = 0;
+ let totalMinutes=0;
+ let totalEarnings=0;
 
-  const workDates = new Set();
+ const workDates=new Set();
 
-  monthData.forEach(item=>{
+ monthData.forEach(item=>{
 
-    const minutes = getSessionMinutes(item);
+   totalMinutes+=Number(item.totalMinutes||0);
 
-    totalMinutes += minutes;
+   totalEarnings+=Number(item.earning||0);
 
-    if(item.checkOut){
+   if(Number(item.totalMinutes||0)>0){
+     workDates.add(item.date);
+   }
 
-      totalEarnings += Number(item.earning||0);
+ });
 
-    }else{
+ if(currentSession){
 
-      totalEarnings += calculateSessionEarning(item,minutes);
+   const start=getDateValue(currentSession.checkIn);
 
-    }
+   if(start){
 
-    if(minutes>0){
-      workDates.add(item.date);
-    }
+     const liveMinutes=Math.max(
+       0,
+       Math.floor((new Date().getTime()-start.getTime())/60000)
+     );
 
-  });
+     totalMinutes+=liveMinutes;
 
-  totalHoursEl.textContent = minutesToHours(totalMinutes);
-  totalMinutesEl.textContent = totalMinutes;
+     totalEarnings+=(liveMinutes/60)*Number(
+       currentSession.hourlyRate||faculty?.hourlyRate||0
+     );
 
-  totalEarningsEl.textContent = money(totalEarnings);
-  monthEarningEl.textContent = money(totalEarnings);
+     workDates.add(todayKey());
 
-  workDaysEl.textContent = workDates.size;
+   }
 
-  const avg = workDates.size
-    ? Math.round(totalMinutes/workDates.size)
-    : 0;
+ }
 
-  avgHoursEl.textContent = minutesToHours(avg);
+ totalHoursEl.textContent=minutesToHours(totalMinutes);
+ totalMinutesEl.textContent=totalMinutes;
+ totalEarningsEl.textContent=money(totalEarnings);
+ monthEarningEl.textContent=money(totalEarnings);
+ workDaysEl.textContent=workDates.size;
+
+ const avg=workDates.size
+ ? Math.round(totalMinutes/workDates.size)
+ : 0;
+
+ avgHoursEl.textContent=minutesToHours(avg);
+
 }
 
-
-/* MONTHLY PAYMENT HISTORY */
+/* NEW: MONTHLY PAYMENT HISTORY */
 
 function updateMonthlyPaymentHistory(){
 
-  const monthlyTotals = {};
+ const monthlyTotals={};
 
-  let allTimeTotal = 0;
+ let allTimeTotal=0;
 
-  attendanceList.forEach(item=>{
+ attendanceList.forEach(item=>{
 
-    const date = String(item.date||"");
+   const earning=Number(item.earning||0);
+   const date=String(item.date||"");
 
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+   if(!date||date.length<7)return;
 
-    const month = date.substring(0,7);
+   const month=date.substring(0,7);
 
-    const minutes = getSessionMinutes(item);
+   monthlyTotals[month]=
+   (monthlyTotals[month]||0)+earning;
 
-    const earning = item.checkOut
-      ? Number(item.earning||0)
-      : calculateSessionEarning(item,minutes);
+   allTimeTotal+=earning;
 
-    monthlyTotals[month] =
-    (monthlyTotals[month]||0)+earning;
+ });
 
-    allTimeTotal += earning;
+ document.getElementById("allTimeEarning").textContent=
+ money(allTimeTotal);
 
-  });
+ const tbody=document.getElementById("monthlyPaymentHistory");
 
-  document.getElementById("allTimeEarning").textContent =
-  money(allTimeTotal);
+ const months=Object.keys(monthlyTotals).sort().reverse();
 
-  const tbody = document.getElementById("monthlyPaymentHistory");
+ if(!months.length){
 
-  const months = Object.keys(monthlyTotals).sort().reverse();
+   tbody.innerHTML=`
+     <tr>
+       <td colspan="2" class="empty">
+         No payment history available.
+       </td>
+     </tr>
+   `;
 
-  if(!months.length){
+   return;
 
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="2" class="empty">
-          No payment history available.
-        </td>
-      </tr>
-    `;
+ }
 
-    return;
-  }
+ tbody.innerHTML=months.map(month=>{
 
-  tbody.innerHTML = months.map(month=>{
+   const [year,monthNumber]=month.split("-");
 
-    const [year,monthNumber] = month.split("-");
+   const monthName=new Date(
+     Number(year),
+     Number(monthNumber)-1,
+     1
+   ).toLocaleString("en-IN",{
+     month:"long",
+     year:"numeric"
+   });
 
-    const monthName = new Date(
-      Number(year),
-      Number(monthNumber)-1,
-      1
-    ).toLocaleString("en-IN",{
-      month:"long",
-      year:"numeric"
-    });
+   return`
 
-    return `
+     <tr>
 
-      <tr>
+       <td class="payment-month">
+         ${monthName}
+       </td>
 
-        <td class="payment-month">
-          ${monthName}
-        </td>
+       <td class="payment-total-cell">
+         ${money(monthlyTotals[month])}
+       </td>
 
-        <td class="payment-total-cell">
-          ${money(monthlyTotals[month])}
-        </td>
+     </tr>
 
-      </tr>
+   `;
 
-    `;
+ }).join("");
 
-  }).join("");
 }
-
 
 /* FILTER BUTTONS */
 
 document.querySelectorAll(".filter").forEach(button=>{
 
-  button.addEventListener("click",()=>{
+ button.addEventListener("click",()=>{
 
-    document.querySelectorAll(".filter").forEach(x=>
-      x.classList.remove("active")
-    );
+   document.querySelectorAll(".filter").forEach(x=>
+     x.classList.remove("active")
+   );
 
-    button.classList.add("active");
+   button.classList.add("active");
 
-    selectedFilter = button.dataset.filter;
+   selectedFilter=button.dataset.filter;
 
-    renderHistory();
+   renderHistory();
 
-  });
+ });
 
 });
-
 
 /* LOGOUT */
 
 document.getElementById("logoutBtn").addEventListener("click",()=>{
 
-  localStorage.removeItem("facultyMobile");
-  localStorage.removeItem("facultyName");
-  localStorage.removeItem("facultyLoggedIn");
+ localStorage.removeItem("facultyMobile");
+ localStorage.removeItem("facultyName");
+ localStorage.removeItem("facultyLoggedIn");
 
-  window.location.href="./faculty-login.html";
+ window.location.href="./faculty-login.html";
 
 });
-
 
 /* HTML ESCAPE */
 
 function escapeHtml(value){
 
-  return String(value||"")
-  .replaceAll("&","&amp;")
-  .replaceAll("<","&lt;")
-  .replaceAll(">","&gt;")
-  .replaceAll('"',"&quot;")
-  .replaceAll("'","&#039;");
+ return String(value||"")
+ .replaceAll("&","&amp;")
+ .replaceAll("<","&lt;")
+ .replaceAll(">","&gt;")
+ .replaceAll('"',"&quot;")
+ .replaceAll("'","&#039;");
 
 }
-
 
 /* LIVE UPDATE */
 
 setInterval(async()=>{
 
-  if(!faculty)return;
+ if(!faculty)return;
 
-  await loadTodaySchedule();
-  await loadAttendance();
+ await loadTodaySchedule();
+ await loadAttendance();
 
-},10000);
-
+},60000);
 
 /* INITIAL LOAD */
 
 async function startDashboard(){
 
-  await loadFaculty();
+ await loadFaculty();
 
-  if(!faculty)return;
+ if(!faculty)return;
 
-  await loadTodaySchedule();
-  await loadAttendance();
+ await loadTodaySchedule();
+ await loadAttendance();
 
 }
 
 startDashboard();
-
 
 </script>
 
