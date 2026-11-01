@@ -1267,7 +1267,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
 </section>
 
-<!-- NEW: MONTHLY EARNING HISTORY -->
+<!-- MONTHLY EARNING HISTORY - FACULTY WISE -->
 
 <section class="section history-section">
 
@@ -1276,8 +1276,8 @@ tr:hover td{background:rgba(255,255,255,.015)}
     <div class="section-title">
       <i class="ri-history-line"></i>
       <div>
-        <h3>Monthly Earning History</h3>
-        <p>Month-wise total faculty payment history</p>
+        <h3>Faculty Monthly Payment History</h3>
+        <p>Faculty-wise monthly earning records</p>
       </div>
     </div>
 
@@ -1290,17 +1290,18 @@ tr:hover td{background:rgba(255,255,255,.015)}
   <div class="history-total">
     <i class="ri-wallet-3-line"></i>
     <div>
-      <span>All-Time Recorded Earnings</span>
+      <span>All-Time Total Faculty Earnings</span>
       <strong id="allTimeEarning">₹0</strong>
     </div>
   </div>
 
   <div class="table-wrap">
 
-    <table style="min-width:400px">
+    <table style="min-width:550px">
 
       <thead>
         <tr>
+          <th>Faculty Name</th>
           <th>Month</th>
           <th>Total Earning</th>
         </tr>
@@ -1308,8 +1309,8 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
       <tbody id="monthlyHistoryTable">
         <tr>
-          <td colspan="2">
-            <div class="empty">Loading earning history...</div>
+          <td colspan="3">
+            <div class="empty">Loading payment history...</div>
           </td>
         </tr>
       </tbody>
@@ -2527,16 +2528,19 @@ async function loadEarnings(){
    No new collection is created.
 ===================================================== */
 
+/* =====================================================
+   FACULTY-WISE MONTHLY EARNING HISTORY
+===================================================== */
+
 window.loadMonthlyEarningHistory = async function(){
 
   const tbody = document.getElementById("monthlyHistoryTable");
-
   const allTimeEl = document.getElementById("allTimeEarning");
 
   tbody.innerHTML = `
     <tr>
-      <td colspan="2">
-        <div class="empty">Loading history...</div>
+      <td colspan="3">
+        <div class="empty">Loading payment history...</div>
       </td>
     </tr>
   `;
@@ -2555,50 +2559,68 @@ window.loadMonthlyEarningHistory = async function(){
 
       const a = item.data();
 
-      if(!a.date) return;
+      const facultyId = String(a.facultyId || "");
+      const facultyName = String(a.facultyName || "Unknown Faculty");
+      const date = String(a.date || "");
 
-      const date = String(a.date);
-
-      /*
-        Expected date format: YYYY-MM-DD
-      */
-
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){
+      if(!facultyId || !/^\d{4}-\d{2}-\d{2}$/.test(date)){
         return;
       }
 
       const month = date.substring(0,7);
-
       const earning = Number(a.earning || 0);
 
-      if(!Number.isFinite(earning)) return;
-
-      if(!history[month]){
-        history[month] = 0;
+      if(!Number.isFinite(earning)){
+        return;
       }
 
-      history[month] += earning;
+      // Faculty + Month combination
+      const key = facultyId + "_" + month;
+
+      if(!history[key]){
+
+        history[key] = {
+          facultyId: facultyId,
+          facultyName: facultyName,
+          month: month,
+          totalEarning: 0
+        };
+
+      }
+
+      history[key].totalEarning += earning;
 
       allTimeTotal += earning;
 
     });
 
+    // All-time total
     allTimeEl.textContent =
-      "₹"+allTimeTotal.toLocaleString("en-IN",{
+      "₹" + allTimeTotal.toLocaleString("en-IN",{
         minimumFractionDigits:0,
         maximumFractionDigits:2
       });
 
-    const months = Object.keys(history)
-      .sort((a,b)=>b.localeCompare(a));
+    // Sort newest month first, then faculty name
+    const rows = Object.values(history).sort((a,b)=>{
 
-    if(!months.length){
+      const monthCompare = b.month.localeCompare(a.month);
+
+      if(monthCompare !== 0){
+        return monthCompare;
+      }
+
+      return a.facultyName.localeCompare(b.facultyName);
+
+    });
+
+    if(!rows.length){
 
       tbody.innerHTML = `
         <tr>
-          <td colspan="2">
+          <td colspan="3">
             <div class="empty">
-              No monthly earning history found.
+              No faculty payment history found.
             </div>
           </td>
         </tr>
@@ -2608,31 +2630,35 @@ window.loadMonthlyEarningHistory = async function(){
 
     }
 
-    tbody.innerHTML = months.map(month=>{
+    tbody.innerHTML = rows.map(item=>{
 
-      const parts = month.split("-");
+      const [year,monthNumber] = item.month.split("-");
 
       const monthName = new Date(
-        Number(parts[0]),
-        Number(parts[1])-1,
+        Number(year),
+        Number(monthNumber)-1,
         1
       ).toLocaleDateString("en-IN",{
         month:"long",
         year:"numeric"
       });
 
-      const amount = history[month];
-
       return `
         <tr>
 
           <td>
-            <strong>${escapeHtml(monthName)}</strong>
+            <strong>
+              ${escapeHtml(item.facultyName)}
+            </strong>
+          </td>
+
+          <td>
+            ${escapeHtml(monthName)}
           </td>
 
           <td>
             <span class="history-amount">
-              ₹${amount.toLocaleString("en-IN",{
+              ₹${item.totalEarning.toLocaleString("en-IN",{
                 minimumFractionDigits:0,
                 maximumFractionDigits:2
               })}
@@ -2647,19 +2673,19 @@ window.loadMonthlyEarningHistory = async function(){
   }
   catch(error){
 
-    console.error("Monthly earning history error:",error);
+    console.error("Faculty monthly history error:",error);
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="2">
+        <td colspan="3">
           <div class="empty">
-            Unable to load earning history.
+            Unable to load payment history.
           </div>
         </td>
       </tr>
     `;
 
-    toast("Monthly history load failed");
+    toast("Monthly payment history failed");
 
   }
 
