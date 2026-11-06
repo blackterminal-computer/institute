@@ -350,6 +350,7 @@ button{cursor:pointer}
 </main>
 </div>
 
+
 <script type="module">
 import { initializeApp } from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -366,7 +367,11 @@ import {
 } from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* EXISTING FIREBASE CONFIGURATION */
+/* =====================================
+   FIREBASE CONFIGURATION
+   KEEP YOUR EXISTING PROJECT
+===================================== */
+
 const firebaseConfig = {
   apiKey: "AIzaSyCEYfwZv2CkgcJ8vJMBRlXA2w_WpI",
   authDomain: "black-terminal-f2c91.firebaseapp.com",
@@ -381,146 +386,359 @@ const db = getFirestore(app);
 
 const $ = id => document.getElementById(id);
 
-/* DATE */
-$("todayDate").textContent = new Date().toLocaleDateString("en-IN",{
-  weekday:"long",
-  day:"numeric",
-  month:"long",
-  year:"numeric"
-});
+/* =====================================
+   CACHE SETTINGS
+===================================== */
 
-/* MOBILE SIDEBAR */
+const CACHE_DURATION = 2 * 60 * 1000;
+
+let dashboardCache = null;
+let lastLoadedAt = 0;
+let loadingPromise = null;
+
+/* =====================================
+   DATE
+===================================== */
+
+$("todayDate").textContent =
+  new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+
+/* =====================================
+   MOBILE SIDEBAR
+===================================== */
+
 const sidebar = $("sidebar");
 const overlay = $("overlay");
 
-$("menuBtn").addEventListener("click",()=>{
+function closeSidebar() {
+  sidebar.classList.remove("open");
+  overlay.classList.remove("show");
+}
+
+$("menuBtn").addEventListener("click", () => {
   sidebar.classList.toggle("open");
   overlay.classList.toggle("show");
 });
 
-overlay.addEventListener("click",()=>{
-  sidebar.classList.remove("open");
-  overlay.classList.remove("show");
+overlay.addEventListener("click", closeSidebar);
+
+sidebar.querySelectorAll(".nav-link").forEach(link => {
+  link.addEventListener("click", closeSidebar);
 });
 
-/* COUNT */
-function setCount(id,value){
-  $(id).textContent = Number(value).toLocaleString("en-IN");
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeSidebar();
+});
+
+/* =====================================
+   COUNT HELPERS
+===================================== */
+
+function setCount(id, value) {
+  $(id).textContent =
+    value === null || value === undefined
+      ? "—"
+      : Number(value).toLocaleString("en-IN");
 }
 
-async function loadCount(collectionName,elementId,activeOnly=false){
-  try{
-    const ref = collection(db,collectionName);
+async function fetchCount(collectionName, activeOnly = false) {
+  try {
+    const ref = collection(db, collectionName);
 
     const targetQuery = activeOnly
-      ? query(ref,where("active","==",true))
+      ? query(ref, where("active", "==", true))
       : ref;
 
     const result = await getCountFromServer(targetQuery);
-    setCount(elementId,result.data().count);
 
-  }catch(error){
-    console.error("Count error:",collectionName,error);
-    $(elementId).textContent = "—";
+    return result.data().count;
+
+  } catch (error) {
+    console.error("Count error:", collectionName, error);
+    return null;
   }
 }
 
-/* SAFE TEXT */
-function safe(value){
-  return String(value ?? "").replace(/[&<>"']/g,char=>({
-    "&":"&amp;",
-    "<":"&lt;",
-    ">":"&gt;",
-    '"':"&quot;",
-    "'":"&#39;"
+/* =====================================
+   SAFE TEXT
+===================================== */
+
+function safe(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
   }[char]));
 }
 
-/* DATE FORMAT */
-function formatDate(value){
-  if(!value) return "Date unavailable";
+/* =====================================
+   DATE FORMAT
+===================================== */
+
+function formatDate(value) {
+  if (!value) return "Date unavailable";
 
   let date;
 
-  if(typeof value.toDate === "function"){
+  if (typeof value.toDate === "function") {
     date = value.toDate();
-  }else{
+  } else if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
     date = new Date(value);
+  } else {
+    return "Date unavailable";
   }
 
-  if(isNaN(date.getTime())) return "Date unavailable";
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
 
-  return date.toLocaleDateString("en-IN",{
-    day:"numeric",
-    month:"short",
-    year:"numeric"
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
   });
 }
 
-/* RECENT ENQUIRIES */
-async function loadRecentEnquiries(){
-  const container = $("recentEnquiries");
+/* =====================================
+   FETCH RECENT ENQUIRIES
+   MAXIMUM 5 DOCUMENTS
+===================================== */
 
-  try{
+async function fetchRecentEnquiries() {
+  try {
     const q = query(
-      collection(db,"enquiries"),
-      orderBy("createdAt","desc"),
+      collection(db, "enquiries"),
+      orderBy("createdAt", "desc"),
       limit(5)
     );
 
     const snapshot = await getDocs(q);
 
-    if(snapshot.empty){
-      container.innerHTML =
-        '<div class="empty">No enquiries received yet.</div>';
-      return;
-    }
-
-    container.innerHTML = snapshot.docs.map(docSnap=>{
+    return snapshot.docs.map(docSnap => {
       const data = docSnap.data();
 
-      const name = data.name || "Unknown Student";
-      const phone = data.phone || "No phone";
-      const course = data.course || "General Enquiry";
-      const status = String(data.status || "new").toLowerCase();
-      const initial = name.trim().charAt(0).toUpperCase() || "S";
+      return {
+        name: data.name || "Unknown Student",
+        phone: data.phone || "No phone",
+        course: data.course || "General Enquiry",
+        status: String(data.status || "new").toLowerCase(),
+        date: formatDate(data.createdAt)
+      };
+    });
 
-      return `
-        <div class="enquiry">
-          <div class="enquiry-avatar">${safe(initial)}</div>
-          <div class="enquiry-info">
-            <strong>${safe(name)}</strong>
-            <small>${safe(course)} • ${safe(phone)}</small>
-            <small>${safe(formatDate(data.createdAt))}</small>
-          </div>
-          <span class="status">${safe(status)}</span>
-        </div>
-      `;
-    }).join("");
-
-  }catch(error){
-    console.error("Enquiry loading error:",error);
-
-    container.innerHTML =
-      '<div class="empty error-text">Unable to load enquiries. Check Firestore permissions or index configuration.</div>';
+  } catch (error) {
+    console.error("Recent enquiries error:", error);
+    return null;
   }
 }
 
-/* LOAD DASHBOARD DATA */
-async function loadDashboard(){
-  await Promise.all([
-    loadCount("students","studentsCount"),
-    loadCount("faculty","facultyCount"),
-    loadCount("enquiries","enquiriesCount"),
-    loadCount("notices","noticesCount",true),
-    loadRecentEnquiries()
-  ]);
+/* =====================================
+   RENDER RECENT ENQUIRIES
+===================================== */
+
+function renderRecentEnquiries(items) {
+  const container = $("recentEnquiries");
+
+  if (items === null) {
+    container.innerHTML =
+      '<div class="empty error-text">Unable to load enquiries. Check Firestore permissions or index configuration.</div>';
+    return;
+  }
+
+  if (!items.length) {
+    container.innerHTML =
+      '<div class="empty">No enquiries received yet.</div>';
+    return;
+  }
+
+  container.innerHTML = items.map(item => {
+    const initial =
+      item.name.trim().charAt(0).toUpperCase() || "S";
+
+    return `
+      <div class="enquiry">
+
+        <div class="enquiry-avatar">
+          ${safe(initial)}
+        </div>
+
+        <div class="enquiry-info">
+          <strong>${safe(item.name)}</strong>
+
+          <small>
+            ${safe(item.course)} • ${safe(item.phone)}
+          </small>
+
+          <small>${safe(item.date)}</small>
+        </div>
+
+        <span class="status ${safe(item.status)}">
+          ${safe(item.status)}
+        </span>
+
+      </div>
+    `;
+  }).join("");
 }
+
+/* =====================================
+   RENDER DASHBOARD
+===================================== */
+
+function renderDashboard(data) {
+
+  setCount("studentsCount", data.students);
+  setCount("facultyCount", data.faculty);
+  setCount("enquiriesCount", data.enquiries);
+  setCount("noticesCount", data.notices);
+
+  renderRecentEnquiries(data.recentEnquiries);
+}
+
+/* =====================================
+   FETCH ALL DASHBOARD DATA
+   PARALLEL REQUESTS
+===================================== */
+
+async function fetchDashboardData() {
+
+  const [
+    students,
+    faculty,
+    enquiries,
+    notices,
+    recentEnquiries
+  ] = await Promise.all([
+
+    fetchCount("students"),
+
+    fetchCount("faculty"),
+
+    fetchCount("enquiries"),
+
+    fetchCount("notices", true),
+
+    fetchRecentEnquiries()
+
+  ]);
+
+  return {
+    students,
+    faculty,
+    enquiries,
+    notices,
+    recentEnquiries
+  };
+}
+
+/* =====================================
+   MAIN DASHBOARD LOADER
+===================================== */
+
+function loadDashboard(forceRefresh = false) {
+
+  // Prevent duplicate simultaneous requests.
+  if (loadingPromise) {
+    return loadingPromise;
+  }
+
+  // Reuse cached data for 2 minutes.
+  if (
+    !forceRefresh &&
+    dashboardCache &&
+    Date.now() - lastLoadedAt < CACHE_DURATION
+  ) {
+    renderDashboard(dashboardCache);
+    return Promise.resolve();
+  }
+
+  // Keep cached dashboard visible offline.
+  if (!navigator.onLine && dashboardCache) {
+    renderDashboard(dashboardCache);
+    return Promise.resolve();
+  }
+
+  loadingPromise = (async () => {
+
+    try {
+
+      const data = await fetchDashboardData();
+
+      dashboardCache = data;
+      lastLoadedAt = Date.now();
+
+      renderDashboard(data);
+
+    } catch (error) {
+
+      console.error("Dashboard loading error:", error);
+
+      $("recentEnquiries").innerHTML =
+        '<div class="empty error-text">Unable to load dashboard data.</div>';
+
+    }
+
+  })().finally(() => {
+    loadingPromise = null;
+  });
+
+  return loadingPromise;
+}
+
+/* =====================================
+   INITIAL LOAD
+===================================== */
+
+lucide.createIcons();
 
 loadDashboard();
 
-lucide.createIcons();
+/* =====================================
+   REFRESH WHEN APP RETURNS
+===================================== */
+
+document.addEventListener("visibilitychange", () => {
+
+  if (
+    document.visibilityState === "visible" &&
+    Date.now() - lastLoadedAt >= CACHE_DURATION
+  ) {
+    loadDashboard();
+  }
+
+});
+
+/* =====================================
+   INTERNET RESTORED
+===================================== */
+
+window.addEventListener("online", () => {
+  loadDashboard(true);
+});
+
+/* =====================================
+   BACK-FORWARD CACHE RESTORE
+===================================== */
+
+window.addEventListener("pageshow", event => {
+
+  if (event.persisted) {
+    loadDashboard();
+  }
+
+});
 </script>
+
 
 </body>
 </html>
