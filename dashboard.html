@@ -1460,1308 +1460,1170 @@ function showToast(message){
 }
 </script>
 
+
 <script type="module">
 
-import {initializeApp} from
-"https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 
 import {
- initializeFirestore,
- getFirestore,
- persistentLocalCache,
- persistentMultipleTabManager,
- collection,
- doc,
- getDoc,
- getDocs,
- onSnapshot,
- query,
- where,
- setDoc,
- serverTimestamp
-} from
-"https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+  initializeFirestore,
+  getFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 /* =====================================
    EXISTING FIREBASE CONFIGURATION
 ===================================== */
 
-const firebaseConfig={
- apiKey:"AIzaSyCEfwZv2CkgcJ8Q9vNwRlRlXA2w_WpI",
- authDomain:"black-terminal-f2c91.firebaseapp.com",
- projectId:"black-terminal-f2c91",
- storageBucket:"black-terminal-f2c91.appspot.com",
- messagingSenderId:"552489994197",
- appId:"1:552489994197:web:7662331264c334ffbadf5c"
+const firebaseConfig = {
+  apiKey: "AIzaSyCEfwZv2CkgcJ8Q9vNwRlRlXA2w_WpI",
+  authDomain: "black-terminal-f2c91.firebaseapp.com",
+  projectId: "black-terminal-f2c91",
+  storageBucket: "black-terminal-f2c91.appspot.com",
+  messagingSenderId: "552489994197",
+  appId: "1:552489994197:web:7662331264c334ffbadf5c"
 };
 
-const app=initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 let db;
 
-try{
- db=initializeFirestore(app,{
-  localCache:persistentLocalCache({
-   tabManager:persistentMultipleTabManager()
-  })
- });
-}catch(error){
- db=getFirestore(app);
-}
-
-/* STUDENT SESSION */
-
-const savedName=localStorage.getItem("studentName");
-
-if(!savedName){
- location.replace("login.html");
- throw new Error("Student login required");
-}
-
-const $=id=>document.getElementById(id);
-
-/* HELPERS */
-
-function setStatus(message,isError=false){
- $("syncStatus").textContent=message;
- $("syncStatus").classList.toggle("error",isError);
-}
-
-function getXP(data){
-
- const fields=[
-  "xpPoints","xp","totalXP","totalXp","XP",
-  "points","totalPoints","earnedXP","earnedXp",
-  "experience","experiencePoints"
- ];
-
- for(const field of fields){
-  const value=Number(data?.[field]);
-  if(Number.isFinite(value)&&value>=0)return value;
- }
-
- return 0;
-}
-
-function getStudentName(data){
- return data?.name||
-  data?.studentName||
-  data?.fullName||
-  data?.displayName||
-  savedName;
-}
-
-function getStudentPhoto(data){
- return data?.photo||
-  data?.photoURL||
-  data?.profilePhoto||
-  data?.image||
-  data?.imageUrl||
-  "";
-}
-
-function getCourse(data){
- return data?.course||
-  data?.courseName||
-  data?.enrolledCourse||
-  data?.program||
-  data?.currentCourse||
-  "BlackTerminal Student";
-}
-
-function localDateKey(date){
-
- const y=date.getFullYear();
- const m=String(date.getMonth()+1).padStart(2,"0");
- const d=String(date.getDate()).padStart(2,"0");
-
- return `${y}-${m}-${d}`;
-}
-
-/* ATTENDANCE ID FORMAT:
-   studentName_YYYY-MM-DD
-*/
-
-function parseAttendanceId(id){
-
- const match=String(id).match(/^(.*)_(\d{4}-\d{2}-\d{2})$/);
-
- if(!match)return null;
-
- return {
-  studentName:match[1],
-  date:match[2]
- };
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (error) {
+  db = getFirestore(app);
 }
 
 /* =====================================
-   STUDENT DATABASE
+   SESSION
 ===================================== */
 
-async function getStudentFromDatabase(){
+const savedName = localStorage.getItem("studentName");
 
- const directRef=doc(db,"students",savedName);
- const directSnap=await getDoc(directRef);
+if (!savedName) {
+  location.replace("login.html");
+  throw new Error("Student login required");
+}
 
- if(directSnap.exists()){
-  return {
-   id:directSnap.id,
-   ...directSnap.data()
-  };
- }
+const $ = id => document.getElementById(id);
 
- const studentsSnap=await getDocs(collection(db,"students"));
+const CACHE_DURATION = 5 * 60 * 1000;
 
- for(const studentDoc of studentsSnap.docs){
+let dashboardCache = null;
+let lastLoadedAt = 0;
+let dashboardLoading = false;
+let notificationStarted = false;
 
-  const data=studentDoc.data();
+let notificationUnsubscribe = null;
+let readUnsubscribe = null;
 
-  const names=[
-   studentDoc.id,
-   data.name,
-   data.studentName,
-   data.fullName,
-   data.displayName
+let currentNotificationStudentId = "";
+
+let broadcastItems = [];
+let individualItems = [];
+let readNotificationIds = new Set();
+
+/* =====================================
+   HELPERS
+===================================== */
+
+function setStatus(message, isError = false) {
+  $("syncStatus").textContent = message;
+  $("syncStatus").classList.toggle("error", isError);
+}
+
+function showToast(message) {
+  const toast = $("toast");
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.style.display = "block";
+
+  clearTimeout(window.toastTimer);
+
+  window.toastTimer = setTimeout(() => {
+    toast.style.display = "none";
+  }, 2500);
+}
+
+function getXP(data) {
+  const fields = [
+    "xpPoints", "xp", "totalXP", "totalXp", "XP",
+    "points", "totalPoints", "earnedXP", "earnedXp",
+    "experience", "experiencePoints"
   ];
 
-  if(names.some(name=>
-   String(name||"").trim().toLowerCase()===
-   savedName.trim().toLowerCase()
-  )){
-   return {
-    id:studentDoc.id,
-    ...data
-   };
-  }
- }
+  for (const field of fields) {
+    const value = Number(data?.[field]);
 
- return null;
+    if (Number.isFinite(value) && value >= 0) {
+      return value;
+    }
+  }
+
+  return 0;
 }
 
-/* =====================================
-   LOAD PROFILE
-===================================== */
+function getStudentName(data) {
+  return data?.name ||
+    data?.studentName ||
+    data?.fullName ||
+    data?.displayName ||
+    savedName;
+}
 
-async function loadStudent(){
+function getStudentPhoto(data) {
+  return data?.photo ||
+    data?.photoURL ||
+    data?.profilePhoto ||
+    data?.image ||
+    data?.imageUrl ||
+    "";
+}
 
- const student=await getStudentFromDatabase();
+function getCourse(data) {
+  return data?.course ||
+    data?.courseName ||
+    data?.enrolledCourse ||
+    data?.program ||
+    data?.currentCourse ||
+    "BlackTerminal Student";
+}
 
- if(!student){
-  setStatus("Student record not found. Please contact institute.",true);
-  return null;
- }
+function localDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
 
- const name=getStudentName(student);
- const xp=getXP(student);
+  return `${y}-${m}-${d}`;
+}
 
- $("studentName").textContent=name;
- $("profileName").textContent=name;
- $("courseName").textContent=getCourse(student);
- $("xpStat").textContent=xp.toLocaleString("en-IN");
+function parseAttendanceId(id) {
+  const match = String(id).match(/^(.*)_(\d{4}-\d{2}-\d{2})$/);
 
- const initials=name.trim()
-  .split(/\s+/)
-  .map(word=>word[0])
-  .join("")
-  .substring(0,2)
-  .toUpperCase();
+  if (!match) return null;
 
- const photo=getStudentPhoto(student);
-
- if(photo){
-
-  $("avatar").innerHTML="";
-
-  const img=document.createElement("img");
-  img.src=photo;
-  img.alt="Student profile";
-
-  img.onerror=()=>{
-   $("avatar").textContent=initials||"BT";
+  return {
+    studentName: match[1],
+    date: match[2]
   };
-
-  $("avatar").appendChild(img);
-
- }else{
-
-  $("avatar").textContent=initials||"BT";
-
- }
-
- const level=Math.floor(xp/1000)+1;
- const currentLevelXP=xp%1000;
-
- $("level").textContent="LEVEL "+String(level).padStart(2,"0");
-
- $("xpText").textContent=currentLevelXP+" / 1000 XP";
-
- $("xpProgress").style.width=
-  (currentLevelXP/1000*100)+"%";
-
- return {
-  id:student.id,
-  data:student,
-  xp
- };
 }
 
+function getLast365DayRange() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364);
 
-/* =====================================
-   NEW STUDENTS HORIZONTAL CAROUSEL
-===================================== */
-
-let newStudentsTimer = null;
-
-async function loadNewStudents(){
-
- const track=document.getElementById("newStudentsTrack");
-
- if(!track)return;
-
- try{
-
-  const snapshot=await getDocs(collection(db,"students"));
-
-  const students=snapshot.docs.map(item=>{
-
-   const data=item.data();
-
-   return {
-    id:item.id,
-    name:
-     data.name||
-     data.studentName||
-     data.fullName||
-     data.displayName||
-     item.id,
-
-    photo:getStudentPhoto(data),
-
-    joinedAt:
-     data.createdAt||
-     data.admissionDate||
-     data.joinedAt||
-     data.registeredAt||
-     null
-   };
-
-  });
-
-  // Sort by admission/creation date, newest first.
-  function getTime(value){
-
-   if(value?.toDate)return value.toDate().getTime();
-
-   if(value instanceof Date)return value.getTime();
-
-   if(typeof value==="string"||typeof value==="number"){
-    const date=new Date(value);
-    if(!Number.isNaN(date.getTime()))return date.getTime();
-   }
-
-   return 0;
-  }
-
-  students.sort((a,b)=>
-   getTime(b.joinedAt)-getTime(a.joinedAt)
-  );
-
-  // Show latest 12 students
-  const latest=students.slice(0,12);
-
-  track.innerHTML="";
-
-  if(!latest.length){
-
-   track.innerHTML=
-    '<div class="new-students-message">No student records available.</div>';
-
-   return;
-  }
-
-  latest.forEach(student=>{
-
-   const card=document.createElement("div");
-   card.className="new-student-item";
-
-   const photo=document.createElement("div");
-   photo.className="new-student-photo";
-
-   const initials=String(student.name)
-    .trim()
-    .split(/\s+/)
-    .map(word=>word[0])
-    .join("")
-    .substring(0,2)
-    .toUpperCase();
-
-   if(student.photo){
-
-    const img=document.createElement("img");
-
-    img.src=student.photo;
-    img.alt=student.name;
-    img.loading="lazy";
-
-    img.onerror=()=>{
-     photo.textContent=initials||"BT";
-    };
-
-    photo.appendChild(img);
-
-   }else{
-
-    photo.textContent=initials||"BT";
-
-   }
-
-   const info=document.createElement("div");
-   info.className="new-student-info";
-
-   const name=document.createElement("div");
-   name.className="new-student-name";
-   name.textContent=student.name;
-
-   const label=document.createElement("div");
-   label.className="new-student-label";
-
-   const dot=document.createElement("span");
-   label.append(dot,"NEW STUDENT");
-
-   info.append(name,label);
-   card.append(photo,info);
-   track.appendChild(card);
-
-  });
-
-  
- // Seamless infinite marquee
- const cards=Array.from(track.children);
-
- track.classList.remove("marquee-ready");
-
- // Duplicate all cards for seamless looping
- cards.forEach(card=>{
-  track.appendChild(card.cloneNode(true));
- });
-
- // Speed automatically based on number of students
- const duration=Math.max(22,latest.length*3);
-
- track.style.setProperty(
-  "--marquee-duration",
-  duration+"s"
- );
-
- // Restart animation cleanly
- track.style.animation="none";
-
- requestAnimationFrame(()=>{
-  track.style.animation="";
-  track.classList.add("marquee-ready");
- });
-
-
- }catch(error){
-
-  console.error("New students loading error:",error);
-
-  track.innerHTML=
-   '<div class="new-students-message">Unable to load new students.</div>';
-
- }
-
+  return {
+    start: localDateKey(start),
+    end: localDateKey(today)
+  };
 }
 
-
-/* =====================================
-   ATTENDANCE - LAST 365 DAYS
-===================================== */
-
-function getLast365DayRange(){
-
- const today=new Date();
- today.setHours(0,0,0,0);
-
- const start=new Date(today);
- start.setDate(start.getDate()-364);
-
- return {
-  start:localDateKey(start),
-  end:localDateKey(today)
- };
+function isWithinLast365Days(dateString, range) {
+  return dateString >= range.start && dateString <= range.end;
 }
 
-function isWithinLast365Days(dateString,range){
- return dateString>=range.start&&dateString<=range.end;
-}
+function getStudentKeys(student) {
+  const data = student.data;
 
-async function loadAttendanceData(currentStudent){
-
- const results=await Promise.all([
-  getDocs(collection(db,"attendance")),
-  getDocs(collection(db,"students"))
- ]);
-
- const attendanceSnapshot=results[0];
- const studentsSnapshot=results[1];
-
- const range=getLast365DayRange();
-
- const studentRecords=studentsSnapshot.docs.map(item=>({
-  id:item.id,
-  data:item.data()
- }));
-
- const counts=new Map();
-
- attendanceSnapshot.forEach(item=>{
-
-  const parsed=parseAttendanceId(item.id);
-
-  if(!parsed)return;
-
-  if(!isWithinLast365Days(parsed.date,range))return;
-
-  const key=parsed.studentName.trim().toLowerCase();
-
-  if(!key)return;
-
-  if(!counts.has(key)){
-   counts.set(key,new Set());
-  }
-
-  counts.get(key).add(parsed.date);
-
- });
-
- const currentName=getStudentName(currentStudent.data)
-  .trim().toLowerCase();
-
- const currentId=String(currentStudent.id)
-  .trim().toLowerCase();
-
- const savedNameKey=savedName.trim().toLowerCase();
-
- let myDates=new Set();
-
- for(const [name,dates] of counts.entries()){
-
-  if(
-   name===currentName||
-   name===currentId||
-   name===savedNameKey
-  ){
-   myDates=dates;
-   break;
-  }
-
- }
-
- const presentDays=myDates.size;
-
- const percentage=Math.min(
-  100,
-  Math.round((presentDays/365)*100)
- );
-
- $("myAttendanceDays").textContent=
-  presentDays+" Days";
-
- $("myAttendancePercent").textContent=
-  percentage+"%";
-
- /* TOP 3 STUDENTS */
-
- const leaderboard=[];
-
- for(const [name,dates] of counts.entries()){
-
-  const profile=studentRecords.find(record=>{
-
-   const data=record.data;
-
-   const names=[
-    record.id,
+  return [
+    student.id,
     data.name,
     data.studentName,
     data.fullName,
     data.displayName
-   ];
-
-   return names.some(value=>
-    String(value||"").trim().toLowerCase()===name
-   );
-
-  });
-
-  const data=profile?.data||{};
-
-  leaderboard.push({
-
-   name:
-    data.name||
-    data.studentName||
-    data.fullName||
-    data.displayName||
-    name,
-
-   photo:getStudentPhoto(data),
-
-   days:dates.size,
-
-   percent:Math.min(
-    100,
-    Math.round((dates.size/365)*100)
-   )
-
-  });
-
- }
-
- leaderboard.sort((a,b)=>b.days-a.days);
-
- renderTopAttendance(leaderboard.slice(0,3));
-
+  ]
+    .filter(Boolean)
+    .map(value => String(value).trim().toLowerCase());
 }
 
 /* =====================================
-   TOP 3 ATTENDANCE
+   LOAD BOTH COLLECTIONS ONCE
 ===================================== */
 
-function renderTopAttendance(topStudents){
+async function fetchDashboardData() {
 
- const grid=$("topAttendanceGrid");
- grid.innerHTML="";
+  const [studentsSnapshot, attendanceSnapshot] = await Promise.all([
+    getDocs(collection(db, "students")),
+    getDocs(collection(db, "attendance"))
+  ]);
 
- if(!topStudents.length){
+  const students = studentsSnapshot.docs.map(item => ({
+    id: item.id,
+    data: item.data(),
+    xp: getXP(item.data())
+  }));
 
-  const empty=document.createElement("div");
-  empty.className="attendance-loading";
-  empty.textContent="No attendance records available yet.";
+  const attendance = [];
 
-  grid.appendChild(empty);
-  return;
- }
+  attendanceSnapshot.forEach(item => {
+    const parsed = parseAttendanceId(item.id);
 
- const medals=["🥇","🥈","🥉"];
+    if (!parsed) return;
 
- topStudents.forEach((student,index)=>{
+    attendance.push({
+      id: item.id,
+      studentName: parsed.studentName.trim(),
+      date: parsed.date
+    });
+  });
 
-  const card=document.createElement("div");
-  card.className="top-student";
-
-  const rank=document.createElement("div");
-  rank.className="top-student-rank";
-  rank.textContent=medals[index];
-
-  const photo=document.createElement("div");
-  photo.className="top-student-photo";
-
-  if(student.photo){
-
-   const img=document.createElement("img");
-   img.src=student.photo;
-   img.alt=student.name;
-
-   img.onerror=()=>{
-    photo.textContent=student.name.substring(0,1).toUpperCase();
-   };
-
-   photo.appendChild(img);
-
-  }else{
-
-   photo.textContent=
-    student.name.substring(0,1).toUpperCase();
-
-  }
-
-  const name=document.createElement("div");
-  name.className="top-student-name";
-  name.textContent=student.name;
-
-  const days=document.createElement("div");
-  days.className="top-student-days";
-  days.textContent=student.days+" attendance days";
-
-  const percent=document.createElement("div");
-  percent.className="top-student-percent";
-  percent.textContent=student.percent+"%";
-
-  const label=document.createElement("div");
-  label.className="top-student-label";
-  label.textContent="ATTENDANCE";
-
-  card.append(
-   rank,
-   photo,
-   name,
-   days,
-   percent,
-   label
-  );
-
-  grid.appendChild(card);
-
- });
-
+  return {
+    students,
+    attendance,
+    loadedAt: Date.now()
+  };
 }
 
 /* =====================================
-   DAILY STREAKS
+   FIND CURRENT STUDENT
 ===================================== */
 
-async function loadDailyStreaks(){
+function findCurrentStudent(students) {
 
- const snapshot=await getDocs(collection(db,"attendance"));
+  const searchName = savedName.trim().toLowerCase();
 
- const dates=new Set();
+  return students.find(student => {
+    return getStudentKeys(student).includes(searchName);
+  }) || null;
+}
 
- snapshot.forEach(item=>{
+/* =====================================
+   PROFILE
+===================================== */
 
-  const parsed=parseAttendanceId(item.id);
+function renderProfile(student) {
 
-  if(!parsed)return;
+  const data = student.data;
+  const name = getStudentName(data);
+  const xp = student.xp;
 
-  if(
-   parsed.studentName.trim().toLowerCase()===
-   savedName.trim().toLowerCase()
-  ){
-   dates.add(parsed.date);
+  $("studentName").textContent = name;
+  $("profileName").textContent = name;
+  $("courseName").textContent = getCourse(data);
+
+  $("xpStat").textContent = xp.toLocaleString("en-IN");
+
+  const initials = name.trim()
+    .split(/\s+/)
+    .map(word => word[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+
+  const avatar = $("avatar");
+  const photo = getStudentPhoto(data);
+
+  avatar.innerHTML = "";
+
+  if (photo) {
+    const img = document.createElement("img");
+    img.src = photo;
+    img.alt = "Student profile";
+
+    img.onerror = () => {
+      avatar.textContent = initials || "BT";
+    };
+
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = initials || "BT";
   }
 
- });
+  const level = Math.floor(xp / 1000) + 1;
+  const currentLevelXP = xp % 1000;
 
- const today=new Date();
- today.setHours(0,0,0,0);
+  $("level").textContent =
+    "LEVEL " + String(level).padStart(2, "0");
 
- const monday=new Date(today);
+  $("xpText").textContent =
+    currentLevelXP + " / 1000 XP";
 
- const dayNumber=(today.getDay()+6)%7;
-
- monday.setDate(today.getDate()-dayNumber);
-
- for(let i=0;i<7;i++){
-
-  const date=new Date(monday);
-  date.setDate(monday.getDate()+i);
-
-  const key=localDateKey(date);
-
-  const star=$("streakDay"+i);
-
-  const isPresent=dates.has(key);
-
-  star.innerHTML="";
-  star.classList.remove("completed","today");
-
-  if(isPresent){
-
-   star.classList.add("completed");
-
-   const check=document.createElement("i");
-   check.setAttribute("data-lucide","check");
-
-   star.appendChild(check);
-
-  }
-
-  if(key===localDateKey(today)){
-   star.classList.add("today");
-  }
-
- }
-
- /* Current streak */
-
- const sorted=Array.from(dates).sort().reverse();
-
- let streak=0;
-
- if(sorted.length){
-
-  const todayKey=localDateKey(today);
-
-  const yesterday=new Date(today);
-  yesterday.setDate(yesterday.getDate()-1);
-
-  const yesterdayKey=localDateKey(yesterday);
-
-  let expected=null;
-
-  if(sorted[0]===todayKey){
-   expected=new Date(today);
-  }else if(sorted[0]===yesterdayKey){
-   expected=new Date(yesterday);
-  }
-
-  if(expected){
-
-   for(const dateString of sorted){
-
-    const actual=new Date(dateString+"T00:00:00");
-
-    if(actual.getTime()===expected.getTime()){
-
-     streak++;
-
-     expected.setDate(expected.getDate()-1);
-
-    }else{
-
-     break;
-
-    }
-
-   }
-
-  }
-
- }
-
- $("streakStat").textContent=streak;
-
- $("streakMessage").textContent=
-  streak>0
-   ? `${streak}-day streak! Keep your learning momentum going.`
-   : "Start today and build your daily learning habit.";
-
- lucide.createIcons();
-
+  $("xpProgress").style.width =
+    (currentLevelXP / 1000 * 100) + "%";
 }
 
 /* =====================================
    GLOBAL RANK
 ===================================== */
 
-async function loadGlobalRank(currentStudent){
+function renderGlobalRank(students, currentStudent) {
 
- const snapshot=await getDocs(collection(db,"students"));
+  const sorted = [...students].sort((a, b) => b.xp - a.xp);
 
- const students=snapshot.docs.map(item=>({
+  const index = sorted.findIndex(item =>
+    item.id === currentStudent.id
+  );
 
-  id:item.id,
-  xp:getXP(item.data())
-
- }));
-
- students.sort((a,b)=>b.xp-a.xp);
-
- const index=students.findIndex(item=>
-  item.id===currentStudent.id
- );
-
- $("rankStat").textContent=
-  index>=0?"#"+(index+1):"--";
-
+  $("rankStat").textContent =
+    index >= 0 ? "#" + (index + 1) : "--";
 }
-
 
 /* =====================================
-   SEPARATE BROADCAST & INDIVIDUAL NOTIFICATIONS
+   ATTENDANCE DATA
+   REUSES THE SAME SNAPSHOT
 ===================================== */
 
-let broadcastItems=[];
-let individualItems=[];
-let readNotificationIds=new Set();
+function buildAttendanceCounts(attendance) {
 
-let notificationUnsubscribe=null;
-let readUnsubscribe=null;
+  const range = getLast365DayRange();
+  const counts = new Map();
 
-let currentNotificationStudentId="";
+  attendance.forEach(item => {
 
-const notificationOverlay=$("notificationOverlay");
-const notificationList=$("notificationList");
-const notificationBadge=$("notificationBadge");
+    if (!isWithinLast365Days(item.date, range)) return;
 
-function openNotifications(){
- notificationOverlay.classList.add("open");
- document.body.style.overflow="hidden";
- renderNotifications();
+    const key = item.studentName.toLowerCase();
+
+    if (!key) return;
+
+    if (!counts.has(key)) {
+      counts.set(key, new Set());
+    }
+
+    counts.get(key).add(item.date);
+  });
+
+  return counts;
 }
 
-function closeNotifications(){
- notificationOverlay.classList.remove("open");
- document.body.style.overflow="";
+/* =====================================
+   CURRENT STUDENT ATTENDANCE
+===================================== */
+
+function renderMyAttendance(counts, currentStudent) {
+
+  const currentKeys = getStudentKeys(currentStudent);
+
+  let myDates = new Set();
+
+  for (const [name, dates] of counts.entries()) {
+
+    if (currentKeys.includes(name)) {
+      myDates = dates;
+      break;
+    }
+  }
+
+  const presentDays = myDates.size;
+
+  const percentage = Math.min(
+    100,
+    Math.round((presentDays / 365) * 100)
+  );
+
+  $("myAttendanceDays").textContent =
+    presentDays + " Days";
+
+  $("myAttendancePercent").textContent =
+    percentage + "%";
 }
 
-$("notificationBell").addEventListener("click",openNotifications);
-$("closeNotifications").addEventListener("click",closeNotifications);
+/* =====================================
+   TOP 3 ATTENDANCE LEADERBOARD
+===================================== */
 
-notificationOverlay.addEventListener("click",event=>{
- if(event.target===notificationOverlay)closeNotifications();
-});
+function renderTopAttendanceData(counts, students) {
 
-document.addEventListener("keydown",event=>{
- if(event.key==="Escape")closeNotifications();
-});
+  const leaderboard = [];
 
-function getNotificationDate(data){
- const value=data.createdAt||data.date||data.timestamp;
- if(value?.toDate)return value.toDate();
- if(value instanceof Date)return value;
- if(typeof value==="string"||typeof value==="number"){
-  const date=new Date(value);
-  if(!Number.isNaN(date.getTime()))return date;
- }
- return null;
+  const studentMap = new Map();
+
+  students.forEach(student => {
+
+    getStudentKeys(student).forEach(key => {
+      studentMap.set(key, student);
+    });
+
+  });
+
+  for (const [name, dates] of counts.entries()) {
+
+    const profile = studentMap.get(name);
+    const data = profile?.data || {};
+
+    leaderboard.push({
+      name: profile
+        ? getStudentName(data)
+        : name,
+
+      photo: getStudentPhoto(data),
+
+      days: dates.size,
+
+      percent: Math.min(
+        100,
+        Math.round((dates.size / 365) * 100)
+      )
+    });
+  }
+
+  leaderboard.sort((a, b) => b.days - a.days);
+
+  renderTopAttendance(leaderboard.slice(0, 3));
 }
 
-function formatNotificationDate(data){
- const date=getNotificationDate(data);
- if(!date)return "Recently";
+function renderTopAttendance(topStudents) {
 
- return date.toLocaleString("en-IN",{
-  day:"2-digit",
-  month:"short",
-  year:"numeric",
-  hour:"2-digit",
-  minute:"2-digit"
- });
+  const grid = $("topAttendanceGrid");
+  grid.innerHTML = "";
+
+  if (!topStudents.length) {
+
+    const empty = document.createElement("div");
+    empty.className = "attendance-loading";
+    empty.textContent = "No attendance records available yet.";
+
+    grid.appendChild(empty);
+    return;
+  }
+
+  const medals = ["🥇", "🥈", "🥉"];
+
+  topStudents.forEach((student, index) => {
+
+    const card = document.createElement("div");
+    card.className = "top-student";
+
+    const rank = document.createElement("div");
+    rank.className = "top-student-rank";
+    rank.textContent = medals[index];
+
+    const photo = document.createElement("div");
+    photo.className = "top-student-photo";
+
+    const initials = student.name
+      .trim()
+      .substring(0, 1)
+      .toUpperCase();
+
+    if (student.photo) {
+
+      const img = document.createElement("img");
+      img.src = student.photo;
+      img.alt = student.name;
+      img.loading = "lazy";
+
+      img.onerror = () => {
+        photo.textContent = initials || "BT";
+      };
+
+      photo.appendChild(img);
+
+    } else {
+      photo.textContent = initials || "BT";
+    }
+
+    const name = document.createElement("div");
+    name.className = "top-student-name";
+    name.textContent = student.name;
+
+    const days = document.createElement("div");
+    days.className = "top-student-days";
+    days.textContent = student.days + " attendance days";
+
+    const percent = document.createElement("div");
+    percent.className = "top-student-percent";
+    percent.textContent = student.percent + "%";
+
+    const label = document.createElement("div");
+    label.className = "top-student-label";
+    label.textContent = "ATTENDANCE";
+
+    card.append(rank, photo, name, days, percent, label);
+    grid.appendChild(card);
+  });
 }
 
-/* CLASSIFY NOTIFICATION */
+/* =====================================
+   DAILY STREAKS
+   REUSES THE SAME ATTENDANCE DATA
+===================================== */
 
-function isBroadcastNotification(data){
- const audience=String(data.audience||"").toLowerCase();
- const target=String(data.target||"").toLowerCase();
- const targetType=String(data.targetType||"").toLowerCase();
+function renderDailyStreaks(attendance, currentStudent) {
 
- return (
-  ["all","everyone","broadcast"].includes(audience)||
-  ["all","everyone","broadcast"].includes(target)||
-  ["all","everyone","broadcast"].includes(targetType)
- );
-}
+  const dates = new Set();
 
-function isIndividualNotification(data){
- const audience=String(data.audience||"").toLowerCase();
- const target=String(data.target||"").toLowerCase();
- const targetType=String(data.targetType||"").toLowerCase();
+  const currentKeys = getStudentKeys(currentStudent);
 
- const individualType=
-  audience==="individual"||
-  target==="individual"||
-  targetType==="individual";
+  attendance.forEach(item => {
 
- if(!individualType)return false;
+    if (currentKeys.includes(item.studentName.toLowerCase())) {
+      dates.add(item.date);
+    }
 
- const targetId=
-  data.studentId||
-  data.recipientId||
-  data.targetStudentId||
-  "";
+  });
 
- const targetName=
-  data.studentName||
-  data.recipientName||
-  "";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
- const idMatch=
-  targetId &&
-  String(targetId)===currentNotificationStudentId;
+  const monday = new Date(today);
 
- const nameMatch=
-  targetName &&
-  String(targetName).trim().toLowerCase()===
-  savedName.trim().toLowerCase();
+  const dayNumber = (today.getDay() + 6) % 7;
+  monday.setDate(today.getDate() - dayNumber);
 
- return Boolean(idMatch||nameMatch);
-}
+  for (let i = 0; i < 7; i++) {
 
-/* UPDATE SEPARATE COUNTERS */
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
 
-function updateNotificationBadge(){
+    const key = localDateKey(date);
+    const star = $("streakDay" + i);
 
- // Bell: only broadcast unread
- const broadcastUnread=broadcastItems.filter(item=>
-  !readNotificationIds.has(item.id)
- ).length;
+    const isPresent = dates.has(key);
 
- notificationBadge.hidden=broadcastUnread===0;
+    star.innerHTML = "";
+    star.classList.remove("completed", "today");
 
- if(broadcastUnread>0){
-  notificationBadge.textContent=
-   broadcastUnread>99?"99+":broadcastUnread;
- }
+    if (isPresent) {
 
- // My Notifications card: only individual unread
- const individualUnread=individualItems.filter(item=>
-  !readNotificationIds.has(item.id)
- ).length;
+      star.classList.add("completed");
 
- const cardCount=$("myNotificationCount");
- const cardText=$("myNotificationText");
+      const check = document.createElement("i");
+      check.setAttribute("data-lucide", "check");
 
- if(cardCount){
-  cardCount.textContent=
-   individualUnread>99?"99+":individualUnread;
+      star.appendChild(check);
+    }
 
-  cardCount.classList.toggle("show",individualUnread>0);
- }
+    if (key === localDateKey(today)) {
+      star.classList.add("today");
+    }
+  }
 
- if(cardText){
-  cardText.textContent=individualUnread>0
-   ? `${individualUnread} individual unread notification${individualUnread===1?"":"s"}`
-   : "No individual notifications";
- }
-}
+  /* Current streak */
 
-/* BELL POPUP: BROADCAST ONLY */
+  const sorted = Array.from(dates).sort().reverse();
 
-function renderNotifications(){
+  let streak = 0;
 
- notificationList.innerHTML="";
+  if (sorted.length) {
 
- if(!broadcastItems.length){
+    const todayKey = localDateKey(today);
 
-  const empty=document.createElement("div");
-  empty.className="notification-empty";
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-  const icon=document.createElement("i");
-  icon.setAttribute("data-lucide","bell-off");
+    const yesterdayKey = localDateKey(yesterday);
 
-  const title=document.createElement("strong");
-  title.textContent="No broadcast notifications";
+    let expected = null;
 
-  const message=document.createElement("div");
-  message.textContent="Institute announcements will appear here.";
+    if (sorted[0] === todayKey) {
+      expected = new Date(today);
+    } else if (sorted[0] === yesterdayKey) {
+      expected = new Date(yesterday);
+    }
 
-  empty.append(icon,title,message);
-  notificationList.appendChild(empty);
+    if (expected) {
+
+      for (const dateString of sorted) {
+
+        const actual = new Date(dateString + "T00:00:00");
+
+        if (actual.getTime() === expected.getTime()) {
+
+          streak++;
+          expected.setDate(expected.getDate() - 1);
+
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  $("streakStat").textContent = streak;
+
+  $("streakMessage").textContent =
+    streak > 0
+      ? `${streak}-day streak! Keep your learning momentum going.`
+      : "Start today and build your daily learning habit.";
 
   lucide.createIcons();
-  return;
- }
-
- broadcastItems.forEach(item=>{
-
-  const isRead=readNotificationIds.has(item.id);
-
-  const wrapper=document.createElement("div");
-  wrapper.className=
-   "notification-item"+(isRead?"":" unread");
-
-  const icon=document.createElement("div");
-  icon.className="notification-item-icon";
-
-  const iconElement=document.createElement("i");
-  iconElement.setAttribute("data-lucide","bell");
-
-  icon.appendChild(iconElement);
-
-  const content=document.createElement("div");
-  content.className="notification-item-content";
-
-  const title=document.createElement("strong");
-  title.textContent=item.data.title||"Institute Announcement";
-
-  const message=document.createElement("p");
-  message.textContent=item.data.message||"";
-
-  const date=document.createElement("small");
-  date.textContent=formatNotificationDate(item.data);
-
-  content.append(title,message,date);
-  wrapper.append(icon,content);
-
-  if(!isRead){
-   const dot=document.createElement("span");
-   dot.className="notification-dot";
-   wrapper.appendChild(dot);
-  }
-
-  wrapper.addEventListener("click",async()=>{
-
-   await markNotificationRead(item.id);
-
-   const link=item.data.url||item.data.link;
-
-   if(link){
-    try{
-     const destination=new URL(link,location.origin);
-
-     if(
-      destination.protocol==="https:"||
-      destination.protocol==="http:"
-     ){
-      location.href=destination.href;
-     }
-    }catch(error){
-     console.error("Invalid notification link:",error);
-    }
-   }
-  });
-
-  notificationList.appendChild(wrapper);
- });
-
- lucide.createIcons();
 }
-
-/* MARK READ */
-
-async function markNotificationRead(notificationId){
-
- if(!currentNotificationStudentId)return;
- if(readNotificationIds.has(notificationId))return;
-
- try{
-  await setDoc(
-   doc(
-    db,
-    "notificationReads",
-    currentNotificationStudentId+"_"+encodeURIComponent(notificationId)
-   ),
-   {
-    studentId:currentNotificationStudentId,
-    notificationId,
-    readAt:serverTimestamp()
-   },
-   {merge:true}
-  );
- }catch(error){
-  console.error("Unable to mark notification read:",error);
-  showToast("Unable to update notification");
- }
-}
-
-/* MARK ALL BROADCAST READ */
-
-$("markAllRead").addEventListener("click",async()=>{
-
- const unreadItems=broadcastItems.filter(item=>
-  !readNotificationIds.has(item.id)
- );
-
- if(!unreadItems.length){
-  showToast("All broadcast notifications are read");
-  return;
- }
-
- try{
-  await Promise.all(unreadItems.map(item=>
-   setDoc(
-    doc(
-     db,
-     "notificationReads",
-     currentNotificationStudentId+"_"+encodeURIComponent(item.id)
-    ),
-    {
-     studentId:currentNotificationStudentId,
-     notificationId:item.id,
-     readAt:serverTimestamp()
-    },
-    {merge:true}
-   )
-  ));
-
-  showToast("All broadcast notifications marked as read");
-
- }catch(error){
-  console.error(error);
-  showToast("Could not update notifications");
- }
-});
-
-/* REALTIME LISTENERS */
-
-function startNotificationSync(studentId){
-
- currentNotificationStudentId=studentId;
-
- if(notificationUnsubscribe)notificationUnsubscribe();
- if(readUnsubscribe)readUnsubscribe();
-
- broadcastItems=[];
- individualItems=[];
- readNotificationIds=new Set();
-
- updateNotificationBadge();
-
- notificationUnsubscribe=onSnapshot(
-  collection(db,"notifications"),
-  snapshot=>{
-
-   const allItems=snapshot.docs.map(item=>({
-    id:item.id,
-    data:item.data()
-   }));
-
-   broadcastItems=allItems
-    .filter(item=>
-     item.data.active!==false&&
-     isBroadcastNotification(item.data)
-    )
-    .sort((a,b)=>
-     (getNotificationDate(b.data)?.getTime()||0)-
-     (getNotificationDate(a.data)?.getTime()||0)
-    );
-
-   individualItems=allItems
-    .filter(item=>
-     item.data.active!==false&&
-     isIndividualNotification(item.data)
-    )
-    .sort((a,b)=>
-     (getNotificationDate(b.data)?.getTime()||0)-
-     (getNotificationDate(a.data)?.getTime()||0)
-    );
-
-   updateNotificationBadge();
-   renderNotifications();
-
-  },
-  error=>{
-   console.error("Notification listener error:",error);
-   notificationList.textContent="Unable to load notifications.";
-  }
- );
-
- const readQuery=query(
-  collection(db,"notificationReads"),
-  where("studentId","==",studentId)
- );
-
- readUnsubscribe=onSnapshot(
-  readQuery,
-  snapshot=>{
-
-   readNotificationIds=new Set(
-    snapshot.docs.map(item=>item.data().notificationId)
-   );
-
-   updateNotificationBadge();
-   renderNotifications();
-
-  },
-  error=>{
-   console.error("Notification read status error:",error);
-  }
- );
-}
-
 
 /* =====================================
-   LOAD DASHBOARD
+   NOTIFICATIONS
 ===================================== */
 
-let dashboardLoading=false;
+const notificationOverlay = $("notificationOverlay");
+const notificationList = $("notificationList");
+const notificationBadge = $("notificationBadge");
 
-async function loadDashboard(){
+function openNotifications() {
+  notificationOverlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+  renderNotifications();
+}
 
- if(dashboardLoading)return;
+function closeNotifications() {
+  notificationOverlay.classList.remove("open");
+  document.body.style.overflow = "";
+}
 
- dashboardLoading=true;
+$("notificationBell").addEventListener("click", openNotifications);
+$("closeNotifications").addEventListener("click", closeNotifications);
 
- setStatus("Loading your dashboard...");
+notificationOverlay.addEventListener("click", event => {
+  if (event.target === notificationOverlay) {
+    closeNotifications();
+  }
+});
 
- try{
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeNotifications();
+});
 
-  const student=await loadStudent();
+function getNotificationDate(data) {
 
-  if(!student)return;
-  loadNewStudents();
+  const value = data.createdAt || data.date || data.timestamp;
 
-  startNotificationSync(student.id);
+  if (value?.toDate) return value.toDate();
+  if (value instanceof Date) return value;
 
-  const results=await Promise.allSettled([
-
-   loadDailyStreaks(),
-
-   loadGlobalRank(student),
-
-   loadAttendanceData(student)
-
-  ]);
-
-  const labels=[
-   "Daily streak error:",
-   "Global rank error:",
-   "Attendance error:"
-  ];
-
-  results.forEach((result,index)=>{
-
-   if(result.status==="rejected"){
-
-    console.error(labels[index],result.reason);
-
-   }
-
-  });
-
-  const failures=results.filter(r=>r.status==="rejected").length;
-
-  if(failures){
-   setStatus("Some dashboard information could not be loaded.",true);
-  }else{
-   setStatus("Connected to BlackTerminal database");
+  if (typeof value === "string" || typeof value === "number") {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date;
   }
 
- }catch(error){
+  return null;
+}
 
-  console.error("Dashboard error:",error);
+function formatNotificationDate(data) {
 
-  setStatus(
-   "Unable to load dashboard. Check your internet connection.",
-   true
+  const date = getNotificationDate(data);
+
+  if (!date) return "Recently";
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function isBroadcastNotification(data) {
+
+  const audience = String(data.audience || "").toLowerCase();
+  const target = String(data.target || "").toLowerCase();
+  const targetType = String(data.targetType || "").toLowerCase();
+
+  return (
+    ["all", "everyone", "broadcast"].includes(audience) ||
+    ["all", "everyone", "broadcast"].includes(target) ||
+    ["all", "everyone", "broadcast"].includes(targetType)
+  );
+}
+
+function isIndividualNotification(data) {
+
+  const audience = String(data.audience || "").toLowerCase();
+  const target = String(data.target || "").toLowerCase();
+  const targetType = String(data.targetType || "").toLowerCase();
+
+  const individualType =
+    audience === "individual" ||
+    target === "individual" ||
+    targetType === "individual";
+
+  if (!individualType) return false;
+
+  const targetId =
+    data.studentId ||
+    data.recipientId ||
+    data.targetStudentId ||
+    "";
+
+  const targetName =
+    data.studentName ||
+    data.recipientName ||
+    "";
+
+  const idMatch =
+    targetId &&
+    String(targetId) === currentNotificationStudentId;
+
+  const nameMatch =
+    targetName &&
+    String(targetName).trim().toLowerCase() ===
+    savedName.trim().toLowerCase();
+
+  return Boolean(idMatch || nameMatch);
+}
+
+/* =====================================
+   NOTIFICATION COUNTERS
+===================================== */
+
+function updateNotificationBadge() {
+
+  const broadcastUnread = broadcastItems.filter(item =>
+    !readNotificationIds.has(item.id)
+  ).length;
+
+  notificationBadge.hidden = broadcastUnread === 0;
+
+  if (broadcastUnread > 0) {
+    notificationBadge.textContent =
+      broadcastUnread > 99 ? "99+" : broadcastUnread;
+  }
+
+  const individualUnread = individualItems.filter(item =>
+    !readNotificationIds.has(item.id)
+  ).length;
+
+  const cardCount = $("myNotificationCount");
+  const cardText = $("myNotificationText");
+
+  if (cardCount) {
+
+    cardCount.textContent =
+      individualUnread > 99 ? "99+" : individualUnread;
+
+    cardCount.classList.toggle("show", individualUnread > 0);
+  }
+
+  if (cardText) {
+
+    cardText.textContent = individualUnread > 0
+      ? `${individualUnread} individual unread notification${individualUnread === 1 ? "" : "s"}`
+      : "No individual notifications";
+  }
+}
+
+/* =====================================
+   RENDER BROADCAST NOTIFICATIONS
+===================================== */
+
+function renderNotifications() {
+
+  notificationList.innerHTML = "";
+
+  if (!broadcastItems.length) {
+
+    const empty = document.createElement("div");
+    empty.className = "notification-empty";
+
+    const icon = document.createElement("i");
+    icon.setAttribute("data-lucide", "bell-off");
+
+    const title = document.createElement("strong");
+    title.textContent = "No broadcast notifications";
+
+    const message = document.createElement("div");
+    message.textContent = "Institute announcements will appear here.";
+
+    empty.append(icon, title, message);
+    notificationList.appendChild(empty);
+
+    lucide.createIcons();
+    return;
+  }
+
+  broadcastItems.forEach(item => {
+
+    const isRead = readNotificationIds.has(item.id);
+
+    const wrapper = document.createElement("div");
+    wrapper.className =
+      "notification-item" + (isRead ? "" : " unread");
+
+    const icon = document.createElement("div");
+    icon.className = "notification-item-icon";
+
+    const iconElement = document.createElement("i");
+    iconElement.setAttribute("data-lucide", "bell");
+
+    icon.appendChild(iconElement);
+
+    const content = document.createElement("div");
+    content.className = "notification-item-content";
+
+    const title = document.createElement("strong");
+    title.textContent = item.data.title || "Institute Announcement";
+
+    const message = document.createElement("p");
+    message.textContent = item.data.message || "";
+
+    const date = document.createElement("small");
+    date.textContent = formatNotificationDate(item.data);
+
+    content.append(title, message, date);
+    wrapper.append(icon, content);
+
+    if (!isRead) {
+
+      const dot = document.createElement("span");
+      dot.className = "notification-dot";
+
+      wrapper.appendChild(dot);
+    }
+
+    wrapper.addEventListener("click", async () => {
+
+      await markNotificationRead(item.id);
+
+      const link = item.data.url || item.data.link;
+
+      if (link) {
+
+        try {
+
+          const destination = new URL(link, location.origin);
+
+          if (
+            destination.protocol === "https:" ||
+            destination.protocol === "http:"
+          ) {
+            location.href = destination.href;
+          }
+
+        } catch (error) {
+          console.error("Invalid notification link:", error);
+        }
+      }
+    });
+
+    notificationList.appendChild(wrapper);
+  });
+
+  lucide.createIcons();
+}
+
+/* =====================================
+   MARK NOTIFICATION READ
+===================================== */
+
+async function markNotificationRead(notificationId) {
+
+  if (!currentNotificationStudentId) return;
+  if (readNotificationIds.has(notificationId)) return;
+
+  try {
+
+    await setDoc(
+      doc(
+        db,
+        "notificationReads",
+        currentNotificationStudentId + "_" +
+        encodeURIComponent(notificationId)
+      ),
+      {
+        studentId: currentNotificationStudentId,
+        notificationId,
+        readAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+  } catch (error) {
+
+    console.error("Unable to mark notification read:", error);
+    showToast("Unable to update notification");
+  }
+}
+
+/* =====================================
+   MARK ALL BROADCAST READ
+===================================== */
+
+$("markAllRead").addEventListener("click", async () => {
+
+  const unreadItems = broadcastItems.filter(item =>
+    !readNotificationIds.has(item.id)
   );
 
-  showToast("Dashboard loading error");
+  if (!unreadItems.length) {
+    showToast("All broadcast notifications are read");
+    return;
+  }
 
- }finally{
+  try {
 
-  dashboardLoading=false;
+    await Promise.all(unreadItems.map(item =>
+      setDoc(
+        doc(
+          db,
+          "notificationReads",
+          currentNotificationStudentId + "_" +
+          encodeURIComponent(item.id)
+        ),
+        {
+          studentId: currentNotificationStudentId,
+          notificationId: item.id,
+          readAt: serverTimestamp()
+        },
+        { merge: true }
+      )
+    ));
 
- }
+    showToast("All broadcast notifications marked as read");
 
+  } catch (error) {
+
+    console.error(error);
+    showToast("Could not update notifications");
+  }
+});
+
+/* =====================================
+   REALTIME NOTIFICATION LISTENERS
+   START ONLY ONCE
+===================================== */
+
+function startNotificationSync(studentId) {
+
+  if (notificationStarted) return;
+
+  notificationStarted = true;
+  currentNotificationStudentId = studentId;
+
+  notificationUnsubscribe = onSnapshot(
+    collection(db, "notifications"),
+    snapshot => {
+
+      const allItems = snapshot.docs.map(item => ({
+        id: item.id,
+        data: item.data()
+      }));
+
+      broadcastItems = allItems
+        .filter(item =>
+          item.data.active !== false &&
+          isBroadcastNotification(item.data)
+        )
+        .sort((a, b) =>
+          (getNotificationDate(b.data)?.getTime() || 0) -
+          (getNotificationDate(a.data)?.getTime() || 0)
+        );
+
+      individualItems = allItems
+        .filter(item =>
+          item.data.active !== false &&
+          isIndividualNotification(item.data)
+        )
+        .sort((a, b) =>
+          (getNotificationDate(b.data)?.getTime() || 0) -
+          (getNotificationDate(a.data)?.getTime() || 0)
+        );
+
+      updateNotificationBadge();
+
+      if (notificationOverlay.classList.contains("open")) {
+        renderNotifications();
+      }
+
+    },
+    error => {
+
+      console.error("Notification listener error:", error);
+      notificationList.textContent = "Unable to load notifications.";
+    }
+  );
+
+  const readQuery = query(
+    collection(db, "notificationReads"),
+    where("studentId", "==", studentId)
+  );
+
+  readUnsubscribe = onSnapshot(
+    readQuery,
+    snapshot => {
+
+      readNotificationIds = new Set(
+        snapshot.docs.map(item => item.data().notificationId)
+      );
+
+      updateNotificationBadge();
+
+      if (notificationOverlay.classList.contains("open")) {
+        renderNotifications();
+      }
+
+    },
+    error => {
+      console.error("Notification read status error:", error);
+    }
+  );
 }
+
+/* =====================================
+   RENDER COMPLETE DASHBOARD
+===================================== */
+
+function renderDashboard(data) {
+
+  const currentStudent = findCurrentStudent(data.students);
+
+  if (!currentStudent) {
+    setStatus(
+      "Student record not found. Please contact institute.",
+      true
+    );
+    return false;
+  }
+
+  renderProfile(currentStudent);
+
+  renderGlobalRank(data.students, currentStudent);
+
+  const attendanceCounts =
+    buildAttendanceCounts(data.attendance);
+
+  renderMyAttendance(attendanceCounts, currentStudent);
+
+  renderTopAttendanceData(
+    attendanceCounts,
+    data.students
+  );
+
+  renderDailyStreaks(
+    data.attendance,
+    currentStudent
+  );
+
+  startNotificationSync(currentStudent.id);
+
+  lucide.createIcons();
+
+  return true;
+}
+
+/* =====================================
+   MAIN DASHBOARD LOADER
+===================================== */
+
+async function loadDashboard(forceRefresh = false) {
+
+  if (dashboardLoading) return;
+
+  // Reuse existing data for 5 minutes.
+  if (
+    !forceRefresh &&
+    dashboardCache &&
+    Date.now() - lastLoadedAt < CACHE_DURATION
+  ) {
+    renderDashboard(dashboardCache);
+
+    setStatus("Connected to BlackTerminal database");
+    return;
+  }
+
+  // If offline, keep already loaded dashboard visible.
+  if (!navigator.onLine && dashboardCache) {
+    renderDashboard(dashboardCache);
+    setStatus("Offline mode - showing saved dashboard data");
+    return;
+  }
+
+  dashboardLoading = true;
+
+  setStatus("Loading your dashboard...");
+
+  try {
+
+    const data = await fetchDashboardData();
+
+    dashboardCache = data;
+    lastLoadedAt = Date.now();
+
+    const success = renderDashboard(data);
+
+    if (success) {
+      setStatus("Connected to BlackTerminal database");
+    }
+
+  } catch (error) {
+
+    console.error("Dashboard error:", error);
+
+    setStatus(
+      "Unable to load dashboard. Check your internet connection.",
+      true
+    );
+
+    showToast("Dashboard loading error");
+
+  } finally {
+
+    dashboardLoading = false;
+  }
+}
+
+/* =====================================
+   INITIAL LOAD
+===================================== */
 
 loadDashboard();
 
-/* REFRESH */
+/* =====================================
+   REFRESH WHEN APP RETURNS
+===================================== */
 
-document.addEventListener("visibilitychange",()=>{
+document.addEventListener("visibilitychange", () => {
 
- if(!document.hidden){
-  loadDashboard();
- }
+  if (!document.hidden) {
+    loadDashboard(false);
+  }
 
 });
 
-window.addEventListener("online",loadDashboard);
+/* Refresh after internet connection returns */
 
-/* PWA SERVICE WORKER */
+window.addEventListener("online", () => {
+  loadDashboard(true);
+});
 
-if("serviceWorker" in navigator){
+/* =====================================
+   PWA SERVICE WORKER
+   EXISTING sw.js PRESERVED
+===================================== */
 
- window.addEventListener("load",()=>{
+if ("serviceWorker" in navigator) {
 
-  navigator.serviceWorker.register("/sw.js")
-   .catch(error=>console.log("PWA:",error));
+  window.addEventListener("load", () => {
 
- });
+    navigator.serviceWorker.register("/sw.js")
+      .catch(error => console.log("PWA:", error));
 
+  });
 }
 
-/* CLEANUP */
+/* =====================================
+   CLEANUP
+===================================== */
 
-window.addEventListener("pagehide",()=>{
+window.addEventListener("pagehide", () => {
 
- if(notificationUnsubscribe){
-  notificationUnsubscribe();
- }
+  if (notificationUnsubscribe) {
+    notificationUnsubscribe();
+  }
 
- if(readUnsubscribe){
-  readUnsubscribe();
- }
+  if (readUnsubscribe) {
+    readUnsubscribe();
+  }
 
 });
 
 </script>
+
 
 </body>
 </html>
