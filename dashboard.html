@@ -2606,21 +2606,40 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+
 /* =====================================
-   CLEANUP
+   CLEANUP AND RESTORE
 ===================================== */
 
-window.addEventListener("pagehide", () => {
+function stopNotificationSync() {
 
   if (notificationUnsubscribe) {
     notificationUnsubscribe();
+    notificationUnsubscribe = null;
   }
 
   if (readUnsubscribe) {
     readUnsubscribe();
+    readUnsubscribe = null;
+  }
+
+  notificationStarted = false;
+}
+
+window.addEventListener("pagehide", () => {
+  stopNotificationSync();
+});
+
+window.addEventListener("pageshow", () => {
+
+  if (dashboardCache) {
+    renderDashboard(dashboardCache);
+  } else {
+    loadDashboard(false);
   }
 
 });
+
 
 </script>
 
