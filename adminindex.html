@@ -358,8 +358,7 @@ button{cursor:pointer}
 </main>
 </div>
 
-
-<script type="module">
+<script>
 import { initializeApp } from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -376,8 +375,7 @@ import {
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* =====================================
-   FIREBASE CONFIGURATION
-   KEEP YOUR EXISTING PROJECT
+   FIREBASE CONFIG - UNCHANGED
 ===================================== */
 
 const firebaseConfig = {
@@ -395,29 +393,44 @@ const db = getFirestore(app);
 const $ = id => document.getElementById(id);
 
 /* =====================================
-   CACHE SETTINGS
+   FAST CACHE
+   Counts only - no personal information
 ===================================== */
 
+const CACHE_KEY = "bt_admin_dashboard_counts";
 const CACHE_DURATION = 2 * 60 * 1000;
 
-let dashboardCache = null;
+let countCache = null;
 let lastLoadedAt = 0;
 let loadingPromise = null;
+
+try {
+  const saved = JSON.parse(sessionStorage.getItem(CACHE_KEY));
+
+  if (saved && saved.data && saved.time) {
+    countCache = saved.data;
+    lastLoadedAt = saved.time;
+  }
+} catch (error) {
+  console.warn("Cache unavailable:", error);
+}
 
 /* =====================================
    DATE
 ===================================== */
 
-$("todayDate").textContent =
-  new Date().toLocaleDateString("en-IN", {
+$("todayDate").textContent = new Date().toLocaleDateString(
+  "en-IN",
+  {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric"
-  });
+  }
+);
 
 /* =====================================
-   MOBILE SIDEBAR
+   SIDEBAR
 ===================================== */
 
 const sidebar = $("sidebar");
@@ -429,8 +442,8 @@ function closeSidebar() {
 }
 
 $("menuBtn").addEventListener("click", () => {
-  sidebar.classList.toggle("open");
-  overlay.classList.toggle("show");
+  const isOpen = sidebar.classList.toggle("open");
+  overlay.classList.toggle("show", isOpen);
 });
 
 overlay.addEventListener("click", closeSidebar);
@@ -444,7 +457,7 @@ document.addEventListener("keydown", event => {
 });
 
 /* =====================================
-   COUNT HELPERS
+   COUNT DISPLAY
 ===================================== */
 
 function setCount(id, value) {
@@ -454,26 +467,15 @@ function setCount(id, value) {
       : Number(value).toLocaleString("en-IN");
 }
 
-async function fetchCount(collectionName, activeOnly = false) {
-  try {
-    const ref = collection(db, collectionName);
-
-    const targetQuery = activeOnly
-      ? query(ref, where("active", "==", true))
-      : ref;
-
-    const result = await getCountFromServer(targetQuery);
-
-    return result.data().count;
-
-  } catch (error) {
-    console.error("Count error:", collectionName, error);
-    return null;
-  }
+function renderCounts(data) {
+  setCount("studentsCount", data.students);
+  setCount("facultyCount", data.faculty);
+  setCount("enquiriesCount", data.enquiries);
+  setCount("noticesCount", data.notices);
 }
 
 /* =====================================
-   SAFE TEXT
+   SAFE HTML
 ===================================== */
 
 function safe(value) {
@@ -518,11 +520,34 @@ function formatDate(value) {
 }
 
 /* =====================================
-   FETCH RECENT ENQUIRIES
-   MAXIMUM 5 DOCUMENTS
+   FIRESTORE COUNT
+===================================== */
+
+async function fetchCount(name, activeOnly = false) {
+  try {
+    const ref = collection(db, name);
+
+    const target = activeOnly
+      ? query(ref, where("active", "==", true))
+      : ref;
+
+    const result = await getCountFromServer(target);
+
+    return result.data().count;
+
+  } catch (error) {
+    console.error("Count error:", name, error);
+    return null;
+  }
+}
+
+/* =====================================
+   RECENT ENQUIRIES
 ===================================== */
 
 async function fetchRecentEnquiries() {
+  const container = $("recentEnquiries");
+
   try {
     const q = query(
       collection(db, "enquiries"),
@@ -532,170 +557,134 @@ async function fetchRecentEnquiries() {
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(docSnap => {
+    if (snapshot.empty) {
+      container.innerHTML =
+        '<div class="empty">No enquiries received yet.</div>';
+      return;
+    }
+
+    const html = snapshot.docs.map(docSnap => {
       const data = docSnap.data();
 
-      return {
-        name: data.name || "Unknown Student",
-        phone: data.phone || "No phone",
-        course: data.course || "General Enquiry",
-        status: String(data.status || "new").toLowerCase(),
-        date: formatDate(data.createdAt)
-      };
-    });
+      const name = data.name || "Unknown Student";
+      const initial = String(name).trim().charAt(0).toUpperCase() || "S";
+      const course = data.course || "General Enquiry";
+      const phone = data.phone || "No phone";
+      const status = String(data.status || "new").toLowerCase();
+
+      return `
+        <div class="enquiry">
+          <div class="enquiry-avatar">${safe(initial)}</div>
+
+          <div class="enquiry-info">
+            <strong>${safe(name)}</strong>
+            <small>${safe(course)} • ${safe(phone)}</small>
+            <small>${safe(formatDate(data.createdAt))}</small>
+          </div>
+
+          <span class="status ${safe(status)}">
+            ${safe(status)}
+          </span>
+        </div>
+      `;
+    }).join("");
+
+    container.innerHTML = html;
 
   } catch (error) {
-    console.error("Recent enquiries error:", error);
-    return null;
-  }
-}
+    console.error("Enquiry error:", error);
 
-/* =====================================
-   RENDER RECENT ENQUIRIES
-===================================== */
-
-function renderRecentEnquiries(items) {
-  const container = $("recentEnquiries");
-
-  if (items === null) {
     container.innerHTML =
-      '<div class="empty error-text">Unable to load enquiries. Check Firestore permissions or index configuration.</div>';
-    return;
+      '<div class="empty error-text">Unable to load enquiries.</div>';
   }
-
-  if (!items.length) {
-    container.innerHTML =
-      '<div class="empty">No enquiries received yet.</div>';
-    return;
-  }
-
-  container.innerHTML = items.map(item => {
-    const initial =
-      item.name.trim().charAt(0).toUpperCase() || "S";
-
-    return `
-      <div class="enquiry">
-
-        <div class="enquiry-avatar">
-          ${safe(initial)}
-        </div>
-
-        <div class="enquiry-info">
-          <strong>${safe(item.name)}</strong>
-
-          <small>
-            ${safe(item.course)} • ${safe(item.phone)}
-          </small>
-
-          <small>${safe(item.date)}</small>
-        </div>
-
-        <span class="status ${safe(item.status)}">
-          ${safe(item.status)}
-        </span>
-
-      </div>
-    `;
-  }).join("");
 }
 
 /* =====================================
-   RENDER DASHBOARD
+   FETCH COUNTS IN PARALLEL
 ===================================== */
 
-function renderDashboard(data) {
-
-  setCount("studentsCount", data.students);
-  setCount("facultyCount", data.faculty);
-  setCount("enquiriesCount", data.enquiries);
-  setCount("noticesCount", data.notices);
-
-  renderRecentEnquiries(data.recentEnquiries);
-}
-
-/* =====================================
-   FETCH ALL DASHBOARD DATA
-   PARALLEL REQUESTS
-===================================== */
-
-async function fetchDashboardData() {
-
+async function fetchCounts() {
   const [
     students,
     faculty,
     enquiries,
-    notices,
-    recentEnquiries
+    notices
   ] = await Promise.all([
-
     fetchCount("students"),
-
     fetchCount("faculty"),
-
     fetchCount("enquiries"),
-
-    fetchCount("notices", true),
-
-    fetchRecentEnquiries()
-
+    fetchCount("notices", true)
   ]);
 
-  return {
+  const data = {
     students,
     faculty,
     enquiries,
-    notices,
-    recentEnquiries
+    notices
   };
+
+  const successful =
+    Object.values(data).every(value => value !== null);
+
+  if (successful) {
+    countCache = data;
+    lastLoadedAt = Date.now();
+
+    try {
+      sessionStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          data,
+          time: lastLoadedAt
+        })
+      );
+    } catch (error) {
+      console.warn("Unable to save cache:", error);
+    }
+
+    renderCounts(data);
+
+  } else if (!countCache) {
+    renderCounts(data);
+  }
 }
 
 /* =====================================
-   MAIN DASHBOARD LOADER
+   MAIN LOADER
 ===================================== */
 
 function loadDashboard(forceRefresh = false) {
+  if (loadingPromise) return loadingPromise;
 
-  // Prevent duplicate simultaneous requests.
-  if (loadingPromise) {
+  const cacheIsFresh =
+    countCache &&
+    Date.now() - lastLoadedAt < CACHE_DURATION;
+
+  // Fetch only recent enquiries when count cache is fresh.
+  if (!forceRefresh && cacheIsFresh) {
+    loadingPromise = fetchRecentEnquiries()
+      .finally(() => {
+        loadingPromise = null;
+      });
+
     return loadingPromise;
   }
 
-  // Reuse cached data for 2 minutes.
-  if (
-    !forceRefresh &&
-    dashboardCache &&
-    Date.now() - lastLoadedAt < CACHE_DURATION
-  ) {
-    renderDashboard(dashboardCache);
-    return Promise.resolve();
-  }
-
-  // Keep cached dashboard visible offline.
-  if (!navigator.onLine && dashboardCache) {
-    renderDashboard(dashboardCache);
+  // Offline: show cached counts.
+  if (!navigator.onLine) {
+    if (countCache) renderCounts(countCache);
     return Promise.resolve();
   }
 
   loadingPromise = (async () => {
-
     try {
-
-      const data = await fetchDashboardData();
-
-      dashboardCache = data;
-      lastLoadedAt = Date.now();
-
-      renderDashboard(data);
-
+      await Promise.all([
+        fetchCounts(),
+        fetchRecentEnquiries()
+      ]);
     } catch (error) {
-
-      console.error("Dashboard loading error:", error);
-
-      $("recentEnquiries").innerHTML =
-        '<div class="empty error-text">Unable to load dashboard data.</div>';
-
+      console.error("Dashboard error:", error);
     }
-
   })().finally(() => {
     loadingPromise = null;
   });
@@ -704,26 +693,33 @@ function loadDashboard(forceRefresh = false) {
 }
 
 /* =====================================
-   INITIAL LOAD
+   INSTANT FIRST DISPLAY
 ===================================== */
 
-lucide.createIcons();
+// Show cached counts before network requests.
+if (countCache) {
+  renderCounts(countCache);
+}
 
+// Icons
+if (window.lucide) {
+  lucide.createIcons();
+}
+
+// Load fresh data if required.
 loadDashboard();
 
 /* =====================================
-   REFRESH WHEN APP RETURNS
+   RETURN TO DASHBOARD
 ===================================== */
 
 document.addEventListener("visibilitychange", () => {
-
   if (
     document.visibilityState === "visible" &&
     Date.now() - lastLoadedAt >= CACHE_DURATION
   ) {
     loadDashboard();
   }
-
 });
 
 /* =====================================
@@ -735,15 +731,13 @@ window.addEventListener("online", () => {
 });
 
 /* =====================================
-   BACK-FORWARD CACHE RESTORE
+   BACK/FORWARD CACHE
 ===================================== */
 
 window.addEventListener("pageshow", event => {
-
   if (event.persisted) {
     loadDashboard();
   }
-
 });
 </script>
 
