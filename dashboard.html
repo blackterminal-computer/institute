@@ -2622,6 +2622,7 @@ function getHolidayDate(data){
   return null;
 }
 
+
 function renderUpcomingHolidays(snapshot){
 
   const container = $("holidayList");
@@ -2632,12 +2633,11 @@ function renderUpcomingHolidays(snapshot){
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  const holidays = [];
+  const upcoming = [];
 
   snapshot.forEach(item => {
 
     const data = item.data();
-
     const date = getHolidayDate(data);
 
     if(!date) return;
@@ -2647,25 +2647,24 @@ function renderUpcomingHolidays(snapshot){
     // Only today and future holidays
     if(date < today) return;
 
-    holidays.push({
+    upcoming.push({
       id: item.id,
       name:
         data.name ||
         data.holidayName ||
         data.title ||
         "Holiday",
-
       date,
-
-      category:
-        data.category ||
-        data.type ||
-        "Institute"
+      category: data.category || data.type || "Institute"
     });
 
   });
 
-  holidays.sort((a,b) => a.date-b.date);
+  // Nearest date first
+  upcoming.sort((a,b) => a.date - b.date);
+
+  // SHOW ONLY FIRST 3 UPCOMING HOLIDAYS
+  const holidays = upcoming.slice(0,3);
 
   if(!holidays.length){
 
@@ -2724,7 +2723,6 @@ function renderUpcomingHolidays(snapshot){
     category.textContent = holiday.category;
 
     item.append(dateBox,info,category);
-
     container.appendChild(item);
 
   });
@@ -2732,32 +2730,6 @@ function renderUpcomingHolidays(snapshot){
   lucide.createIcons();
 }
 
-function startHolidaySync(){
-
-  if(holidayUnsubscribe) return;
-
-  holidayUnsubscribe = onSnapshot(
-    collection(db,"holidays"),
-
-    snapshot => {
-      renderUpcomingHolidays(snapshot);
-    },
-
-    error => {
-
-      console.error("Holiday loading error:",error);
-
-      $("holidayList").innerHTML = `
-        <div class="holiday-empty">
-          Unable to load holidays.<br>
-          Please check your connection.
-        </div>
-      `;
-
-    }
-  );
-
-}
 
 /* =====================================
    RENDER COMPLETE DASHBOARD
