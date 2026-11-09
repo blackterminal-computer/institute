@@ -2732,6 +2732,46 @@ function renderUpcomingHolidays(snapshot){
 
 
 /* =====================================
+   START HOLIDAY REALTIME SYNC
+===================================== */
+
+function startHolidaySync(){
+
+  if(holidayUnsubscribe) return;
+
+  const container = $("holidayList");
+
+  container.innerHTML = `
+    <div class="holiday-empty">
+      Connecting to holiday database...
+    </div>
+  `;
+
+  console.log("Starting holiday listener...");
+
+  holidayUnsubscribe = onSnapshot(
+    collection(db, "holidays"),
+
+    snapshot => {
+      console.log("Holiday documents received:", snapshot.size);
+
+      renderUpcomingHolidays(snapshot);
+    },
+
+    error => {
+      console.error("Holiday Firebase Error:", error);
+
+      container.innerHTML = `
+        <div class="holiday-empty error">
+          Unable to load holidays.<br>
+          Error: ${error.code || error.message || "Unknown error"}
+        </div>
+      `;
+    }
+  );
+}
+
+/* =====================================
    RENDER COMPLETE DASHBOARD
 ===================================== */
 
