@@ -1067,6 +1067,96 @@ button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 }
 
 
+
+/* UPCOMING HOLIDAYS */
+
+.holiday-card{
+  background:
+    radial-gradient(circle at 100% 0%,rgba(53,214,232,.10),transparent 45%),
+    linear-gradient(145deg,#172a46,#111729);
+  border:1px solid rgba(53,214,232,.18);
+  border-radius:21px;
+  padding:17px;
+  margin:16px 0 24px;
+}
+
+.holiday-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.holiday-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.06);
+}
+
+.holiday-date{
+  width:49px;
+  min-width:49px;
+  height:53px;
+  border-radius:13px;
+  background:rgba(53,214,232,.12);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:var(--cyan);
+}
+
+.holiday-date strong{
+  font-size:19px;
+  font-weight:900;
+  line-height:1;
+}
+
+.holiday-date small{
+  font-size:9px;
+  font-weight:800;
+  margin-top:4px;
+}
+
+.holiday-info{
+  flex:1;
+  min-width:0;
+}
+
+.holiday-info strong{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+
+.holiday-info small{
+  display:block;
+  font-size:9px;
+  color:var(--muted);
+  margin-top:6px;
+}
+
+.holiday-category{
+  font-size:8px;
+  font-weight:800;
+  color:#c4aaff;
+  background:rgba(169,138,255,.13);
+  padding:6px 8px;
+  border-radius:20px;
+  white-space:nowrap;
+}
+
+.holiday-empty{
+  text-align:center;
+  color:var(--muted);
+  font-size:11px;
+  padding:22px 10px;
+  line-height:1.7;
+}
 </style>
 </head>
 
@@ -1226,7 +1316,26 @@ button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 
 
+<!-- UPCOMING HOLIDAYS -->
 
+<div class="section-head">
+  <h2>Upcoming Holidays</h2>
+  <span style="font-size:9px;color:var(--muted);font-weight:800">
+    INSTITUTE CALENDAR
+  </span>
+</div>
+
+<section class="holiday-card">
+
+  <div class="holiday-list" id="holidayList">
+    <div class="holiday-empty">
+      <i data-lucide="calendar-days"></i>
+      <br>
+      Loading upcoming holidays...
+    </div>
+  </div>
+
+</section>
 
 <!-- DAILY PRACTICE -->
 
@@ -2464,6 +2573,192 @@ function startNotificationSync(studentId) {
   );
 }
 
+
+
+
+/* =====================================
+   UPCOMING HOLIDAYS
+   FIRESTORE REALTIME LISTENER
+===================================== */
+
+let holidayUnsubscribe = null;
+
+function getHolidayDate(data){
+
+  const value =
+    data.date ||
+    data.holidayDate ||
+    data.startDate;
+
+  if(!value) return null;
+
+  if(value?.toDate){
+    return value.toDate();
+  }
+
+  if(value instanceof Date){
+    return value;
+  }
+
+  // Supports YYYY-MM-DD
+  if(typeof value === "string"){
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if(match){
+      return new Date(
+        Number(match[1]),
+        Number(match[2])-1,
+        Number(match[3])
+      );
+    }
+
+    const parsed = new Date(value);
+
+    if(!Number.isNaN(parsed.getTime())){
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function renderUpcomingHolidays(snapshot){
+
+  const container = $("holidayList");
+  if(!container) return;
+
+  container.innerHTML = "";
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const holidays = [];
+
+  snapshot.forEach(item => {
+
+    const data = item.data();
+
+    const date = getHolidayDate(data);
+
+    if(!date) return;
+
+    date.setHours(0,0,0,0);
+
+    // Only today and future holidays
+    if(date < today) return;
+
+    holidays.push({
+      id: item.id,
+      name:
+        data.name ||
+        data.holidayName ||
+        data.title ||
+        "Holiday",
+
+      date,
+
+      category:
+        data.category ||
+        data.type ||
+        "Institute"
+    });
+
+  });
+
+  holidays.sort((a,b) => a.date-b.date);
+
+  if(!holidays.length){
+
+    container.innerHTML = `
+      <div class="holiday-empty">
+        <i data-lucide="calendar-check"></i>
+        <br>
+        No upcoming holidays announced yet.
+      </div>
+    `;
+
+    lucide.createIcons();
+    return;
+  }
+
+  holidays.forEach(holiday => {
+
+    const item = document.createElement("div");
+    item.className = "holiday-item";
+
+    const dateBox = document.createElement("div");
+    dateBox.className = "holiday-date";
+
+    const day = document.createElement("strong");
+    day.textContent = holiday.date.getDate();
+
+    const month = document.createElement("small");
+    month.textContent = holiday.date.toLocaleDateString(
+      "en-IN",
+      {month:"short"}
+    ).toUpperCase();
+
+    dateBox.append(day,month);
+
+    const info = document.createElement("div");
+    info.className = "holiday-info";
+
+    const name = document.createElement("strong");
+    name.textContent = holiday.name;
+
+    const dateText = document.createElement("small");
+    dateText.textContent = holiday.date.toLocaleDateString(
+      "en-IN",
+      {
+        weekday:"long",
+        day:"numeric",
+        month:"long",
+        year:"numeric"
+      }
+    );
+
+    info.append(name,dateText);
+
+    const category = document.createElement("span");
+    category.className = "holiday-category";
+    category.textContent = holiday.category;
+
+    item.append(dateBox,info,category);
+
+    container.appendChild(item);
+
+  });
+
+  lucide.createIcons();
+}
+
+function startHolidaySync(){
+
+  if(holidayUnsubscribe) return;
+
+  holidayUnsubscribe = onSnapshot(
+    collection(db,"holidays"),
+
+    snapshot => {
+      renderUpcomingHolidays(snapshot);
+    },
+
+    error => {
+
+      console.error("Holiday loading error:",error);
+
+      $("holidayList").innerHTML = `
+        <div class="holiday-empty">
+          Unable to load holidays.<br>
+          Please check your connection.
+        </div>
+      `;
+
+    }
+  );
+
+}
+
 /* =====================================
    RENDER COMPLETE DASHBOARD
 ===================================== */
@@ -2572,6 +2867,7 @@ async function loadDashboard(forceRefresh = false) {
 ===================================== */
 
 loadDashboard();
+startHolidaySync();
 
 /* =====================================
    REFRESH WHEN APP RETURNS
@@ -2628,6 +2924,10 @@ function stopNotificationSync() {
 
 window.addEventListener("pagehide", () => {
   stopNotificationSync();
+  if(holidayUnsubscribe){
+  holidayUnsubscribe();
+  holidayUnsubscribe = null;
+}
 });
 
 window.addEventListener("pageshow", () => {
