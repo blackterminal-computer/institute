@@ -6457,283 +6457,136 @@ function updateTaskWagePreview(){
    ASSIGN TASK
 ===================================================== */
 
-function assignTask(){
 
-    const targetId =
-        document.getElementById(
-            "task-staff-select"
-        ).value;
+async function assignTask(){
 
+    try{
 
-    const description =
-        document.getElementById(
-            "task-desc"
-        ).value.trim();
+        const targetId =
+            document.getElementById("task-staff-select").value;
 
+        const description =
+            document.getElementById("task-desc").value.trim();
 
-    if(
-        !targetId ||
-        !description
-    ){
+        const isDefault =
+            document.getElementById("task-default")?.checked || false;
 
-        alert(
-            "Select staff and enter assignment."
+        if(!targetId || !description){
+
+            alert("Select staff and enter assignment.");
+            return;
+
+        }
+
+        const staffSnap = await db.ref(
+            `staff/${targetId}`
+        ).once("value");
+
+        if(!staffSnap.exists()){
+
+            throw new Error("Staff profile not found.");
+
+        }
+
+        const staff = staffSnap.val() || {};
+
+        const dailyWage = Number(
+            staff.perDayWage ??
+            staff.dailyWage ??
+            0
         );
 
-        return;
+        if(dailyWage <= 0){
+
+            throw new Error("Staff daily wage is ₹0. Set the wage first.");
+
+        }
+
+        const today = getLocalDate();
+        const now = Date.now();
+
+        if(isDefault){
+
+            const templateRef = db.ref(
+                `taskTemplates/${targetId}`
+            ).push();
+
+            const templateId = templateRef.key;
+
+            const taskId = `${today}_${templateId}`;
+
+            const updates = {};
+
+            updates[
+                `taskTemplates/${targetId}/${templateId}`
+            ] = {
+                task: description,
+                active: true,
+                isDefault: true,
+                createdBy: adminName,
+                createdAt: now
+            };
+
+            updates[
+                `tasks/${targetId}/${taskId}`
+            ] = {
+                task: description,
+                templateId: templateId,
+                assignmentDate: today,
+                status: "Pending",
+                adminVerified: false,
+                isDefault: true,
+                showToStaff: true,
+                assignedBy: adminName,
+                assignedAt: now
+            };
+
+            await db.ref().update(updates);
+
+        }else{
+
+            const taskRef = db.ref(
+                `tasks/${targetId}`
+            ).push();
+
+            await taskRef.set({
+
+                task: description,
+                assignmentDate: today,
+                status: "Pending",
+                adminVerified: false,
+                isDefault: false,
+                showToStaff: true,
+                assignedBy: adminName,
+                assignedAt: now
+
+            });
+
+        }
+
+        document.getElementById("task-desc").value = "";
+
+        const defaultCheckbox =
+            document.getElementById("task-default");
+
+        if(defaultCheckbox){
+            defaultCheckbox.checked = false;
+        }
+
+        showToast(
+            isDefault
+            ? "Default task assigned successfully."
+            : "Task assigned successfully."
+        );
+
+    }catch(error){
+
+        alert("Task assignment failed: " + error.message);
 
     }
 
-
-    db.ref(
-        `staff/${targetId}`
-    )
-    .once("value")
-    .then(
-        staffSnap=>{
-
-            if(
-                !staffSnap.exists()
-            ){
-
-                throw new Error(
-                    "Staff profile not found."
-                );
-
-            }
-
-
-            const staff =
-                staffSnap.val() ||
-                {};
-
-
-            const dailyWage =
-                Number(
-                    staff.perDayWage || 0
-                );
-
-
-            if(dailyWage <= 0){
-
-                throw new Error(
-                    "Staff per-day wage is ₹0. Please set the wage first."
-                );
-
-            }
-
-
-            const today =
-                getLocalDate();
-
-
-            return db.ref(
-                `tasks/${targetId}`
-            )
-            .once("value")
-            .then(
-                taskSnap=>{
-
-                    const existing =
-                        [];
-
-
-                    if(taskSnap.exists()){
-
-                        const tasks =
-                            taskSnap.val() ||
-                            {};
-
-
-                        Object.keys(tasks)
-                        .forEach(
-                            key=>{
-
-                                const task =
-                                    tasks[key] ||
-                                    {};
-
-
-                                if(
-
-                                    task.priority === true &&
-
-                                    task.assignmentDate === today &&
-
-                                    task.status !== "Cancelled"
-
-                                ){
-
-                                    existing.push({
-
-                                        key,
-
-                                        data:
-                                            task
-
-                                    });
-
-                                }
-
-                            }
-                        );
-
-                    }
-
-
-                    const total =
-                        existing.length + 1;
-
-
-                    const reward =
-                        Number(
-                            (
-                                dailyWage /
-                                total
-                            ).toFixed(2)
-                        );
-
-
-                    const taskRef =
-                        db.ref(
-                            `tasks/${targetId}`
-                        )
-                        .push();
-
-
-                    const newTask = {
-
-                        task:
-                            description,
-
-                        showToStaff:
-                            true,
-
-                        date:
-                            new Date().toISOString(),
-
-                        assignmentDate:
-                            today,
-
-                        status:
-                            "Pending",
-
-                        priority:
-                            true,
-
-                        priorityType:
-                            "Daily Wage Distributed",
-
-                        dailyWage:
-                            dailyWage,
-
-                        totalPriorityTasks:
-                            total,
-
-                        rewardPerTask:
-                            reward,
-
-                        walletReward:
-                            reward,
-
-                        walletCredited:
-                            false,
-
-                        assignedBy:
-                            adminName,
-
-                        assignedAt:
-                            Date.now()
-
-                    };
-
-
-                    const updates =
-                        {};
-
-
-                    existing.forEach(
-                        item=>{
-
-                            if(
-                                item.data.walletCredited !== true
-                            ){
-
-                                updates[
-                                    `tasks/${targetId}/${item.key}/totalPriorityTasks`
-                                ] =
-                                    total;
-
-
-                                updates[
-                                    `tasks/${targetId}/${item.key}/dailyWage`
-                                ] =
-                                    dailyWage;
-
-
-                                updates[
-                                    `tasks/${targetId}/${item.key}/rewardPerTask`
-                                ] =
-                                    reward;
-
-
-                                updates[
-                                    `tasks/${targetId}/${item.key}/walletReward`
-                                ] =
-                                    reward;
-
-                            }
-
-                        }
-                    );
-
-
-                    updates[
-                        `tasks/${targetId}/${taskRef.key}`
-                    ] =
-                        newTask;
-
-
-                    return db.ref()
-                    .update(
-                        updates
-                    );
-
-                }
-            );
-
-        }
-    )
-    .then(
-        ()=>{
-
-            showToast(
-                "Priority task deployed successfully."
-            );
-
-
-            document.getElementById(
-                "task-desc"
-            ).value =
-                "";
-
-
-            updateTaskWagePreview();
-
-        }
-    )
-    .catch(
-        error=>{
-
-            alert(
-                "Task deployment failed: " +
-                error.message
-            );
-
-        }
-    );
-
 }
+
 
 
 /* =====================================================
