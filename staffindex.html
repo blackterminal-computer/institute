@@ -209,47 +209,6 @@ button:active{transform:scale(.98)}
   .earning-value{font-size:25px}
   .strict-grid{grid-template-columns:repeat(3,1fr)}
 }
-
-/* STAFF TASK VISIBILITY */
-.task-zone:not(.unlocked) .task-content {
-    display: none;
-}
-
-.task-zone.unlocked .task-content {
-    display: block;
-}
-
-/* DISPLAY ONLY TASKS */
-.task-btn {
-    display: none !important;
-}
-
-.task-item {
-    cursor: default;
-}
-
-.task-admin-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 12px;
-    padding: 8px 11px;
-    border-radius: 10px;
-    background: rgba(255,159,10,.08);
-    color: var(--orange);
-    font-size: 10px;
-    font-weight: 900;
-}
-
-.task-admin-status.verified {
-    color: var(--green);
-    background: rgba(48,209,88,.09);
-}
-
-.task-admin-status.paid {
-    color: var(--cyan);
-    background: rgba(34,211,238,.09);
-}
 </style>
 </head>
 
@@ -521,7 +480,6 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 const fs = firebase.firestore();
 
-
 /* =========================================================
    SESSION — FIXED
 ========================================================= */
@@ -553,7 +511,6 @@ if (!staffId) {
 } else {
     console.log("Staff session loaded:", staffId);
 }
-
 
 /* =========================================================
    STATE AND HELPERS
@@ -794,18 +751,15 @@ function updateTaskLock() {
     const icon = document.getElementById("task-lock-icon");
     const title = document.getElementById("task-lock-title");
     const subtitle = document.getElementById("task-lock-subtitle");
-
     if (!zone || !icon || !title || !subtitle) return;
 
     const unlocked = punchEnabled && isAttendanceMarkedToday;
-
     zone.classList.toggle("locked", !unlocked);
-    zone.classList.toggle("unlocked", unlocked);
 
     if (unlocked) {
         icon.className = "fas fa-unlock";
         title.innerText = "TASKS UNLOCKED";
-        subtitle.innerText = "Your assigned tasks are now visible.";
+        subtitle.innerText = "You can now complete your assignments.";
     } else if (!punchEnabled) {
         icon.className = "fas fa-user-lock";
         title.innerText = "TASKS LOCKED";
@@ -813,7 +767,7 @@ function updateTaskLock() {
     } else {
         icon.className = "fas fa-lock";
         title.innerText = "TASKS LOCKED";
-        subtitle.innerText = "Punch in successfully to view your assignments.";
+        subtitle.innerText = "Punch in successfully to unlock today's assignments.";
     }
 }
 
@@ -897,20 +851,12 @@ function getTaskReward(task) {
     return wage > 0 && total > 0 ? Number((wage / total).toFixed(2)) : 0;
 }
 
-/* =========================================================
-   STAFF TASKS — DISPLAY ONLY
-   Staff cannot complete, modify or approve tasks.
-   Admin handles verification and final payment.
-========================================================= */
-
 function listenTasks() {
     if (tasksListenerStarted) return;
-
     tasksListenerStarted = true;
 
     db.ref(`tasks/${staffId}`).on("value", renderTasks, error => {
         console.error("TASK ERROR:", error);
-
         document.getElementById("task-list").innerHTML =
             '<div class="empty-state">Unable to load tasks.</div>';
     });
@@ -918,158 +864,65 @@ function listenTasks() {
 
 function renderTasks(snapshot) {
     const container = document.getElementById("task-list");
-
     if (!container) return;
 
     if (!snapshot.exists()) {
-        container.innerHTML =
-            '<div class="empty-state">No assignments available.</div>';
+        container.innerHTML = '<div class="empty-state">No active tasks</div>';
         return;
     }
 
     const tasks = [];
-
     snapshot.forEach(child => {
         const data = child.val() || {};
-
-        if (
-            data.showToStaff === false ||
-            data.status === "Cancelled"
-        ) return;
-
-        tasks.push({
-            id: child.key,
-            data
-        });
+        if (data.showToStaff === false || data.status === "Cancelled") return;
+        tasks.push({id: child.key, data});
     });
 
     if (!tasks.length) {
-        container.innerHTML =
-            '<div class="empty-state">No active assignments.</div>';
+        container.innerHTML = '<div class="empty-state">No visible assignments</div>';
         return;
     }
 
+    const priorityCount = tasks.filter(x => x.data.priority === true).length;
+
     container.innerHTML = tasks.map(({id, data}) => {
-
+        const done = data.status === "Completed";
         const priority = data.priority === true;
-
-        const name = escapeHtml(
-            data.task ||
-            data.title ||
-            data.name ||
-            "Untitled Task"
-        );
-
-        const description = escapeHtml(
-            data.description || data.details || ""
-        );
-
-        const date = data.date &&
-            !isNaN(new Date(data.date).getTime())
+        const reward = getTaskReward(data);
+        const credited = data.walletCredited === true || data.wasEverCredited === true;
+        const name = escapeHtml(data.task || data.title || data.name || "Untitled Task");
+        const date = data.date && !isNaN(new Date(data.date).getTime())
             ? new Date(data.date).toLocaleDateString("en-IN")
             : "--";
 
-        // Admin verification status
-        const verified =
-            data.adminVerified === true ||
-            data.verified === true;
-
-        const paid =
-            data.paymentStatus === "Paid" ||
-            data.adminPaid === true;
-
-        const finalAmount = Number(
-            data.finalAmount ||
-            data.approvedAmount ||
-            data.paidAmount ||
-            0
-        );
-
-        let statusHTML = "";
-
-        if (paid) {
-
-            statusHTML = `
-                <div class="task-admin-status paid">
-                    <i class="fas fa-check-double"></i>
-                    PAYMENT RELEASED
-                </div>
-            `;
-
-        } else if (verified) {
-
-            statusHTML = `
-                <div class="task-admin-status verified">
-                    <i class="fas fa-circle-check"></i>
-                    VERIFIED BY ADMIN
-                </div>
-            `;
-
-        } else {
-
-            statusHTML = `
-                <div class="task-admin-status">
-                    <i class="fas fa-clock"></i>
-                    AWAITING ADMIN VERIFICATION
-                </div>
-            `;
-        }
+        const rewardHTML = priority ? `
+          <div class="task-reward-row">
+            <span class="reward-pill wage"><i class="fas fa-coins"></i> Daily ₹${formatMoney(Number(data.dailyWage || currentDailyWage || 0))}</span>
+            <span class="reward-pill wage"><i class="fas fa-list-ol"></i> ${Number(data.totalPriorityTasks || priorityCount || 1)} Tasks</span>
+            <span class="reward-pill amount"><i class="fas fa-wallet"></i> ₹${formatMoney(reward)} / Task</span>
+            <span class="reward-pill ${credited ? "credited" : "wallet"}"><i class="fas ${credited ? "fa-check-circle" : "fa-clock"}"></i> ${credited ? "CREDITED" : "ON COMPLETION"}</span>
+          </div>` : "";
 
         return `
-            <article class="task-item ${priority ? "priority" : "normal"}">
-
-                <div class="task-top">
-
-                    <div class="task-dot ${
-                        paid ? "completed" : priority ? "" : "normal"
-                    }"></div>
-
-                    <div class="task-info">
-
-                        <p class="task-name">
-                            ${name}
-
-                            ${
-                                priority
-                                ? `<span class="priority-label">
-                                    <i class="fas fa-bolt"></i>
-                                    PRIORITY
-                                   </span>`
-                                : ""
-                            }
-                        </p>
-
-                        ${
-                            description
-                            ? `<div class="task-meta">${description}</div>`
-                            : ""
-                        }
-
-                        <div class="task-meta">
-                            Assigned: ${escapeHtml(date)}
-                        </div>
-
-                        ${statusHTML}
-
-                        ${
-                            paid && finalAmount > 0
-                            ? `
-                                <div class="task-reward-row">
-                                    <span class="reward-pill credited">
-                                        <i class="fas fa-wallet"></i>
-                                        Approved Amount: ₹${formatMoney(finalAmount)}
-                                    </span>
-                                </div>
-                            `
-                            : ""
-                        }
-
-                    </div>
-                </div>
-
-            </article>
-        `;
-
+          <article class="task-item ${priority ? "priority" : "normal"}">
+            <div class="task-top">
+              <div class="task-dot ${done ? "completed" : priority ? "" : "normal"}"></div>
+              <div class="task-info">
+                <p class="task-name ${done ? "done" : ""}">${name}
+                  ${priority ? '<span class="priority-label"><i class="fas fa-bolt"></i> PRIORITY</span>' : ""}
+                </p>
+                <div class="task-meta">${done ? "Completed" : "New assignment"} • ${escapeHtml(date)}</div>
+                ${rewardHTML}
+              </div>
+            </div>
+            <div class="task-bottom">
+              <div class="task-amount ${priority ? "" : "normal"}">${priority ? `₹${formatMoney(reward)}` : "—"}</div>
+              <button class="task-btn ${done ? "completed" : ""}"
+                data-complete-task="${escapeHtml(id)}" ${done ? "disabled" : ""}>
+                ${done ? '<i class="fas fa-check"></i> DONE' : 'MARK DONE <i class="fas fa-arrow-right"></i>'}
+              </button>
+            </div>
+          </article>`;
     }).join("");
 }
 
